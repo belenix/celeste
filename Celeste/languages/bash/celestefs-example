@@ -1,0 +1,68 @@
+#!/bin/bash -e
+# Copyright 2007-2008 Sun Microsystems, Inc. All Rights Reserved.
+# DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER
+# 
+# This code is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License version 2
+# only, as published by the Free Software Foundation.
+# 
+# This code is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+# General Public License version 2 for more details (a copy is
+# included in the LICENSE file that accompanied this code).
+# 
+# You should have received a copy of the GNU General Public License
+# version 2 along with this work; if not, write to the Free Software
+# Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
+# 02110-1301 USA
+# 
+# Please contact Sun Microsystems, Inc., 16 Network Circle, Menlo
+# Park, CA 94025 or visit www.sun.com if you need additional
+# information or have any questions.
+
+CELESTEHOME=${CELESTEHOME:=/opt/celeste}
+if [[ -x bin/celeste && -x bin/celestefs ]]; then
+	CELESTEHOME=`pwd`
+fi
+
+replicationParams="ReplicationParameters=AObject.Replication.Store=2;VObject.Replication.Store=2;BObject.Replication.Store=2"
+myId=meMyselfAndI
+myPassword=plugh
+fileSystemName=celestefs-example
+fileSystemPassword=fspw
+ownerName=celestefs-Owner
+ownerPassword=owner
+groupName=celestefs-Group
+groupPassword=group
+fileName=celestefs-file
+deleteToken=deleteMe
+blockSize=`expr 8 \* 1024 \* 1024`
+timeToLive=86400
+set -x
+${CELESTEHOME}/bin/celestefs           --id ${myId} --password ${myPassword} mkid
+${CELESTEHOME}/bin/celestefs --verbose                                       test -c ${myId}
+#${CELESTEHOME}/bin/celestefs --verbose                                       test -c ${myId}xxx
+${CELESTEHOME}/bin/celestefs           --id ${myId} --password ${myPassword} mkfs ${fileSystemName} ${fileSystemPassword}
+${CELESTEHOME}/bin/celestefs --verbose --id ${myId} --password ${myPassword} test -f ${fileSystemName}
+#${CELESTEHOME}/bin/celestefs --verbose                                       test -f ${fileSystemName}xxx
+${CELESTEHOME}/bin/celestefs           --id ${myId} --password ${myPassword} ls -l /${fileSystemName}/
+${CELESTEHOME}/bin/celestefs           --id ${myId} --password ${myPassword} readdir /${fileSystemName}/
+${CELESTEHOME}/bin/celestefs           --id ${myId} --password ${myPassword} create --attr ${replicationParams} /${fileSystemName}/fubar
+echo "Hello World" | ${CELESTEHOME}/bin/celestefs --id ${myId} --password ${myPassword} pwrite /${fileSystemName}/fubar 0
+${CELESTEHOME}/bin/celestefs           --id ${myId} --password ${myPassword} ls -l /${fileSystemName}/fubar
+${CELESTEHOME}/bin/celestefs           --id ${myId} --password ${myPassword} pread /${fileSystemName}/fubar 0 -1
+
+${CELESTEHOME}/bin/celestefs           --id ${myId} --password ${myPassword} set-length /${fileSystemName}/fubar 6
+${CELESTEHOME}/bin/celestefs           --id ${myId} --password ${myPassword} ls -l /${fileSystemName}/fubar
+${CELESTEHOME}/bin/celestefs           --id ${myId} --password ${myPassword} pread /${fileSystemName}/fubar 0 -1
+
+${CELESTEHOME}/bin/celestefs --id ${myId} --password ${myPassword} mkdir /${fileSystemName}/foo
+${CELESTEHOME}/bin/celestefs --id ${myId} --password ${myPassword} create /${fileSystemName}/foo/bar
+echo "Hello World" | ${CELESTEHOME}/bin/celestefs --id ${myId} --password ${myPassword} pwrite /${fileSystemName}/foo/bar 0
+${CELESTEHOME}/bin/celestefs --id ${myId} --password ${myPassword} pread /${fileSystemName}/foo/bar 0 -1
+${CELESTEHOME}/bin/celestefs --id ${myId} --password ${myPassword} rm /${fileSystemName}/foo/bar
+echo The following commands MUST fail.
+${CELESTEHOME}/bin/celestefs --id ${myId} --password ${myPassword} pread /${fileSystemName}/foo/bar 0 -1
+${CELESTEHOME}/bin/celestefs --id ${myId} --password ${myPassword} --verbose test -e /${fileSystemName}/foo/bar
+exit 0

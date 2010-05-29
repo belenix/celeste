@@ -1,0 +1,47 @@
+#!/bin/bash -e
+# Copyright 2007-2008 Sun Microsystems, Inc. All Rights Reserved.
+# DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER
+# 
+# This code is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License version 2
+# only, as published by the Free Software Foundation.
+# 
+# This code is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+# General Public License version 2 for more details (a copy is
+# included in the LICENSE file that accompanied this code).
+# 
+# You should have received a copy of the GNU General Public License
+# version 2 along with this work; if not, write to the Free Software
+# Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
+# 02110-1301 USA
+# 
+# Please contact Sun Microsystems, Inc., 16 Network Circle, Menlo
+# Park, CA 94025 or visit www.sun.com if you need additional
+# information or have any questions.
+
+CELESTEHOME=${CELESTEHOME:=/opt/celeste}
+if [[ -x bin/celeste && -x bin/celestesh ]]; then
+        CELESTEHOME=`pwd`
+fi
+
+replicationParams="AObject.Replication.Store=3;VObject.Replication.Store=3;BObject.Replication.Store=3"
+nameSpaceName=example5
+nameSpacePassword=asdf
+clientName=example5-client
+clientPassword=example5pw
+ownerName=example5-owner
+ownerPassword=owner
+groupName=example5-group
+groupPassword=group
+fileName=example5-data
+deleteToken=delete
+
+set -x
+${CELESTEHOME}/bin/celestesh new-namespace  ${nameSpaceName} ${nameSpacePassword} ${replicationParams}
+${CELESTEHOME}/bin/celestesh new-credential ${clientName} ${clientPassword} ${replicationParams}
+${CELESTEHOME}/bin/celestesh new-credential ${ownerName} ${ownerPassword} ${replicationParams}
+${CELESTEHOME}/bin/celestesh new-credential ${groupName} ${groupPassword} ${replicationParams}
+
+${CELESTEHOME}/bin/celestesh create-file   ${clientName} ${clientPassword} ${nameSpaceName} ${nameSpacePassword} ${fileName} ${ownerName} ${groupName} ${deleteToken} ${replicationParams} 10485760 86400

@@ -1,0 +1,701 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html>
+<head>
+  <title></title>
+</head>
+<body>
+<link href="http://www.opensolaris.org/os/project/celeste/common.css" media="all" rel="stylesheet" type="text/css"/>
+<h1>CELESTESH COMMAND LINE INTERFACE</h1>
+<p>
+  The <tt>celestesh</tt> programme is a command line interface to the
+  low-level Celeste data store.
+  This interface gives you the basic capabilities of creating and
+  manipulating Celeste data files, namespaces, and credentials
+  at the lowest level.
+</p>
+<p>
+  The general form of the command line invocation is:
+<pre>
+celestesh -help | [--celeste-address <i>&lt;address&gt;</i>:<i>&lt;port&gt;</i>] [--verbose] [operation]
+</pre>
+  Where <tt>--help</tt> causes a help message to be printed.
+  Otherwise and the optional parameter
+  <tt>--celeste-address <i>address</i>:<i>port</i></tt>
+  specifies the address and tcp-port number of the Celeste node to
+  contact to perform the specified operation.
+  If <tt>--celeste-address</tt> is left unspecified,
+  the default value used for the address and port of the Celeste node
+  is <tt>127.0.0.1:14000</tt>
+  Note that any Celeste node is capable of performing the operation and
+  you can distribute the operations among many nodes.
+  Finally the operation specified is performed.
+</p>
+<ul>
+<li><a href="#create-file">create-file</a></li>
+<li><a href="#delete-file">delete-file</a></li>
+<li><a href="#inspect-file">inspect-file</a></li>
+<li><a href="#new-credential">new-credential</a></li>
+<li><a href="#new-namespace">new-namespace</a></li>
+<li><a href="#read-credential">read-credential</a></li>
+<li><a href="#read-file">read-file</a></li>
+<li><a href="#read-file-version">read-file-version</a></li>
+<li><a href="#set-file-length">set-file-length</a></li>
+<li><a href="#set-file-owner-and-group">set-file-owner-and-group</a></li>
+<li><a href="#write-file">write-file</a></li>
+</ul>
+
+<h2>CELESTESH OPERATIONS</h2>
+<p>
+  Unless otherwise specified, all parameters are encoded as UTF-8 strings.
+  An object-id is always expressed as a 64 digit hexadecimal number.
+  In cases where a null value may be supplied, it is specified by the
+  string "null".
+</p>
+<dl>
+  <dt class="verbatim" style="margin-top: 1em;">
+    <a name="create-file"></a>create-file
+  </dt>
+  <dd>
+    Create a named file within a specified namespace,
+    owned by the supplied owner and group.
+
+    The specified namespace and the owner and group credentials
+    must have already been created
+    (see the
+    <tt><a href="#new-namespace">new-namespace</a></tt>
+    and
+    <tt><a href="#new-credential">new-credential</a></tt>
+    operations).
+    <dl>
+      <dt>[<tt>--unsigned-writes</tt>]</dt>
+      <dd>
+	The data written as the result of writes to this file will not
+	be signed by the client and checked by the Celeste node.
+	This allows for faster writes at the expense of malicious
+	nodes possibly writing old data to the file at a later time.
+      </dd>
+      <dt>[<tt>--signed-writes</tt>]</dt>
+      <dd>
+	This is the default behaviour.
+	The data written as the result of writes to this file will
+	be signed by the client and checked by the Celeste node.
+	This guards against a malicious node substituting the written data 
+	at the expense of additional processing.
+      </dd>
+      <dt>&lt;requestor&gt;</dt>
+      <dd>
+	The name or the object-id of the credential to use for authorising
+	this operation.
+      </dd>
+      <dt>&lt;password&gt;</dt>
+      <dd>
+	The password string to unlock the specified requestor credential.
+      </dd>
+      <dt>&lt;namespace&gt;</dt>
+      <dd>
+	The name or the object-id of the namespace to use when
+	creating this file
+	(See the operation
+	<tt><a href="#new-namespace">new-namespace</a></tt>).
+      </dd>
+      <dt>&lt;password&gt;</dt>
+      <dd>
+	The password string to unlock the specified namespace.
+      </dd>
+      <dt>&lt;file-name&gt;</dt>
+      <dd>
+	The name or object-id of the file to create.
+	File names are unique within namespaces and must not already exist.
+      </dd>
+
+      <dt>&lt;owner&gt;</dt>
+      <dd>
+	The name or the object-id
+	of the credential for the owner of this file.
+	The credential must already exist
+	(see the operation
+	<tt><a href="new-credential">new-credential<a/></tt>).
+      </dd>
+      <dt>&lt;group&gt;</dt>
+      <dd>
+	The name or the object-id of the credential of group for this file.
+	The credential must already exist
+	(see the operation
+	<tt><a href="new-credential">new-credential<a/></tt>).
+      </dd>
+      <dt>&lt;deleteToken&gt;</dt>
+      <dd>
+	The secret string or object-id to encode with the created file's
+	Celeste metadata to enable a subsequent deletion.
+      </dd>
+      <dt>&lt;replication-parameters&gt;</dt>
+      <dd>
+	The specification of the replication technique and
+	parameters for the data and metadata that comprise the file.
+	(See <a href="http://www.opensolaris.org/os/project/celeste/Documentation/ReplicationParams.html">
+	  Replication Parameters</a>)
+      </dd>
+      <dt>&lt;bObjectSize&gt;</dt>
+      <dd>
+	The decimal value of the maximum size of an individual block of
+	data (a BObject).
+
+	When data is written to this data file, it will be aggregated
+	into bObjectSize chunks.
+
+	Choosing a large value improves read performance at the cost
+	of increasing the load on the object store in storing large
+	objects.
+
+	If the Celeste system is comprised of nodes which cannot store
+	the bObjectSize chunks, performance suffers and may fail
+	entirely if a node is not availalble to store the chunk.
+      </dd>
+      <dt>&lt;timeToLive&gt;</dt>
+      <dd>
+	The decimal value of the number of seconds for this data file to exist.
+      </dd>
+    </dl>
+  </dd>
+</dt>
+<dd>
+<pre class="inline-example">
+<span class="prompt">$ </span>celestesh create-file celestesh-id myPass celestesh-ns nspw celestesh-file \
+  celestesh-Owner celestesh-Group deleteMe \
+  'AObject.Replication.Store=3;VObject.Replication.Store=3;BObject.Replication.Store=3' \
+  8388608 86400
+</pre>
+</dd>
+
+<dt class="verbatim" style="margin-top: 1em;">
+  <a name="delete-file"></a>delete-file</dt>
+<dd>
+  Delete an existing file.
+  <dl>
+      <dt>&lt;requestor&gt;</dt>
+      <dd>
+	The name or the object-id of the credential to use for authorising
+	this operation.
+      </dd>
+      <dt>&lt;password&gt;</dt>
+      <dd>
+	The password string to unlock the specified requestor credential.
+      </dd>
+    <dt>&lt;namespace&gt;</dt>
+    <dd>
+      The name or the object-id
+      of the namespace used when this file was created.
+      (See the operations
+      <tt><a href="#new-namespace">new-namespace</a></tt>
+      and <tt><a href="#create-file">create-file</a></tt>)
+    </dd>
+    <dt>&lt;file-name&gt;</dt>
+    <dd>
+      The name or object-id of the file to delete.
+    </dd>
+    <dt>&lt;deleteToken&gt;</dt>
+    <dd>
+      The secret delete-token that was previously set when this
+      file was created.
+    </dd>
+    <dt>&lt;timeToLive&gt;</dt>
+    <dd>
+      The decimal value of the number of seconds that the system should
+      continue to look for undeleted components of the original file and
+      delete them.
+      Choosing this value is a function of the duration of time
+      that nodes in the system are absent and return.
+
+      The risk is that if this value is too small, a node the contains
+      some part of a deleted data file may be absent at the time of
+      deletion and then rejoin the Celeste system after the deletion
+      time-to-live has gone to zero.
+
+      In this case, the node will never be notified to delete the part
+      of the original data file that it still has.
+
+      Ultimately the part of the deleted file will be removed because
+      of the time-to-live set when the file was created
+      (see <tt><a href="#create-file">create-file</a></tt>).
+      But this may be far into the future.
+    </dd>
+  </dl>
+</dd>
+<dd>
+<pre class="inline-example">
+<span class="prompt">$ </span> celestesh delete-file myId myPass myNs myFile deleteMe 900
+</pre>
+</dd>
+
+<dt class="verbatim" style="margin-top: 1em;">
+  <a name="inspect-file"></a>inspect-file</dt>
+<dd>
+  Obtain the Celeste-metadta and user-metadata for the specified file.
+  <dl>
+    <dt>&lt;requestor&gt;</dt>
+    <dd>
+      The name or the object-id of the credential to use for authorising
+      this operation.
+    </dd>
+    <dt>&lt;password&gt;</dt>
+    <dd>
+      The password string to unlock the specified requestor credential.
+    </dd>
+    <dt>&lt;namespace&gt;</dt>
+    <dd>
+      The name or the object-id of the file namespace specified
+      when this file was created.
+      (See the operations
+      <tt><a href="#new-namespace">new-namespace</a></tt>
+      and <tt><a href="#create-file">create-file</a></tt>)
+    </dd>
+    <dt>&lt;file-name&gt;</dt>
+    <dd>
+      The name or object-id of the file to inspect.
+    </dd>
+    <dt>&lt;vObject-Id&gt;</dt>
+    <dd>
+      The object-id of the specific version of this file.
+      The string "null" signifies the most recent version.
+    </dd>
+    <dt>&lt;client-meta-data&gt;</dt>
+    <dd>
+      File to write the content of the client supplied metadata for this file.
+      The string "-" signifies standard output.
+      If the file does not contain any client supplied metadata,
+      there is no output and the output file is <b>not</b> created.
+    </dd>
+    <dt>&lt;celeste-meta-data&gt;</dt>
+    <dd>
+      File to write the content of the Celeste metadata for this file.
+      The string "-" signifies standard output.
+    </dd>
+  </dl>
+</dd>
+<dd>
+<p>
+  The results returned from this operation is still in flux.
+  If you have specific requirements,
+  or depend upon the formatting of the result,
+  please notify the developers.
+</p>
+<pre class="inline-example">
+<span class="prompt">$ </span>celestesh inspect-file myId myPass myNs myFile null clientMetaData celesteMetaData
+</pre>
+</dd>
+
+<dt class="verbatim" style="margin-top: 1em;">
+  <a name="new-credential"></a>new-credential</dt>
+<dd>
+  Create a new Celeste credential.
+  Credentials represent responsible entities 
+  (both internal and external to Celeste)
+  and are used to determine authorisation,
+  sign and attest to operations,
+  and provide auditing.
+  <dl>
+    <dt>&lt;name&gt;</dt>
+    <dd>
+      The name or specific object-id of the credential to create.
+      The credential must not already exist.
+    </dd>
+    <dt>&lt;password&gt;</dt>
+    <dd>
+      The password string to unlock the resulting credential.
+    </dd>
+    <dt>&lt;replication-parameters&gt;</dt>
+    <dd>
+      The specification of the replication technique and
+      parameters for the data and metadata that comprise the credential.
+      (See <a href="http://www.opensolaris.org/os/project/celeste/Documentation/ReplicationParams.html">
+	Replication Parameters</a>)
+    </dd>
+  </dl>
+</dd>
+<dd>
+<pre class="inline-example">
+<span class="prompt">$ </span>celestesh new-credential myId myPass ErasureCodeReplica/3
+</pre>
+</dd>
+
+<dt class="verbatim" style="margin-top: 1em;">
+<a name="new-namespace"></a>new-namespace</dt>
+<dd>
+  Create a new namespace in the Celeste system.
+  <dl>
+    <dt>&lt;name&gt;</dt>
+    <dd>
+      The name or specific object-id of the namespace to create.
+      The namespace must not already exist.
+    </dd>
+    <dt>&lt;password&gt;</dt>
+    <dd>
+      The password string to unlock the resulting namespace.
+      Creators of files in this namespace must have this password in order
+      to unlock the namespace.
+    </dd>
+    <dt>&lt;replication-parameters&gt;</dt>
+    <dd>
+      The specification of the replication technique and
+      parameters for the data and metadata that comprise the namespace
+      metadata.
+      (See <a href="http://www.opensolaris.org/os/project/celeste/Documentation/ReplicationParams.html">
+	Replication Parameters</a>)
+    </dd>
+  </dl>
+</dd>
+<dd>
+<pre class="inline-example">
+<span class="prompt">$ </span>celestesh new-namespace myNs nspw ErasureCodeReplica/3
+</pre>
+</dd>
+
+<dt class="verbatim" style="margin-top: 1em;">
+  <a name="read-credential"></a>read-credential</dt>
+<dd>
+  Read a raw credential.
+  <dl>
+    <dt>&lt;name&gt;</dt>
+    <dd>
+      The name or the object-id
+      of the credential to read.
+      (See the operation <tt><a href="new-credential">new-credential<a/></tt>)
+    </dd>
+    <dt>&lt;result-filename&gt;</dt>
+    <dd>
+      The local file name to store the result.
+      The special name "-" signifies the standard output.
+    </dd>
+  </dl>
+</dd>
+<dd>
+<pre class="inline-example">
+<span class="prompt">$ </span>celestesh read-credential myClient result-filename
+</pre>
+</dd>
+
+<dt class="verbatim" style="margin-top: 1em;">
+  <a name="read-file"></a>read-file</dt>
+<dd>
+  Read data from an existing data file.
+  <dl>
+    <dt>&lt;requestor&gt;</dt>
+    <dd>
+      The name or the object-id of the credential to use for authorising
+      this operation.
+    </dd>
+    <dt>&lt;password&gt;</dt>
+    <dd>
+      The password string to unlock the requestor's credential.
+    </dd>
+    <dt>&lt;namespace&gt;</dt>
+    <dd>
+      The name or the object-id
+      of the namespace used when this file was created.
+      (See the operations
+      <tt><a href="#new-namespace">new-namespace</a></tt>
+      and <tt><a href="#create-file">create-file</a></tt>)
+    </dd>
+    <dt>&lt;file-name&gt;</dt>
+    <dd>
+      The name or object-id of the file to read
+      (see the operation <tt><a href="#create-file">create-file</a></tt>).
+    </dd>
+    <dt>&lt;offset&gt;</dt>
+    <dd>
+      The decimal value of the starting position to read from.
+    </dd>
+    <dt>&lt;length&gt;</dt>
+    <dd>
+      The decimal value of the bumber of bytes to read.
+      If the value is -1, the entire contents of the file from the
+      specified starting position to end of file is read and returned.
+    </dd>
+    <dt>&lt;result-data&gt;</dt>
+    <dd>
+      The name of the local file to write the result.
+      The special name "-" signifies the standard output.
+    </dd>
+    <dt>&lt;result-metadata&gt;</dt>
+    <dd>
+      The name of the local file to write the result metadata.
+      The special name "-" signifies the standard output.
+    </dd>
+  </dl>
+<dd>
+<pre class="inline-example">
+<span class="prompt">$ </span>celestesh read-file myId myPass myNs myFile 0 -1 -
+</pre>
+</dd>
+
+<dt class="verbatim" style="margin-top: 1em;">
+  <a name="read-file-version"></a>read-file-version</dt>
+<dd>
+  Read data from a specific version of a data file.
+  <dl>
+    <dt>&lt;requestor&gt;</dt>
+    <dd>
+      The name or the object-id of the credential to use for authorising
+      this operation.
+    </dd>
+    <dt>&lt;password&gt;</dt>
+    <dd>
+      The password string to unlock the requestor's credential.
+    </dd>
+    <dt>&lt;namespace&gt;</dt>
+    <dd>
+      The name or the object-id
+      of the namespace used when this file was created.
+      (See the operations
+      <tt><a href="#new-namespace">new-namespace</a></tt>
+      and <tt><a href="#create-file">create-file</a></tt>)
+    </dd>
+    <dt>&lt;file-name&gt;</dt>
+    <dd>
+      The name or object-id of the file to read
+      (see the operation <tt><a href="#create-file">create-file</a></tt>).
+    </dd>
+    <dt>&lt;vObject-Id&gt;</dt>
+    <dd>
+      The object-id of the specific version of this file.
+      The string "null" signifies the most recent version
+      (see the operation <tt><a href="#read-file">read-file</a></tt>)
+    </dd>
+    <dt>&lt;offset&gt;</dt>
+    <dd>
+      The decimal value of the starting position to read from.
+    </dd>
+    <dt>&lt;length&gt;</dt>
+    <dd>
+      The decimal value of the bumber of bytes to read.
+    </dd>
+    <dt>&lt;result-filename&gt;</dt>
+    <dd>
+      The name of the local file to write the result.
+      The special name "-" signifies the standard output.
+    </dd>
+    <dt>&lt;result-metadata-filename&gt;</dt>
+    <dd>
+      The name of the local file to write the result metadata.
+      The special name "-" signifies the standard output.
+    </dd>
+  </dl>
+</dd>
+<dd>
+<pre class="inline-example">
+<span class="prompt">$ </span>celestesh read-file-version myId myPass myNs myFile \
+FA5541E46DF5C7ECF037F50E71661565D7B8270CD6A47E501467A648301B0DB4 0 -1 -
+</pre>
+</dd>
+
+<dt class="verbatim" style="margin-top: 1em;">
+<a name="set-file-length"></a>set-file-length</dt>
+<dd>
+  Set the length of an existing data file.
+  The length may be shorter or longer than the amount of data currently
+  in the file.
+
+  Setting the length to a value greater than the amount of data stored
+  in the file will cause subsequent reads of the segment of the data
+  file beyond the length of the actual data to return bytes with a
+  value of 0.
+  <dl>
+    <dt>&lt;requestor&gt;</dt>
+    <dd>
+      The name or the object-id of the credential to use for authorising
+      this operation.
+    </dd>
+    <dt>&lt;password&gt;</dt>
+    <dd>
+      The password string to unlock the specified requestor credential.
+    </dd>
+    <dt>&lt;namespace&gt;</dt>
+    <dd>
+      The name or the object-id
+      of the namespace used when this file was created.
+      (See the operations
+      <tt><a href="#new-namespace">new-namespace</a></tt>
+      and <tt><a href="#create-file">create-file</a></tt>)
+    </dd>
+    <dt>&lt;file-name&gt;</dt>
+    <dd>
+      The name or object-id of the file to read
+      (see the operation <tt><a href="#create-file">create-file</a></tt>).
+    </dd>
+    <dt>&lt;length&gt;</dt>
+    <dd>
+      The decimal value of the new length of the data file.
+      Extending the length of the file beyond the natural length
+      of the data is permitted.
+    </dd>
+  </dl>
+<dd>
+<pre class="inline-example">
+<span class="prompt">$ </span>celestesh set-file-length myId myPass myNs myFile 6
+</pre>
+</dd>
+
+<dt class="verbatim" style="margin-top: 1em;">
+  <a name="set-file-owner-and-group"></a>set-file-owner-and-group</dt>
+<dd>
+  Set the owner and group identities of an existing file.
+  The file and the owner and group credentials must already exist.
+  (See the operation <tt><a href="new-credential">new-credential<a/></tt>)
+  <dl>
+    <dt>&lt;requestor&gt;</dt>
+    <dd>
+      The name or the object-id of the credential to use for authorising
+      this operation.
+    </dd>
+    <dt>&lt;password&gt;</dt>
+    <dd>
+      The password string to unlock the specified requestor credential.
+    </dd>
+    <dt>&lt;namespace&gt;</dt>
+    <dd>
+      The name or the object-id
+      of the namespace used when this file was created.
+      (See the operations
+      <tt><a href="#new-namespace">new-namespace</a></tt>
+      and <tt><a href="#create-file">create-file</a></tt>)
+    </dd>
+    <dt>&lt;file-name&gt;</dt>
+    <dd>
+      The name or object-id of the file to read
+      (see the operation <tt><a href="#create-file">create-file</a></tt>).
+    </dd>
+    <dt>&lt;owner&gt;</dt>
+    <dd>
+      The name or object-id of the credential of the new owner.
+    </dd>
+    <dt>&lt;group&gt;</dt>
+    <dd>
+      The name or object-id of the credential of the new group.
+    </dd>
+  </dl>
+</dd>
+<dd>
+<pre class="inline-example">
+<span class="prompt">$ </span>celestesh set-file-owner-and-group myId myPass myNs myFile Owner Group
+</pre>
+</dd>
+
+<dt class="verbatim" style="margin-top: 1em;">
+  <a name="write-file"></a>write-file</dt>
+<dd>
+  Write data to an existing data file.
+  This operation will write the entire contents of the input data
+  to the Celeste data file starting at the specified offset.
+
+  The file's length is automatically extended if the resulting write
+  extends beyond the current end of the file.
+
+  Note however, that a write that is less than the current length of the
+  file does not truncate the file.
+  Use the <tt><a href="#set-file-length">set-file-length</a></tt> to
+  explicitly set the length of the file if necessary.
+  <dl>
+    <dt>&lt;requestor&gt;</dt>
+    <dd>
+      The name or the object-id of the credential to use for authorising
+      this operation.
+    </dd>
+    <dt>&lt;password&gt;</dt>
+    <dd>
+      The password string to unlock the specified requestor credential.
+    </dd>
+    <dt>&lt;namespace&gt;</dt>
+    <dd>
+      The name or the object-id
+      of the namespace used when this file was created.
+      (See the operations
+      <tt><a href="#new-namespace">new-namespace</a></tt>
+      and <tt><a href="#create-file">create-file</a></tt>)
+    </dd>
+    <dt>&lt;file-name&gt;</dt>
+    <dd>
+      The name or object-id of the file to read
+      (see the operation <tt><a href="#create-file">create-file</a></tt>).
+    </dd>
+    <dt>&lt;offset&gt;</dt>
+    <dd>
+      The decimal value of the starting offset to write.
+    </dd>
+    <dt>&lt;input-FileName&gt;</dt>
+    <dd>
+      The local file name of the data to write.
+      The special name "-" signifies the standard input.
+    </dd>
+    <dt>[&lt;result&gt;]</dt>
+    <dd>
+      Optional file name to store the result returned from this operation.
+    </dd>
+  </dl>
+</dd>
+<dd>
+<pre class="inline-example">
+<span class="prompt">$ </span>echo 'Hello World' | celestesh write-file myId myPass myNs myFile 0 -
+</pre>
+</dd>
+</dl>
+<h2>PUTTING IT ALL TOGETHER</h2>
+The example below is from the shell-script <tt>examples/celestesh-example</tt>
+in the top-level directory of the Celeste installation.
+<pre class="inline-example">
+<span class="prompt">$ </span>celestesh new-namespace celestesh-ns nspw 'AObject.Replication.Store=3;VObject.Replication.Store=3;BObject.Replication.Store=3'
+<span class="prompt">$ </span>celestesh new-credential celestesh-Owner ownerpw \
+  'AObject.Replication.Store=3;VObject.Replication.Store=3;BObject.Replication.Store=3'
+<span class="prompt">$ </span>celestesh new-credential celestesh-Group grouppw \
+  'AObject.Replication.Store=3;VObject.Replication.Store=3;BObject.Replication.Store=3'
+<span class="prompt">$ </span>celestesh new-credential celestesh-id myPass \
+  'AObject.Replication.Store=3;VObject.Replication.Store=3;BObject.Replication.Store=3'
+<span class="prompt">$ </span>celestesh create-file celestesh-id myPass celestesh-ns nspw celestesh-file \
+  celestesh-Owner celestesh-Group deleteMe \
+  'AObject.Replication.Store=3;VObject.Replication.Store=3;BObject.Replication.Store=3' 8388608 86400
+<span class="prompt">$ </span>celestesh set-file-owner-and-group \
+  celestesh-id myPass celestesh-ns celestesh-file celestesh-Owner celestesh-Group
+<span class="prompt">$ </span>echo 'Hello World' | \
+  celestesh write-file celestesh-id myPass celestesh-ns celestesh-file 0 -
+<span class="prompt">$ </span>celestesh read-file celestesh-id myPass celestesh-ns celestesh-file 0 -1 -
+<span class="output">Hello World</span>
+<span class="prompt">$ </span>echo '' | \
+  celestesh write-file celestesh-id myPass celestesh-ns celestesh-file 5 -
+<span class="prompt">$ </span>celestesh read-file celestesh-id myPass celestesh-ns celestesh-file 0 -1 -
+<span class="output">Hello</span>
+<span class="output">World</span>
+<span class="prompt">$ </span>celestesh set-file-length celestesh-id myPass celestesh-ns celestesh-file 6
+<span class="prompt">$ </span>celestesh read-file celestesh-id myPass celestesh-ns celestesh-file 0 -1 -
+<span class="output">Hello</span>
+<span class="prompt">$ </span>celestesh inspect-file celestesh-id myPass celestesh-ns celestesh-file null clientMetaData celesteMetaData
+<span class="prompt">$ </span>cat celesteMetaData 
+<span class="output">#</span>
+<span class="output">#</span>
+<span class="output">Celeste.BObjectSize=8388608</span>
+<span class="output">Celeste.DeleteTokenId=707740A12E713CFF1658006C08FA429C5438E3128EDA7CACB17207D0298183B3</span>
+<span class="output">Celeste.FileSize=6</span>
+<span class="output">Celeste.GroupId=F8F299F5B3EA52D5CE61C22BDE40FCCAD45A7ED2A4A904431CDB3BD5BC42701C</span>
+<span class="output">Celeste.OwnerId=284072C57E661D9A2742D8F50E68DEB2B7313F3458697A6F7EA8F22E65848071</span>
+<span class="output">Celeste.ReplicationParameters={VObject.Replication.Store\=3, AObject.Replication.Store\=3, BObject.Replication.Store\=3}</span>
+<span class="output">Celeste.SignData=true</span>
+<span class="output">Celeste.VObjectId=0FE6B786F99A430235234A017B092B91E752626AD7E3B90665489C1024CB6756</span>
+<span class="output">VObject.ClientMetaData=1\:</span>
+<span class="output">VObject.WritersSignature=E76A7E891200FA97809697D9D9F73AA85BCEBFE99F893E4F7AC1710F608A1868 SHA256withRSA 8049553758337738881320504909421465532413840983339336487670304210231643518150201258634764730908077926644553753687278955220481722340375772026814787198698833798700643262611320978365818039900057646627310921314938421044474293434832351300738723233822096574931749769182130260239720091852829148052405873775729512467091643909103550726963627539792593154915624506317645172147933830785663910073214182181817118139328929324238449484164375603215047582580388278067357356435481304314876293802503161405781445862415340414327947019557316123281274853059079429989759606723137595386917733867348899794364588273081582126825977467755468861952</span>
+<span class="prompt">$ </span>celestesh set-file-length celestesh-id myPass celestesh-ns celestesh-file 10
+<span class="prompt">$ </span>celestesh read-file celestesh-id myPass celestesh-ns celestesh-file 0 -1 - | \
+   cat -v
+<span class="output">Hello</span>
+<span class="output">^@^@^@^@</span>
+<span class="prompt">$ </span> echo 'Hello Again'
+<span class="prompt">$ </span> celestesh write-file celestesh-id myPass celestesh-ns celestesh-file 0 -
+<span class="prompt">$ </span> celestesh read-file celestesh-id myPass celestesh-ns celestesh-file 0 -1 -
+<span class="output">Hello Again</span>
+<span class="prompt">$ </span> echo 'Do you like my hat?' | \
+   celestesh write-file celestesh-id myPass celestesh-ns celestesh-file 0 -
+<span class="prompt">$ </span> celestesh read-file celestesh-id myPass celestesh-ns celestesh-file 0 -1 -
+<span class="output">Do you like my hat?</span>
+<span class="prompt">$ </span> celestesh delete-file celestesh-id myPass celestesh-ns celestesh-file deleteMe 900
+<span class="prompt">$ </span> celestesh read-file celestesh-id myPass celestesh-ns celestesh-file 0 -1 -
+<span class="output">Not Found</span>
+</pre>
+</body>
+</html>

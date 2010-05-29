@@ -1,0 +1,71 @@
+#!/bin/bash -e
+# Copyright 2007-2008 Sun Microsystems, Inc. All Rights Reserved.
+# DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER
+# 
+# This code is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License version 2
+# only, as published by the Free Software Foundation.
+# 
+# This code is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+# General Public License version 2 for more details (a copy is
+# included in the LICENSE file that accompanied this code).
+# 
+# You should have received a copy of the GNU General Public License
+# version 2 along with this work; if not, write to the Free Software
+# Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
+# 02110-1301 USA
+# 
+# Please contact Sun Microsystems, Inc., 16 Network Circle, Menlo
+# Park, CA 94025 or visit www.sun.com if you need additional
+# information or have any questions.
+
+CELESTEHOME=${CELESTEHOME:="unset"}
+if [[ ${CELESTEHOME} == "unset" ]]; then
+if [[ -x ./bin/celeste && -x ./bin/celestesh && -e ./dist/celeste.jar ]]; then
+echo "NOTICE: The current directory looks like a Celeste runtime installation."
+echo "        Using the current directory instead of /opt/celeste"
+echo "        Explicitly set the environment variable CELESTEHOME to override this."
+CELESTEHOME=`pwd`
+else
+CELESTEHOME="/opt/celeste"
+fi
+fi
+
+datafile=$1
+
+if ! test -e ${datafile}; then
+echo ${datafile} does not exist.  Creating 64mb file as a substitute.
+dd if=/dev/urandom of=${datafile} bs=1048576 count=64
+fi
+replicationParams="AObject.Replication.Store=4;VObject.Replication.Store=2;BObject.Replication.Store=2"
+credentialReplicationParams="Credential.Replication.Store=2"
+nameSpaceName=extension-example-ns
+nameSpacePassword=asdf
+clientName=extension-example-client
+clientPassword=clientPassword
+ownerName=extension-example-owner
+ownerPassword=owner
+groupName=extension-example-group
+groupPassword=group
+fileName=extension-example-file
+
+deleteToken=delete
+blockSize=`expr 2 \* 1024 \* 1024` 
+timeToLive=60000
+signWrites="--signed-writes"
+
+echo Using Block Size ${blockSize}
+
+set -x
+${CELESTEHOME}/bin/celestesh new-namespace  ${nameSpaceName} ${nameSpacePassword} "${credentialReplicationParams}"
+${CELESTEHOME}/bin/celestesh new-credential  ${ownerName} ${ownerPassword} "${credentialReplicationParams}"
+${CELESTEHOME}/bin/celestesh new-credential  ${groupName} ${groupPassword} "${credentialReplicationParams}"
+${CELESTEHOME}/bin/celestesh new-credential  ${clientName} ${clientPassword} "${credentialReplicationParams}"
+
+${CELESTEHOME}/bin/celestesh --timeout 300 create-file     ${signWrites} ${clientName} ${clientPassword} ${nameSpaceName} ${nameSpacePassword} ${fileName} ${ownerName} ${groupName} ${deleteToken} ${replicationParams} ${blockSize} ${timeToLive} /tmp/create-d /tmp/create-m
+
+${CELESTEHOME}/bin/celestesh --verbose write ${clientName} ${clientPassword} ${nameSpaceName} ${fileName} 0 ${datafile} /tmp/d00 /tmp/m00
+
+${CELESTEHOME}/bin/celestesh --verbose read ${clientName} ${clientPassword} ${nameSpaceName} ${fileName}  4 > /tmp/x

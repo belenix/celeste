@@ -1,0 +1,65 @@
+#!/bin/bash -e
+# Copyright 2007-2008 Sun Microsystems, Inc. All Rights Reserved.
+# DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER
+# 
+# This code is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License version 2
+# only, as published by the Free Software Foundation.
+# 
+# This code is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+# General Public License version 2 for more details (a copy is
+# included in the LICENSE file that accompanied this code).
+# 
+# You should have received a copy of the GNU General Public License
+# version 2 along with this work; if not, write to the Free Software
+# Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
+# 02110-1301 USA
+# 
+# Please contact Sun Microsystems, Inc., 16 Network Circle, Menlo
+# Park, CA 94025 or visit www.sun.com if you need additional
+# information or have any questions.
+
+CELESTEHOME=${CELESTEHOME:="unset"}
+if [[ ${CELESTEHOME} == "unset" ]]; then
+        if [[ -x ./bin/celeste && -x ./bin/celestesh && -e ./dist/celeste.jar ]]; then
+                echo "NOTICE: The current directory looks like a Celeste runtime installation."
+                echo "        Using the current directory instead of /opt/celeste"
+                echo "        Explicitly set the environment variable CELESTEHOME to override this."
+                CELESTEHOME=`pwd`
+        else
+                CELESTEHOME="/opt/celeste"
+        fi
+fi
+
+datafile=$1
+
+if ! test -e ${datafile}; then
+	echo ${datafile} does not exist.  Creating 64mb file as a substitute.
+	dd if=/dev/urandom of=${datafile} bs=1048576 count=64
+fi
+
+wordcount=file://${CELESTEHOME}/dist/wordcount.jar
+
+replicationParams="ReplicationParameters=AObject.Replication.Store=2;VObject.Replication.Store=2;BObject.Replication.Store=2"
+myId=celestefs-extension
+myPassword=plugh
+fileSystemName=celestefs-extension-example
+fileSystemPassword=fspw
+ownerName=celestefs-extension-Owner
+ownerPassword=owner
+groupName=celestefs-extension-Group
+groupPassword=group
+fileName=celestefs-extension-file
+deleteToken=deleteMe
+blockSize=`expr 4144 \* 500`
+timeToLive=86400
+set -x
+${CELESTEHOME}/bin/celestefs           --id ${myId} --password ${myPassword} mkid
+${CELESTEHOME}/bin/celestefs           --id ${myId} --password ${myPassword} mkfs ${fileSystemName} ${fileSystemPassword}
+${CELESTEHOME}/bin/celestefs           --id ${myId} --password ${myPassword} create --attr ${replicationParams} /${fileSystemName}/fubar
+${CELESTEHOME}/bin/celestefs           --id ${myId} --password ${myPassword} pwrite /${fileSystemName}/fubar 0 $1
+${CELESTEHOME}/bin/celestefs           --id ${myId} --password ${myPassword} ls -l /${fileSystemName}/fubar
+${CELESTEHOME}/bin/celestefs           --id ${myId} --password ${myPassword} run-extension  /${fileSystemName}/fubar ${wordcount} arg1 arg2
+exit 0

@@ -1,0 +1,336 @@
+#!/bin/sh -
+#
+# Copyright 2009 Sun Microsystems, Inc. All Rights Reserved.
+# DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER
+# 
+# This code is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License version 2
+# only, as published by the Free Software Foundation.
+# 
+# This code is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+# General Public License version 2 for more details (a copy is
+# included in the LICENSE file that accompanied this code).
+# 
+# You should have received a copy of the GNU General Public License
+# version 2 along with this work; if not, write to the Free Software
+# Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
+# 02110-1301 USA
+# 
+# Please contact Sun Microsystems, Inc., 16 Network Circle, Menlo
+# Park, CA 94025 or visit www.sun.com if you need additional
+# information or have any questions.
+#
+
+#
+# nightly [-m results-address] [configuration-prefix]
+#
+# Intended to be run out of cron each night.  A sample crontab entry is:
+#
+# 50 1 * * * /export/home/Celeste/trunk/test/regression/nightly \
+#       profile >/dev/null 2>&1
+#
+# Brings the Celeste sources up to date and rebuilds them, creating a fresh
+# binary distribution.  Installs the distribution in /opt/celeste (after
+# clobbering any previous Celeste that might have been running), starts
+# Celeste going, fires up celeste-profiler, and captures its results in the
+# test/regression-results subdirectory of the sources.
+#
+# If the -m option is specified, mails the results of the celeste-profiler run
+# to results-address.
+#
+# If configuration-prefix is specified, uses the configuration named by that
+# prefix from etc/celeste.cf.  Eg, running
+#   nightly profile
+# on the system named vanguard-1 will use the configuration named
+#   profile:vanguard-1
+# from vanguard-1's etc/celeste.cf.
+#
+
+#
+# Default settings:  Ought to be overridden to match local configuration
+# choices.
+#
+# CELESTEHOME:  The location of the sources from which Celeste is built and
+#               in which this script and its helper scripts reside
+# CELESTEINST:  The location where the distribution built from ${CELESTEHOME}
+#               is installed and run
+# MAIL_SENDER	The mail address to be used as the sender of the results
+#               message send when the "-m" flag is specified.  If it is, and
+#               it is set to celeste-dev@opensolaris.org, then MAIL_SENDER must
+#               be the address of a member of that mailing list.  (The list is
+#               set up to forbid messages from non-members.)
+#
+CELESTEHOME=${CELESTEHOME:=/export/home/Celeste/trunk}
+CELESTEINST=${CELESTEINST:=/opt/celeste}
+MAIL_SENDER=${MAIL_SENDER:=glenn.skinner@sun.com}
+
+#
+# Workaround for mismatches in the version of mercurial running on the
+# different systems that this script will run code on:  Avoid loading
+# version-dependent extensions by consulting only the Celeste workspace's
+# .hgrc file.
+#
+HGRCPATH=${CELESTEHOME}/hg
+export HGRCPATH
+
+#
+# Function definitions
+#
+
+#
+# make_distribution base_directory
+#
+#   Assumes that base_directory names the trunk directory of a clone of the
+#   Celeste sources (and that there are no local changes).
+#
+#   Given that, updates the sources from the master repository and then
+#   clobbers and builds a binary distribution in base_directory/dist.
+#
+#   Exits with status 0 or 1 according to whether or not the build was
+#   successful. 
+#
+make_distribution() {
+    base_directory="$1"
+    (
+        cd ${base_directory}
+        ant clobber > /dev/null || (echo "clobber failed"; exit 1)
+        hg pull -u > /dev/null 2>&1 || (echo "hg pull failed"; exit 1)
+        rm -fr dist/*.tgz
+        ant binary-dist > /dev/null || \
+            (echo "build from updated sources failed"; exit 1)
+        exit 0
+    )
+}
+
+#
+# wait_until_ready node_url number_needed
+#
+#   Polls the node at node_url until its census of active nodes has
+#   cardinality at least number_needed.
+#
+wait_until_ready() {
+    node_url="$1"
+    nodes_needed="$2"
+
+    nodes_ready=0
+    while [ $nodes_ready -lt ${nodes_needed} ]; do
+        sleep 6
+        #
+        # Interrogate the node's census daemon.  The resulting web page's
+        # first line is the number of nodes the census found.
+        #
+        nodes_ready=`wget -q -O - ${node_url}/census | head -1`
+        #
+        # The first node may not be ready to emit census output.  Check for
+        # that.
+        #
+        if [ X"$nodes_ready" = "X" ]; then
+            nodes_ready=0
+        fi
+    done
+}
+
+#
+# get_additional_nodes config_name
+#
+#   Reads information about the named Celeste configuration from
+#   etc/celeste.cf and writes the value of its additional_nodes variable to
+#   stdout.
+#
+get_additional_nodes() {
+    config_name="$1"
+    (
+        config_key="${config_name}"
+        . $CELESTEHOME/etc/celeste.cf > /dev/null
+        echo "$additional_nodes"
+        exit 0
+    )
+}
+
+#
+# get_celeste_home config_name
+#
+#   Reads information about the named Celeste configuration from
+#   etc/celeste.cf and writes the value of its celeste_home variable to
+#   stdout.
+#
+get_celeste_home() {
+    config_name="$1"
+    (
+        config_key="${config_name}"
+        . $CELESTEHOME/etc/celeste.cf > /dev/null
+        echo "$celeste_home"
+        exit 0
+    )
+}
+
+#
+# get_nightly_test_cmd config_name
+#
+#   Reads information about the named Celeste configuration from
+#   etc/celeste.cf and writes the value of its nightly_test_cmd variable to
+#   stdout.
+#
+get_nightly_test_cmd() {
+    config_name="$1"
+    (
+        config_key="${config_name}"
+        . $CELESTEHOME/etc/celeste.cf > /dev/null
+        echo "${nightly_test_cmd}"
+        exit 0
+    )
+}
+
+#
+# Main line code starts here.
+#
+
+#
+# Gather arguments.
+#
+results_address=
+while getopts m: option; do
+    case $option in
+    m)
+        results_address="$OPTARG"
+        ;;
+    esac
+done
+shift `expr ${OPTIND} - 1`
+configuration_prefix="$1"
+this_host="`uname -n`"
+
+#
+# Record the configuration to use locally in local_config..
+#
+if [ "X${configuration_prefix}" = "X" ]; then
+    local_config="${this_host}"
+else
+    local_config="${configuration_prefix}:${this_host}"
+fi
+
+#
+# Create a fresh binary distribution.
+#
+make_distribution "${CELESTEHOME}" || exit 1
+
+#
+# Obtain the revision number of the sources used to create the distribution.
+# (Since we don't allow branching in the repository, this value is well
+# defined even for different instantiations of the repository.  Also, since
+# this build area contains no local changes, the revision number completely
+# specifies the contents of the distribution.)
+#
+# Use the revision number and the date portion of the distribution's name to
+# create a tag that will be used to identify the run's output.
+#
+cd "${CELESTEHOME}"
+revision=`hg tip 2>/dev/null | head -1 | awk '{print $2}'  | cut -f 1 -d :`
+tag="${revision}-`echo dist/*.tgz | cut -c 6-13`"
+
+#
+# Install it.
+#
+dist=${CELESTEHOME}/dist/*.tgz
+cd ${CELESTEINST}
+[ -x bin/celeste ] && CELESTECONFIG=${local_config} bin/celeste clobber > /dev/null
+rm -f -r ./*
+/usr/gnu/bin/tar xf $dist
+
+#
+# Start the Celeste configuration running.  (Counts on this system
+# configuration being mentioned in etc/celeste.cf.)
+#
+CELESTECONFIG=${local_config} bin/celeste start > /dev/null
+
+#
+# Have other nodes participating in this profiling configuration update
+# themselves and start their part of the updated configuration.
+#
+# N.B.  The ssh command to update each system in the configuration now runs
+# asynchronously, so the loop as a whole can potentially finish long before
+# the update commands it initiates.  (The "bin/celeste clobber" step in
+# updating a system's configuration can be quite time consuming, dominating
+# everything else done as part of the update.)  The wait_until_ready call
+# immediately below will spin until all of this update time is absorbed.
+#
+user="`whoami`"
+user_this_host="${user}@${this_host}"
+if [ "X${configuration_prefix}" = "X" ]; then
+    this_config="${this_host}"
+else
+    this_config="${configuration_prefix}:${this_host}"
+fi
+for host in `get_additional_nodes ${this_config}`; do
+    user_host="${user}@${host}"
+    #
+    # Examine the configuration for the remote and obtain its celeste_home
+    # value.
+    #
+    if [ "X${configuration_prefix}" = "X" ]; then
+        that_config="${host}"
+    else
+        that_config="${configuration_prefix}:${host}"
+    fi
+    that_celeste_home="`get_celeste_home ${that_config}`"
+
+    #
+    # Have the remote host update its installed Celeste and start it running
+    # with its version of the configuration we're about to run.
+    #
+    # Note that the first argument to nightly-celeste-only names _this_
+    # system, since that's where the distribution to be installed lives.
+    #
+    ssh ${user_host} ${that_celeste_home}/test/regression/nightly-celeste-only \
+        ${this_host} ${dist} ${configuration_prefix} &
+done
+
+#
+# Wait for the overall configuration to become ready to do business.
+#
+# XXX:  Need a way to determine the minimum number of nodes required, which
+#       depends on to fault tolerance parameters in effect.  For now, assume
+#       that they're f==1 && b==1, which implies that 6 nodes are needed.
+#       (This assumption is reasonably safe, since these are the default
+#       values and celeste-profiler doesn't override them.)
+#
+wait_until_ready http://127.0.0.1:12001 6
+
+#
+# Build the initial portion of the profiling command line, using a default if
+# not explicitly specified in the configuration.
+#
+cmd_pfx="`get_nightly_test_cmd ${this_config}`"
+if [ "X${cmd_pfx}" = "X" ]; then
+    cmd_pfx="bin/celeste-profiler create:1,20,1,20,"
+fi
+
+#
+# Run the profiler and capture its output, being careful not to overwrite an
+# existing output file.
+#
+result_dir=${CELESTEHOME}/test/regression-results
+mkdir -p $result_dir
+result_file=$result_dir/$tag
+if [ -f $result_dir/$tag ]; then
+    suffix=0
+    while [ -f $result_dir/$tag-$suffix ]; do
+	suffix=`expr $suffix + 1`
+    done
+    result_file=$result_dir/$tag-$suffix
+fi
+eval "${cmd_pfx}${result_file}"
+
+#
+# Call home with the results.
+#
+if [ "X${results_address}" != "X" ]; then
+    #
+    # XXX:  Another wired-down, Solaris-specific program.  (Well, not quite:
+    #       MacOS X has it too.)
+    #
+    mailx -s "${this_host} celeste-profiler results for ${tag}" \
+        -r ${MAIL_SENDER} ${results_address} < $result_file
+fi

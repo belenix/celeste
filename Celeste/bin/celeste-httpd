@@ -1,0 +1,189 @@
+#!/bin/bash -
+# Copyright 2007-2008 Sun Microsystems, Inc. All Rights Reserved.
+# DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER
+# 
+# This code is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License version 2
+# only, as published by the Free Software Foundation.
+# 
+# This code is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+# General Public License version 2 for more details (a copy is
+# included in the LICENSE file that accompanied this code).
+# 
+# You should have received a copy of the GNU General Public License
+# version 2 along with this work; if not, write to the Free Software
+# Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
+# 02110-1301 USA
+# 
+# Please contact Sun Microsystems, Inc., 16 Network Circle, Menlo
+# Park, CA 94025 or visit www.sun.com if you need additional
+# information or have any questions.
+
+CELESTEHOME=${CELESTEHOME:="unset"}
+if [[ ${CELESTEHOME} == "unset" ]]; then
+        if [[ -x ./bin/celeste && -x ./bin/celestesh && -e ./dist/celeste.jar ]]; then
+                echo "NOTICE: The current directory looks like a Celeste runtime installation."
+                echo "        Using the current directory instead of /opt/celeste"
+                echo "        Explicitly set the environment variable CELESTEHOME to override this."
+                CELESTEHOME=`pwd`
+        else
+                CELESTEHOME="/opt/celeste"
+        fi
+fi
+
+#
+# Report the process ids of JVMs that are running Celeste nodes.
+#
+getpids() {
+    case $(uname -s) in
+        SunOS)
+            #
+            # XXX:  pgrep is intended for this purpose, but considers only the
+	    #	    first 80 bytes of the command line, making it unusable
+	    #	    here, where "celeste-httpd.jar" appears way beyond the 80
+	    #	    byte window.  So instead, use /usr/ucb/ps (and hope that
+	    #	    it has been installed on the system).
+            #
+            pidlist=$(/usr/ucb/ps axww | grep celeste-httpd.jar | \
+		grep -v grep | awk '{print $1}')
+            echo $pidlist
+            ;;
+
+        #
+        # The following code is known to work on Darwin, and has a good shot
+        # at working on other systems.
+        #
+        *)
+            pidlist=$(/bin/ps axww | grep celeste-httpd.jar | grep -v grep | \
+                awk '{print $1}')
+            echo $pidlist
+            ;;
+    esac
+}
+
+# This case is for making OS specific adjustments.
+case `uname -s` in
+    SunOS)
+	PS=/usr/ucb/ps
+	TEST=/usr/ucb/test
+        ;;
+    Darwin)
+	PS=/bin/ps
+	TEST=/bin/test
+        ;;
+     Linux)
+ 	PS=/bin/ps
+	TEST=/usr/bin/test
+        ;;
+    *)
+	PS=/bin/ps
+        ;;
+esac
+
+JAVA=${JAVA:=/usr/bin/java}
+JVMOPTS="-server -Xmx1024m -ea"
+JMXPASSWD=${JMXPASSWORD:=${CELESTEHOME}/etc/jmxremote.password.template}
+
+# Suck in the configuration file.
+
+CELESTECONFIG_URL=${CELESTECONFIG_URL:="unset"}
+
+if [[ ${CELESTECONFIG_URL} == "unset" ]]; then
+        config_key=${CELESTECONFIG:=`hostname`}
+        . ${CELESTEHOME}/etc/celeste-httpd.cf
+fi
+
+JMXOPTS=${jmx_port:+"-Dcom.sun.management.jmxremote -Dcom.sun.management.jmxremote.port=$jmx_port -Dcom.sun.management.jmxremote.password.file=$JMXPASSWD"}
+if ${TEST} -n "${JMXOPTS}"; then
+	chmod 600 ${JMXPASSWD}
+fi
+
+java_option=${java_options:+${java_options}}
+JAVA_ARGUMENTS="${JVMOPTS} ${JMXOPTS} ${java_option}"
+
+celeste_client_port_option=${celeste_client_port:+--celeste-client-port ${celeste_client_port}}
+
+celesteBrowser_arguments="${celeste_client_port_option} ${other_options}"
+
+start() {
+#	echo ${JAVA} ${JAVA_ARGUMENTS} -jar ${CELESTEHOME}/dist/celeste-httpd.jar  ${celesteBrowser_arguments} '>' ${celesteBrowser_log} '2>&1'
+#	${JAVA} ${JAVA_ARGUMENTS} -jar ${CELESTEHOME}/dist/celeste-httpd.jar  ${celesteBrowser_arguments} > ${celesteBrowser_log} 2>&1 &
+
+	echo ${JAVA} ${JAVA_ARGUMENTS} -cp ${CELESTEHOME}/dist/celeste.jar  sunlabs.celeste.client.application.CelesteHTTPd ${celesteBrowser_arguments} '>' ${celesteBrowser_log} '2>&1'
+	${JAVA} ${JAVA_ARGUMENTS} -cp ${CELESTEHOME}/dist/celeste.jar  sunlabs.celeste.client.application.CelesteHTTPd ${celesteBrowser_arguments} > ${celesteBrowser_log} 2>&1 &
+}
+
+stop() {
+    pidlist=$(getpids)
+    if [[ -n "$pidlist" ]]; then
+        kill -9 $(getpids)
+    fi
+}
+
+
+clobber() {
+  echo ""
+}
+
+
+restart() {
+	stop
+	start
+}
+
+config() {
+	echo Java Parameters ${JAVA_ARGUMENTS}
+	echo Celeste Parameters ${celesteBrowser_arguments}
+}
+
+status() {
+    pidlist=$(getpids)
+    if [[ -z "$pidlist" ]]; then
+        echo "celeste-httpd not running"
+    else
+        #
+        # XXX:  Really ought to discriminate on whether ps is BSD-style
+        #       or SysV-style; the use of uname is a surrogate for the proper
+        #       test.
+        #
+        case $(uname -s) in
+            SunOS)
+                /bin/ps -o pid,time,args -p "$(getpids)"
+                ;;
+            *)
+                /bin/ps $(getpids)
+                ;;
+        esac
+    fi
+}
+
+for command in $*; do
+	case $command in
+		start)
+			start
+			;;
+		stop)
+			stop
+			;;
+		restart)
+			restart
+			;;
+		clean)
+			clean
+			;;
+		clobber)
+			clobber
+			;;
+		config)
+			config
+			;;
+		status)
+			status
+			;;
+		*)
+			echo "Unknown operation"
+			;;
+	esac
+done

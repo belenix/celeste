@@ -1,0 +1,264 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html>
+<head>
+  <title></title>
+</head>
+<body>
+<style type="text/css">
+body {
+  margin: 0 11% 0 0;
+  text-align: justify;
+}
+
+.verbatim {
+  font-family: monospace;
+/*  font-weight: bold;*/
+}
+
+.floater {
+  float: right;
+  margin-top: 0;
+}
+
+table.simple {
+  border: 1px solid black;
+  border-collapse: collapse;
+  margin: 1em;
+}
+table.simple th {
+  border-bottom: 3px double black;
+  border-right: thin solid black;
+}
+table.simple td {
+  border-bottom: thin solid black;
+  border-right: thin solid black;
+}
+
+table.simple caption {
+  text-align: left;
+  font-weight: bold;
+}
+
+ol.toc {
+  background-color: #F0F0F0;
+  border: 1px solid black;
+}
+ol.toc li {
+  margin: 0.25em 1em 0.25em 1em;
+}
+
+samp {
+  padding: 1em;
+  background-color: black;
+  color: #00FF00;
+}
+
+code {
+  font-weight: bold;
+}
+
+.example {
+  width: 55%;
+  float: right;
+  padding: 1em;
+  margin: 0 0 0 1em;
+  background-color: black;
+  color: #00FF00;
+  border: thick ridge grey;
+  font-family: monospace;
+  font-weight: bold;
+}
+
+.inline-example {
+  padding: 1em;
+  margin: 0 0 0 1em;
+  background-color: black;
+  color: #00FF00;
+  border: thick ridge grey;
+  font-family: monospace;
+  font-weight: bold;
+}
+
+.clear {
+  clear: both;
+}
+
+dl.option-list dt {
+  margin-top: 1em;
+  font-family: monospace;
+  font-weight: bold;
+}
+</style>
+
+<p>
+A simple interface to the <a href=""><tt>celestesh</tt></a>
+command line interface is available as a Python class implmemented
+in the source file: <tt>languages/python/celestesh.py</tt>.
+</p>
+<h1>The <tt>celestesh</tt> class</h1>
+<dl>
+  <dt>
+    <code>class celestesh(</code>
+    <i>[celesteHome, [jvmOptions, [javaVM]]]</i>
+    <code> )</code>
+  </dt>
+  <dd>
+    Construct a new Python celestesh instance using the Java VM
+    options specified as a string in <i>jvmOptions</i>
+    (default is the empty string),
+    and the top-level directory of the local Celeste installation as
+    <i>celesteHome</i>(defaulting to the value of the environment variable
+    <tt>CELESTEHOME</tt>) and the file name of the Java VM executable
+    specified by <i>javaVM</i> ("/usr/bin/java" by default).
+  </dd>
+</dl>
+The <tt>celestesh</tt> class provides the following methods:
+(cf. <a href=""><tt>celestesh</tt></a> for additional details on
+these methods.)
+<dl>
+  <dt style="margin-top: 1em;">
+    <code>createFile(</code>
+    <i>
+      requestor, requestorPassword, nameSpace, nameSpacePassword, fileName,
+      ownerId, groupId,
+      deleteToken[,
+        replicationParams [, bObjectSize [, timeToLive [, signedWrites]]]]]
+    </i>
+
+    <code>)</code></dt>
+  <dd>
+    Using the credential <i>requestor</i> authorized with
+    <i>requestorPassword</i>,
+    create a new file, <i>fileName</i>, in the file
+    name-space <i>nameSpace</i> authorised with <i>nameSpacePassword</i>,
+    and initialise the new file with the delete-token string specified by
+    <i>deleteToken</i>.
+    The new file will be owned by the credential specified by <i>ownerId</i>
+    and in the group specified by the credential name <i>groupId</i>.
+    The optional parameters <i>replicationParams</i> specifies the replication
+    parameters for this file (by default "ErasureCodeIdentity/3"),
+    the parameter bObjectSize specifies the maximum size of a distinct block of
+    data comprising the file (by default 8Mb),
+    the parameter <i>timeToLive</i> sets the file's time-to-live in seconds
+    (by default 8,640,000 seconds),
+    and the parameter <i>signedWrites</i> is True by default and requires
+    all subsequent writes to this file sign the entire written data.
+  </dd>
+  <dt style="margin-top: 1em;">
+    <code>deleteFile(</code>
+    <i>
+      requestor, requestorPassword, namespace, fileId, deleteToken, timeToLive
+    </i>
+    <code>)</code>
+  </dt>
+  <dd>
+    Assuming the identity described by the credential <i>requestor</i>
+    authenticated by <i>requestorPassword</i>,
+    delete the file identified by <i>namespace</i> and <i>fileId</i>
+    in the file name-space <i>namespace</i>.
+    The deletion is enabled via the <i>deleteToken</i>
+    and persists for <i>timeToLive</i> seconds.
+  </dd>
+  <dt style="margin-top: 1em;">
+    <code>newNameSpace(</code>
+    <i>
+      namespaceName,
+      namespacePassword[, replicationParams="ErasureCodeIdentity/3"]
+    </i>
+    <code>)</code>
+  </dt>
+  <dd>
+    Create a new name-space <i>nameSpaceName</i> using the name-space
+    password <i>namespacePassword</i>.
+    The optional argument <i>replicationParams</i>
+    specifies the replication parameters when storing the name-space credential.
+  </dd>
+  <dt style="margin-top: 1em;">
+    <code>newCredential(</code>
+    <i>name, password[, replicationParams="ErasureCodeIdentity/3"]</i>
+    <code>)</code>
+  </dt>
+  <dd>
+    Create a new credential <i>name</i> with the authentication password
+    <i>password</i>.
+    The optional argument <i>replicationParams</i>
+    specifies the replication parameters for storing the credential.
+  </dd>
+  <dt style="margin-top: 1em;">
+    <code>readFile(</code>
+    <i>requestor, requestorPassword, namespace, fileId[, offset=0[, length=-1]]</i>
+    <code>)</code>
+  </dt>
+  <dd>
+    Assuming the identity described by the credential <i>requestor</i>
+    authenticated by <i>requestorPassword</i>,
+    read <i>length</i> number of bytes from the file
+    identified by <i>namespace</i> and <i>fileId</i>
+    starting at byte offset <i>offset</i> in the file.
+    By default the starting byte offset is 0, and the length is the
+    length of the file.
+    The value -1 for <i>length</i> signifies the entire length of the file.
+  </dd>
+  <dt style="margin-top: 1em;">
+    <code>readFileVersion(</code>
+    <i>requestor, requestorPassword, namespace, fileId, vObjectId[, offset=0[, length=-1]]</i>
+    <code>)</code>
+  </dt>
+  <dd>
+    Assuming the identity described by the credential <i>requestor</i>
+    authenticated by <i>requestorPassword</i>,
+    read <i>length</i> number of bytes from the version of file
+    identified by <i>namespace</i> and <i>fileId</i>
+    and further discriminated by the object-id of the version <i>vObjectId</i>
+    starting at byte offset <i>offset</i> in the file.
+    By default the starting byte offset is 0, and the length is the
+    length of the file.
+    The value -1 for <i>length</i> signifies the entire length of the file.
+  </dd>
+  <dt style="margin-top: 1em;">
+    <code>readCredential(</code>
+    <i>name</i>
+    <code>)</code>
+  </dt>
+  <dd>
+    Read the credential <i>name</i>.
+  </dd>
+  <dt style="margin-top: 1em;">
+    <code>setFileLength(</code>
+    <i>requestor, requestorPassword, namespace, fileId, length</i>
+    <code>)</code>
+  </dt>
+  <dd>
+    Assuming the identity described by the credential <i>requestor</i>
+    authenticated by <i>requestorPassword</i>,
+    set the length of the file
+    identified by <i>namespace</i> and <i>fileId</i>
+    to <i>length</i>.
+    The file is truncated or extended as necessary.
+  </dd>
+  <dt style="margin-top: 1em;">
+    <code>setFileOwnerAndGroup(</code>
+    <i>requestor, requestorPassword, namespace, fileId, owner, group</i>
+    <code>)</code>
+  </dt>
+  <dd>
+    Assuming the identity described by the credential <i>requestor</i>
+    authenticated by <i>requestorPassword</i>,
+    set the new owner of the file
+    identified by <i>namespace</i> and <i>fileId</i>
+    to <i>owner</i> and the group to <i>group</i>.
+  </dd>
+  <dt style="margin-top: 1em;">
+    <code>writeFile(</code>
+    <i>requestor, requestorPassword, namespace, fileId, start, inputFileName</i>
+    <code>)</code>
+  </dt>
+  <dd>
+    Assuming the identity described by the credential <i>requestor</i>
+    authenticated by <i>requestorPassword</i>,
+    write data to the file identified by <i>namespace</i> and <i>fileId</i>
+    starting at byte offset <i>offset</i>.
+    Data is read from the file <i>inputFileName</i>.
+  </dd>
+</dl>
+</body>

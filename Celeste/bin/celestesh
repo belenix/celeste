@@ -1,0 +1,68 @@
+#!/bin/bash
+# Copyright 2007-2008 Sun Microsystems, Inc. All Rights Reserved.
+# DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER
+# 
+# This code is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License version 2
+# only, as published by the Free Software Foundation.
+# 
+# This code is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+# General Public License version 2 for more details (a copy is
+# included in the LICENSE file that accompanied this code).
+# 
+# You should have received a copy of the GNU General Public License
+# version 2 along with this work; if not, write to the Free Software
+# Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
+# 02110-1301 USA
+# 
+# Please contact Sun Microsystems, Inc., 16 Network Circle, Menlo
+# Park, CA 94025 or visit www.sun.com if you need additional
+# information or have any questions.
+#
+#
+# CELESTEHOME is the pathname of the top-level Celeste installation directory
+#             
+# CELESTEURL is the full HTTP URL of the Celeste node to use when performing
+#            Celeste operations.
+#
+# JAVA is the pathname of the top-level Java installation directory.
+#
+
+CELESTEHOME=${CELESTEHOME:=/opt/celeste}
+if [[ -x ./bin/celeste && -x ./bin/celestesh  && -e ./dist/celeste.jar ]]; then
+	#echo "NOTICE: The current directory looks like a Celeste runtime installation."
+	#echo "        Using the current directory instead of /opt/celeste"
+	#echo "        Explicitly set the environment variable CELESTEHOME to override this."
+        CELESTEHOME=.
+fi
+
+CELESTEADDR=${CELESTEADDR:="127.0.0.1:14000"}
+
+case `uname -s` in
+    SunOS)
+        JAVA=${JAVAHOME:=/usr/java}/bin/java
+        JVMOPTS="-server $JVMOPTS"
+        ;;
+    Darwin)
+        jframework=/System/Library/Frameworks/JavaVM.framework
+        JAVA=${JAVA:=${jframework}/Versions/1.6/Commands/java}
+        JAVA=/usr/bin/java
+        JVMOPTS="-server $JVMOPTS"
+        ;;
+    *)
+        JAVA=${JAVAHOME:=/usr/java}/bin/java
+        ;;
+esac
+
+#
+# CELESTESH is a shell variable containing a string that will execute the
+# Java JVM with the celestesh.jar file
+#
+
+# 
+CELESTE=${CELESTEHOME}/dist/celeste.jar
+CELESTESH="${JAVA} ${JVMOPTS} -cp ${CELESTE} sunlabs.celeste.client.application.CelesteSh --celeste-address ${CELESTEADDR}"
+#CELESTESH="${JAVA} ${JVMOPTS} -jar ${CELESTE} --celeste-address ${CELESTEADDR}"
+exec ${CELESTESH} "$@"

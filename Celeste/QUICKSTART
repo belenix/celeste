@@ -1,0 +1,26 @@
+After successfully building, or untaring a prebuilt system:
+
+From the top-level directory, in a terminal window execute:
+
+./bin/celeste clobber restart
+
+Wait about 30 seconds for the system to settle.
+
+This will start a default configuration consisting of 6 nodes, all running on the local computer.
+Log output will be stored in /tmp/celeste-`hostname`.log.
+
+To exercise the system with a small example execute the following command:
+
+./languages/bash/celestesh-example
+
+
+To use the demo web file-system interface, execute:
+
+./bin/celeste-httpd restart
+
+and then visit http://127.0.0.1:15000 with your web browser.
+
+Login with a name-space name and password combination.  One is created for
+you when you login the first time, but is not preserved if you "clobber"
+and restart the system later.
+

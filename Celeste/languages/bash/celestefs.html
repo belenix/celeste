@@ -1,0 +1,343 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html>
+<head>
+  <title></title>
+</head>
+<body>
+<link href="http://opensolaris.org/os/project/celeste/common.css" media="all" rel="stylesheet" type="text/css"/>
+<h1>CELESTEFS COMMAND LINE INTERFACE</h1>
+<p>
+  The <tt>celestefs</tt> programme is a command line interface to the
+  higher-level Celeste file store.
+  This interface gives you the capabilities of creating namespaces and
+  credentials,
+  and manipulating Celeste data files as a heirarchical file system.
+</p>
+<p>
+  The general form of the command line invocation is:
+  <pre>
+<span class="prompt">$ </span>celestefs --id <i>&lt;name&gt;</i> --password <i>&lt;password&gt;</i> \
+  [--replication <i>&lt;replicationParams&gt;</i>] \
+  [--celeste-address <i>address</i>:<i>port</i>] \
+  <i>operation</i>
+</pre>
+<p>
+  Unless otherwise specified, all parameters are encoded as UTF-8 strings.
+  In cases where a null value may be supplied, it is specified by the
+  string "null".
+</p>
+</p>
+<h2>COMMAND LINE PARAMETERS</h2>
+<dl>
+  <dt class="verbatim" style="margin-top: 1em;">--id <i>name</i></dt>
+  <dd>
+    Specifies the name of the credential to use for this operation
+    (See the operation <a href="#mkid">mkid</a>).
+    <dt class="verbatim" style="margin-top: 1em;">--password <i>passphrase</i></dt>
+  <dd>
+    Specifies the password to the credential used for this operation.
+  </dd>
+  <dt class="verbatim" style="margin-top: 1em;">--replication <i>replicationParams</i></dt>
+  <dd>
+    This option specifies the Celeste replication parameters incorporating the
+    information dispersal algorithms and low-level object replication requirements.
+    By default this value is
+    <code>AObject.Replication.Store=3; VObject.Replication.Store=3; BObject.Replication.Store=3;</code>.
+  </dd>
+  <dt class="verbatim" style="margin-top: 1em;">--celeste-address <i>address</i>:<i>port</i></dt>
+  <dd>
+    Specifies the address and tcp-port number of the Celeste node to contact
+    to perform the specified operation.
+    If <tt>--celeste-address</tt> is left unspecified, the default
+    value used for the address and port of the Celeste node
+    is <tt>127.0.0.1:14000</tt> Note that any Celeste node is
+    capable of performing the operation and you can distribute the
+    operations among many nodes.
+  </dd>
+  <dt style="margin-top: 1em;">Operations consist of one of the following set of command line parameters</dt>
+  <dd>
+    <dl>
+      <dt class="verbatim" style="margin-top: 1em;">
+	<a name="create"></a>create
+      </dt>
+      <dd>
+	Create a named file within a specified file-system.
+	The specified file-system and creator credential must have already been created
+	(see the
+	<tt><a href="#mkfs">mkfs</a></tt>
+	and
+	<tt><a href="#mkid">mkid</a></tt>
+	operations).
+	<dl>
+	  <dt>&lt;path-name&gt;</dt>
+	  <dd>
+	    The full path-name file to create.
+	  </dd>
+	</dl>
+      </dd>
+      <dd>
+	<pre class="inline-example">
+<span class="prompt">$ </span>celestefs --id meMyselfAndI --password plugh create /myMyselfAndI/fubar
+	</pre>
+      </dd>
+
+      <dt class="verbatim" style="margin-top: 1em;">
+	<a name="ls"></a>ls</dt>
+      <dd>
+	Display file metadata.
+	<dl>
+	  <dt>optional: -l</dt>
+	  <dd>
+	    Display a long form of output including content-type, size, modified-time, and file-name.
+	  </dd>
+	  <dt>optional: -s</dt>
+	  <dd>
+	    Display a short form of output including size and file-name.
+	  </dd>
+	  <dt>&lt;path-name&gt;</dt>
+	  <dd>
+	    The full path-name of the file.
+	  </dd>
+	</dl>
+      </dd>
+      <dd>
+	<pre class="inline-example">
+<span class="prompt">$ </span>celestefs --id meMyselfAndI --password plugh ls -l /meMyselfAndI/
+<span class="output">0:owner@:[deleteFile, inspectFile, readFile, setACL, setFileLength, setUserAndGroup, writeFile]:grant</span>
+<span class="output">1:group@:[readFile]:grant</span>
+<span class="output">X-Celeste/Directory          2 2008-08-16 01:33:57 /</span>
+</span>
+</pre>
+      </dd>
+
+      <dt class="verbatim" style="margin-top: 1em;">
+	<a name="mkdir"></a>mkdir</dt>
+      <dd>
+	Create a directory.
+	<dl>
+	  <dt>&lt;path-name&gt;</dt>
+	  <dd>
+	    The full path-name of the directory to create.
+	  </dd>
+	</dl>
+      </dd>
+      <dd>
+	<pre class="inline-example">
+<span class="prompt">$ </span>celestefs --id meMyselfAndI --password plugh mkdir /myMyselfAndI/foo
+	</pre>
+      </dd>
+
+      <dt class="verbatim" style="margin-top: 1em;">
+	<a name="mkfs"></a>mkfs</dt>
+      <dd>
+	Create a new Celeste filesystem.
+	<dl>
+	  <dt>&lt;name&gt;</dt>
+	  <dd>
+	    The name of the new filesystem.
+	  </dd>
+	</dl>
+      </dd>
+      <dd>
+	<pre class="inline-example">
+<span class="prompt">$ </span>celestefs --id meMyselfAndI --password plugh \
+  --replication 'AObject.Replication.Store=3;VObject.Replication.Store=3;BObject.Replication.Store=3;' \
+  mkfs meMyselfAndI
+	</pre>
+      </dd>
+
+      <dt class="verbatim" style="margin-top: 1em;">
+	<a name="mkid"></a>mkid</dt>
+      <dd>
+	Create a new credential in the Celeste system.
+	The credential name and password are specified by the <tt>--id</tt>
+	and <tt>--password</tt> command line arguments.
+      </dd>
+      <dd>
+	<pre class="inline-example">
+<span class="prompt">$ </span>celestefs --id meMyselfAndI --password plugh \
+  --replication 'AObject.Replication.Store=3;VObject.Replication.Store=3;BObject.Replication.Store=3;' \
+  mkid
+</pre>
+      </dd>
+
+      <dt class="verbatim" style="margin-top: 1em;">
+	<a name="pread"></a>pread</dt>
+      <dd>
+	Read data from the named Celeste file and write it to the standard output.
+	<dl>
+	  <dt>&lt;path-name&gt;</dt>
+	  <dd>
+	    The full path-name of the file.
+	    (See the operation <tt><a href="create">create<a/></tt>)
+	  </dd>
+	  <dt>&lt;offset&gt;</dt>
+	  <dd>
+	    The decimal value of the byte offset to start reading.
+	  </dd>
+	  <dt>&lt;length&gt;</dt>
+	  <dd>
+	    The decimal value of the number of bytes to read.
+	    The special value -1 signifies to read until end-of-file.
+	  </dd>
+	</dl>
+      </dd>
+      <dd>
+	<pre class="inline-example">
+<span class="prompt">$ </span>celestefs --id meMyselfAndI --password plugh pread /meMyselfAndI/fubar 0 -1
+<span class="output">Hello World</span>
+	</pre>
+      </dd>
+
+      <dt class="verbatim" style="margin-top: 1em;">
+	<a name="pwrite"></a>pwrite</dt>
+      <dd>
+	Read data from the standard input and write it to the named Celeste file.
+	<dl>
+	  <dt>&lt;path-name&gt;</dt>
+	  <dd>
+	    The full path-name of the file.
+	    (See the operation <tt><a href="create">create<a/></tt>)
+	  </dd>
+	  <dt>&lt;offset&gt;</dt>
+	  <dd>
+	    The decimal value of the byte offset to start writing.
+	  </dd>
+	</dl>
+      </dd>
+      <dd>
+	<pre class="inline-example">
+<span class="prompt">$ </span>echo 'Hello World' | celestefs --id meMyselfAndI --password plugh pwrite /meMyselfAndI/fubar 0
+	</pre>
+      </dd>
+
+      <dt class="verbatim" style="margin-top: 1em;">
+	<a name="rm"></a>rm</dt>
+      <dd>
+	Remove a file.
+	<dl>
+	  <dt>&lt;path-name&gt;</dt>
+	  <dd>
+	    The full path-name of the file.
+	    (See the operation <tt><a href="create">create<a/></tt>)
+	  </dd>
+	</dl>
+      </dd>
+      <dd>
+	<pre class="inline-example">
+<span class="prompt">$ </span>echo 'Hello World' | celestefs --id meMyselfAndI --password plugh rm /meMyselfAndI/fubar
+	</pre>
+      </dd>
+
+    <dt class="verbatim" style="margin-top: 1em;">
+	<a name="readdir"></a>readdir</dt>
+      <dd>
+	Read a directory.
+	<dl>
+	  <dt>&lt;path-name&gt;</dt>
+	  <dd>
+	    The full path-name of the directory.
+	    (See the operation <tt><a href="mkdir">mkdire<a/></tt>)
+	  </dd>
+	</dl>
+      </dd>
+      <dd>
+	<pre class="inline-example">
+<span class="prompt">$ </span>celestefs --id meMyselfAndI --password plugh readdir /meMyselfAndI
+	</pre>
+      </dd>
+    <dt class="verbatim" style="margin-top: 1em;">
+	<a name="rename"></a>rename</dt>
+      <dd>
+	Rename a file.
+	<dl>
+	  <dt>&lt;from-name&gt;</dt>
+	  <dd>
+	    The full path-name of the file to rename.
+	    (See the operation <tt><a href="create">create<a/></tt>)
+	  </dd>
+	  <dt>&lt;to-name&gt;</dt>
+	  <dd>
+	    The full path-name of the new file name.
+	  </dd>
+	</dl>
+      </dd>
+      <dd>
+	<pre class="inline-example">
+<span class="prompt">$ </span>celestefs --id meMyselfAndI --password plugh rename /meMyselfAndI/fubar /meMySelfAndId/foobar
+	</pre>
+      </dd>
+    <dt class="verbatim" style="margin-top: 1em;">
+	<a name="set-length"></a>rename</dt>
+      <dd>
+	Set the length of a file.
+	<dl>
+	  <dt>&lt;pathname&gt;</dt>
+	  <dd>
+	    The full path-name of the file.
+	    (See the operation <tt><a href="create">create<a/></tt>)
+	  </dd>
+	  <dt>&lt;length&gt;</dt>
+	  <dd>
+	    The new length of the file.
+	  </dd>
+	</dl>
+      </dd>
+      <dd>
+	<pre class="inline-example">
+<span class="prompt">$ </span>celestefs --id meMyselfAndI --password plugh set-length /meMyselfAndI/fubar 6
+	</pre>
+      </dd>
+    <dt class="verbatim" style="margin-top: 1em;">
+	<a name="test"></a>test</dt>
+      <dd>
+	Test a file.
+	<dl>
+	  <dt>-e</dt><dd>Success if this file exists.</dd>
+	  <dt>-d</dt><dd>Success if this file exists and is a directory.</dd>
+	  <dt>-t content-type</dt><dd>Success if this file exists and has the content-type <i>type</i>.</dd>
+	  <dt>&lt;path-name&gt;</dt>
+	  <dd>
+	    The full path-name of the file to test.
+	    (See the operation <tt><a href="create">create<a/></tt>)
+	  </dd>
+	</dl>
+      </dd>
+      <dd>
+	<pre class="inline-example">
+<span class="prompt">$ </span>echo 'Hello World' | celestefs --id meMyselfAndI --password plugh rm /meMyselfAndI/fubar
+	</pre>
+      </dd>
+</dl>
+
+<h2>PUTTING IT ALL TOGETHER</h2>
+The example below is from the shell-script <tt>examples/celestefs-example</tt>
+in the top-level directory of the Celeste installation.
+<pre class="inline-example">
+<span class="prompt">$ </span>celestefs --id meMyselfAndI --password plugh mkid
+<span class="prompt">$ </span>celestefs --id meMyselfAndI --password plugh mkfs celestefs-example fspw
+<span class="prompt">$ </span>celestefs --id meMyselfAndI --password plugh ls -l /celestefs-example/
+<span class="output">X-Celeste/Directory                           2 2008-08-25 16:50:53 .</span>
+<span class="output">X-Celeste/Directory                           2 2008-08-25 16:50:53 ..</span>
+<span class="prompt">$ </span>celestefs --id meMyselfAndI --password plugh pread /celestefs-example/ 0 -1
+<span class="output">X-Celeste/Directory                           2         1219708253943 .</span>
+<span class="output">X-Celeste/Directory                           2         1219708253943 ..</span>
+<span class="prompt">$ </span>celestefs --id meMyselfAndI --password plugh create /celestefs-example/fubar
+<span class="prompt">$ </span>echo 'Hello World' | \
+  celestefs --id meMyselfAndI --password plugh pwrite /celestefs-example/fubar 0
+<span class="prompt">$ </span>celestefs --id meMyselfAndI --password plugh ls -l /celestefs-example/fubar
+<span class="output">application/octet-stream                     12 2008-08-25 16:51:12 /fubar</span>
+<span class="prompt">$ </span>celestefs --id meMyselfAndI --password plugh pread /celestefs-example/fubar 0 -1
+<span class="output">Hello World</span>
+<span class="prompt">$ </span>celestefs --id meMyselfAndI --password plugh mkdir /celestefs-example/foo
+<span class="prompt">$ </span>celestefs --id meMyselfAndI --password plugh create /celestefs-example/foo/bar
+<span class="prompt">$ </span>echo 'Hello World' | \
+  celestefs --id meMyselfAndI --password plugh pwrite /celestefs-example/foo/bar 0
+<span class="prompt">$ </span>celestefs --id meMyselfAndI --password plugh pread /celestefs-example/foo/bar 0 -1
+<span class="output">Hello World</span>
+<span class="prompt">$ </span>celestefs --id meMyselfAndI --password plugh rm /celestefs-example/foo/bar
+<span class="prompt">$ </span>celestefs --id meMyselfAndI --password plugh pread /celestefs-example/foo/bar 0 -1
+<span class="output">File not found</span>
+</pre>
+</body>
+</html>

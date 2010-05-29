@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<!--
+<p>
+Copyright 2007-2009 Sun Microsystems, Inc. All Rights Reserved.
+DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER
+</p><p>
+This code is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License version 2
+only, as published by the Free Software Foundation.
+</p><p>
+This code is distributed in the hope that it will be useful, but
+WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+General Public License version 2 for more details (a copy is
+included in the LICENSE file that accompanied this code).
+</p><p>
+You should have received a copy of the GNU General Public License
+version 2 along with this work; if not, write to the Free Software
+Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
+02110-1301 USA
+</p><p>
+Please contact Sun Microsystems, Inc., 16 Network Circle, Menlo
+Park, CA 94025 or visit www.sun.com if you need additional
+information or have any questions.
+</p>
+-->
+<html>
+<head>
+<title>Project Celeste</title>
+</head>
+<body>
+<p>
+Celeste is a highly-available, ad hoc, distributed, peer-to-peer data store.
+The system implements semantics for data creation, deletion, arbitrary read and write in a strict-consistency data model.
+</p><p>
+As in similar systems, Celeste divides data into fragments and replicates each fragment on multiple nodes in the system.
+Celeste dynamically caches and re-caches fragment replicas to ensure that a minimum number of them exist in the system to
+protect against loss and that enough fragments are available to recover the entirety of the data.
+Celeste clients create, write, and subsequently read data despite the fact that some of the nodes,
+and consequently some of the fragments, may be unavailable.
+</p><p>
+In contrast to many other similar systems, Celeste clients are able to update any portion of the data including the ability to delete it.
+Celeste has a strict data coherency model which is maintained despite multiple simultaneous readers and writers, and arbitrary node failures.
+Data is deleted completely, even in the face of temporary node failures and absence.
+Celeste clients work with data using a full complement of operations: create, delete, read, write, and administrative controls such as access control.
+While Celeste provides a global name-space for all data, the name-space can be divided into sub-domains.
+</p><p>
+Experimental and example applications for Celeste range from small systems maintaining a high-available central
+repository of metadata for a large storage system to a general purpose geographically distributed "cloud" storage system comprised of several hundred nodes.
+</p><p>
+In addition to simply storing and retrieving data, Celeste is also a development platform for writing applications that
+are distributed across the fragments of the stored data. The distributed components of the application run in parallel producing results that are collated,
+similar to other contemporary map/reduce systems, or in new ways devised by the application programmer.
+</p><p>
+Developer applications have access to stored data and are used to extend the data access interface and can derive new data to store.
+For example, the read interface can be extended to permit an application to read image or video files in different formats performing
+the translation as the data is read from the system.
+</p><p>
+Celeste originated as Sun Microsystems Laboratories research project investigating techniques for building large scale,
+distributed systems that work not only in secured data centers but also in open and potentially hostile environments such as the Internet.
+</p><p>
+While the system is demonstrable, Celeste is still very much a work-in-progress. Our goal is to expand Celeste into the areas
+of distributed processing and storage using the foundation developed. We invite other developers, users and researchers to
+consider Celeste as a platform for their own applications, extensions and further work.
+</p>
+</body>
+</html>

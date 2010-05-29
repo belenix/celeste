@@ -1,0 +1,63 @@
+#!/bin/bash -e
+
+# Override the values of the following variables by setting them in the environment.
+
+CELESTEHOME=${CELESTEHOME:=/opt/celeste}
+WGET=${WGET:="unset"}
+
+echo "Installing Celeste to" ${CELESTEHOME}
+echo "Set the environment variable CELESTEHOME to a different path, if needed."
+
+CELESTEURL=${CELESTEURL:=http://celeste.sunlabs.com/install/latest}
+
+OPTCELESTE=${OPTCELESTE:=${CELESTEHOME}}
+
+OS=${OS:=`uname -s`}
+
+if [[ ${WGET} == "unset" ]]; then
+  case ${OS} in
+    SunOS)
+        JAVA=${JAVAHOME:=/usr/java}/bin/java
+        JVMOPTS="-server $JVMOPTS"
+	WGET="/usr/sfw/bin/wget -q -O -"
+        ;;
+    Darwin)
+        jframework=/System/Library/Frameworks/JavaVM.framework
+        JAVA=${JAVA:=${jframework}/Versions/1.6/Commands/java}
+        JAVA=/usr/bin/java
+        JVMOPTS="-server $JVMOPTS"
+	WGET="curl -o -"
+        ;;
+    Linux)
+        JAVA=${JAVAHOME:=/usr/java}/bin/java
+        JAVA=/usr/bin/java
+        JVMOPTS="-server $JVMOPTS"
+	WGET="wget -q -O -"
+        ;;
+    *)
+        JAVA=${JAVAHOME:=/usr/java}/bin/java
+	WGET="wget -q -O -"
+        ;;
+  esac
+fi
+
+# OPTCELESTE is deprecated.  Use CELESTEHOME instead.
+
+PREVIOUSINSTALL=`date "+%Y-%m-%d+%H:%M:%S"`
+if [[ -e ${OPTCELESTE} ]]; then
+    mkdir -p ${OPTCELESTE}/.${PREVIOUSINSTALL}
+    mv -f ${OPTCELESTE}/* ${OPTCELESTE}/.${PREVIOUSINSTALL}
+    mv -f ${OPTCELESTE}/.${PREVIOUSINSTALL} ${OPTCELESTE}/${PREVIOUSINSTALL}
+else
+    mkdir -p ${OPTCELESTE}
+fi
+
+cd ${OPTCELESTE}
+
+${WGET} ${CELESTEURL} > celeste.tgz
+
+gunzip < celeste.tgz | tar xf -
+
+echo "Successfully installed."
+echo "Copy previous files and configuration information from ${PREVIOUSINSTALL}"
+echo "then delete" ${PREVIOUSINSTALL} "before the next update."

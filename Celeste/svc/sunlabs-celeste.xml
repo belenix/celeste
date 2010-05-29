@@ -1,0 +1,271 @@
+<?xml version="1.0"?>
+<!DOCTYPE service_bundle SYSTEM "/usr/share/lib/xml/dtd/service_bundle.dtd.1">
+
+<!--
+
+Copyright 2007-2008 Sun Microsystems, Inc. All Rights Reserved.
+DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER
+
+This code is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License version 2
+only, as published by the Free Software Foundation.
+
+This code is distributed in the hope that it will be useful, but
+WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+General Public License version 2 for more details (a copy is
+included in the LICENSE file that accompanied this code).
+
+You should have received a copy of the GNU General Public License
+version 2 along with this work; if not, write to the Free Software
+Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
+02110-1301 USA
+
+Please contact Sun Microsystems, Inc., 16 Network Circle, Menlo
+Park, CA 94025 or visit www.sun.com if you need additional
+information or have any questions.
+
+-->
+
+<service_bundle type='manifest' name='sunlabs-celeste:celeste'>
+
+    <!-- XXX:
+	Should the service name start with "application" or with "network" (or
+	with something else)?
+    -->
+    <service
+	    name='application/celeste'
+	    type='service'
+	    version='1'>
+
+	<!-- XXX: Is the following set of dependencies adequate? -->
+
+	<!-- Celeste requires network availability. -->
+	<dependency
+		name='milestone-network'
+		grouping='require_all'
+		restart_on='none'
+		type='service'>
+	    <service_fmri value='svc:/milestone/network' />
+	</dependency>
+
+	<!-- Celeste shouldn't run until the system is ready to act as a
+	     server. -->
+	<dependency
+		name='milestone-server'
+		grouping='require_all'
+		restart_on='none'
+		type='service'>
+	    <service_fmri value='svc:/milestone/multi-user-server' />
+	</dependency>
+
+	<!-- Celeste needs to be able to resolve host names. -->
+	<dependency
+		name='milestone-name-services'
+		grouping='require_all'
+		restart_on='none'
+		type='service'>
+	    <service_fmri value='svc:/milestone/name-services' />
+	</dependency>
+
+	<!-- Celeste needs to be able to access the local file store. -->
+	<dependency
+		name='local-filesystem'
+		grouping='require_all'
+		restart_on='none'
+		type='service'>
+	    <service_fmri value='svc:/system/filesystem/local' />
+	</dependency>
+
+	<!-- XXX:
+
+	    The location and name of the start method are still up in the air.
+	    The choice below is just a first guess at something suitable.  We
+	    really ought to rethink the dist and lib names and contents; the
+	    exec method really ought to end up living in a directory named
+	    "lib".  Right now, the dist directory contains just the jar files
+	    for Celeste and its clients; instead, those ought to be placed
+	    into a (new) dist/lib directory and other artifacts belonging to a
+	    binary distribution (e.g., the existing bin directory) ought to be
+	    placed alongside it.  Stated differently, dist ought to become the
+	    root of a layout exactly matching what would be installed from a
+	    distribution.
+
+        -->
+	<!-- The %{gateway} token comes last, because it's the only one that
+	     might have an empty string as its value, and positioning it
+	     there avoids parsing problems in the start script. -->
+	<exec_method
+		type='method'
+		name='start'
+		exec='/opt/celeste/dist/celeste-exec-start
+		    %{enable_jmx} %{jmx_password_file} %{jmx_port}
+		    %{logging_config} %{number_of_nodes} %{spool_root}
+		    %{use_processes} %{use_ssl} %{gateway}'
+		timeout_seconds='60'>
+	    <method_context>
+		<method_credential user='root' group='root' />
+	    </method_context>
+	</exec_method>
+
+	<exec_method
+		type='method'
+		name='stop'
+		exec=':kill'
+		timeout_seconds='60'>
+	    <method_context>
+		<method_credential user='root' group='root' />
+	    </method_context>
+	</exec_method>
+
+	<!-- Configuration properties:
+
+	    Some properties are common to all the instances defined in this
+	    manifest (but could potentially differ for other instances).
+	    Others are instance-specific.  However, we supply definitions for
+	    all of them at the service level, so that it's not necessary to
+	    worry about whether or not a given property has been defined for
+	    a particular instance.
+
+	    enable_jmx		whether JMX monitoring and management should
+				be enabled for the JVM(s) running a given
+				instance
+
+	    gateway		a hostname:port pair naming a node in the
+				Celeste confederation that the node(s) in the
+				given instance is(are) to join; the hostname
+				must be resolvable on the local system
+
+				XXX: specified as an astring because the DTD
+				     doesn't include a more specific type; it
+				     has hostnames, but not with ports
+				     appended.  Well, I suppose we could
+				     require it to be a URI, but it's not
+				     clear what the scheme part should be.
+
+	    jmx_password_file	the location of the password file governing
+				JMX remote monitoring
+
+				relevant only if enable_jmx is true
+
+	    jmx_port		the port number a JMX management agent is to
+				use to communicate with the first JVM
+				associated with a given instance (subsequent
+				JVMs get successive port numbers)
+
+				relevant only if enable_jmx is true
+
+	    logging_config	the path name of a java.util.logging
+				configuration file specifying which events are
+				to be logged
+
+	    number_of_nodes	the number of nodes to host with a given
+				service instance
+
+	    spool_root		the location in the local file system name
+				space where Celeste will store its portion of
+				the Celeste confederation's overall object
+				store (note that the dependencies stated
+				above assume that this location is in a local
+				file system)
+
+	    use_processes	if true, use one JVM per node for a given
+				instance; otherwise use a single JVM for all
+				the instance's nodes
+
+            use_ssl             if true, use SSL connections betweeen
+                                celeste nodes; otherwise, use plain sockets.
+
+	-->
+
+	<property_group name='application' type='application'>
+
+	    <propval name='enable_jmx' type='boolean' value='false'/>
+
+	    <!-- Supply a default "no gateway" value. -->
+	    <propval name='gateway' type='astring' value=''/>
+
+	    <propval name='jmx_password_file' type='astring'
+		value='/opt/celeste/etc/jmxremote.password.template'/>
+
+	    <propval name='jmx_port' type='integer' value='16000'/>
+
+	    <propval name='logging_config' type='astring'
+		value='/opt/celeste/etc/logging.properties'/>
+
+	    <!-- There's no good default to choose here; it depends on the
+	         rest of the configuration. -->
+	    <propval name='number_of_nodes' type='integer' value='6'/>
+
+	    <!-- Suitable for experimental deployments; production
+	         deployments should choose a location that persists across
+		 reboots. -->
+	    <propval name='spool_root' type='astring' value='/tmp/celeste'/>
+
+	    <propval name='use_processes' type='boolean' value='false'/>
+
+	    <propval name='use_ssl' type='boolean' value='true'/>
+
+	</property_group>
+
+	<!--  Instances:
+
+	    This manifest defines three instances, one that's intended to
+	    start a new Celeste confederation with six processes from
+	    scratch, one that is the initial node for a confederation,and
+	    one that joins an existing confederation.  The last two are
+	    distingushed by the "gateway" property; the "incremental-node"
+	    instance needs to define this property to name a node (and
+	    port) that's part of the confederation to join.
+
+	-->
+
+	<instance name='standalone' enabled='false'>
+
+	    <property_group name='application' type='application'>
+		<propval name='number_of_nodes' type='integer'
+		    value='6'/>
+		<propval name='use_processes' type='boolean'
+		    value='true'/>
+	    </property_group>
+
+	</instance>
+
+	<instance name='incremental-node' enabled='false'>
+
+	    <property_group name='application' type='application'>
+		<propval name='number_of_nodes' type='integer'
+		    value='1'/>
+		<propval name='gateway' type='astring'
+		    value='celeste.sunlabs.com:12001'/>
+	    </property_group>
+
+	</instance>
+
+	<instance name='initial-node' enabled='false'>
+
+	    <property_group name='application' type='application'>
+		<propval name='number_of_nodes' type='integer'
+		    value='1'/>
+		<propval name='gateway' type='astring' value=''/>
+	    </property_group>
+
+	</instance>
+
+	<!-- Celeste is still very much subject to incompatible change. -->
+	<stability value='Unstable' />
+
+	<template>
+	    <common_name>
+		<loctext xml:lang='C'>Project Celeste file store</loctext>
+	    </common_name>
+	    <documentation>
+		<doc_link
+			name='Project Celeste home page'
+			uri='http://www.opensolaris.org/os/project/celeste' />
+	    </documentation>
+	</template>
+
+    </service>
+
+</service_bundle>

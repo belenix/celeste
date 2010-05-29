@@ -1,0 +1,84 @@
+#!/bin/bash 
+# Copyright 2007-2009 Sun Microsystems, Inc. All Rights Reserved.
+# DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER
+# 
+# This code is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License version 2
+# only, as published by the Free Software Foundation.
+# 
+# This code is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+# General Public License version 2 for more details (a copy is
+# included in the LICENSE file that accompanied this code).
+# 
+# You should have received a copy of the GNU General Public License
+# version 2 along with this work; if not, write to the Free Software
+# Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
+# 02110-1301 USA
+# 
+# Please contact Sun Microsystems, Inc., 16 Network Circle, Menlo
+# Park, CA 94025 or visit www.sun.com if you need additional
+# information or have any questions.
+
+CELESTEHOME=${CELESTEHOME:=/opt/celeste}
+if [[ -x ./bin/celeste && -x ./bin/celestesh ]]; then
+        CELESTEHOME=`pwd`
+fi
+
+replicationParams="AObject.Replication.Store=3;VObject.Replication.Store=3;BObject.Replication.Store=3;AObjectVersionMap.Params=1,1"
+credentialReplicationParams="Credential.Replication.Store=2"
+nameSpaceName=celestesh-ns
+nameSpacePassword=nspw
+user1=user1
+user2=user2
+userPassword=myPass
+ownerName=celestesh-Owner
+ownerPassword=ownerpw
+groupName=celestesh-Group
+groupPassword=grouppw
+fileName=celestesh-file
+deleteToken=deleteMe
+blockSize=`expr 8 \* 1024 \* 1024`
+timeToLive=120
+
+set -x
+${CELESTEHOME}/bin/celestesh new-namespace   ${nameSpaceName} ${nameSpacePassword} "${replicationParams}"
+${CELESTEHOME}/bin/celestesh new-credential  ${user1} ${userPassword} "${credentialReplicationParams}"
+${CELESTEHOME}/bin/celestesh new-credential  ${user2} ${userPassword} "${credentialReplicationParams}"
+${CELESTEHOME}/bin/celestesh new-credential  ${groupName} ${groupPassword} "${credentialReplicationParams}"
+
+${CELESTEHOME}/bin/celestesh create-file     ${user1} ${userPassword} ${nameSpaceName} ${nameSpacePassword} ${fileName} ${user1} ${groupName} ${deleteToken} "${replicationParams}" ${blockSize} ${timeToLive}
+# Stack up some locks with the token "token"
+${CELESTEHOME}/bin/celestesh lock-file       ${user1} ${userPassword} ${nameSpaceName} ${fileName} token
+${CELESTEHOME}/bin/celestesh lock-file       ${user1} ${userPassword} ${nameSpaceName} ${fileName} token
+${CELESTEHOME}/bin/celestesh lock-file       ${user1} ${userPassword} ${nameSpaceName} ${fileName} token
+
+echo Must display WRITE object-id token 3
+${CELESTEHOME}/bin/celestesh inspect-lock    ${user1} ${userPassword} ${nameSpaceName} ${fileName}
+
+# Must display Celeste.Lock.Count=3
+${CELESTEHOME}/bin/celestesh inspect-file    ${user1} ${userPassword} ${nameSpaceName} ${fileName} null - -
+
+${CELESTEHOME}/bin/celestesh unlock-file     ${user1} ${userPassword} ${nameSpaceName} ${fileName} token
+
+echo  Must fail with FileLocked mismatched tokens exception
+${CELESTEHOME}/bin/celestesh unlock-file     ${user1} ${userPassword} ${nameSpaceName} ${fileName} token2
+
+${CELESTEHOME}/bin/celestesh unlock-file     ${user1} ${userPassword} ${nameSpaceName} ${fileName}
+
+echo Must display WRITE object-id token 2
+${CELESTEHOME}/bin/celestesh inspect-lock    ${user1} ${userPassword} ${nameSpaceName} ${fileName}
+
+${CELESTEHOME}/bin/celestesh unlock-file     ${user1} ${userPassword} ${nameSpaceName} ${fileName} token
+
+echo Must say "no lock"
+${CELESTEHOME}/bin/celestesh inspect-lock    ${user1} ${userPassword} ${nameSpaceName} ${fileName}
+
+${CELESTEHOME}/bin/celestesh lock-file       ${user1} ${userPassword} ${nameSpaceName} ${fileName} token
+${CELESTEHOME}/bin/celestesh lock-file       ${user1} ${userPassword} ${nameSpaceName} ${fileName} token
+${CELESTEHOME}/bin/celestesh unlock-file     ${user2} ${userPassword} ${nameSpaceName} ${fileName} 
+${CELESTEHOME}/bin/celestesh unlock-file     ${user1} ${userPassword} ${nameSpaceName} ${fileName} token
+${CELESTEHOME}/bin/celestesh unlock-file     ${user1} ${userPassword} ${nameSpaceName} ${fileName} token
+
+exit 0

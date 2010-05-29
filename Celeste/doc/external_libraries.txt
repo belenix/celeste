@@ -1,0 +1,26 @@
+
+The lib directory holds external jar files used by the
+Celeste project. 
+
+Contents:
+classdepandjar.jar      ClassDepAndJar task
+junit-4.1-jar            JUnit jar file
+findbugs-1.1.3           findbugs lint-like tool
+
+Notes:
+ClassDepAndJar comes from the Jini Rio project and can
+be downloaded from https://classdepandjar.dev.java.net .
+The jar file includes the Jini tool ClassDep, which 
+analyzes classes to find other classes on which they
+depend.
+
+JUnit jar file comes from junit.org.
+Documentation can be found at http://junit.sourceforge.net/javadoc_40/index.html
+
+Documentation for ClassDepAndJar is scarce; there is
+a little bit of info at the URL above.  The Jini javadoc
+for com.sun.jini.tool.ClassDep has more information on
+ClassDep itself.
+
+Findbugs can be found at http://findbugs.sourceforge.net/
+There's documentation for it there, as well as doc for the Ant task.

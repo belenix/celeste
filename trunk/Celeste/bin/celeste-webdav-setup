@@ -1,0 +1,55 @@
+#!/bin/bash -e
+# Copyright 2007-2008 Sun Microsystems, Inc. All Rights Reserved.
+# DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER
+# 
+# This code is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License version 2
+# only, as published by the Free Software Foundation.
+# 
+# This code is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+# General Public License version 2 for more details (a copy is
+# included in the LICENSE file that accompanied this code).
+# 
+# You should have received a copy of the GNU General Public License
+# version 2 along with this work; if not, write to the Free Software
+# Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
+# 02110-1301 USA
+# 
+# Please contact Sun Microsystems, Inc., 16 Network Circle, Menlo
+# Park, CA 94025 or visit www.sun.com if you need additional
+# information or have any questions.
+
+CELESTEHOME=${CELESTEHOME:=/opt/celeste}
+if [[ -x bin/celeste && -x bin/celestefs ]]; then
+	CELESTEHOME=`pwd`
+fi
+
+if [ $# = 0 ] ; then
+        echo usage: $0 id-name file-system-name
+        exit 1
+fi
+
+id=$1
+fs=$2
+
+replicationParams="AObject.Replication.Store=3;VObject.Replication.Store=3;BObject.Replication.Store=3"
+myId=${id}
+myPassword=${id}
+fileSystemName=${fs}
+fileSystemPassword=${fs}
+deleteToken=deleteMe
+${CELESTEHOME}/bin/celestefs           --id ${myId} --password ${myPassword} mkid
+${CELESTEHOME}/bin/celestefs           --id ${myId} --password ${myPassword} mkfs ${fileSystemName} ${fileSystemPassword}
+${CELESTEHOME}/bin/celestefs           --id ${myId} --password ${myPassword} create --attr "ContentType=text/plain" --attr "ReplicationParameters=${replicationParams}" /${fileSystemName}/readme.txt
+echo "Welcome to the Celeste WebDAV interface." | ${CELESTEHOME}/bin/celestefs --id ${myId} --password ${myPassword} pwrite /${fileSystemName}/readme.txt 0
+
+${CELESTEHOME}/bin/celestefs           --id ${myId} --password ${myPassword} mkdir --attr "ReplicationParameters=${replicationParams}" /${fileSystemName}/Documents
+${CELESTEHOME}/bin/celestefs           --id ${myId} --password ${myPassword} create --attr "ReplicationParameters=${replicationParams}" /${fileSystemName}/Documents/myId
+echo "id=${id} fs=${fs}" | ${CELESTEHOME}/bin/celestefs --id ${myId} --password ${myPassword} pwrite /${fileSystemName}/Documents/myId
+${CELESTEHOME}/bin/celestefs           --id ${myId} --password ${myPassword} ls -l /${fileSystemName}/
+
+echo The WebDAV resource is now available at: http://${myId}@127.0.0.1:8080/${fileSystemName}
+
+exit 0

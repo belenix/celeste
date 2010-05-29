@@ -1,0 +1,97 @@
+#!/bin/bash -e
+# Copyright 2007-2008 Sun Microsystems, Inc. All Rights Reserved.
+# DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER
+# 
+# This code is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License version 2
+# only, as published by the Free Software Foundation.
+# 
+# This code is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+# General Public License version 2 for more details (a copy is
+# included in the LICENSE file that accompanied this code).
+# 
+# You should have received a copy of the GNU General Public License
+# version 2 along with this work; if not, write to the Free Software
+# Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
+# 02110-1301 USA
+# 
+# Please contact Sun Microsystems, Inc., 16 Network Circle, Menlo
+# Park, CA 94025 or visit www.sun.com if you need additional
+# information or have any questions.
+
+CELESTEHOME=${CELESTEHOME:=/opt/celeste}
+if [[ -x bin/celeste && -x bin/celestesh ]]; then
+        CELESTEHOME=`pwd`
+fi
+
+JAVA=${JAVA:=/usr/bin/java}
+export JVMOPTS="-Xms1024m -Xmx1024m"
+
+file=/tmp/100mb
+
+if ! test -e /tmp/100mb ; then
+	${JAVA} ${JVMOPTS} -jar dist/sortgen.jar 1000000 > /tmp/100mb
+#	dd if=/dev/urandom of=/tmp/100mb bs=1024 count=102400
+fi
+replicationParams="AObject.Replication.Store=2;VObject.Replication.Store=2;BObject.Replication.Store=2"
+credentialReplicationParams="Credential.Replication.Store=2"
+nameSpaceName=example1nameSpace
+nameSpacePassword=asdf
+clientName=example1client
+nameSpaceName=example3nameSpace
+nameSpacePassword=asdf
+clientName=example1client
+clientPassword=clientPassword
+ownerName=example1owner
+ownerPassword=owner
+groupName=example1group
+groupPassword=group
+fileName=example1data
+deleteToken=delete
+blockSize=`expr 8 \* 1024 \* 1024`
+timeToLive=86400
+signWrites="--signed-writes"
+
+set -x
+${CELESTEHOME}/bin/celestesh new-credential  ${nameSpaceName} ${nameSpacePassword} ${replicationParams}
+${CELESTEHOME}/bin/celestesh new-credential  ${ownerName} ${ownerPassword} ${replicationParams}
+${CELESTEHOME}/bin/celestesh new-credential  ${groupName} ${groupPassword} ${replicationParams}
+${CELESTEHOME}/bin/celestesh new-credential  ${clientName} ${clientPassword} ${replicationParams}
+${CELESTEHOME}/bin/celestesh read-credential ${clientName} /tmp/cred-d /tmp/cred-m
+
+${CELESTEHOME}/bin/celestesh create-file     ${signWrites} ${clientName} ${clientPassword} ${nameSpaceName} ${nameSpacePassword} ${fileName} ${ownerName} ${groupName} ${deleteToken} ${replicationParams} ${blockSize} ${timeToLive} /tmp/create-d /tmp/create-m
+
+${CELESTEHOME}/bin/celestesh write           ${clientName} ${clientPassword} ${nameSpaceName} ${fileName} 0 ${file}        /tmp/d00 /tmp/m00
+${CELESTEHOME}/bin/celestesh read            ${clientName} ${clientPassword} ${nameSpaceName} ${fileName} 4 0 -1             /tmp/d01
+cmp /tmp/d01 ${file}
+
+${CELESTEHOME}/bin/celestesh set-file-owner-and-group ${clientName} ${clientPassword} ${nameSpaceName} ${fileName} ${ownerName} ${groupName} /tmp/d02 /tmp/m02
+${CELESTEHOME}/bin/celestesh inspect-file    ${clientName} ${clientPassword} ${nameSpaceName} ${fileName} null  /tmp/d02 /tmp/m02
+
+${CELESTEHOME}/bin/celestesh set-file-length ${clientName} ${clientPassword} ${nameSpaceName} ${fileName} 100              /tmp/d03 /tmp/m03
+${CELESTEHOME}/bin/celestesh read            ${clientName} ${clientPassword} ${nameSpaceName} ${fileName} 4 0 -1           /tmp/d03
+cmp -n 100 /tmp/d03 ${file}
+
+${CELESTEHOME}/bin/celestesh set-file-length ${clientName} ${clientPassword} ${nameSpaceName} ${fileName} 200              /tmp/d04 /tmp/m04
+${CELESTEHOME}/bin/celestesh read            ${clientName} ${clientPassword} ${nameSpaceName} ${fileName} 4 0 -1           /tmp/d05
+
+${CELESTEHOME}/bin/celestesh set-file-length ${clientName} ${clientPassword} ${nameSpaceName} ${fileName} 100              /tmp/d06 /tmp/m06
+${CELESTEHOME}/bin/celestesh read            ${clientName} ${clientPassword} ${nameSpaceName} ${fileName} 4 0 -1           /tmp/d07
+cmp -n 100 /tmp/d07 ${file}
+
+${CELESTEHOME}/bin/celestesh set-file-length ${clientName} ${clientPassword} ${nameSpaceName} ${fileName} 0                /tmp/d08 /tmp/m08
+${CELESTEHOME}/bin/celestesh read            ${clientName} ${clientPassword} ${nameSpaceName} ${fileName} 4 0 -1           /tmp/d09
+cmp -n 0 /tmp/d09 ${file}
+
+${CELESTEHOME}/bin/celestesh write           ${clientName} ${clientPassword} ${nameSpaceName} ${fileName} 0 ${file}        /tmp/d10 /tmp/m10
+${CELESTEHOME}/bin/celestesh read            ${clientName} ${clientPassword} ${nameSpaceName} ${fileName} 4 0 -1           /tmp/d11
+
+${CELESTEHOME}/bin/celestesh write           ${clientName} ${clientPassword} ${nameSpaceName} ${fileName} 0 ${file}        /tmp/d12 /tmp/m12
+${CELESTEHOME}/bin/celestesh read            ${clientName} ${clientPassword} ${nameSpaceName} ${fileName} 4 0 -1           /tmp/d13
+
+${CELESTEHOME}/bin/celestesh delete-file     ${clientName} ${clientPassword} ${nameSpaceName} ${fileName} ${deleteToken} 900  /tmp/d14 /tmp/m14
+
+${CELESTEHOME}/bin/celestesh read            ${clientName} ${clientPassword} ${nameSpaceName} ${fileName} 4 0 -1             /tmp/d15
+${CELESTEHOME}/bin/celestesh write           ${clientName} ${clientPassword} ${nameSpaceName} ${fileName} 0 ${file}        /tmp/d16 /tmp/m16

@@ -1,0 +1,80 @@
+#!/bin/bash -e
+# Copyright 2007-2008 Sun Microsystems, Inc. All Rights Reserved.
+# DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER
+# 
+# This code is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License version 2
+# only, as published by the Free Software Foundation.
+# 
+# This code is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+# General Public License version 2 for more details (a copy is
+# included in the LICENSE file that accompanied this code).
+# 
+# You should have received a copy of the GNU General Public License
+# version 2 along with this work; if not, write to the Free Software
+# Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
+# 02110-1301 USA
+# 
+# Please contact Sun Microsystems, Inc., 16 Network Circle, Menlo
+# Park, CA 94025 or visit www.sun.com if you need additional
+# information or have any questions.
+
+CELESTEHOME=${CELESTEHOME:=/opt/celeste}
+if [[ -x ./bin/celeste && -x ./bin/celestesh ]]; then
+        CELESTEHOME=`pwd`
+fi
+
+replicationParams="AObject.Replication.Store=3;VObject.Replication.Store=3;BObject.Replication.Store=3;AObjectVersionMap.Params=1,1"
+credentialReplicationParams="Credential.Replication.Store=2"
+nameSpaceName=celestesh-ns
+nameSpacePassword=nspw
+clientName=celestesh-id
+clientPassword=myPass
+ownerName=celestesh-Owner
+ownerPassword=ownerpw
+groupName=celestesh-Group
+groupPassword=grouppw
+fileName=celestesh-file
+deleteToken=deleteMe
+blockSize=`expr 1 \* 1024 \* 1024`
+timeToLive=`expr 60 \* 60`
+
+set -x
+${CELESTEHOME}/bin/celestesh new-namespace  ${nameSpaceName} ${nameSpacePassword} "${replicationParams}"
+${CELESTEHOME}/bin/celestesh new-credential  ${ownerName} ${ownerPassword} "${credentialReplicationParams}"
+${CELESTEHOME}/bin/celestesh --verbose test -c         ${ownerName}
+${CELESTEHOME}/bin/celestesh new-credential  ${groupName} ${groupPassword} "${credentialReplicationParams}"
+${CELESTEHOME}/bin/celestesh new-credential  ${clientName} ${clientPassword} "${credentialReplicationParams}"
+
+${CELESTEHOME}/bin/celestesh create-file     ${clientName} ${clientPassword} ${nameSpaceName} ${nameSpacePassword} ${fileName} ${ownerName} ${groupName} ${deleteToken} "${replicationParams}" ${blockSize} ${timeToLive}
+${CELESTEHOME}/bin/celestesh --verbose test -e         ${clientName} ${clientPassword} ${nameSpaceName} ${fileName} 
+
+${CELESTEHOME}/bin/celestesh set-file-owner-and-group ${clientName} ${clientPassword} ${nameSpaceName} ${fileName} ${ownerName} ${groupName}
+
+echo "Hello World" | ${CELESTEHOME}/bin/celestesh write-file      ${clientName} ${clientPassword} ${nameSpaceName} ${fileName} 0 -
+${CELESTEHOME}/bin/celestesh read            ${clientName} ${clientPassword} ${nameSpaceName} ${fileName} 4 0 -1 -
+
+echo "" | ${CELESTEHOME}/bin/celestesh write-file      ${clientName} ${clientPassword} ${nameSpaceName} ${fileName} 5 -
+${CELESTEHOME}/bin/celestesh read            ${clientName} ${clientPassword} ${nameSpaceName} ${fileName} 4 0 -1 -
+
+${CELESTEHOME}/bin/celestesh set-file-length ${clientName} ${clientPassword} ${nameSpaceName} ${fileName} 6
+${CELESTEHOME}/bin/celestesh read            ${clientName} ${clientPassword} ${nameSpaceName} ${fileName} 4 0 -1 -
+
+${CELESTEHOME}/bin/celestesh inspect-file    ${clientName} ${clientPassword} ${nameSpaceName} ${fileName} null /tmp/clientMetadata /tmp/celesteMetadata
+
+${CELESTEHOME}/bin/celestesh set-file-length ${clientName} ${clientPassword} ${nameSpaceName} ${fileName} 10
+${CELESTEHOME}/bin/celestesh read            ${clientName} ${clientPassword} ${nameSpaceName} ${fileName} 4 0 -1 - | cat -v 
+
+echo "Hello Again" | ${CELESTEHOME}/bin/celestesh write-file      ${clientName} ${clientPassword} ${nameSpaceName} ${fileName} 0 -
+${CELESTEHOME}/bin/celestesh read            ${clientName} ${clientPassword} ${nameSpaceName} ${fileName} 4 0 -1 -
+
+echo "Do you like my hat?" | ${CELESTEHOME}/bin/celestesh write-file      ${clientName} ${clientPassword} ${nameSpaceName} ${fileName} 0 -
+${CELESTEHOME}/bin/celestesh read            ${clientName} ${clientPassword} ${nameSpaceName} ${fileName} 4 0 -1 -
+
+${CELESTEHOME}/bin/celestesh delete-file     ${clientName} ${clientPassword} ${nameSpaceName} ${fileName} ${deleteToken} 15
+
+echo The following command MUST fail.
+${CELESTEHOME}/bin/celestesh read            ${clientName} ${clientPassword} ${nameSpaceName} ${fileName} 4 0 -1 -
+echo "No, I do not." | ${CELESTEHOME}/bin/celestesh write-file      ${clientName} ${clientPassword} ${nameSpaceName} ${fileName} 0 -

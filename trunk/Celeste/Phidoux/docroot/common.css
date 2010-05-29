@@ -1,0 +1,19 @@
+@CHARSET "UTF-8";
+
+body {
+	font-family: sans-serif;
+	margin: 11% 11% 0 11%;
+}
+
+pre.code {
+	background-color: #A0A0A0;
+	padding: 1em;
+}
+	
+a.class {
+    font-family: monospace;
+}
+
+li {
+	margin-top: 1ex;
+}

@@ -1,0 +1,389 @@
+/*
+ * Copyright 2007-2008 Sun Microsystems, Inc. All Rights Reserved.
+ * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER
+ *
+ * This code is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2
+ * only, as published by the Free Software Foundation.
+ *
+ * This code is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ * General Public License version 2 for more details (a copy is
+ * included in the LICENSE file that accompanied this code).
+ *
+ * You should have received a copy of the GNU General Public License
+ * version 2 along with this work; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
+ * 02110-1301 USA
+ *
+ * Please contact Sun Microsystems, Inc., 16 Network Circle, Menlo
+ * Park, CA 94025 or visit www.sun.com if you need additional
+ * information or have any questions.
+ */
+body {
+	background-color: white;
+	color: black;
+	font-family: sans-serif, Helvetica;
+}
+
+button {
+	background-color: white;
+	color: black;
+	border: 3px outset grey;
+}
+
+table { 
+	border-spacing: 0px;
+	margin: 0;
+	padding: 0;
+}
+
+td { 
+	padding: 0;
+	margin: 0;
+}
+
+table.socket-cache {
+	background-color: white;
+	color: black;
+	font-size: x-small;
+	margin: 0;
+	padding: 0;
+	border-spacing: 3px;
+}
+
+table.socket-cache > tbody > tr:first-child > td {
+	border-bottom: 1px dotted black;
+}
+
+table.socket-cache td {
+	font-weight: normal;
+	text-align: center;
+	margin: 0px;
+	padding: 0px;
+}
+
+table.neighbour-map {
+	background: white;
+	color: black;
+	padding: 0px;
+	margin: 0px;
+}
+
+table.neighbour-map > tr > td {
+	padding: 0;
+	margin: 0;
+}
+
+table.neighbour-map-tabs caption {
+	background: white;
+	color: black;
+	text-align: left;
+	padding: 0;
+	margin: 0;
+}
+	
+table.neighbour-map-tabs {
+	background: white;
+	color: olive;
+	width: 100%;
+	border-top: 3px double gray;
+	margin: 0;
+	padding: 0;
+}
+
+table.neighbour-map-tabs td {
+	text-align: center;
+	border-left: 1px dotted black;
+	width: 10%;
+	padding: 0;
+	margin: 0;
+	border-bottom: 1px solid black;
+}
+
+table.neighbour-map-tabs td:first-child {
+	border-left: 0px dotted black;
+	padding: 0;
+	margin: 0;
+}
+
+table.neighbour-map-tabs td#active-tab {
+	background: #f0e0c0;
+	padding: 0;
+	margin: 0;
+	border-bottom: none;
+}
+
+table.neighbour-map-tabs a:visited,
+table.neighbour-map-tabs a:link {
+	color: black;
+}
+
+table.neighbour-map-pages {
+	color: black;
+	font-size: xx-small;
+	width: 100%;
+	padding: 0;
+	margin: 0;
+}
+
+table.neighbour-map-pages caption {
+	font-size: small;
+}
+
+table.neighbour-map-pages > tbody > tr > td {
+	border-left: 1px solid gray;
+	padding: 0;
+	margin: 0;
+}
+
+table.neighbour-map-pages > tbody > tr > td:first-child {
+	border-left: 0px solid transparent;
+	padding: 0;
+	margin: 0;
+}
+
+table.level {
+	border-collapse: collapse;
+	padding: 0;
+	margin: 0;
+	width: 100%;
+	font-size: small;
+	font-family: sans-serif;
+}
+
+table.level > caption {
+	border-bottom: 1px dashed gray;
+	background: #f0e0c0;
+}
+
+table.level > tr > td {
+	background-color: white;
+	color: black;
+	font-weight: normal;
+	text-align: left;
+	padding: 0;
+	margin: 0;
+}
+
+table.level tr > td { 
+	text-align: left;
+	font-family: sans-serif;
+	font-family: monospace;
+	font-size: x-small;
+	padding: 0 1em 0 0em;
+}
+
+table.level tr > td:first-child {
+	font-weight: bold;
+	font-size: small;
+	margin: 0;
+	padding: 0 0 0 0.5em;
+	width: 5em;
+}
+
+table.level > tr:first-child > td:first-child { 
+	border-bottom: 1px dashed black;
+	padding: 0;
+	margin: 0;
+}
+
+
+table.applications {
+	border: 3px ridge teal;
+}
+
+table.applications td {
+	background-color: white;
+	color: black;
+	border-top: 1px solid gray;
+	padding: 0.2em 0.5em 0.1em 0.5em;
+}
+
+table.applications tr:first-child > td {
+	font-style: italic; 
+	border-bottom: 1px solid black;
+	background-color: white;
+}
+
+table.applications tr.shade > td {
+	background-color: yellow;
+}
+
+table.node_properties {
+	border: 3px ridge teal;
+}
+
+table.node_properties td {
+	background-color: white;
+	color: black;
+	border-top: 1px solid gray;
+	padding: 0 .5em 0 .5em;
+}
+
+
+table.sockets {
+	border: 3px ridge teal;
+}
+
+table.sockets td {
+	background-color: white;
+	color: black;
+	border-top: 1px solid gray;
+	padding: 0 .5em 0 .5em;
+}
+
+table.object-store {
+	border: 3px double black;
+	width: 100%;
+	vertical-align: top;
+	border-collapse: collapse;
+	background: #e0f0e0;
+}
+
+table.object-store > caption {
+	text-align: left;
+	font-family: sans-serif;
+}
+
+table.object-store > tbody > tr >td {
+	vertical-align: top;
+	border-right: 3px double black;
+	width: 25%;
+}
+
+table.stored {
+	width: 100%;
+	background: #e0f0e0;
+	border-top: 3px double black;
+	vertical-align: top;
+	border-collapse: collapse;
+}
+
+table.stored td {
+	padding: 0 0 0 0.5em;
+	font-family: monospace;
+	font-size: small;
+}
+
+table.stored td + td + td {
+	font-family: sans-serif;
+}
+
+table.stored tr:first-child td {
+	border-bottom: 1px solid black;
+	font-family: sans-serif;
+}
+
+
+table.backpointers {
+	width: 100%;
+	background: #e0f0e0;
+	border-top: 3px double black;
+	vertical-align: top;
+	border-collapse: collapse;
+}
+
+table.backpointers tr:first-child td {
+	border: none;
+	border-bottom: 1px solid black;
+	font-family: sans-serif;
+}
+
+table.backpointers td:first-child {
+	//border:none;
+}
+
+table.backpointers td {
+	border: 1px dotted black;
+	vertical-align: top;
+	font-family: monospace;
+	padding: 0 0 0 0.5em;
+	font-size: small;
+}
+
+table.backpointers td.root {
+	color: red;
+}
+
+table.root {
+	vertical-align: top;
+	border-collapse: collapse;
+}
+
+table.recorded td {
+	padding: 0 0 0 0.5em;
+}
+
+
+table.DOLRMessage {
+	border: 1px solid black;
+}
+
+table.DOLRMessage caption {
+	text-align: left;
+	font-weight: bold;
+}
+
+table.DOLRMessage tr > td:first-child {
+	font-style: italic;
+	width: 7em;
+}
+
+table.DOLRMessage td {
+	padding: 0.25em;
+}
+
+table.controls {
+	border: 3px ridge teal;
+	width: 100%;
+	height: 100%;
+}
+
+button {
+	text-align: center;
+	font-size: x-small;
+}
+
+button[value="on"] {
+	background-color: #800000;
+	color: #ff6060;
+}
+
+button[value="on"]:hover {
+	background-color: #00f000;
+	color: white;
+}
+
+button[value="off"] {
+	background-color: green;
+	color: #00ff00;
+}
+
+button[value="off"]:hover {
+	color: white;
+}
+
+.toggle-button {
+	font-size: xx-small;
+	background: #000080;
+	color: #f0f080;
+	border: 2px outset gray;
+	padding: 0 0.5em 0 0.5em;
+	text-decoration: none;
+}
+
+.toggle-button.on {
+	background: #008000;
+	color: #40ff40;
+}
+	
+.toggle-button.off {
+	background: #b00000;
+	color: white;
+}
+
+.toggle-button.off:hover, .toggle-button-off:hover {
+	background: red;
+}

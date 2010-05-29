@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+<link rel="stylesheet" href="common.css" type="text/css" media="screen" /> 
+<title>Insert title here</title>
+</head>
+<body>
+<img src="logo.png" style="float: left;"/>
+<p>Welcome to the Phidoux WebDAV server.</p>
+<p>
+Phidoux is an embeddeable WebDAV server that can provide WebDAV level-1, level-2, and level-3 interaction with your application.
+The application that is displaying this web page is a tiny example.
+</p>
+<p>
+To use this server in your application, you must address three components, either by implementing them, or using the default instances already available.
+<ol>
+<li>The main <a href="http://java.sun.com/javase/6/docs/api/java/nio/channels/ServerSocketChannel.html?is-external=true">ServerSocketChannel</a> accept loop.
+<p>This consists of iteratively accepting inbound connection requests and constructing a new instance of <code>HTTPServer</code> to handle each one.
+   Once the <code>HTTPServer</code> instance is created, it must be configured and finally started directly or placed in a thread pool for execution.
+</p>
+</li>
+<li>Each server manages one or more URL namespaces.
+    Each URL namespace is handled by a corresponding instance of <a class="class" href="javadoc/sunlabs/asdf/web/http/HTTP.NameSpace.html">HTTP.NameSpace</a></li>
+<li>A class implementing the <a class="class" href="javadoc/sunlabs/asdf/web/http/HTTP.Backend.html">HTTP.Backend</a>
+    interface which connects the server to the repository of the resources provided by your application.</li>
+<li>A class implementing the <a class="class" href="javadoc/sunlabs/asdf/web/http/HTTP.Resource.html">HTTP.Resource</a> interface and which implements the
+    specific behaviour of the resources provided by the backend. </li>
+</ol>
+</p>
+
+<p>
+A simple example:
+<pre class="code">
+<b>WebDAV.Backend backend = new FileBackend("docroot/");
+            
+ while (true) {
+   SocketChannel socketChannel = serverSocketChannel.accept();
+   Socket socket = socketChannel.socket();
+   socket.setSoTimeout(clientTimeOutMillis);
+   socket.setReceiveBufferSize(8192);
+   socket.setSendBufferSize(8192);
+
+   HTTPServer server = new HTTPServer(socketChannel);
+   server.setTrace(true);
+   HTTP.NameSpace nameSpace = new WebDAVNameSpace(server, backend);
+
+   server.addNameSpace(new URI("/"), nameSpace);
+   server.setLogger(Logger.getLogger(WebDAVServerMain.class.getName()));
+   server.start();
+ }</b>
+</pre>
+</p>
+</body>
+</html>

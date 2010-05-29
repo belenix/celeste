@@ -1,0 +1,78 @@
+#!/bin/bash
+# Copyright 2007-2008 Sun Microsystems, Inc. All Rights Reserved.
+# DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER
+# 
+# This code is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License version 2
+# only, as published by the Free Software Foundation.
+# 
+# This code is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+# General Public License version 2 for more details (a copy is
+# included in the LICENSE file that accompanied this code).
+# 
+# You should have received a copy of the GNU General Public License
+# version 2 along with this work; if not, write to the Free Software
+# Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
+# 02110-1301 USA
+# 
+# Please contact Sun Microsystems, Inc., 16 Network Circle, Menlo
+# Park, CA 94025 or visit www.sun.com if you need additional
+# information or have any questions.
+# This is the AVGateway run-time configuration script.
+#
+# This script just emits lines that are evaluated by the AVGateway
+# start/stop/restart script to set variables and control features.
+#
+# This script is sourced by the celeste-browser start/stop/restart script
+# to set variables and control features.  It expects the config_key
+# shell variable to have been set to a value naming the configuration
+# of interest.  (The invoking script currently uses hostnames as values
+# for this variable.)
+#
+# Variables are:
+#	java_options
+#	celeste_client_port
+#	celesteBrowser_log
+#
+case $config_key in
+    sml-grid-01)
+	java_options="-Djava.util.logging.config.file=${CELESTEHOME}/etc/logging.properties"
+	celesteBrowser_log="/tmp/celeste-browser.log"
+	;;
+
+    sml-grid-02|sml-grid-03|sml-grid-04|sml-grid-05|sml-grid-06)
+	celesteBrowser_log="/tmp/celeste-browser.log"
+	java_options="-Djava.util.logging.config.file=${CELESTEHOME}/etc/logging.properties"
+	;;
+
+    h19-880a)
+	celesteBrowser_log="/tmp/celeste-browser.log"
+	java_options="-Djava.util.logging.config.file=${CELESTEHOME}/etc/logging.properties"
+	;;
+
+    h19-880b|gty-4900a|gty-4900b|cp0|h10-890-2)
+	celesteBrowser_log="/tmp/celeste-browser.log"
+	java_options="-Djava.util.logging.config.file=${CELESTEHOME}/etc/logging.properties"
+	;;
+
+    asdf)
+	#
+	# Try to avoid ports (starting at 16000) that Celeste processes use.
+	#
+	jmx_port=16099
+	celesteBrowser_log="/tmp/celeste-browser.log"
+	java_options="-ea -Djava.util.logging.config.file=${CELESTEHOME}/etc/logging.properties"
+	other_options="--log /tmp/http.log"
+	;;
+
+    *)
+	#
+	# Try to avoid ports (starting at 16000) that Celeste processes use.
+	#
+	jmx_port=16099
+	celesteBrowser_log="/tmp/celeste-browser.log"
+	java_options="-ea -Djava.util.logging.config.file=${CELESTEHOME}/etc/logging.properties"
+	;;
+esac

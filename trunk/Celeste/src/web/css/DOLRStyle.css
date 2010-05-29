@@ -1,0 +1,523 @@
+/*
+ * Copyright 2007-2008 Sun Microsystems, Inc. All Rights Reserved.
+ * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER
+ *
+ * This code is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2
+ * only, as published by the Free Software Foundation.
+ *
+ * This code is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ * General Public License version 2 for more details (a copy is
+ * included in the LICENSE file that accompanied this code).
+ *
+ * You should have received a copy of the GNU General Public License
+ * version 2 along with this work; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
+ * 02110-1301 USA
+ *
+ * Please contact Sun Microsystems, Inc., 16 Network Circle, Menlo
+ * Park, CA 94025 or visit www.sun.com if you need additional
+ * information or have any questions.
+ */
+body {
+/*	background-color: #afb7af;*/
+/*	background-color: white;*/
+	color: white;
+	background-color: black;
+	font-family: serif, Helvetica;
+	padding: 0 1em 0 1em;
+}
+
+/*
+ * Miscellaneous short class definitions
+ */
+.objectId {
+    font-family: monospace;
+}
+
+button {
+	border: 3px outset gray;
+}
+
+table { 
+	border-spacing: 0px;
+	margin: 0;
+	padding: 0;
+}
+
+caption {
+	text-align: left;
+	font-weight: bold;
+	background: none #8090A0;
+	color: white;
+	padding: 0.125em 0.5em 0.125em 0.5em;
+}
+
+tr {
+	vertical-align: top;
+}
+
+td { 
+	padding: 0 1em 0 0;
+	margin: 0;
+}
+
+th {
+	text-align: left;
+}
+
+td.number {
+	text-align: right;
+}
+
+body > div > div > span {
+	color: white;
+}
+
+h1,h2,h3 {
+	color: white;
+}
+
+div.section {
+	padding: 1em;
+	margin: 0.5em;
+	background: none white;
+	color: black;
+	font-size: medium;
+	border: 1px solid #D4D4D4;
+}
+
+.section > table { 
+	border: 1px solid gray;
+	vertical-align: top;
+	border-collapse: collapse;
+	width: 100%;
+	height: 100%;
+	border-spacing: 0.5em;
+}
+
+.section > table > caption {
+	border: 1px solid #8080A0;
+	background: none #507C9A;
+	color: white;
+	margin: 0 0 0.5em 0;
+	text-align: left;
+	font-variant: small-caps;
+	font-weight: bold;
+	font-size: large;
+	padding: 2px;
+}
+
+.section > table > tbody > tr {
+	vertical-align: top;
+}
+
+
+h1.meta-info {
+	font-size: large;
+	font-weight: bold;
+}
+
+
+table.java {
+	font-size: x-small;
+	font-family: serif;
+	width: 100%;
+}
+
+table.java td {
+	padding: 0.25em 0 0 0;
+	text-align: left;
+}
+
+table.java td + td {
+	text-align: right;
+}
+
+
+table.socket-cache {
+	font-size: x-small;
+	font-family: serif;
+	width: 100%;
+}
+
+table.socket-cache td {
+	padding: 0.25em 0 0 0;
+	text-align: left;
+}
+
+table.socket-cache td + td {
+	text-align: right;
+}
+
+table.threads {
+	font-size: x-small;
+	font-family: serif;
+}
+
+table.threads tr.threadGroup td {
+	font-weight: bold;
+}
+
+table.threads td {
+	padding: 0 0.25em 0 0;
+}
+
+table.node-properties {
+	font-size: small;
+	margin: 0.5em;
+	font-size: xx-small;
+	vertical-align: top;
+	border-collapse: collapse;
+}
+
+table.node-properties > caption {
+	text-align: left;
+	font-weight: bold;
+	background: none #8090A0;
+	color: white;
+}
+
+table.node-properties > tbody > tr {
+	padding: 0.25em;
+}
+
+table.node-properties > tbody > td {
+	padding: 0 .5em 0 .5em;
+	text-align: right;
+}
+
+
+/* neighbourMap (as a sub-table called routingTable ) */
+
+table.neighbour-map {
+	width: 100%;
+	padding: 0;
+	margin: 0;
+	border-collapse: collapse;
+	font-size: small;
+	font-weight: bold;
+}
+
+	
+table.neighbour-map td {
+	border: 1px solid black;
+    font-family: monospace;
+	text-align: center;
+	padding: 0 0.25em 0 0.25em;
+	margin: 0;
+}
+
+table.neighbour-map a,
+table.neighbour-map a:visited,
+table.neighbour-map a:link {
+	color: inherit;
+}
+
+table.neighbour-map tr > td:first-child {
+	border: none;
+	font-weight: normal;
+}
+
+table.neighbour-map td.empty {
+
+}
+
+table.neighbour-map td.full {
+	color: white;
+	background: none #507C9A;
+}
+
+table.neighbourMap caption {
+	font-size: small;
+	font-family: sans-serif;
+}
+
+
+div.ancillary-information {
+	font-family: sans-serif;
+	font-size: small;
+	font-weight: normal;
+	width: 100%;
+	height: 4em;
+	margin: 0.5em 0 0 0;
+	padding: 0;
+	vertical-align: top;
+}
+
+.ancillary-information table {
+	vertical-align: top;
+}
+
+.ancillary-information table tr {
+	vertical-align: top;
+}
+
+.ancillary-information table td {
+	padding: 0 0.25em 0 0.25em;
+}
+
+/* applications */
+table#applications thead th {
+	background: none #D0D0D0;
+	padding: 0.2em 0.5em 0.1em 0.5em;
+	text-align: left;
+}
+
+table#applications td {
+	padding: 0.2em 0.5em 0.1em 0.5em;
+	border-top: 1px solid gray;
+}
+
+/* objectStore */
+table.objectStore {
+	border-collapse: collapse;
+	vertical-align: top;
+}
+
+table.neighbour-map tr {
+	vertical-align: top;
+}
+
+table.objectStore th {
+	text-align: left;
+	padding: 0.2em 0.3em 0.1em 0.3em;
+	background: none #D0D0D0;
+}
+
+table.objectStore td {
+	padding: 0.1em 0.3em 0.1em 0.3em;
+	vertical-align: top;
+	text-align: right;
+	font-family: monospace;
+	font-size: xx-small;
+}
+
+table.objectStore td.objectId {
+	text-align: left;
+}
+
+table.objectStore td.deleted {
+	text-decoration: line-through;
+}
+
+
+/*  objectPublishers */
+table.Publishers {
+	border-collapse: collapse;
+	width: 100%;
+	font-family: monospace;
+	font-size: x-small;
+}
+
+table.Publishers th {
+	text-align: left;
+	background: none #D0D0D0;	
+	padding: 0.2em 0.5em 0.1em 0.5em;
+	border-bottom: 1px solid black;
+}
+
+table.Publishers td.numeric {
+	text-align: right;
+}
+
+table.Publishers a.deleted {
+	text-decoration: line-through;
+}
+
+table.Publishers a,
+table.Publishers a:visited,
+table.Publishers a:link {
+	color: blue;
+}
+
+table.Publishers tr.barrier {
+	border-top: 1px solid black;
+}
+
+table.Publishers td.deleted {
+	text-decoration: line-through;
+}
+
+table.Publishers td.root,
+table.Publishers td.root a,
+table.Publishers td.root a:visited,
+table.Publishers td.root a:link {
+	color: red;
+}
+
+table.Publishers td:first-child + td + td, 
+table.Publishers td:first-child + td + td + td, 
+table.Publishers td:first-child + td + td + td + td {
+	text-align: right;
+} 
+
+/* DOLRMessage formatting */
+table.DOLRMessage {
+	border: 1px solid black;
+	border-collapse: collapse;
+	background: white;
+}
+
+table.DOLRMessage caption {
+	text-align: left;
+	font-weight: bold;
+}
+
+table.DOLRMessage tr > td:first-child {
+	font-style: italic;
+	font-weight: bold;
+	width: 7em;
+	vertical-align: top;
+}
+
+table.DOLRMessage td {
+	padding: 0.25em;
+	border: 1px solid black;
+	vertical-align: top;
+}
+
+table.DOLRMessage pre {
+	font-size: x-small;
+}
+
+table.DOLRMessage .metadata tr > td:first-child, table.DOLRMessage .metadata td {
+	border: none;
+	border-bottom: 1px dotted black;
+	background: yellow;
+}
+
+table.metadata {
+	
+}
+
+table.metadata td:first-child {
+	font-weight: bold;
+}
+
+div.copyright {
+	margin-top: 1em;
+	color: white;
+}
+
+div.release {
+	margin-top: 1em;
+	color: white;
+}
+
+tr.stripe td {
+	background: none #ecf3fe;
+}
+
+button {
+	text-align: center;
+	font-size: x-small;
+}
+
+button[value="on"] {
+	background-color: #800000;
+	color: #ff6060;
+}
+
+button[value="on"]:hover {
+	background-color: #00f000;
+	color: white;
+}
+
+button[value="off"] {
+	background-color: green;
+	color: #00ff00;
+}
+
+button[value="off"]:hover {
+	color: white;
+}
+
+.toggle-button {
+	font-family: sans-serif;
+	font-size: xx-small;
+	font-weight: bold;
+	background: #000080;
+	color: yellow !important;
+	border: 1px outset gray;
+	padding: 0 0.3em 0 0.3em;
+	text-decoration: none;
+	text-align: center;
+}
+
+.toggle-button.on {
+	background: #008000;
+	color: #40ff40;
+}
+	
+.toggle-button.off {
+	background: #b00000;
+	color: white;
+}
+
+.toggle-button.off:hover, .toggle-button-off:hover {
+	background: red;
+}
+
+a.bracket:before {
+	content: "[";
+	font-weight: bold;
+}
+
+a.bracket:after {
+	content: "]";
+	font-weight: bold;
+}
+
+table.FragmentMap td {
+	font-size: small;
+	color: red;
+}
+
+table.formattedData {
+	font-family: monospace;
+	font-size: xx-small;
+}
+table.formattedData td {
+	margin: 0;
+	padding: 1px;
+}
+
+/* application related stuff */
+/* this stuff should not be here because applications come and go.  they should have their own style embedded with them somehow */
+pre.logfile {
+	background: white;
+	color: black;
+	font-size: x-small;
+}
+
+table.controls td {
+	vertical-align: top;
+	padding: 0.125em 0.25em 0.125em 0;
+}
+
+.sunlabs_beehive_dolr_services_CensusDaemon_1 table.data > tbody > tr > td {
+	border-bottom: 1px solid black;
+	margin: 0 1em 0 0;
+	font-size: small;
+}
+
+.sunlabs_beehive_dolr_services_CensusDaemon_1 table.data > tbody > tr > td:first-child {
+	font-family: monospace;
+}
+
+.sunlabs_beehive_dolr_services_LinearizerApplication3_1 table {
+	border-collapse: collapse;
+}
+
+.sunlabs_beehive_dolr_services_LinearizerApplication3_1 table.data > tbody > tr > td {
+	padding: 0.5em 1em 0.5em 0;
+	border: 1px solid gray;
+	border-collapse: collapse;
+}
+
+.sunlabs_beehive_dolr_services_LinearizerApplication3_1 table.timestamp td {
+	padding: 0 0.5em 0 0.5em;
+}

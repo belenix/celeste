@@ -1,0 +1,49 @@
+This directory contains files pertinent to running Celeste as an SMF
+(Service Management Facility) service on Solaris (release 10 or higher)
+systems.  If you don't have access to a Solaris (or OpenSolaris)
+system, it's safe to ignore this directory.  (But don't remove it; the
+ant binary-dist target expects to find this directory and includes its
+contents in the distribution it constructs.)
+
+On Solaris systems, you can enable Celeste as an SMF service by:
+
+1)  # svccfg import <base-installation-directory>/svc/sunlabs-celeste.xml
+
+2)  Use svccfg to edit properties of the "standalone" or
+    "incremental-node" instance as needed to match local requirements.
+    The sunlabs-celeste.xml manifest file contains a description of the
+    properties the service uses.  (The "standalone" instance should be
+    usable for experimental deployments without requiring any property
+    edits.)
+
+    For example, let's suppose that you want to change the gateway that
+    the "incremental-node" instance uses.  Use svccfg to change the
+    value of the application/gateway property (I've reformatted the
+    setprop command line to split it into two lines for readability):
+
+    # svccfg
+    svc:> select application/celeste:incremental-node
+    svc:/application/celeste:incremental-node> listprop application/*
+    application/gateway          astring  celeste.sunlabs.com:12001
+    application/number_of_nodes  integer  1
+    svc:/application/celeste:incremental-node> setprop application/gateway = \
+	myhost.mydomain:12001
+    svc:/application/celeste:incremental-node> quit
+    #
+
+    (If you have multiple property changes to make, you can gather them
+    together into a command file and use svccfg's -f flag to run them
+    as a batch.)
+
+    To make the change applied above take effect, use svcadm to refresh
+    the service instance:
+
+    # svcadm refresh svc:/application/celeste:incremental-node
+
+    Now you're ready to proceed to step 3 to start the modified Celeste
+    service instance running.
+
+3)  # svcadm enable application/celeste:<name of the instance to start>
+
+See svccfg(1M), svcadm(1M), and svcs(1) for more information on
+managing SMF services.

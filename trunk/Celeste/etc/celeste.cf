@@ -1,0 +1,569 @@
+#
+# Copyright 2007-2009 Sun Microsystems, Inc. All Rights Reserved.
+# DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER
+# 
+# This code is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License version 2
+# only, as published by the Free Software Foundation.
+# 
+# This code is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+# General Public License version 2 for more details (a copy is
+# included in the LICENSE file that accompanied this code).
+# 
+# You should have received a copy of the GNU General Public License
+# version 2 along with this work; if not, write to the Free Software
+# Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
+# 02110-1301 USA
+# 
+# Please contact Sun Microsystems, Inc., 16 Network Circle, Menlo
+# Park, CA 94025 or visit www.sun.com if you need additional
+# information or have any questions.
+#
+
+#
+# This is the Celeste run-time configuration script.
+#
+# This script is sourced by the Celeste start/stop/restart script bin/celeste
+# to set variables, control features, and runtime options.
+#
+# It expects the "config_key" shell variable to have been set to a value
+# naming the configuration of interest.  (The invoking script currently uses
+# hostnames as values for this variable, but uses the CELESTECONFIG and
+# CELESTECONFIG_URL environment variables to override its default setting.)
+#
+# By the time this script is sourced, the "CELESTEHOME" shell variable will
+# have been set to the location of the directory where the Celeste runtime has
+# been installed.
+#
+# Variables are:
+#
+#   celeste_root        The location of the base directory of the Celeste
+#                       runtime to start.  Defaults to "${CELESTEHOME}" and
+#                       should not normally need to be changed.
+#
+#   spool_root          The location in the local file system name space of
+#                       this system's contribution to storage for the overall
+#                       Celeste object pool.  Defaults to "/tmp/celeste".
+#
+#   n_nodes             The number of Celeste nodes to configure for this
+#                       system.  Defaults to "6".
+#
+#   use_processes       If set to a non-empty value, run each of the nodes
+#                       dictated by the value of n_nodes in a separate
+#                       process; otherwise use a single JVM to run all of the
+#                       nodes.  Defaults to the empty string.
+#
+#   gateway             Determines whether or not the nodes running on this
+#                       system connect to an existing Celeste instance or form
+#                       their own.  If they are to connect to an existing
+#                       instance, should be of the form <hostname>:<port>
+#                       (where port typically will be 12001).  For a
+#                       standalone configuration, should be the empty string.
+#                       Defaults to a standalone configuration.
+#
+#   logging_config_file The location of the file that specifies the logging
+#                       configuration.  Defaults to
+#                       "${CELESTEHOME}/etc/logging.properties".
+#
+#   celeste_log         The location of the log file itself.  Defaults to
+#                       "/tmp/celeste-$config_key.log".
+#
+#   beehive_port        If non-empty, overrides the default Beehive port
+#                       number to use.  Defaults to the empty string.
+#
+#   celeste_client_port If non-empty, overrides the default Celeste client
+#                       port number to use.  Defaults to the empty string.
+#
+#   http_port           If non-empty, overrides the default HTTP port number
+#                       to use.  Defaults to the empty string.
+#
+#   node_address        If non-empty, overrides the default address used for
+#                       the node being started.  Defaults to the empty string.
+#
+#   connection_type     If non-empty, specifies whether connections among
+#                       nodes use SSL (the default, when this variable is left
+#                       empty) or not (when this variable has value "plain").
+#                       Defaults to the empty string.
+#
+#   enable_jmx          If set to "true", enables JMX monitoring and
+#                       management for the JVM(s) running these nodes.
+#                       Defaults to "false".
+#
+#   jmx_password_file   The location of the password file governing JMX remote
+#                       monitoring.  Relevant only if enable_jmx is true.
+#                       Defaults to
+#                       "${CELESTEHOME}/etc/jmxremote.password.template".
+#
+#   jmx_port            The port number a JMX management agent is to use to
+#                       communicate with the first JVM associated with a given
+#                       instance (subsequent JVMs get successive port
+#                       numbers).  Relevant only if enable_jmx is true.
+#                       Defaults to "16000".
+#   
+#   server_option       Set this to the empty string for Windows; otherwise,
+#                       leave it unchanged from its default value of
+#                       "-server".
+#
+#   heap_options        Should contain options instructing the JVM how to
+#                       configure the Java heap.  Defaults to
+#                       "-Xmx128m -Xms128m -XX:+UseParallelGC".
+#
+#   java_options        This variable is for things like setting Java
+#                       properties, enabling assertions, and so on.  Defaults
+#                       to enabling assertions:  "-ea".
+#
+#   additional_options  Options directed at Celeste itself that aren't
+#                       covered by anything mentioned above, for example,
+#                       "--delay-time 15".  Defaults to the empty string.
+#
+# In addition to the variables above, you can specify variables that correlate
+# configurations on distinct systems.  Scripts such as test/regression/nightly
+# use these variables to form multi-system Celeste confederations (using ssh
+# under the covers to initiate startup on remote systems).
+#
+#   additional_nodes    This variable defaults to the empty string but can be
+#                       set to a space-separated list of system names for
+#                       other systems where Celeste should be started and
+#                       join the Celeste instance running locally.  The
+#                       configuration for each such system should set the
+#                       gateway variable to name the system running Celeste
+#                       locally.
+#
+#   celeste_home        This variable defaults to the empty string but can be
+#                       set to the absolute path name of the location on this
+#                       system of the trunk directory of a Celeste source work
+#                       space.  (The test/regression/nightly script uses this
+#                       value to locate its counterpart on a remote system.)
+#
+# Finally, a configuration can override the specific test that
+# test/regression/nightly performs by setting the variable below.
+#
+#   nightly_test_cmd    This variable should contain the initial part of a
+#                       command line that has nightly start a test.  The
+#                       script completes the command line by appending a
+#                       suffix specifying where output should go, so this
+#                       variable should contain everything up to that point.
+#                       The default value is the emtpy string, which instructs
+#                       the script to run a default test.  A sample value
+#                       overrding the default is:
+#                           bin/celeste-profiler create:1,35,1,20,
+#                       (As described above, it omits the output designator
+#                       that celeste-profiler expects.)
+#
+
+case $config_key in
+    sml-grid-09|sml-proj-01)
+	n_nodes=10
+	JAVAHOME=/usr/jdk/jdk1.6.0_12
+	export JAVAHOME
+	JAVA=${JAVAHOME}/bin/java
+	#java_options="-DJAVA=${JAVA}"
+	use_processes=true
+	;;
+
+    sml-grid-0[1-8])
+	n_nodes=10
+	gateway="sml-grid-09:12001"
+	;;
+
+    h19-880a)
+	n_nodes=1
+	;;
+
+    h19-880b|gty-4900a|gty-4900b|cp0|h10-890-2)
+	n_nodes=1
+	gateway="h19-880a:12001"
+	;;
+
+    ldom1)
+        n_nodes=8
+        enable_jmx=true
+        use_processes=true
+	gateway="192.18.47.178:12001"
+        ;;
+
+    ldom2)
+        n_nodes=8
+        enable_jmx=true
+        use_processes=true
+	gateway="192.18.47.178:12001"
+        ;;
+
+    ldom3)
+        spool_root=/usr/tmp/celeste
+        n_nodes=8
+        enable_jmx=true
+        use_processes=true
+	additional_options="--delay-time 15"
+        ;;
+
+    ivrel*)
+	spool_root=/export/home/irien/glenn/celeste-store/contents
+	n_nodes=7
+        enable_jmx=true
+	use_processes=true
+	heap_options="-XX:+UseParallelGC"
+	#java_options="-ea -Dsunlabs.beehive.node.ApplicationFramework.loadOnlyFromObjectStore=http://ivrel:12007"
+	java_options="-ea -Dsunlabs.beehive.node.ApplicationFramework.storeClassesInObjectStore=false"
+	;;
+
+    glenn-skinners-macbook-pro.local)
+	echo "configuring from ${config_key}"
+	# n_nodes=2
+        # gateway="ivrel:12001"
+	n_nodes=7
+	use_processes=true
+	#celeste_log=/tmp/celeste-log
+	celeste_log=/Users/glenn/Projects/Celeste-hg/trunk/celeste-log
+	;;
+
+    nonlinear)
+	n_nodes=10
+        enable_jmx=true
+	use_processes=true
+        connection_type=plain
+	additional_options="--delay-time 2 --object-store-capacity 500M --keystore /tmp/k1,/tmp/k2,/tmp/k3,/tmp/k4,/tmp/k5,/tmp/k6,/tmp/k7,/tmp/k8,/tmp/k9,/tmp/k10"
+	;;
+
+    android)
+	spool_root=/var/tmp/celeste
+        enable_jmx=true
+	use_processes=true
+	celeste_log="/var/tmp/celeste-$config_key.log"
+	additional_options="--delay-time 2 --object-store-capacity 10M --keystore /tmp/k2,/tmp/k3,/tmp/k4,/tmp/k5,/tmp/k6,/tmp/k7,/tmp/k8,/tmp/k9,/tmp/k10,/tmp/k11,/tmp/k12,/tmp/k1 -Dsunlabs.beehive.node.services.WebDAVDaemon.InspectorCSS=/css/BeehiveStyle.css,/css/BeehiveColours-grey.css"
+        #connection_type=plain
+        heap_options="-Xmx12m -Xms12m -XX:+UseParallelGC"
+	#java_options="-DenableProfiling=true"
+	;;
+
+    asdf)
+	spool_root=/var/tmp/celeste
+        enable_jmx=true
+	#use_processes=true
+	threads=true
+	celeste_log="/var/tmp/celeste-$config_key.log"
+	additional_options="--delay-time 2 --object-store-capacity 500M --keystore /tmp/k2,/tmp/k3,/tmp/k4,/tmp/k5,/tmp/k6,/tmp/k7,/tmp/k8,/tmp/k9,/tmp/k10,/tmp/k11,/tmp/k12,/tmp/k1 -Dsunlabs.beehive.node.services.WebDAVDaemon.InspectorCSS=/css/BeehiveStyle.css,/css/BeehiveColours-grey.css -Dsunlabs.beehive.node.services.RoutingDaemon.IntroductionRateMillis=60000 -Dsunlabs.beehive.node.services.RoutingDaemon.ReunionRateMillis=600000"
+        connection_type=plain
+        heap_options="-Xmx12m -Xms12m -XX:+UseParallelGC"
+	#java_options="-DenableProfiling=true"
+	;;
+
+    asdf-firewall)
+	spool_root=/var/tmp/celeste
+        enable_jmx=true
+	use_processes=true
+	celeste_log="/var/tmp/celeste-$config_key.log"
+	additional_options="--delay-time 2 --internetwork-address 75.61.122.30 --object-store-capacity 500M --keystore /tmp/k2,/tmp/k3,/tmp/k4,/tmp/k5,/tmp/k6,/tmp/k7,/tmp/k8,/tmp/k9,/tmp/k10,/tmp/k11,/tmp/k12,/tmp/k1 -Dsunlabs.beehive.node.services.WebDAVDaemon.InspectorCSS=/css/BeehiveStyle.css,/css/BeehiveColours-grey.css"
+#        connection_type=plain
+        heap_options="-Xmx256m -Xms256m -XX:+UseParallelGC"
+	#java_options="-verbose:gc"
+	#java_options="-DenableProfiling=true"
+	;;
+
+    asdf-0)
+	spool_root=/var/tmp/celeste
+	n_nodes=1
+        enable_jmx=true
+	beehive_port=12000
+	http_port=12001
+	celeste_client_port=14000
+	use_processes=true
+	celeste_log="/var/tmp/celeste-$config_key.log"
+	additional_options="--delay-time 5 --object-store-capacity 500M --keystore /tmp/k1"
+	;;
+
+    asdf-1)
+	gateway="127.0.0.1:12001"
+	spool_root=/var/tmp/celeste
+	n_nodes=1
+        enable_jmx=true
+	jmx_port=16001
+	beehive_port=12002
+	http_port=12003
+	celeste_client_port=14001
+	use_processes=true
+	celeste_log="/var/tmp/celeste-$config_key.log"
+	additional_options="--delay-time 5 --object-store-capacity 500M --keystore /tmp/k2"
+	;;
+
+    asdf-2)
+	gateway="127.0.0.1:12001"
+	spool_root=/var/tmp/celeste
+	n_nodes=1
+        enable_jmx=true
+	jmx_port=16002
+	beehive_port=12004
+	http_port=12005
+	celeste_client_port=14002
+	use_processes=true
+	celeste_log="/var/tmp/celeste-$config_key.log"
+	additional_options="--delay-time 5 --object-store-capacity 500M --keystore /tmp/k3"
+	;;
+
+    asdf-3)
+	gateway="127.0.0.1:12001"
+	spool_root=/var/tmp/celeste
+	n_nodes=1
+        enable_jmx=true
+	jmx_port=16003
+	beehive_port=12006
+	http_port=12007
+	celeste_client_port=14003
+	use_processes=true
+	celeste_log="/var/tmp/celeste-$config_key.log"
+	additional_options="--delay-time 5 --object-store-capacity 500M --keystore /tmp/k4"
+	;;
+
+    asdf-4)
+	gateway="127.0.0.1:12001"
+	spool_root=/var/tmp/celeste
+	n_nodes=1
+        enable_jmx=true
+	jmx_port=16004
+	beehive_port=12008
+	http_port=12009
+	celeste_client_port=14004
+	use_processes=true
+	celeste_log="/var/tmp/celeste-$config_key.log"
+	additional_options="--delay-time 5 --object-store-capacity 500M --keystore /tmp/k5"
+	;;
+
+    asdf-5)
+	gateway="127.0.0.1:12001"
+	spool_root=/var/tmp/celeste
+	n_nodes=1
+        enable_jmx=true
+	jmx_port=16005
+	beehive_port=12010
+	http_port=12011
+	celeste_client_port=14005
+	use_processes=true
+	celeste_log="/var/tmp/celeste-$config_key.log"
+	additional_options="--delay-time 5 --object-store-capacity 500M --keystore /tmp/k6"
+	;;
+
+    asdf-6)
+	gateway="127.0.0.1:12001"
+	spool_root=/var/tmp/celeste
+	n_nodes=1
+        enable_jmx=true
+	jmx_port=16006
+	beehive_port=12012
+	http_port=12013
+	celeste_client_port=14006
+	use_processes=true
+	celeste_log="/var/tmp/celeste-$config_key.log"
+	additional_options="--delay-time 5 --object-store-capacity 500M --keystore /tmp/k7"
+	;;
+
+    asdf-7)
+	gateway="127.0.0.1:12001"
+	spool_root=/var/tmp/celeste
+	n_nodes=1
+        enable_jmx=true
+	jmx_port=16007
+	beehive_port=12014
+	http_port=12015
+	celeste_client_port=14007
+	use_processes=true
+	celeste_log="/var/tmp/celeste-$config_key.log"
+	additional_options="--delay-time 5 --object-store-capacity 500M --keystore /tmp/k8"
+	;;
+
+    asdf-8)
+	gateway="127.0.0.1:12001"
+	spool_root=/var/tmp/celeste
+	n_nodes=1
+        enable_jmx=true
+	jmx_port=16008
+	beehive_port=12016
+	http_port=12017
+	celeste_client_port=14008
+	use_processes=true
+	celeste_log="/var/tmp/celeste-$config_key.log"
+	additional_options="--delay-time 5 --object-store-capacity 500M --keystore /tmp/k9"
+	;;
+
+    asdf-9)
+	gateway="127.0.0.1:12001"
+	spool_root=/var/tmp/celeste
+	n_nodes=1
+        enable_jmx=true
+	jmx_port=16009
+	beehive_port=12018
+	http_port=12019
+	celeste_client_port=14009
+	use_processes=true
+	celeste_log="/var/tmp/celeste-$config_key.log"
+	additional_options="--delay-time 5 --object-store-capacity 500M --keystore /tmp/k10"
+	;;
+
+    asdf-single-node)
+	gateway="127.0.0.1:12001"
+	beehive_port=12020
+	http_port=12021
+	celeste_client_port=14010
+	spool_root=/var/tmp/celeste
+	n_nodes=1
+        enable_jmx=true
+	jmx_port=16010
+	use_processes=true
+	celeste_log="/var/tmp/celeste-$config_key.log"
+	additional_options="--delay-time 5 --object-store-capacity 500M --keystore /tmp/single-node-key"
+	;;
+
+
+    pc)
+        JAVAHOME=c:/Progra~1/Java/jre6
+        JAVA=${JAVAHOME}/bin/java
+        CELESTEHOME=`cygpath -m $CELESTEHOME`
+        celeste_root=${CELESTEHOME}
+	server_option=""
+        spool_root=/var/tmp/celeste
+        spool_root=`cygpath -m $spool_root`
+        tmp=/tmp
+        tmp=`cygpath -m $tmp`
+        n_nodes=10
+        enable_jmx=true
+        use_processes=
+        celeste_log="/var/tmp/celeste-$config_key.log"
+        celeste_log=`cygpath -m $celeste_log`
+        additional_options="--delay-time 5 --object-store-capacity 500M --keystore $tmp/k1,$tmp/k2,$tmp/k3,$tmp/k4,$tmp/k5,$tmp/k6,$tmp/k7,$tmp/k8,$tmp/k9,$tmp/k10"
+        ;;
+
+    #
+    # The system on which we make nightly celeste-profiler runs.
+    #
+    vanguard-2)
+	#
+	# /export/home/Celeste/celeste-store is a ZFS file system with a
+	# snapshot taken immediately after the file system was created.
+	# This allows "bin/celeste clobber" to be implemented by rolling back
+	# to that snapshot.  However, the traditional "rm -rf ${spool_root}"
+	# solution shouldn't break, which means that another level of directory
+	# is needed (to avoid attempting to remove the file system itself).
+	#
+	spool_root=/export/home/Celeste/celeste-store/contents
+        enable_jmx=true
+	use_processes=true
+	#
+	# Use the best known heap and GC settings for running Celeste on
+	# configurations of modest size, but with multiple nodes per host.
+	#
+        heap_options="-Xmx128m -Xms128m -XX:+UseParallelGC"
+	additional_options="--delay-time 5"
+	;;
+
+    ############################################################
+    #
+    # Configurations for use in periodic profiling runs.  They differ from the
+    # vanguard-2 configuration above in that they conspire to have two systems
+    # join into a single Celeste confederation, with vanguard-1 taking the
+    # lead and vanguard-2 joining with it.
+    #
+
+    profile:vanguard-1)
+	#
+	# /export/home/Celeste/celeste-store is a ZFS file system with a
+	# snapshot taken immediately after the file system was created.
+	# This allows "bin/celeste clobber" to be implemented by rolling back
+	# to that snapshot.  However, the traditional "rm -rf ${spool_root}"
+	# solution shouldn't break, which means that another level of directory
+	# is needed (to avoid attempting to remove the file system itself).
+	#
+	spool_root=/export/home/Celeste/celeste-store/contents
+        enable_jmx=true
+	use_processes=true
+	additional_options="--delay-time 5"
+        #
+        # vanguard-2 runs the remaining nodes for this profiling
+        # configuration.  This node runs correspondingly fewer.
+        #
+        n_nodes=3
+        additional_nodes="vanguard-2"
+        celeste_home=/export/home/Celeste/trunk
+	;;
+
+    profile:vanguard-2)
+	#
+	# /export/home/Celeste/celeste-store is a ZFS file system with a
+	# snapshot taken immediately after the file system was created.
+	# This allows "bin/celeste clobber" to be implemented by rolling back
+	# to that snapshot.  However, the traditional "rm -rf ${spool_root}"
+	# solution shouldn't break, which means that another level of directory
+	# is needed (to avoid attempting to remove the file system itself).
+	#
+	spool_root=/export/home/Celeste/celeste-store/contents
+        enable_jmx=true
+	use_processes=true
+	additional_options="--delay-time 5"
+        #
+        # This profiling configuration uses a reduced number of nodes and
+        # joins with the Celeste confederation running on vanguard-1.
+        #
+        n_nodes=3
+        gateway="vanguard-1:12001"
+        celeste_home=/export/home/Celeste/trunk
+	;;
+
+    #
+    ############################################################
+
+    ############################################################
+    #
+    # Another profiling configuration spanning multiple systems.
+    #
+    # As in realistic deployments, each system runs a single node.
+    #
+
+    profile:voiptest-51)
+	spool_root=/export/home/Celeste/celeste-store/contents
+        enable_jmx=true
+	use_processes=true
+        heap_options="-Xms128m -Xmx3072m -XX:+UseParallelGC"
+        java_options="-ea -d64"
+	additional_options="--delay-time 5"
+	#
+        # This system runs a single node and acts as a gateway for the nodes
+        # running on voiptest-52 through voiptest-56
+        #
+        n_nodes=1
+        additional_nodes="voiptest-52 voiptest-53 voiptest-54 voiptest-55 voiptest-56"
+        celeste_home=/export/home/Celeste/trunk
+        celeste_log=/net/ivrel/tmp/celeste-${config_key}.log
+        #
+        # When the test/regression/nightly script runs, have it perform a more
+        # demanding thest than the default.
+        #
+        nightly_test_cmd="bin/celeste-profiler create:1,30,1,20,"
+	;;
+
+    profile:voiptest-5[23456])
+	spool_root=/export/home/Celeste/celeste-store/contents
+        enable_jmx=true
+	use_processes=true
+        heap_options="-Xms128m -Xmx3072m -XX:+UseParallelGC"
+        java_options="-ea -d64"
+	additional_options="--delay-time 5"
+        #
+        # Each of these systems runs a single node that joins the Celeste
+        # instance running on the indicated gateway.
+        #
+        n_nodes=1
+        gateway="voiptest-51:12001"
+        celeste_home=/export/home/Celeste/trunk
+        celeste_log=/net/ivrel/tmp/celeste-${config_key}.log
+	;;
+
+    #
+    ############################################################
+
+    *)
+        enable_jmx=true
+	use_processes=true
+	additional_options="--delay-time 5"
+        connection_type=plain
+	;;
+esac

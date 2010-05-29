@@ -1,0 +1,147 @@
+#!/usr/bin/ksh -
+
+# Copyright 2007-2008 Sun Microsystems, Inc. All Rights Reserved.
+# DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER
+# 
+# This code is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License version 2
+# only, as published by the Free Software Foundation.
+# 
+# This code is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+# General Public License version 2 for more details (a copy is
+# included in the LICENSE file that accompanied this code).
+# 
+# You should have received a copy of the GNU General Public License
+# version 2 along with this work; if not, write to the Free Software
+# Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
+# 02110-1301 USA
+# 
+# Please contact Sun Microsystems, Inc., 16 Network Circle, Menlo
+# Park, CA 94025 or visit www.sun.com if you need additional
+# information or have any questions.
+
+#
+# celeste-exec-start \
+#	enable_jmx jmx_password_file jmx_port logging_config \
+#	    number_of_nodes spool_root use_processes use_ssl [gateway]
+#
+#	SMF start method for instances of the application/celeste service
+#
+# XXX:	Might want to redo the manifest's exec method definition to forgo
+#	passing in property arguments in favor of passing in the instance
+#	FMRI.  Then this script would become responsible for digging them
+#	out.  It would trade clutter in the manifest for (rather more)
+#	clutter here.
+#
+
+#
+# Pull in SMF utility functions and verify invocation via SMF.
+#
+if [[ ! -f /lib/svc/share/smf_include.sh ]]; then
+    echo "celeste-exec-start is usable only in conjunction with Solaris SMF."
+    exit 99
+fi
+. /lib/svc/share/smf_include.sh
+smf_present || exit $SMF_EXIT_ERR_NOSMF
+
+#
+# Obtain parameters.  Some turn into java property specifications, others
+# into arguments to celeste.jar's main class.  Note that gateway comes last,
+# because it's the only parameter that might be missing.
+#
+enable_jmx="$1"
+jmx_password_file="$2"
+jmx_port="$3"
+logging_config="$4"
+number_of_nodes="$5"
+spool_root="$6"
+use_processes="$7"
+use_ssl="$8"
+gateway="$9"
+
+#
+# Mirror the setup work that bin/celeste does.  (That is, changes there
+# probably have consequences here and vice versa.)
+#
+
+JVMOPTS="-server -Xmx512m -ea"
+
+# Enable the process to be attached to by a debugger.
+
+#JVMOPTS="$JVMOPTS -agentlib:jdwp=transport=dt_socket,server=y,address=33444,suspend=n"
+
+#
+# DOJO Configuration
+#
+DOJOURL="http://o.aolcdn.com/dojo/1.1.1"
+DOJOBASE="-Dsunlabs.asdf.xhtml.ajax.dojo.baseURL=${DOJOURL}"
+DOJO="-Dsunlabs.asdf.xhtml.ajax.dojo.dojo=dojo/dojo.xd.js"
+DOJOOPTS="${DOJOBASE} ${DOJO}"
+
+#
+# JMX Configuration
+#
+if [[ $enable_jmx = true ]]; then
+    JMXOPTS="-Dcom.sun.management.jmxremote \
+	-Dcom.sun.management.jmxremote.port=$jmx_port \
+	-Dcom.sun.management.jmxremote.password.file=$jmx_password_file"
+    jmx_port_option="--jmx-port $jmx_port"
+else
+    JMXOPTS=""
+    jmx_port_option=""
+fi
+
+LOGGING_OPTS="-Djava.util.logging.config.file=${logging_config}"
+
+#
+# LOGGING_OPTS comes early so that "bin/celeste status" can find the
+# command line pattern it's looking for (which has to occur in the
+# first 80 bytes of command line arguments).
+#
+JAVA_ARGS="${JVMOPTS} ${LOGGING_OPTS} ${JMXOPTS} ${DOJOOPTS}"
+
+#
+# Transform the remaining parameters into the form that celeste.jar's main
+# class expects.
+#
+gateway_opt="${gateway:+--gateway http://$gateway}"
+n_nodes_opt="--n-nodes $number_of_nodes"
+spool_root_opt="--spool-root $spool_root"
+if [[ $use_processes = true ]]; then
+    use_processes_opt="--use-processes"
+else
+    use_processes_opt=
+fi
+if [[ $use_ssl = true ]]; then
+    use_ssl_opt="--beehive-connection-type ssl"
+else
+    use_ssl_opt="--beehive-connection-type plain"
+fi
+
+celeste_args=" \
+    --celeste-root /opt/celeste \
+    ${gateway_opt} \
+    ${jmxport_option} \
+    ${n_nodes_opt} \
+    ${spool_root_opt} \
+    ${use_processes_opt} \
+    ${use_ssl_opt} \
+"
+
+#
+# XXX:	How should we handle the requirement that the instance be providing
+#	service before this method returns?  Will
+#		(exec java... &)
+#	suffice?  (It seems to, but nonetheless, celeste clients won't
+#	necessarily be getting responses yet.)  Perhaps there should be
+#	some sort of blocking ping that Celeste responds to.
+#
+smf_clear_env
+
+echo "Starting /usr/bin/java ${JAVA_ARGS} -jar /opt/celeste/dist/celeste.jar \
+    ${celeste_args} 2>&1 &"
+
+(exec /usr/bin/java ${JAVA_ARGS} -jar /opt/celeste/dist/celeste.jar \
+    ${celeste_args} 2>&1 &)

@@ -1,0 +1,50 @@
+Here are the settings for Errors/Warnings in eclipse:
+
+Code style
+Indirect access to static member:                               Warning
+Unqualified access to instance field:                           Warning
+Undocumented empty block:                                       Ignore
+Access to a non-accessible member of an enclosing type:         Warning
+Methods with a constructor name:                                Warning
+Usage of non-externalized strings:                              Ignore
+
+Potential programming problems
+Serializable class without serialVersionUID:                    Warning
+Assignment as no effect (e.g. 'x = x'):                         Warning
+Possible accidental boolean assignment (e.g. if (a = b)):       Warning
+'finally' does not complete normally:                           Warning
+Empty statement:                                                Warning
+Using a char array in string concatenation:                     Warning
+Hidden catch block:                                             Warning
+
+Name shadowing and conflicts
+Field declaration hides another field or variable               Warning
+Local variable declaration hides another field or variable:     Warning
+Type parameter hides another type:                              Warning
+Interface method conflicts with protected 'Object' method:      Warning
+
+Deprecated and restricted API
+Deprecated API:                                                 Warning
+Forbidden reference (access rules):                             Error
+Discouraged reference (access rules):                           Warning
+
+Unnecessary code
+Local variable is never read:                                   Warning
+Parameter is never read:                                        Warning
+Unused imports                                                  Warning
+Unused local or private members:                                Warning
+Unnecessary else statement:                                     Warning
+Unnecesary cast or 'instanceOf' operation:                      Warning
+Unnecessary declaration of thrown checked exception:            Warning
+
+J2SE 5.0 options
+Unchecked generic type operation:                               Warning
+Generic type parameter declared with a final type bound:        Warning
+Inexact type match of vararg arguments:                         Warning
+Boxing and unboxing conversions:                                Warning
+Missing @Override annotation:                                   Warning
+Mising @Deprecated annotation:                                  Warning
+Annotation uis used as super interface:                         Warning
+Not all enum constants covered on 'switch':                     Warning
+Unhandled warning tokens in '@SuppressWarnings':                Warning
+

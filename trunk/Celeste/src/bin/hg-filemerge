@@ -1,0 +1,146 @@
+#!/bin/ksh -
+
+# Copyright 2007-2008 Sun Microsystems, Inc. All Rights Reserved.
+# DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER
+# 
+# This code is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License version 2
+# only, as published by the Free Software Foundation.
+# 
+# This code is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+# General Public License version 2 for more details (a copy is
+# included in the LICENSE file that accompanied this code).
+# 
+# You should have received a copy of the GNU General Public License
+# version 2 along with this work; if not, write to the Free Software
+# Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
+# 02110-1301 USA
+# 
+# Please contact Sun Microsystems, Inc., 16 Network Circle, Menlo
+# Park, CA 94025 or visit www.sun.com if you need additional
+# information or have any questions.
+
+#
+# hg-filemerge: Compare two versions of a file using filemerge.
+#
+# XXX:	The original version of this utility used the ksh process
+#	substitution facility (the <(cmd) syntax) to obtain the lhs
+#	file to compare.  But neither the SunOS nor the Mac file comparison
+#	programs can cope with /dev/fd/<n>, so I gave up on the idea.
+#
+# XXX:	It would be nice to find a way to give meaningful titles
+#	to the panes in the filemerge program (as opposed to the
+#	temporary file names that appear now).  Don't know how,
+#	though.
+#
+
+usage() {
+    echo "usage: ${0##*/} [-r left-vers [-r right-vers]] file"
+    echo "    Compare left-ver against right-vers with a filemerge program."
+    echo "    If second -r is ommitted, use working version as right-vers."
+    echo "    If first -r is omitted, use tip version as left-vers."
+}
+
+l_rev=""
+r_rev=""
+while getopts :r: flag; do case $flag in
+    r)
+	if [[ -z $l_rev ]]; then
+	    l_rev=$OPTARG
+	elif [[ -z $r_rev ]]; then
+	    r_rev=$OPTARG
+	else
+	    echo "too many -r flags"
+	    exit 1
+	fi
+	;;
+    *)
+	usage
+	exit 1;
+	;;
+esac done
+shift $(($OPTIND - 1))
+
+#
+# XXX:	Code to handle "-r a:b" goes here.  It should verify that r_rev
+#	is not yet set and then l_rev and r-rev to "a" and "b" respectively.
+#
+
+#
+# After the argument processing above, there should be a single argument
+# remaining.
+#
+if [ $# != 1 ]; then
+    echo "a single file argument is required"
+    usage
+    exit 1
+fi
+
+#
+# Customize according to host OS.
+#
+case $(uname -s) in
+    SunOS)
+	filemerge=filemerge
+	mergeopts="-r -diffopt w"
+	;;
+    Darwin)
+	filemerge=opendiff
+	mergeopts=""
+	;;
+    *)
+	echo "Unknown OS"
+	exit 1
+	;;
+esac
+
+#
+# Determine what temporary files will be needed and arrange to remove them
+# upon termination or interrupt.
+#
+if [[ -z $l_rev ]]; then
+    #
+    # If l_rev is empty, then we're being asked to compare the tip
+    # revision to the working copy.
+    #
+    l_rev=tip
+    l_file=/tmp/hgf-l-$$
+    rm_list=$l_file
+elif [[ -z $r_rev ]]; then
+    #
+    # Specifying the left but not the right, requests comparing the
+    # given revision against the working copy.
+    #
+    l_file=/tmp/hgf-l-$$
+    rm_list=$l_file
+else
+    #
+    # We must compare the two given revisions.
+    #
+    l_file=/tmp/hgf-l-$$
+    r_file=/tmp/hgf-r-$$
+    rm_list="$l_file $r_file"
+fi
+trap "rm $rm_list" INT EXIT
+
+#
+# Now it's safe to grab temporary copies of non-working versions of the file.
+#
+if [[ -n $l_file ]]; then
+    hg cat -r $l_rev $1 > $l_file
+fi
+if [[ -n $r_file ]]; then
+    hg cat -r $r_rev $1 > $r_file
+else
+    r_file=$1
+fi
+
+#
+# XXX:	It would be nice to exec $filemerge in the background, so
+#	that the filemerge could run independently of its invoking
+#	shell.  But doing so would cause the temporary files to
+#	vanish prematurely.
+#
+$filemerge $mergeopts $l_file $r_file

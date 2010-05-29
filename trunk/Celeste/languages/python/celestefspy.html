@@ -1,0 +1,263 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html>
+<head>
+  <title></title>
+</head>
+<body>
+<style type="text/css">
+body {
+  margin: 0 11% 0 0;
+  text-align: justify;
+}
+
+.verbatim {
+  font-family: monospace;
+/*  font-weight: bold;*/
+}
+
+.floater {
+  float: right;
+  margin-top: 0;
+}
+
+table.simple {
+  border: 1px solid black;
+  border-collapse: collapse;
+  margin: 1em;
+}
+table.simple th {
+  border-bottom: 3px double black;
+  border-right: thin solid black;
+}
+table.simple td {
+  border-bottom: thin solid black;
+  border-right: thin solid black;
+}
+
+table.simple caption {
+  text-align: left;
+  font-weight: bold;
+}
+
+ol.toc {
+  background-color: #F0F0F0;
+  border: 1px solid black;
+}
+ol.toc li {
+  margin: 0.25em 1em 0.25em 1em;
+}
+
+samp {
+  padding: 1em;
+  background-color: black;
+  color: #00FF00;
+}
+
+code {
+  font-weight: bold;
+}
+
+.example {
+  width: 55%;
+  float: right;
+  padding: 1em;
+  margin: 0 0 0 1em;
+  background-color: black;
+  color: #00FF00;
+  border: thick ridge grey;
+  font-family: monospace;
+  font-weight: bold;
+}
+
+.inline-example {
+  padding: 1em;
+  margin: 0 0 0 1em;
+  background-color: black;
+  color: #00FF00;
+  border: thick ridge grey;
+  font-family: monospace;
+  font-weight: bold;
+}
+
+.clear {
+  clear: both;
+}
+
+dl.option-list dt {
+  margin-top: 1em;
+  font-family: monospace;
+  font-weight: bold;
+}
+</style>
+
+<p>
+A simple interface to the <a href=""><tt>celestefs</tt></a>
+interface is available as a Python class implmemented
+in the source file: <tt>languages/python/celestefs.py</tt>.
+</p>
+<h1>The <tt>celestesfs</tt> class</h1>
+<dl>
+  <dt>
+    <code>class celestefs(</code>
+    <i>requestor, password[, address[, port [, replicationParamsM]]]</i>
+    <code>)</code>
+  </dt>
+  <dd>
+    Construct a new Python celestefs instance
+    using the credential <i>requestor</i>
+    authenticated with <i>password</i>.
+    (See the function <code>mkid</code> to create this credential).
+    Connect to the Celeste node at <i>address</i> and <i>port</i>
+    using the replication parameters specified by <i>replicationParams</i>
+    By default <i>address</i> is <tt>127.0.0.1</tt>,
+    port <tt>14000</tt>
+    and <i>replicationParams</i> is "ErasureCodeReplica/3".
+  </dd>
+</dl>
+The <tt>celestefs</tt> class provides the following methods:
+(cf. <a href=""><tt>celestefs</tt></a> for additional details on
+these methods.)
+<dl>
+  <dt style="margin-top: 1em;">
+    <code>create(</code>
+    <i>pathName</i>
+    <code>)</code></dt>
+  <dd>
+    Create a file named by the fully qualified <i>pathName</i>.
+    All pathnames must begin with the name of the file-system.
+    The specified file-system and requestor's credential must have already
+    been created (see the mkfs and mkid functions).
+  </dd>
+  <dt style="margin-top: 1em;">
+    <code>mkfs(</code>
+    <i>name, password</i>
+    <code>)</code></dt>
+  <dd>
+    Create a new filesystem named <i>name</i> and authenticated with
+    <i>password</i>.
+  </dd>
+  <dt style="margin-top: 1em;">
+    <code>mkdir(</code>
+    <i>pathName[, options=""]</i>
+    <code>)</code></dt>
+  <dd>
+    Create a new directory named with the fully qualified path-name
+    <i>pathName</i>.
+    The optional parameter <i>option</i> (by default the empty string)
+    specifies:
+    <dl>
+      <dt><code>-p</code></dt>
+      <dd>
+	Create all parent directories in the path that do not already exist.
+      </dd>
+    </dl>
+  </dd>
+  <dt style="margin-top: 1em;">
+    <code>mkid(</code>
+    <i></i>
+    <code>)</code></dt>
+  <dd>
+    Create the credential specified in the <code>celestefs</code> constructor.
+    The new credential must not already exist and will be authenticated with
+    the <i>password</i> specified in the <code>celestefs</code> constructor.
+  </dd>
+
+  <dt style="margin-top: 1em;">
+    <code>pread(</code>
+    <i>
+      pathName[, offset[, length]]
+    </i>
+    <code>)</code>
+  </dt>
+  <dd>
+    Read data from the file named <i>pathName</i>.
+    The read starts at byte position <i>offset</i> (0 (zero) by default)
+    and continues for <i>length</i> bytes.
+    By default <i>length</i> is -1 which sigifies read to end-of-file.
+  </dd>
+  <dt style="margin-top: 1em;">
+    <code>pwrite(</code>
+    <i>
+      pathName, inputFile[, offset]
+    </i>
+    <code>)</code>
+  </dt>
+  <dd>
+    Write data from the local file <i>inputFile</i> to the Celeste
+    file <i>pathName</i> starting at byte position <i>offset</i> in the file.
+    By default, <i>offset</i> is 0.
+  </dd>
+  <dt style="margin-top: 1em;">
+    <code>remove(</code>
+    <i>pathName</i>
+    <code>)</code></dt>
+  <dd>
+    Remove the file specified by the fully qualified path-name <i>pathName</i>.
+  </dd>
+  <dt style="margin-top: 1em;">
+    <code>readdir(</code>
+    <i>pathName[, options=""]</i>
+    <code>)</code></dt>
+  <dd>
+    Read the directory entries file the directory specified by the
+    fully qualified path-name <i>pathName</i> and return them as a
+    sequence of lines terminated by a newline, each line containing
+    the name of a file.
+    The optional parameter <i>options</i> (by default the empty string)
+    may be set to <code>-l</code> to cause readdir to return the
+    fully qualified path-names of the directory entries.
+  </dd>
+  <dt style="margin-top: 1em;">
+    <code>setLength(</code>
+    <i>pathName, length</i>
+    <code>)</code></dt>
+  <dd>
+    Set the length of the file specified by the fully qualified path-name
+    <i>pathName</i> to <i>length</i> bytes.
+    The file is truncated or extended as needed.
+  </dd>
+  <dt style="margin-top: 1em;">
+    <code>stat(</code>
+    <i>
+      pathName[, options=]
+    </i>
+    <code>)</code>
+  </dt>
+  <dd>
+    Return a string consisting of lines containing metadata for
+    the file specified by the fully qualified path-name <i>pathName</i>.
+    The optional parameter <i>options</i> (the empty string by default)
+    specifies different forms of the output.
+    <dl>
+      <dt>-l</dt>
+      <dd>
+	Display a long form of output including content-type,
+	size, modified-time, and file-name.
+      </dd>
+      <dt>-s</dt>
+      <dd>
+	Display a short form of output including size and file-name.
+      </dd>
+    </dl>
+  </dd>
+
+  <dt style="margin-top: 1em;">
+    <code>test(</code>
+    <i>pathName, conditions</i>
+    <code>)</code></dt>
+  <dd>
+    Test for certain conditions on the file named <i>pathName</i>.
+    The parameter <i>conditions</i> may be one of:
+    <dl>
+      <dt><code>-e</code></dt>
+      <dd>True if the file exists.</dd>
+      <dt><code>-d</code></dt>
+      <dd>True if the file exists and is a directory.</dd>
+      <dt><code>-t</code> <i>contentType</i></dt>
+      <dd>True if the file exists and has the content-type metadata value
+	<i>contentType</i>.
+      </dd>
+    </dl>
+  </dd>
+</dl>
+</body>

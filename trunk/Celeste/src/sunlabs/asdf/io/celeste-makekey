@@ -1,0 +1,7 @@
+#!/bin/bash -x
+
+# This is a Celeste key.
+keystore=celeste.jks
+
+keytool -genkeypair -dname 'CN=129.146.73.39, DC=beehive.sun.com, DNQ=v1, OU=Sun Microsystems Laboratories, O=Sun Microsystems, C=US, IP=129.146.73.39:12000' -keyalg RSA -alias PrivateKey -keypass celesteKey -keystore ${keystore} -storepass celesteStore
+

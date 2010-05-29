@@ -1,0 +1,316 @@
+#!/bin/bash -
+# Copyright 2007-2009 Sun Microsystems, Inc. All Rights Reserved.
+# DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER
+# 
+# This code is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License version 2
+# only, as published by the Free Software Foundation.
+# 
+# This code is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+# General Public License version 2 for more details (a copy is
+# included in the LICENSE file that accompanied this code).
+# 
+# You should have received a copy of the GNU General Public License
+# version 2 along with this work; if not, write to the Free Software
+# Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
+# 02110-1301 USA
+# 
+# Please contact Sun Microsystems, Inc., 16 Network Circle, Menlo
+# Park, CA 94025 or visit www.sun.com if you need additional
+# information or have any questions.
+
+CELESTEHOME=${CELESTEHOME:="unset"}
+if [[ ${CELESTEHOME} == "unset" ]]; then
+    if [[ -x ./bin/celeste && -x ./bin/celestesh && -e ./dist/celeste.jar ]]; then
+	echo "NOTICE: The current directory looks like a Celeste runtime installation."
+	echo "        Using the current directory instead of /opt/celeste"
+	echo "        Explicitly set the environment variable CELESTEHOME to override this."
+	CELESTEHOME=`pwd`
+    else
+	CELESTEHOME="/opt/celeste"
+    fi
+fi
+
+#
+# Report the process ids of JVMs that are running Celeste nodes.
+#
+getpids() {
+    case $(uname -s) in
+        SunOS)
+            #
+            # Look for processes with argument lists matching what we've
+            # launched.
+            #
+            # XXX:  pgrep considers only the first 80 bytes of the command line
+            #       so this test is vulnerable to false positives.  In
+            #       particular, the string "celeste.jar" doesn't appear within
+            #       the 80 byte window.  Sigh...
+            #
+            pidlist=$(pgrep -f 'java.*-Djava.util.logging.config.file')
+            echo $pidlist
+            ;;
+
+        #
+        # The following code is known to work on Darwin, and has a good shot
+        # at working on other systems.
+        #
+        *)
+            pidlist=$(/bin/ps axww | grep Dceleste-node | grep -v grep | \
+                awk '{print $1}')
+            echo $pidlist
+            ;;
+    esac
+}
+
+#
+# Set the value of the "config_key" shell variable used to determine which
+# configuration to use.
+#
+CELESTECONFIG_URL=${CELESTECONFIG_URL:="unset"}
+if [[ ${CELESTECONFIG_URL} == "unset" ]]; then
+	config_key=${CELESTECONFIG:=`hostname`}
+fi
+
+#
+# Establish defaults for variables documented as being settable in
+# etc/celeste.cf.  Note that default values are documented there, so a change
+# here must have a corresponding documentation change there.
+#
+#celeste_root="${CELESTEHOME}"
+export BEEHIVEHOME=${CELESTEHOME}
+
+spool_root="/tmp/celeste"
+n_nodes="6"
+use_processes=""
+threads=""
+gateway=""
+logging_config_file="${CELESTEHOME}/etc/logging.properties"
+celeste_log="/tmp/celeste-$config_key.log"
+beehive_port=""
+celeste_client_port=""
+http_port=""
+node_address=""
+connection_type=""
+enable_jmx="false"
+jmx_password_file="${CELESTEHOME}/etc/jmxremote.password.template"
+jmx_port="16000"
+server_option="-server"
+heap_options="-Xmx128m -Xms128m -XX:+UseParallelGC"
+java_options="-ea"
+additional_options=""
+
+
+JAVA=${JAVA:=/usr/bin/java}
+
+# Every variable value defined and set above can be overridden in the
+# configuration file below.
+
+# Suck in the configuration file.
+. ${CELESTEHOME}/etc/celeste.cf
+
+#
+# DOJO Configuration
+#
+#
+#DOJOBASE="-Dsunlabs.asdf.xhtml.ajax.dojo.baseURL=http://o.aolcdn.com/dojo/1.1.1"
+DOJOBASE="-Dsunlabs.asdf.xhtml.ajax.dojo.rootURL=http://o.aolcdn.com/dojo/1.4.1"
+DOJO="-Dsunlabs.asdf.xhtml.ajax.dojo.dojoJs=dojo/dojo.xd.js"
+DOJOOPTS="${DOJOBASE} ${DOJO}"
+
+#
+# JMX configuration:
+#
+if [[ $enable_jmx = true ]]; then
+#    JMXOPTS="-Dcom.sun.management.jmxremote \
+#	-Dcom.sun.management.jmxremote.port=$jmx_port \
+#	-Dcom.sun.management.jmxremote.password.file=$jmx_password_file"
+    JMXOPTS="-Dcom.sun.management.jmxremote \
+	-Dcom.sun.management.jmxremote.password.file=$jmx_password_file"
+    jmx_port_option="--jmx-port $jmx_port"
+    if [[ -r $jmx_password_file ]]; then
+        chmod 600 $jmx_password_file
+    fi
+else
+    JMXOPTS=""
+    jmx_port_option=""
+fi
+
+#
+# Hack for conveying the "-server" option to JVMs invoked from within the
+# celeste.jar main class.  If "-server" is set at this level, set the "server"
+# Java property, so that the class can find it and set it for JVMs that it
+# starts.
+#
+if [[ "x${server_option}" = "x-server" ]]; then
+    server_property="-Dserver=true"
+else
+    server_property=""
+fi
+
+LOGGINGOPTS="-Djava.util.logging.config.file=${logging_config_file}"
+
+java_option=${java_options:+${java_options}}
+#
+# LOGGINGOPTS comes early so that the "status" command can find the
+# command line pattern it's looking for (which has to occur in the
+# first 80 bytes of command line arguments).
+#
+JAVA_ARGUMENTS="\
+    -Dceleste-node \
+    ${server_option} \
+    ${LOGGINGOPTS} \
+    ${heap_options} \
+    ${JMXOPTS} \
+    ${server_property} \
+    ${java_option}"
+
+#celeste_root_option=${celeste_root:+--celeste-root ${celeste_root}}
+spool_root_option=${spool_root:+--localfs-root ${spool_root}}
+gateway_option=${gateway:+--gateway http://${gateway}}
+n_nodes_option="${n_nodes:+--n-nodes ${n_nodes}}"
+beehive_port_option=${beehive_port:+--beehive-port ${beehive_port}}
+http_port_option=${http_port:+--http-port ${http_port}}
+celeste_client_port_option=${celeste_client_port:+--celeste-client-port ${celeste_client_port}}
+local_address_option=${node_address:+--local-address ${node_address}}
+use_processes_option=${use_processes:+--use-processes}
+threads_option=${threads:+--threads}
+connection_type_option=${connection_type:+--beehive-connection-type ${connection_type}}
+
+
+celeste_arguments=" \
+    ${n_nodes_option} \
+    ${spool_root_option} \
+    ${gateway_option} \
+    ${beehive_port_option} \
+    ${http_port_option} \
+    ${celeste_client_port_option} \
+    ${jmx_port_option} \
+    ${local_address_option} \
+    ${socket_cache_option} \
+    ${use_processes_option} \
+    ${connection_type_option} \
+    ${additional_options}"
+
+
+start() {
+    if [[ ${CELESTECONFIG_URL} == "unset" ]]; then
+        echo ${JAVA} ${JAVA_ARGUMENTS} -jar ${CELESTEHOME}/dist/celeste.jar ${celeste_arguments} '>' ${celeste_log} '2>&1'
+        ${JAVA} ${JAVA_ARGUMENTS} -jar ${CELESTEHOME}/dist/celeste.jar ${celeste_arguments} > ${celeste_log} 2>&1 &
+    else
+        echo ${JAVA} ${JAVA_ARGUMENTS} -jar ${CELESTEHOME}/dist/celeste.jar ${CELESTECONFIG_URL} '>' ${celeste_log} '2>&1'
+        ${JAVA} ${JAVA_ARGUMENTS} -jar ${CELESTEHOME}/dist/celeste.jar ${CELESTECONFIG_URL} > ${celeste_log} 2>&1 &
+    fi
+}
+
+stop() {
+    pidlist=$(getpids)
+    echo Stopping Celeste: ${pidlist}
+    if [[ -n "$pidlist" ]]; then
+        kill -9 $(getpids)
+    fi
+}
+
+
+restart() {
+	stop
+	start
+}
+
+reinit() {
+	stop
+	rm -rf ${spool_root}/dolr*
+}
+
+clean() {
+	stop
+	for node in ${spool_root}/node-* ; do
+		rm -rf $node/publishers $node/object-store/ $node/object-publishers > /dev/null 2>&1
+        	mkdir $node/publishers $node/object-store > /dev/null 2>&1
+		find $node -name '*.txt' -exec rm -f \{\} \; > /dev/null 2>&1
+		find $node -name '*.lck' -exec rm -f \{\} \; > /dev/null 2>&1
+	done
+}
+
+clobber() {
+	stop
+	echo /bin/rm -rf ${spool_root}
+	/bin/rm -rf ${spool_root}
+}
+
+bgclobber() {
+        stop
+        echo "/bin/mv -f ${spool_root} ${spool_root}$$ ; /bin/rm -rf ${spool_root}$$ "
+        /bin/mv -f ${spool_root} ${spool_root}$$ ; /bin/rm -rf ${spool_root}$$ &
+}
+
+config() {
+	echo Java Parameters ${JAVA_ARGUMENTS}
+	echo Celeste Parameters ${celeste_arguments}
+	echo Celeste Log File ${celeste_log}
+	echo AVGateway Log File ${avgateway_log}
+}
+
+status() {
+    pidlist=$(getpids)
+    if [[ -z "$pidlist" ]]; then
+        echo "Celeste not running"
+    else
+        #
+        # XXX:  Really ought to discriminate on whether ps is BSD-style
+        #       or SysV-style; the use of uname is a surrogate for the proper
+        #       test.
+        #
+        case $(uname -s) in
+            SunOS)
+                /bin/ps -o pid,time,args -p "$(getpids)"
+                ;;
+            *)
+                /bin/ps $(getpids)
+                ;;
+        esac
+    fi
+}
+
+for command in $*; do
+	case $command in
+		start)
+			start
+			;;
+		stop)
+			stop
+			;;
+		restart)
+			restart
+			;;
+		clean)
+			clean
+			;;
+		clobber)
+			clobber
+			;;
+		bgclobber)
+			bgclobber
+			;;
+		config)
+			config
+			;;
+		reinit)
+			reinit
+			;;
+		status)
+			status
+			;;
+		*|help|-help|--help)
+			echo "celeste clean"
+			echo "        clobber"
+			echo "        start"
+			echo "        stop"
+			echo "        restart"
+			echo "        reinit"
+			echo "        config"
+			echo "        status"
+			;;
+	esac
+done

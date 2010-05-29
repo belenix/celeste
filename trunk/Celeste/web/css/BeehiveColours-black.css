@@ -1,0 +1,309 @@
+@charset "UTF-8";
+/*
+ * Copyright 2007-2009 Sun Microsystems, Inc. All Rights Reserved.
+ * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER
+ *
+ * This code is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2
+ * only, as published by the Free Software Foundation.
+ *
+ * This code is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ * General Public License version 2 for more details (a copy is
+ * included in the LICENSE file that accompanied this code).
+ *
+ * You should have received a copy of the GNU General Public License
+ * version 2 along with this work; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
+ * 02110-1301 USA
+ *
+ * Please contact Sun Microsystems, Inc., 16 Network Circle, Menlo
+ * Park, CA 94025 or visit www.sun.com if you need additional
+ * information or have any questions.
+ */
+body {
+    /*background-image: url('../images/background.jpg');*/
+    background: none black;
+    color: white;
+}
+
+a.NodeId,
+a.NodeId:link,
+a.NodeId:visited {
+	background-color: inherit;
+	color: inherit;
+}
+
+table.striped tbody tr:nth-child(even) 	{background: #777; color: white;}
+table.striped tbody tr:nth-child(odd) 	{background: #555; color: white}
+
+caption {
+    background-color: #808080;
+    color: black;
+}
+
+h1,h2,h3 {
+    background-color: inherit;
+    color: white;
+}
+
+
+div.section {
+	/*background: none #404040;*/
+	color: white;
+	border:  1px dotted #00FFFF;
+}
+
+div.section > table { 
+	border: 1px solid black;
+}
+
+div.section > table > caption {
+	/*border: 1px solid #800080;*/
+	border: 1px solid #00FFFF;
+	/*background: none #808080;*/
+	color: white;
+}
+
+div.section > table > tbody > tr {
+}
+
+h1.meta-info {
+
+}
+
+table.node-properties > caption {
+	background: none #8090A0;
+	color: white;
+}
+
+/*
+ * neighbour-map
+ */
+table.neighbour-map {
+	background-image: none;
+	background-color: inherit;
+	border: 1px solid gray;
+}
+
+table.neighbour-map caption {
+	background: black url('../images/red-to-alpha.png') no-repeat left top;
+}
+
+table.neighbour-map thead th {
+	background: none transparent;
+	color: white;
+}
+	
+table.neighbour-map tbody tr:nth-child(even) { background: #777; color: white; }
+table.neighbour-map tbody tr:nth-child(odd)  { background: #444; color: white; }
+
+table.neighbour-map tbody td {
+	border-right:  1px solid black;
+}
+
+table.neighbour-map tbody td.full 				{background: none #B00000; color: white; }
+table.neighbour-map tbody td.full:hover 		{background: none red; color: white;}
+table.neighbour-map tr {
+	border: 1px solid black;
+}
+
+table.neighbour-map a,
+table.neighbour-map a:visited,
+table.neighbour-map a:link {
+	color: inherit;
+}
+
+table.neighbour-map tr > td:first-child {
+	border-right: 3px double black;
+}
+
+/* Beehive Services */
+table#applications {
+	background-image: none;
+	background-color: inherit;
+	border: 1px solid grey;
+}
+
+table#applications thead th {
+	background: none #D0D0D0;
+	color: black;
+}
+
+table#applications tbody tr:nth-child(even) {background: #777; color: white;}
+table#applications tbody tr:nth-child(odd) {background: #555; color: white}
+table#applications a,
+table#applications a:link,
+table#applications a:visited {
+	background-color: inherit;
+	color: inherit;
+	text-decoration: none;
+}
+
+table#objectStore thead th {
+	background: none #D0D0D0;
+	color: black;
+}
+
+table#objectStore tbody tr:nth-child(even) {background: #777; color: white;}
+table#objectStore tbody tr:nth-child(odd) {background: #555; color: white}
+table#objectStore a,
+table#objectStore a:link,
+table#objectStore a:visited {
+	background-color: inherit;
+	color: inherit;
+	text-decoration: none;
+}
+
+/* object publish records table */
+
+table.Publishers tbody tr:nth-child(even) {background: #777; color: white;}
+table.Publishers tbody tr:nth-child(odd) {background: #555; color: white}
+
+table.Publishers th {
+	background: none #D0D0D0;
+	color: black;
+}
+
+table.Publishers a,
+table.Publishers a:visited,
+table.Publishers a:link {
+	background-color: inherit;
+	color: inherit;
+	text-decoration: none;
+}
+
+table.Publishers tr.barrier {
+	border-top: 1px solid black;
+}
+
+table.Publishers td.root,
+table.Publishers td.root a,
+table.Publishers td.root a:visited,
+table.Publishers td.root a:link {
+	color: orange;
+}
+
+
+/**/
+table.DOLRMessage {
+	border: 1px solid black;
+	background: white;
+}
+
+table.DOLRMessage td {
+	border: 1px solid black;
+}
+
+table.DOLRMessage .metadata tr > td:first-child, table.DOLRMessage .metadata td {
+	border-bottom: 1px dotted black;
+	background: yellow;
+}
+
+div.copyright {
+	color: white;
+	background-color: transparent;
+}
+
+div.release {
+	color: white;
+	background-color: inherit;
+}
+
+tr.stripe td {
+	background: none #ecf3fe;
+}
+
+button[value="on"] {
+	background-color: #800000;
+	color: #ff6060;
+}
+
+button[value="on"]:hover {
+	background-color: #00f000;
+	color: white;
+}
+
+button[value="off"] {
+	background-color: green;
+	color: #00ff00;
+}
+
+button[value="off"]:hover {
+	color: white;
+}
+
+.toggle-button {
+	background: inherit;
+	color: orange !important;
+	border: 1px outset black;
+}
+
+.toggle-button.on {
+	background: inherit;
+	color: #40ff40;
+	border: 1px inset white;
+}
+	
+.toggle-button.off {
+	background: #b00000;
+	color: white;
+	border: 1px outset black;
+}
+
+.toggle-button.off:hover,
+.toggle-button-off:hover {
+	background: red;
+}
+
+table.FragmentMap td {
+	color: red;
+}
+
+/* application related stuff */
+/* this stuff should not be here because applications come and go.  they should have their own style embedded with them somehow */
+pre.logfile {
+	background: white;
+	color: black;
+}
+
+pre {
+	background-color: inherit;
+	color: inherit;
+	font-size: inherit;
+	margin: 0;
+	padding: 0;
+}
+
+/* General BeehiveObject display */
+.BeehiveObject table.MetaData tbody tr:nth-child(even) { background: #777; color: white; }
+.BeehiveObject table.MetaData tbody tr:nth-child(odd) { background: #555; color: white; }
+.BeehiveObject table.MetaData thead tr {
+	background: none #D0D0D0;
+	color:  black;
+}
+.BeehiveObject table.MetaData a,
+.BeehiveObject table.MetaData a:link,
+.BeehiveObject table.MetaData a:visited {
+	background-color: inherit;
+	color: inherit;
+	text-decoration: none;
+}
+
+/* Version Object Stuff */
+
+.VersionObject table.Parameters tbody tr:nth-child(even) { background: #777; color: white; }
+.VersionObject table.Parameters tbody tr:nth-child(odd) { background: #555; color: white; }
+
+.VersionObject table.FileOperation tbody tr:nth-child(even) { background: #777; color: white; }
+.VersionObject table.FileOperation tbody tr:nth-child(odd) { background: #555; color: white; }
+
+.VersionObject table a,
+.VersionObject table a:link,
+.VersionObject table a:visited {
+	background-color: inherit;
+	color: inherit;
+	text-decoration: none;
+}
+

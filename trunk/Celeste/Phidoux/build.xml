@@ -1,0 +1,268 @@
+<?xml version="1.0" ?>
+<!--
+Copyright 2007-2009 Sun Microsystems, Inc. All Rights Reserved.
+DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER
+
+This code is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License version 2
+only, as published by the Free Software Foundation.
+
+This code is distributed in the hope that it will be useful, but
+WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+General Public License version 2 for more details (a copy is
+included in the LICENSE file that accompanied this code).
+
+You should have received a copy of the GNU General Public License
+version 2 along with this work; if not, write to the Free Software
+Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
+02110-1301 USA
+
+Please contact Sun Microsystems, Inc., 16 Network Circle, Menlo
+Park, CA 94025 or visit www.sun.com if you need additional
+information or have any questions.
+-->
+<project name="Phidoux" default="jars" basedir="." >
+        <description>Build the Phidoux WebDAV/HTTP Server</description>
+
+    <!-- Load up user properties first;  these can be used to override any of the properties below  -->
+    <property name="user.properties.file" location="${user.home}/.build.properties" />
+    <property file="${user.properties.file}" />
+
+    <property name="src.dir" location="src" />
+    <property name="src.etc.dir" location="${src.dir}/etc" />
+    <property name="web.dir" location="${src.dir}/web" />
+    <property name="test.dir" location="test" />
+    <property name="test.unit.dir" location="${test.dir}/unit" />
+    <property name="test.showoutput" value="false"/>
+    <property name="doc.dir" location="doc" />
+    <property name="build.dir" location="${basedir}/build" />
+    <property name="WebContent.dir" location="${src.dir}/WEB-INF" />
+    <property name="build.classes.dir" location="${build.dir}/classes" />
+
+    <property name="javadoc.dir" location="${basedir}/docroot/javadoc" />
+    <property name="dist.dir" location="${basedir}/dist" />
+    <property name="lib.dir" location="lib" />
+
+    <property name="build.test.dir" location="${build.dir}/test" />
+    <property name="build.test.classes.dir" location="${build.test.dir}/classes" />
+    <property name="build.test.depend.dir"  location="${build.test.dir}/depend" />
+    <property name="build.test.output.dir"  location="${build.test.dir}/output" />
+
+    <property name="j2se.doc.api.url" value="http://java.sun.com/javase/6/docs/api/" />
+    <property name="jdk.package.list" value="${doc.dir}/jdk5.0_package_list" />
+
+    <!-- Override this property to limit your unit tests run -->
+    <property name="test.include" value="**/*Test.java" />
+
+    <!-- Override this property to point to your junit jar file -->
+    <property name="junit.jar" location="${lib.dir}/junit-4.1.jar"/>
+
+    <!-- properties used by javac -->
+    <property name="build.debug" value="yes" />
+    <property name="build.debug.level" value="lines,vars,source" />
+    <property name="build.deprecation" value="no" />
+
+    <!-- properties used by manifests for jar files -->
+    <property name="manifest.vendor" value="Sun Microsystems, Inc." />
+
+    <target name="classdepandjar.jar">
+      <exec executable="/usr/bin/curl" >
+        <arg value="-k" />
+        <arg value="-o" />
+        <arg value="lib/classdepandjar.jar" />
+        <arg value="https://classdepandjar.dev.java.net/downloads/classdepandjar.jar" />
+      </exec>
+      <echo message="${os.name}" />
+    </target>
+
+    <!-- =================================
+          target: init
+         ================================= -->
+    <target name="init">
+        <!-- Create the initial time stamps, we use DSTAMP -->
+        <tstamp/>
+        <mkdir dir="${build.dir}"/>
+        <!-- Read the contents of copyright-mini.html into a property, for javadoc commands -->
+        <loadfile property="copyright.mini" srcFile="${basedir}/docroot/copyright-mini.html" />
+    </target>
+
+    <!-- =================================
+          target: jars
+         ================================= -->
+    <target name="jars"
+    	depends="doc, Phidoux.jar"
+        description="==> builds all jar files"/>
+
+
+    <!-- =================================
+          target: all
+         ================================= -->
+    <target name="all"
+    	depends="jars"
+        description="==> builds everything, including javadocs"/>
+
+
+    <!-- =================================
+          target: compile
+         ================================= -->
+    <target name="compile"
+    	depends="init"
+    	description="==> compile all sources">
+        <mkdir dir="${build.classes.dir}"/>
+        <depend srcdir="${src.dir}"
+                destdir="${build.classes.dir}"
+                cache="${build.dir}/dependencies"
+                closure="true" />
+        <javac srcdir="${src.dir}"
+               destdir="${build.classes.dir}"
+               includeAntRuntime="no"
+               debug="${build.debug}"
+               debuglevel="${build.debug.level}"
+               source="1.6"
+               deprecation="${build.deprecation}">
+            <compilerarg value="-Xlint:unchecked"/>
+        </javac>
+    </target>
+	
+
+    <!-- =================================
+         target: Phidoux.jar
+         ================================= -->
+    <target name="Phidoux.jar"
+            depends="compile,scmversion"
+            description="==> build the Phidoux.jar file">
+        <jar destfile="Phidoux.jar">
+        	<fileset dir="${build.classes.dir}"/>
+        	<fileset dir="." includes="docroot/**"/>
+            <fileset dir="." includes="src/**"/>
+            <manifest>
+                <attribute name="Main-Class"             value="sunlabs.asdf.web.http.WebDAVServerMain" />
+                <attribute name="Built-By"               value="${user.name}.${DSTAMP}" />
+                <attribute name="Sealed"                 value="false" />
+                <attribute name="Specification-Title"    value="sunlabs.asdf.web" />
+                <attribute name="Specification-Version"  value="2010.5.4" />
+                <attribute name="Specification-Vendor"   value="${manifest.vendor}" />
+                <attribute name="Implementation-Title"   value="sunlabs.asdf.web" />
+                <attribute name="Implementation-Version" value="${scm_version}" />
+                <attribute name="Implementation-Vendor"  value="${manifest.vendor}" />
+            </manifest>
+        </jar>
+    </target>
+
+
+    <!-- =================================
+          target: checkdocuptodate
+
+         Determine whether or not the javadoc tree is up to date.  The check
+         depends on the doc target updating a timestamp file when it
+         completes successfully.
+         ================================= -->
+    <target name="checkdocuptodate" >
+        <uptodate property="javadoc.isuptodate">
+            <srcfiles dir="${src.dir}">
+                <include name="**/*.java"/>
+                <include name="**/package.html"/>
+            </srcfiles>
+            <!-- srcfiles dir="${doc.dir}">
+                <include name="doc-files/**"/>
+            </srcfiles-->
+            <mapper type="merge" to="${javadoc.dir}/doctimestamp"/>
+        </uptodate>
+    </target>
+
+    <!-- =================================
+          target: doc
+         ================================= -->
+    <target name="doc" depends="scmversion, init, checkdocuptodate, proxy.args" unless="javadoc.isuptodate" description="==> build javadocs">
+        <delete dir="${javadoc.dir}" />
+        <mkdir dir="${javadoc.dir}" />
+        <mkdir dir="${javadoc.dir}/doc-files" />
+        <javadoc destdir="${javadoc.dir}"
+                 overview="${src.dir}/overview.html"
+                 use="true"
+                 package="true"
+                 linksource="no"
+                 noqualifier="java.*" >
+            <arg line="${option.proxyHost}" />
+            <arg line="${option.proxyPort}" />
+            <arg line="${option.nonProxyHosts}" />
+            <arg value="-quiet" />
+            <arg value="-docfilessubdirs" />
+            <bottom>
+                <![CDATA[<div class="bottom">${scm_version}</div><div class="bottom">${copyright.mini}<a href="{@docRoot}/doc-files/copyright.html">Terms</a>.</div>]]>
+            </bottom>
+            <fileset dir="${src.dir}" defaultexcludes="yes">
+                <include name="**/*.java"/>
+            </fileset>
+            <link href="${j2se.doc.api.url}" offline="false" packagelistLoc="${jdk.package.list}" />
+        </javadoc>
+        <touch file="${javadoc.dir}/doctimestamp" />
+    </target>
+
+    <!-- =================================
+          target: clean
+         ================================= -->
+    <target name="clean"  description="==> Remove all build artifacts">
+        <delete dir="${build.dir}" />
+    	<delete dir="${javadoc.dir}" />
+        <delete file="Phidoux.jar" />
+    </target>
+
+
+    <!-- =================================
+          target: clobber
+         ================================= -->
+    <target name="clobber" depends="clean"
+            description="==> Remove all build artifacts, including javadoc">
+        <delete dir="${javadoc.dir}" />
+    </target>
+
+    <!-- =================================
+          Targets that set properties concerning proxy setup that are
+          to be used as arguments in javadoc tasks.  They come in
+          pairs, one for the case where the underlying Java property is
+          set and one for where it isn't set.  (The proxy settings are
+          necessary to allow the "-link" option to work across
+          firewalls.  If you need them and they're not set by default,
+          you can set them in your ~/.build.properties file.)
+         ================================= -->
+    <target name="proxy.args"
+            depends="proxyHost.arg, proxyPort.arg, nonProxyHosts.arg" />
+
+    <target name="proxyHost.arg"
+            depends="set.proxyHost.arg, unset.proxyHost.arg" />
+    <target name="set.proxyHost.arg" if="http.proxyHost" >
+        <property name="option.proxyHost"
+                value="-J-Dhttp.proxyHost=${http.proxyHost}" />
+    </target>
+    <target name="unset.proxyHost.arg" unless="http.proxyHost" >
+        <property name="option.proxyHost" value="" />
+    </target>
+
+    <target name="proxyPort.arg"
+            depends="set.proxyPort.arg, unset.proxyPort.arg" />
+    <target name="set.proxyPort.arg" if="http.proxyPort" >
+        <property name="option.proxyPort"
+                value="-J-Dhttp.proxyPort=${http.proxyPort}" />
+    </target>
+    <target name="unset.proxyPort.arg" unless="http.proxyPort" >
+        <property name="option.proxyPort" value="" />
+    </target>
+
+    <target name="nonProxyHosts.arg"
+            depends="set.nonProxyHosts.arg, unset.nonProxyHosts.arg" />
+    <target name="set.nonProxyHosts.arg" if="http.nonProxyHosts" >
+        <property name="option.nonProxyHosts"
+                value="-J-Dhttp.nonProxyHosts=${http.nonProxyHosts}" />
+    </target>
+    <target name="unset.nonProxyHosts.arg" unless="http.nonProxyHosts" >
+        <property name="option.nonProxyHosts" value="" />
+    </target>
+
+    <target name="scmversion">
+        <exec executable="hg" outputproperty="scm_version" failifexecutionfails="false" error="/dev/null">
+            <arg line="log -rtip --template 'Revision: {branches}{rev} of {date|isodate}. Built {localdate|isodate}'"/>
+        </exec>
+    </target>
+</project>

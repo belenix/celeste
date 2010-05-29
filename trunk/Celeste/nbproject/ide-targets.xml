@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+Copyright 2009 Sun Microsystems, Inc. All Rights Reserved.
+DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER
+
+This code is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License version 2
+only, as published by the Free Software Foundation.
+
+This code is distributed in the hope that it will be useful, but
+WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+General Public License version 2 for more details (a copy is
+included in the LICENSE file that accompanied this code).
+
+You should have received a copy of the GNU General Public License
+version 2 along with this work; if not, write to the Free Software
+Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
+02110-1301 USA
+
+Please contact Sun Microsystems, Inc., 16 Network Circle, Menlo
+Park, CA 94025 or visit www.sun.com if you need additional
+information or have any questions.
+-->
+
+<project basedir=".." name="Celeste-IDE">
+    <import file="../build.xml"/>
+    <target name="debug-nb" depends="celeste">
+        <path id="cp">
+            <pathelement location="${dist.dir}/celeste.jar"/>
+        </path>
+        <nbjpdastart addressproperty="jpda.address" name="Celeste" transport="dt_socket">
+            <classpath refid="cp"/>
+        </nbjpdastart>
+        <java classname="sunlabs.celeste.node.Celeste" fork="true">
+            <classpath refid="cp"/>
+            <jvmarg value="-ea"/>
+            <jvmarg value="-Xdebug"/>
+            <jvmarg value="-Xrunjdwp:transport=dt_socket,address=${jpda.address}"/>
+          <!--
+	    <arg value="--localfs-root"/> <arg value="/files/tmp/celeste/"/>
+            <arg value="--delay-time"/> <arg value="2"/>
+           -->
+	    <arg value="--n-nodes"/> <arg value="6"/>
+	    <arg value="--beehive-connection-type"/> <arg value="plain"/>
+        </java>
+    </target>
+    <target name="compile-selected-files-in-src">
+        <fail unless="files">Must set property 'files'</fail>
+        <mkdir dir="${build.classes.dir}"/>
+        <javac destdir="${build.classes.dir}" includes="${files}"
+               source="1.5" srcdir="src" debug="${build.debug}"
+               debuglevel="${build.debug.level}" />
+    </target>
+    <target name="compile-selected-files-in-test">
+        <fail unless="files">Must set property 'files'</fail>
+        <!-- TODO decide on and define some value for ${build.classes.dir} -->
+        <mkdir dir="${build.classes.dir}"/>
+        <javac destdir="${build.classes.dir}" includes="${files}" 
+               classpath="${junit.jar}"
+               source="1.5" srcdir="test" debug="${build.debug}"
+               debuglevel="${build.debug.level}" />
+    </target>
+</project>

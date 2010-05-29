@@ -1,0 +1,27 @@
+This is Celeste (and Beehive), a distributed, master-less, peer-to-peer,
+byzantine and fault-tolerant mutable data store.
+
+Use ant 1.7, or newer, to build the system.
+
+% (cd Phidoux ; ant clean all)
+% ant clean all
+
+See http://hub.opensolaris.org/bin/view/Project+celeste/WebHome
+
+LICENSE		A copy of the GNU GPL V.2 license
+QUICKSTART	A very small how-to do someting with the system.  For the impatient.
+README		This file.
+administration/	Files (sources, etc) for administering celeste.sunlabs.com.
+bin/		Shell script front-ends for invocations of Celeste and Celeste clients.
+build/		Created when building the system.
+build.xml	The Ant build script.
+dist/		Created when building the system.
+doc/		Miscellaneous documentation
+etc/		Run-time configuration data
+javadoc/	Created when building the system.
+languages/	Simple language bindings for Python and Bash (others welcome).
+lib/		Miscellaneous build or runtime libraries
+nbproject/	NetBeans stuff
+src/		The sources to the entire system
+svc/		Files for configuring Solaris SMF.
+test/		Some test jigs

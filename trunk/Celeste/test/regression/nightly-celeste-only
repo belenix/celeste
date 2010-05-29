@@ -1,0 +1,110 @@
+#!/bin/sh -
+#
+# Copyright 2009 Sun Microsystems, Inc. All Rights Reserved.
+# DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER
+# 
+# This code is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License version 2
+# only, as published by the Free Software Foundation.
+# 
+# This code is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+# General Public License version 2 for more details (a copy is
+# included in the LICENSE file that accompanied this code).
+# 
+# You should have received a copy of the GNU General Public License
+# version 2 along with this work; if not, write to the Free Software
+# Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
+# 02110-1301 USA
+# 
+# Please contact Sun Microsystems, Inc., 16 Network Circle, Menlo
+# Park, CA 94025 or visit www.sun.com if you need additional
+# information or have any questions.
+#
+
+#
+# nightly-celeste-only originating-host dist-path config-prefix
+#
+#   A helper script for base nightly script.  Obtains a Celeste distribution
+#   from dist-path on the remote system, clobbers any currently running
+#   Celeste instances on the local host, installs the distribution, and
+#   starts it running. obtaining the configuration to execute by combining
+#   config-prefix with the local system name.
+#
+#   Wires in a specific location at which to install Celeste and assumes that
+#   the invoker has permission to replace whatever may currently be at that
+#   location.  (This location can be overridden by setting the CELESTEINST
+#   environment variable.)
+#
+#   Also assumes that the invoker has ssh and scp configured so that explicit
+#   passwords aren't needed for the systems involved.
+#
+
+#
+# Default settings:
+#
+# CELESTEINST:  The location where the distribution named by the command line
+#               arguments is installed an run.
+#
+CELESTEINST=${CELESTEINST:=/opt/celeste}
+
+#
+# Gather arguments.
+#
+orginating_host="$1"
+binary_dist_path="$2"
+config_prefix="$3"
+
+user="`whoami`"
+tmp_dist_archive=/tmp/celeste-dist-$$
+
+#
+# Arrange for temporary files to be removed on termination.
+#
+trap "rm -f ${tmp_dist_archive}" 0 1 2 3 15
+
+#
+# Obtain the distribution.  We assume that ${user}'s ssh/scp configuration has
+# been set to avoid needing explicit passwords.
+#
+user_host="${user}@${orginating_host}"
+scp ${user_host}:${binary_dist_path} ${tmp_dist_archive} \
+    > /dev/null 2>&1
+if [ $? != 0 ]; then
+    echo "copy from ${user_host} failed"
+    exit 1
+fi
+
+#
+# Put the name of the configuration to run into the environment, so that
+# bin/celeste will use that configuration.
+#
+if [ "X${config_prefix}" = "X" ]; then
+    CELESTECONFIG="`hostname`"
+else
+    CELESTECONFIG="${config_prefix}:`hostname`"
+fi
+export CELESTECONFIG
+
+#
+# If there's a running Celeste instance, clobber it.
+#
+cd ${CELESTEINST}
+[ -x bin/celeste ] && bin/celeste clobber > /dev/null
+
+#
+# Replace the existing Celeste installation with the new one.
+#
+rm -f -r ./*
+/usr/gnu/bin/tar xf ${tmp_dist_archive}
+
+#
+# Start the Celeste configuration running.  (Counts on this system
+# configuration being mentioned in etc/celeste.cf.)
+#
+bin/celeste start > /dev/null
+if [ $? != 0 ]; then
+    echo "starting Celeste with the ${CELESTECONFIG} configuration failed"
+    exit 1
+fi

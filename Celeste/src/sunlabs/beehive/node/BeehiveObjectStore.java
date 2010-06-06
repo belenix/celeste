@@ -50,9 +50,9 @@ import sunlabs.beehive.exception.BeehiveException;
 import sunlabs.beehive.node.services.WebDAVDaemon;
 import sunlabs.beehive.node.services.PublishDaemon.UnpublishObject;
 import sunlabs.beehive.node.services.api.Publish;
-import sunlabs.beehive.node.services.xml.BeehiveXML;
-import sunlabs.beehive.node.services.xml.BeehiveXML.XMLObject;
-import sunlabs.beehive.node.services.xml.BeehiveXML.XMLObjectStore;
+import sunlabs.beehive.node.services.xml.TitanXML;
+import sunlabs.beehive.node.services.xml.TitanXML.XMLObject;
+import sunlabs.beehive.node.services.xml.TitanXML.XMLObjectStore;
 
 /**
  * <p>
@@ -804,7 +804,7 @@ public final class BeehiveObjectStore implements ObjectStore {
     }
     
     public XMLObjectStore toXML() {
-        BeehiveXML xml = new BeehiveXML();
+        TitanXML xml = new TitanXML();
 
         long currentTimeSeconds = Time.currentTimeInSeconds();
         Set<BeehiveObjectId> objects = this.sortedKeySet();

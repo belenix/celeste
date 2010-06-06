@@ -54,9 +54,9 @@ import sunlabs.asdf.web.XML.XML;
 import sunlabs.asdf.web.http.HTTP;
 import sunlabs.beehive.BeehiveObjectId;
 import sunlabs.beehive.node.services.WebDAVDaemon;
-import sunlabs.beehive.node.services.xml.BeehiveXML;
-import sunlabs.beehive.node.services.xml.BeehiveXML.XMLRoute;
-import sunlabs.beehive.node.services.xml.BeehiveXML.XMLRoutingTable;
+import sunlabs.beehive.node.services.xml.TitanXML;
+import sunlabs.beehive.node.services.xml.TitanXML.XMLRoute;
+import sunlabs.beehive.node.services.xml.TitanXML.XMLRoutingTable;
 
 /**
  * Each Node has a NeighbourMap which is the fundamental distributed
@@ -462,7 +462,7 @@ public final class NeighbourMap {
      * @return XML.Content contain the XML representation of this {@link NeighbourMap}.
      */
     public XMLRoutingTable toXML() {
-        BeehiveXML xml = new BeehiveXML();
+        TitanXML xml = new TitanXML();
 
         XMLRoutingTable table = xml.newXMLRoutingTable(this.node.getNodeAddress().getObjectId(), 0, 64);
         table.bindNameSpace();

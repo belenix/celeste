@@ -57,7 +57,7 @@ getpids() {
         # at working on other systems.
         #
         *)
-            pidlist=$(/bin/ps axww | grep Dbeehive-node | grep -v grep | \
+            pidlist=$(/bin/ps axww | grep Dtitan-node | grep -v grep | \
                 awk '{print $1}')
             echo $pidlist
             ;;

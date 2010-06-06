@@ -35,7 +35,7 @@ import sunlabs.beehive.node.BeehiveObjectStore.NoSpaceException;
 import sunlabs.beehive.node.BeehiveObjectStore.ObjectExistenceException;
 import sunlabs.beehive.node.BeehiveObjectStore.UnacceptableObjectException;
 import sunlabs.beehive.node.object.BeehiveObjectHandler;
-import sunlabs.beehive.node.services.xml.BeehiveXML.XMLObjectStore;
+import sunlabs.beehive.node.services.xml.TitanXML.XMLObjectStore;
 
 // Not sure this interface is that useful as opposed to just using the class definition
 

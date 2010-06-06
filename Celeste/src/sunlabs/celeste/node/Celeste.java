@@ -34,6 +34,7 @@ import java.net.InetAddress;
 import java.net.URL;
 import java.net.UnknownHostException;
 import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
@@ -48,7 +49,7 @@ import sunlabs.celeste.node.services.CelesteClientDaemon;
 
 /**
  * <p>
- * Primary command line startup of a Beehive node.
+ * Primary command line startup of a Celeste node.
  * </p>
  * <p>
  * This class has no instance and serves only to construct one or more
@@ -123,7 +124,7 @@ public class Celeste {
                 while ((line = input.readLine()) != null) {
                     System.out.println(line);
                 }
-                System.out.println(DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.LONG).format(new Date()) + ": " + this.command + " died.");
+                System.out.println(new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss").format(new Date()) + ": " + this.command + " died.");
                 input.close();
                 proc.waitFor();
             } catch (RuntimeException weDidAllWeCouldDo) {
@@ -196,7 +197,7 @@ public class Celeste {
         
         int n_nodes = 1;
         int interprocessStartupDelayTimeSeconds = 5;
-
+        // These are for computing the allocated ports for multiple instances of a node (if any).
         int beehivePortIncrement = 2;
         int webdavPortIncrement = 2;
         int celestePortIncrement = 1;
@@ -284,7 +285,6 @@ public class Celeste {
                         webdavPortIncrement = Integer.parseInt(tokens[1]);
                     properties.setProperty(WebDAVDaemon.Port.getName(), port);
                 } else if (args[i].equals("--celeste-port") || args[i].equals("--celeste-client-port")) {
-
                     String[] tokens = args[++i].split(",");
                     String port = tokens[0];
                     if (tokens.length > 1)
@@ -335,7 +335,7 @@ public class Celeste {
                 properties.setProperty(tokens[0], tokens[1]);
             } else {
                 // Read this command line argument as a URL to fetch configuration properties.
-                // These properties are overridden by options subsequent on the command line.
+                // These properties are then overridden by options subsequent on the command line.
                 try {
                     OrderedProperties p = new OrderedProperties(new URL(args[i]));
                     properties.putAll(p);
@@ -360,9 +360,7 @@ public class Celeste {
                 System.exit(-1);
             }
         }
-
-        DateFormat dateFormat = DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.LONG);
-        
+        DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss"); // ISO 8601    
         
         // Start all of the nodes as threads in one JVM.
         if (useThreads) {
@@ -381,8 +379,7 @@ public class Celeste {
 
                     thread[i] = node[i].start();
 
-                    System.out.printf("%s [%d ms] %s%n",
-                            dateFormat.format(new Date()),
+                    System.out.printf("%s [%d ms] %s%n", dateFormat.format(new Date()),
                             System.currentTimeMillis() - node[i].getStartTime(),
                             node[i].getNodeAddress().format());
 

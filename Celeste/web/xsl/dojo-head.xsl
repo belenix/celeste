@@ -23,8 +23,7 @@
  * information or have any questions.
  -->
 <xsl:stylesheet version="1.0"
-  xmlns:xsl="http://www.w3.org/1999/XSL/Transform" xmlns:beehive="http://labs.oracle.com/Beehive/Version1"
-  exclude-result-prefixes="beehive">
+  xmlns:xsl="http://www.w3.org/1999/XSL/Transform" xmlns:titan="http://labs.oracle.com/Titan/Version1" exclude-result-prefixes="titan">
   <xsl:template name="dojo-head">
     <script type="text/javascript">djConfig={ isDebug: true, parseOnLoad: true, baseUrl: './', useXDomain: true, modulePaths: {'sunlabs': '/dojo/1.3.1/sunlabs'}};</script>
     <link href="http://o.aolcdn.com/dojo/1.4.1/dojo/resources/dojo.css" media="all" rel="stylesheet" type="text/css" />

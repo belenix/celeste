@@ -61,9 +61,9 @@ import sunlabs.beehive.node.services.BeehiveService;
 import sunlabs.beehive.node.services.WebDAVDaemon;
 import sunlabs.beehive.node.services.api.AppClass;
 import sunlabs.beehive.node.services.object.AppClassObjectType;
-import sunlabs.beehive.node.services.xml.BeehiveXML;
-import sunlabs.beehive.node.services.xml.BeehiveXML.XMLService;
-import sunlabs.beehive.node.services.xml.BeehiveXML.XMLServices;
+import sunlabs.beehive.node.services.xml.TitanXML;
+import sunlabs.beehive.node.services.xml.TitanXML.XMLService;
+import sunlabs.beehive.node.services.xml.TitanXML.XMLServices;
 import sunlabs.beehive.node.util.DOLRLogger;
 import sunlabs.beehive.util.DOLRStatus;
 
@@ -1575,7 +1575,7 @@ public final class ApplicationFramework implements XHTMLInspectable {
     }
 
     public XMLServices toXML() {
-        BeehiveXML xml = new BeehiveXML();
+        TitanXML xml = new TitanXML();
         
         XMLServices services = xml.newXMLServices();
         for (String name : this.keySet()) {

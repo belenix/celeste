@@ -22,21 +22,21 @@
  * or visit www.oracle.com if you need additional
  * information or have any questions.
  -->
-<xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform" xmlns:beehive="http://labs.oracle.com/Beehive/Version1" exclude-result-prefixes="beehive">
+<xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform" xmlns:titan="http://labs.oracle.com/Titan/Version1" exclude-result-prefixes="titan">
     <xsl:variable name="column">0</xsl:variable>
     <!-- The value of a time that will never be reached (infinite time) (java.lang.Long.MAX_VALUE). -->
     <xsl:variable name="infinite-time">9223372036854728568</xsl:variable>
     
-	<xsl:template match="beehive:object-store-">
+	<xsl:template match="titan:object-store-">
       <div class="section">
         <table class="objectStore">
           <caption>Object Store</caption>
-          <xsl:apply-templates select="beehive:object" />
+          <xsl:apply-templates select="titan:object" />
         </table>
       </div>
 	</xsl:template>
   
-    <xsl:template match="beehive:object-">
+    <xsl:template match="titan:object-">
     <tr><td class="objectId"><a href="inspect/{@objectId}" title="{@objectType}"><xsl:value-of select="@objectId"/></a></td>
         <td><xsl:value-of select="@size"/></td>
         <td><xsl:value-of select="@replication"/></td>
@@ -44,26 +44,26 @@
     </tr>
     </xsl:template>
     
-    <xsl:template match="beehive:object-store">
-      <xsl:variable name="nobjects"><xsl:value-of select="count(beehive:object)"></xsl:value-of></xsl:variable>
+    <xsl:template match="titan:object-store">
+      <xsl:variable name="nobjects"><xsl:value-of select="count(titan:object)"></xsl:value-of></xsl:variable>
       <xsl:message><xsl:value-of select="$nobjects"/></xsl:message>
       <xsl:message><xsl:value-of select="$nobjects mod 2"/></xsl:message>
       
       <div class="section">
         <table class="objectStore">
           <caption>Object Store</caption>
-          <!-- xsl:apply-templates select="beehive:object" /-->
+          <!-- xsl:apply-templates select="titan:object" /-->
           <xsl:call-template name="object-row-loop">
             <xsl:with-param name="i">1</xsl:with-param>
             <xsl:with-param name="count"><xsl:value-of select="floor($nobjects div 2)" /></xsl:with-param>
           </xsl:call-template>
           <!--  handle the residue of one, if any -->
-          <xsl:if test="$nobjects mod 2 = 1"><tr><xsl:apply-templates select="beehive:object[$nobjects]"/><td></td><td></td><td></td><td></td></tr></xsl:if>          
+          <xsl:if test="$nobjects mod 2 = 1"><tr><xsl:apply-templates select="titan:object[$nobjects]"/><td></td><td></td><td></td><td></td></tr></xsl:if>          
         </table>
       </div>
     </xsl:template>
   
-    <xsl:template match="beehive:object">
+    <xsl:template match="titan:object">
       <td class="objectId"><a href="inspect/{@objectId}" title="{@objectType}"><xsl:value-of select="@objectId"/></a></td>
         <td><xsl:value-of select="@size"/></td>
         <td><xsl:value-of select="@lowWater"/> &#8804; <xsl:value-of select="@nStore"/> &#8804; <xsl:value-of select="@highWater"/></td>
@@ -78,8 +78,8 @@
         <xsl:message>row-loop: i=<xsl:value-of select="$i"/><xsl:text> count=</xsl:text><xsl:value-of select="$count"/></xsl:message>
         <xsl:message>row <xsl:value-of select="$i"/>: [<xsl:value-of select="($i - 1) * 2 + 1"/>] [<xsl:value-of select="($i - 1) * 2 + 2"/>]</xsl:message>
         <tr>
-         <xsl:apply-templates select="beehive:object[($i - 1) * 2 + 1]" />
-         <xsl:apply-templates select="beehive:object[($i - 1) * 2 + 2]" />
+         <xsl:apply-templates select="titan:object[($i - 1) * 2 + 1]" />
+         <xsl:apply-templates select="titan:object[($i - 1) * 2 + 2]" />
         </tr>
       </xsl:if>
 

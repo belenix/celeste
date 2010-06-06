@@ -22,10 +22,10 @@
  * or visit www.oracle.com if you need additional
  * information or have any questions.
  -->
-<xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform" xmlns:beehive="http://labs.oracle.com/Beehive/Version1" exclude-result-prefixes="beehive">
+<xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform" xmlns:titan="http://labs.oracle.com/Titan/Version1" exclude-result-prefixes="titan">
    <xsl:template name="copyright">
         <div class="copyright">        
-          <div class="release">work version</div>
+          <div class="release"><span id="titan"><b>TITAN</b></span>: Uranus</div>
           <table style="width: 450px"><tr><td><img src="images/sun_labs_123x65.gif" /></td><td>Copyright 2004-2010 Oracle.
             This code is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License version 2 only,
             as published by the Free Software Foundation.</td></tr></table>

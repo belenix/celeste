@@ -1,5 +1,5 @@
 /*
- * Copyright 2007-2009 Sun Microsystems, Inc. All Rights Reserved.
+ * Copyright 2007-2010 Oracle. All Rights Reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER
  *
  * This code is free software; you can redistribute it and/or modify
@@ -17,9 +17,8 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
  * 02110-1301 USA
  *
- * Please contact Sun Microsystems, Inc., 16 Network Circle, Menlo
- * Park, CA 94025 or visit www.sun.com if you need additional
- * information or have any questions.
+ * Please contact Oracle, 16 Network Circle, MenloPark, CA 94025
+ * or visit www.oracle.com if you need additional information or have any questions.
  */
 package sunlabs.beehive.node;
 
@@ -34,6 +33,7 @@ import java.net.InetAddress;
 import java.net.URL;
 import java.net.UnknownHostException;
 import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
@@ -47,7 +47,7 @@ import sunlabs.beehive.util.OrderedProperties;
 
 /**
  * <p>
- * Primary command line startup of a Beehive node.
+ * Primary command line startup and supervisor of a Titan node.
  * </p>
  * <p>
  * This class has no instance and serves only to construct one or more
@@ -86,7 +86,6 @@ import sunlabs.beehive.util.OrderedProperties;
  * <tr><td>--local-address &lt;ip-addr&gt;</td><td>The NodeAddress for this node (ip-addr:dolr-port:node-id).</td><td> (nodeAddress)</td></tr>
  * <tr><td>--dolr-server-port &lt;number&gt;</td><td>The TCP port number to use for the DOLR server of this Node.</td><td> (dolrServerPort)</td></tr>
  * <tr><td>--dolr-client-port &lt;number&gt;</td><td>The TCP port number to use for the DOLR client of this Node.</td><td> (dolrClientPort)</td></tr>
- * <tr><td>--celeste-client-port &lt;number&gt;</td><td>The TCP port number to use for the Celeste client of this Node.</td><td></td></tr>
  * <tr><td>--gateway &lt;node-addr&gt;|-|URL</td><td>The gateway node to use to connect to the DOLR</td><td>  (gatewayArgument)</td></tr>
  * <tr><td>--gateway-retry &lt;seconds&gt;</td><td>The number of seconds to delay before retrying to join the specified gateway.</td><td></td></tr>
  * <tr><td>--localfs-root &lt;directory&gt;</td><td>The local file-system directory to use to store all persistent state and other data.</td><td> (spoolDirectoryRoot)</td></tr>
@@ -121,8 +120,8 @@ public class Beehive {
                 String line;
                 while ((line = input.readLine()) != null) {
                     System.out.println(line);
-                }
-                System.out.println(DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.LONG).format(new Date()) + ": " + this.command + " died.");
+                } 
+                System.out.println(new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss").format(new Date()) + ": " + this.command + " died.");
                 input.close();
                 proc.waitFor();
             } catch (RuntimeException weDidAllWeCouldDo) {
@@ -168,7 +167,7 @@ public class Beehive {
         if (javaFile == null)
             javaFile = "/usr/bin/java";
 
-        String jarFile = "dist/celeste.jar";
+        String jarFile = "dist/beehive.jar";
 
         String keyStoreNames[] = null;
 
@@ -348,7 +347,7 @@ public class Beehive {
             }
         }
 
-        DateFormat dateFormat = DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.LONG);
+        DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss"); // ISO 8601    
         
         
         // Start all of the nodes as threads in one JVM.
@@ -443,7 +442,7 @@ public class Beehive {
             }
             String configurationURL = " file://" + configurationFileName;
 
-            String command = javaFile + " -Dbeehive-node" + jvmArguments.toString() + jmxPortProperty + applicationSpecification + configurationURL;
+            String command = javaFile + " -Dtitan-node" + jvmArguments.toString() + jmxPortProperty + applicationSpecification + configurationURL;
             System.out.println(command);
 
             try {

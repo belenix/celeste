@@ -99,10 +99,10 @@ import sunlabs.beehive.node.services.RoutingDaemon;
 import sunlabs.beehive.node.services.WebDAVDaemon;
 import sunlabs.beehive.node.services.api.Census;
 import sunlabs.beehive.node.services.api.Publish;
-import sunlabs.beehive.node.services.xml.BeehiveXML;
-import sunlabs.beehive.node.services.xml.BeehiveXML.XMLNode;
-import sunlabs.beehive.node.services.xml.BeehiveXML.XMLObjectStore;
-import sunlabs.beehive.node.services.xml.BeehiveXML.XMLRoutingTable;
+import sunlabs.beehive.node.services.xml.TitanXML;
+import sunlabs.beehive.node.services.xml.TitanXML.XMLNode;
+import sunlabs.beehive.node.services.xml.TitanXML.XMLObjectStore;
+import sunlabs.beehive.node.services.xml.TitanXML.XMLRoutingTable;
 import sunlabs.beehive.node.util.DOLRLogger;
 import sunlabs.beehive.node.util.DOLRLoggerMBean;
 import sunlabs.beehive.util.DOLRStatus;
@@ -596,7 +596,7 @@ public class BeehiveNode implements NodeMBean {
         public void run() {
             ServerSocket serverSocket = null;
             try {
-                serverSocket = connMgr.getServerSocket();
+                serverSocket = BeehiveNode.this.connMgr.getServerSocket();
             } catch (IOException e) {
                 e.printStackTrace();
                 return;
@@ -644,7 +644,6 @@ public class BeehiveNode implements NodeMBean {
                     return;
                 } finally {
                     // Should close the connection manager's server socket.
-                    if (socket != null) try { socket.close(); } catch (IOException e) { e.printStackTrace(); }
                 }
             }
         }
@@ -955,12 +954,12 @@ public class BeehiveNode implements NodeMBean {
             }
 
             this.connMgr = ConnectionManager.getInstance(this.configuration.asString(BeehiveNode.ConnectionType), this.getNodeAddress(), this.nodeKey);
-            // Still some problems with the new async I/O mechanism and SSL.  Soaks up memory.
+            // Still some problems with the new async I/O mechanism and SSL.  Soaks up a lot of memory.
             if (false) {
                 this.server = new BeehiveServer2();
             } else {
                 if (this.configuration.asString(BeehiveNode.ConnectionType).equalsIgnoreCase("plain")) {
-                    this.server = new PlainServer(new PlainChannelHandler.Factory(this));                
+                    this.server = new PlainServer(new PlainChannelHandler.Factory(this));
                 } else if (this.configuration.asString(BeehiveNode.ConnectionType).equalsIgnoreCase("ssl")) {
                     if (true) {
                         this.server = new BeehiveServer2();
@@ -1903,7 +1902,7 @@ public class BeehiveNode implements NodeMBean {
 
     public XML.Content toXML() {
 
-        BeehiveXML xml = new BeehiveXML();
+        TitanXML xml = new TitanXML();
 
         long currentTime = System.currentTimeMillis();
         long upTime = currentTime - this.startTime;

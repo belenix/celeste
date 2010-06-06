@@ -39,8 +39,8 @@ table.striped tbody tr:nth-child(even) 	{background: #777; color: white;}
 table.striped tbody tr:nth-child(odd) 	{background: #555; color: white}
 
 caption {
-    background-color: #808080;
-    color: black;
+    background: black url('../images/red-to-alpha.png') no-repeat left top;
+    color: white;
 }
 
 h1,h2,h3 {
@@ -88,7 +88,7 @@ table.neighbour-map {
 }
 
 table.neighbour-map caption {
-	background: black url('../images/red-to-alpha.png') no-repeat left top;
+	/*background: black url('../images/red-to-alpha.png') no-repeat left top;*/
 }
 
 table.neighbour-map thead th {
@@ -126,6 +126,10 @@ table#applications {
 	border: 1px solid grey;
 }
 
+table#applications caption {
+    background: black url('../images/red-to-alpha.png') no-repeat left top;
+}
+
 table#applications thead th {
 	background: none #D0D0D0;
 	color: black;
@@ -141,18 +145,23 @@ table#applications a:visited {
 	text-decoration: none;
 }
 
-table#objectStore thead th {
-	background: none #D0D0D0;
-	color: black;
+table.objectStore {
+	
 }
 
-table#objectStore tbody tr:nth-child(even) {background: #777; color: white;}
-table#objectStore tbody tr:nth-child(odd) {background: #555; color: white}
-table#objectStore a,
-table#objectStore a:link,
-table#objectStore a:visited {
-	background-color: inherit;
-	color: inherit;
+table.objectStore thead th {
+	background: none #D0D0D0;
+	color: white;
+}
+
+table.objectStore tbody tr:nth-child(even) {background: #777; color: white;}
+table.objectStore tbody tr:nth-child(odd) {background: #555; color: white}
+
+table.objectStore a,
+table.objectStore a:link,
+table.objectStore a:visited {
+	/*background-color: white;*/
+	color: #FFFFFF;
 	text-decoration: none;
 }
 
@@ -211,9 +220,9 @@ div.release {
 	background-color: inherit;
 }
 
-tr.stripe td {
+/*tr.stripe td {
 	background: none #ecf3fe;
-}
+}*/
 
 button[value="on"] {
 	background-color: #800000;

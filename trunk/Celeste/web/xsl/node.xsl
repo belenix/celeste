@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform" xmlns:beehive="http://labs.oracle.com/Beehive/Version1" exclude-result-prefixes="beehive">
+<xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform" xmlns:titan="http://labs.oracle.com/Titan/Version1" exclude-result-prefixes="titan">
 <xsl:output method="html" doctype-system="http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd" doctype-public="-//W3C//DTD XHTML 1.0 Strict//EN" indent="yes"/>
 <!--
  * Copyright 2004-2010 Oracle. All Rights Reserved.
@@ -25,7 +25,7 @@
  * information or have any questions.
  -->
  <!--
-  This XSL template translates a node routing table into a complete XHTML document
+  This XSL template translates a node into a complete XHTML document
   This uses Dojo 1.4.1
   -->
     <xsl:include href="copyright.xsl"/>
@@ -49,29 +49,29 @@
         </html>
     </xsl:template>
     
-    <xsl:template match="beehive:node">
+    <xsl:template match="titan:node">
         <div><xsl:value-of select="@uptime"/></div>
-        <xsl:apply-templates select="beehive:routing-table" />
-        <xsl:apply-templates select="beehive:services" />
-        <xsl:apply-templates select="beehive:object-store" />
+        <xsl:apply-templates select="titan:routing-table" />
+        <xsl:apply-templates select="titan:services" />
+        <xsl:apply-templates select="titan:object-store" />
     </xsl:template>
     
-    <xsl:template match="beehive:services">
+    <xsl:template match="titan:services">
       <div class="section">
         <table id="applications">
           <caption>Node Services</caption>
-          <xsl:apply-templates select="beehive:service" />
+          <xsl:apply-templates select="titan:service" />
         </table>
       </div>
     </xsl:template>
 
-    <xsl:template match="beehive:service">
+    <xsl:template match="titan:service">
         <tr><td title="{@description}"><a class="serviceName" href="service/{@name}"><xsl:value-of select="@name" /></a></td><td><xsl:value-of select="." /></td></tr>
     </xsl:template>
     
     
-    <!--  this is taken from beehive-route-table.xsl -->
-    <xsl:template match="beehive:routing-table">
+    <!--  this is taken from titan-route-table.xsl -->
+    <xsl:template match="titan:routing-table">
       <div class="section">
       <table class="neighbour-map">
         <caption><xsl:value-of select="@objectId"/></caption>
@@ -93,11 +93,11 @@
       </div>
     </xsl:template>
 
-    <xsl:template match="beehive:route">
-        <xsl:apply-templates select="beehive:route-node" />
+    <xsl:template match="titan:route">
+        <xsl:apply-templates select="titan:route-node" />
     </xsl:template>
     
-    <xsl:template match="beehive:route-node">
+    <xsl:template match="titan:route-node">
       <a class="NodeId" href="http://{@ipAddress}:{@port}"><xsl:value-of select="@objectId"></xsl:value-of></a><br/>
     </xsl:template>
     
@@ -147,7 +147,7 @@
       <xsl:param name="count" />
       <xsl:param name="row" />
       <xsl:if test="$i &lt;= $count">
-        <xsl:variable name="nroutes"><xsl:value-of select="count(beehive:route[@row=$row and @col=$i]/beehive:route-node)"></xsl:value-of></xsl:variable>
+        <xsl:variable name="nroutes"><xsl:value-of select="count(titan:route[@row=$row and @col=$i]/titan:route-node)"></xsl:value-of></xsl:variable>
         <xsl:choose>
           <xsl:when test="$nroutes = 0">
             <td id="cell-{$row}-{$i}"><xsl:text disable-output-escaping='yes'>&#160;</xsl:text></td></xsl:when>
@@ -155,7 +155,7 @@
             <td id="cell-{$row}-{$i}" class="full">
               <xsl:value-of select="$nroutes"></xsl:value-of>
               <div class="neighbour" connectId="cell-{$row}-{$i}" dojoType="sunlabs.StickyTooltip">
-                <xsl:apply-templates select="beehive:route[@row=$row and @col=$i]" />
+                <xsl:apply-templates select="titan:route[@row=$row and @col=$i]" />
               </div>
             </td>
           </xsl:otherwise>

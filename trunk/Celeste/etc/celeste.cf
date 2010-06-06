@@ -245,8 +245,8 @@ case $config_key in
 	threads=true
 	celeste_log="/var/tmp/celeste-$config_key.log"
 	additional_options="--delay-time 2 --object-store-capacity 500M --keystore /tmp/k2,/tmp/k3,/tmp/k4,/tmp/k5,/tmp/k6,/tmp/k7,/tmp/k8,/tmp/k9,/tmp/k10,/tmp/k11,/tmp/k12,/tmp/k1 -Dsunlabs.beehive.node.services.WebDAVDaemon.InspectorCSS=/css/BeehiveStyle.css,/css/BeehiveColours-grey.css -Dsunlabs.beehive.node.services.RoutingDaemon.IntroductionRateMillis=60000 -Dsunlabs.beehive.node.services.RoutingDaemon.ReunionRateMillis=600000"
-        connection_type=plain
-        heap_options="-Xmx12m -Xms12m -XX:+UseParallelGC"
+        #connection_type=plain
+        heap_options="-Xmx20m -Xms20m -XX:+UseParallelGC"
 	#java_options="-DenableProfiling=true"
 	;;
 

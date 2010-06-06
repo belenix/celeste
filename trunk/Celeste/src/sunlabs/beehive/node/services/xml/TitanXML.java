@@ -1,3 +1,25 @@
+/*
+ * Copyright 2007-2010 Oracle. All Rights Reserved.
+ * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER
+ *
+ * This code is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2
+ * only, as published by the Free Software Foundation.
+ *
+ * This code is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ * General Public License version 2 for more details (a copy is
+ * included in the LICENSE file that accompanied this code).
+ *
+ * You should have received a copy of the GNU General Public License
+ * version 2 along with this work; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
+ * 02110-1301 USA
+ *
+ * Please contact Oracle, 16 Network Circle, MenloPark, CA 94025
+ * or visit www.oracle.com if you need additional information or have any questions.
+ */
 package sunlabs.beehive.node.services.xml;
 
 import sunlabs.asdf.web.XML.XML;
@@ -9,31 +31,10 @@ import sunlabs.beehive.BeehiveObjectId;
  * @author Glenn Scott, Sun Labs, Oracle
  *
  */
-/*
- * <?xml version="1.0" encoding="UTF-8"?>
- * <?xml-stylesheet href="/xsl/beehive-route-table.xml" type="application/xml"?>
- * <beehive:routing-table xmlns:beehive="http://labs.oracle.com/Beehive/Version1"
- *   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
- *  xsi:schemaLocation="http://labs.oracle.com/Beehive/Version1/routing-table.xsd"
- *  objectId="9714E902453F36230993BD39A51D592386C34D44FCC9934CB57488A0A7A050F1"
- *  version="0" depth="4">
- *    <beehive:route row="5" col="4">
- *      <beehive:node objectId="row-5-4:0" ipAddress="127.0.0.1" port="12000" http="12001" />
- *      <beehive:node objectId="row-5-4:1" ipAddress="127.0.0.1" port="12002" http="12003" />
- *    </beehive:route>
- *    <beehive:route row="0" col="1">
- *      <beehive:node objectId="row-0-1:0" ipAddress="127.0.0.1" port="12000" http="12001" />
- *      <beehive:node objectId="row-0-1:1" ipAddress="127.0.0.1" port="12002" http="12003" />
- *    </beehive:route>
- *    <beehive:route row="0" col="0">
- *      <beehive:node objectId="row-0-0:0" ipAddress="127.0.0.1" port="12000" http="12001" />
- *      <beehive:node objectId="row-0-0:1" ipAddress="127.0.0.1" port="12002" http="12003" />
- *    </beehive:route>
- * </beehive:routing-table>
- */
-public class BeehiveXML implements XML.ElementFactory  {
 
-    public final static String XmlNameSpace = "http://labs.oracle.com/Beehive/Version1";
+public class TitanXML implements XML.ElementFactory  {
+
+    public final static String XmlNameSpace = "http://labs.oracle.com/Titan/Version1";
     
     private XML.NameSpace nameSpacePrefix;
     private long nameSpaceReferenceCount;
@@ -45,13 +46,13 @@ public class BeehiveXML implements XML.ElementFactory  {
      * </p>
      * @param nameSpacePrefix
      */
-    public BeehiveXML(XML.NameSpace nameSpacePrefix) {
+    public TitanXML(XML.NameSpace nameSpacePrefix) {
         this.nameSpacePrefix = nameSpacePrefix;
         this.nameSpaceReferenceCount = 0;
     }
     
-    public BeehiveXML() {
-        this(new XML.NameSpace("beehive", BeehiveXML.XmlNameSpace));
+    public TitanXML() {
+        this(new XML.NameSpace("titan", TitanXML.XmlNameSpace));
     }
 
     public NameSpace getNameSpace() {
@@ -274,7 +275,7 @@ public class BeehiveXML implements XML.ElementFactory  {
     }
     
     public static void main(String[] args) {
-        BeehiveXML xml = new BeehiveXML();
+        TitanXML xml = new TitanXML();
 
         XMLRoutingTable table = xml.newXMLRoutingTable(new BeehiveObjectId(), 0, 4);
         table.bindNameSpace();

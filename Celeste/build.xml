@@ -293,7 +293,7 @@ information or have any questions.
          depends on the doc target updating a timestamp file when it
          completes successfully.
          ================================= -->
-    <target name="checkdocuptodate" >
+    <!--target name="checkdocuptodate" >
         <uptodate property="javadoc.isuptodate">
             <srcfiles dir="${src.dir}">
                 <include name="**/*.java"/>
@@ -304,17 +304,53 @@ information or have any questions.
             </srcfiles>
             <mapper type="merge" to="${javadoc.dir}/doctimestamp"/>
         </uptodate>
-    </target>
+    </target-->
+	
+	<!--target name="isuptodate" if="javadoc.isuptodate">
+	  <echo message="javadoc.isuptodate no build necessary" />
+	</target-->
+	
+	<target name="set.javadoc.isuptodate">
+	  <uptodate targetfile="${javadoc.dir}/doctimestamp" property="javadoc.isuptodate">
+	    <srcfiles dir="${src.dir}">
+	  	  <include name="**/*.java"/>
+	  	  <include name="**/package.html"/>
+	  	</srcfiles>
+	    <srcfiles dir="${doc.dir}">
+	      <include name="doc-files/**"/>
+	    </srcfiles>
+	  </uptodate>
+	</target>
+
+	<target name="check.javadoc.build">
+	  <uptodate targetfile="src.txt" property="javadoc.needsbuild">
+        <srcfiles dir="${javadoc.dir}">
+          <include name="doctimestamp" />
+        </srcfiles>
+      </uptodate>
+	</target>
+
+	<target name="test.javadoc.notuptodate" unless="javadoc.isuptodate">
+	  <echo message="javadoc needs to be built"/>
+	</target>
+
+	<target name="test.javadoc.isuptodate" if="javadoc.isuptodate">
+	  <echo message="javadoc does not need to be built"/>
+	</target>
+
+	<target name="check.javadoc.isuptodate" 
+	  depends="set.javadoc.isuptodate, test.javadoc.notuptodate, test.javadoc.isuptodate">
+	</target>
 
     <!-- =================================
           target: doc
          ================================= -->
-    <target name="doc" depends="init, checkdocuptodate, proxy.args" unless="javadoc.isuptodate" description="==> build javadocs">
+    <target name="doc" depends="init, check.javadoc.isuptodate, proxy.args" unless="javadoc.isuptodate" description="==> build javadocs">
         <delete dir="${javadoc.dir}" />
         <mkdir dir="${javadoc.dir}" />
         <mkdir dir="${javadoc.dir}/doc-files" />
         <copy todir="${javadoc.dir}/doc-files" >
-                <fileset dir="${doc.dir}/doc-files" />
+          <fileset dir="${doc.dir}/doc-files" />
         </copy>
         <javadoc destdir="${javadoc.dir}"
                  overview="${src.dir}/overview.html"
@@ -338,6 +374,22 @@ information or have any questions.
             <link href="${j2se.doc.api.url}" offline="false" packagelistLoc="${jdk.package.list}" />
         </javadoc>
         <touch file="${javadoc.dir}/doctimestamp" />
+    	
+    	 <jar destfile="${dist.dir}/javadoc.jar" filesonly="true" >
+    	            <fileset dir="${javadoc.dir}" />
+    	            <!--manifest>
+    	                <attribute name="Main-Class"             value="sunlabs.celeste.extension.WordCount" />
+    	                <attribute name="Built-By"               value="${user.name}.${DSTAMP}" />
+    	                <attribute name="Sealed"                 value="true" />
+    	                <attribute name="Specification-Title"    value="Sun Labs Celeste" />
+    	                <attribute name="Specification-Version"  value="${manifest.celeste.spec.version}" />
+    	                <attribute name="Specification-Vendor"   value="${manifest.vendor}" />
+    	                <attribute name="Implementation-Title"   value="sunlabs.celeste" />
+    	                <attribute name="Implementation-Version" value="${scm_version}" />
+    	                <attribute name="Implementation-Vendor"  value="${manifest.vendor}" />
+    	            </manifest-->
+    	         </jar>
+        	
     </target>
 
     <!-- =================================

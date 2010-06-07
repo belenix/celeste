@@ -734,8 +734,9 @@ public class FileImpl {
         // we're counting on the prefix length property setting to be
         // sufficiently large for this purpose.)
         //
-        String nameSuffix = String.format("FileImpl-%s",
-                DOLRLogFormatter.prefixObjId(this.getUniqueFileId()));
+//        String nameSuffix = String.format("FileImpl-%s",
+//                DOLRLogFormatter.prefixObjId(this.getUniqueFileId()));
+        String nameSuffix = String.format("FileImpl-%s", this.getUniqueFileId());
         try {
             //
             // If jmxObjectNamePrefix is null, use our package name as a

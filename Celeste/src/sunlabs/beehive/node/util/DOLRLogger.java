@@ -1,5 +1,5 @@
 /*
- * Copyright 2007-2008 Sun Microsystems, Inc. All Rights Reserved.
+ * Copyright 2007-2010 Oracle. All Rights Reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER
  *
  * This code is free software; you can redistribute it and/or modify
@@ -17,9 +17,8 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
  * 02110-1301 USA
  *
- * Please contact Sun Microsystems, Inc., 16 Network Circle, Menlo
- * Park, CA 94025 or visit www.sun.com if you need additional
- * information or have any questions.
+ * Please contact Oracle, 16 Network Circle, MenloPark, CA 94025
+ * or visit www.oracle.com if you need additional information or have any questions.
  */
 package sunlabs.beehive.node.util;
 
@@ -103,14 +102,14 @@ public class DOLRLogger implements DOLRLoggerMBean {
 //             application, if multiple Nodes are created in one VM).
 //            this.logger = Logger.getLogger(getUniqueName(name));
 
-            this.logger = Logger.getLogger(name);
+            this.logger = Logger.getLogger(name + nodeId.toString());
 
             // File for logging output.
 
             if (false) {
                 FileHandler fh = new FileHandler(this.directory + File.separator + this.fileName + "%g.txt", defaultLogFileSize, defaultNumberOfLogFiles);
                 //fh.setFormatter(new SimpleFormatter());
-                fh.setFormatter(new DOLRLogFormatter(nodeId));
+                fh.setFormatter(new DOLRLogFormatter());
                 this.logger.addHandler(fh);
             }
 
@@ -119,7 +118,7 @@ public class DOLRLogger implements DOLRLoggerMBean {
             // to the root logger, which allows us to do global operations
             // in the logging config file, like set levels for applications.
             Handler ch = new ConsoleHandler();
-            ch.setFormatter(new DOLRLogFormatter(nodeId));
+            ch.setFormatter(new DOLRLogFormatter());
             this.logger.addHandler(ch);
             this.logger.setUseParentHandlers(false);
         } catch (IOException e) {

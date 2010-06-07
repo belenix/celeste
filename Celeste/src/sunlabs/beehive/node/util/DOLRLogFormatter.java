@@ -1,5 +1,5 @@
 /*
- * Copyright 2007-2009 Sun Microsystems, Inc. All Rights Reserved.
+ * Copyright 2007-2010 Oracle. All Rights Reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER
  *
  * This code is free software; you can redistribute it and/or modify
@@ -17,23 +17,18 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
  * 02110-1301 USA
  *
- * Please contact Sun Microsystems, Inc., 16 Network Circle, Menlo
- * Park, CA 94025 or visit www.sun.com if you need additional
- * information or have any questions.
+ * Please contact Oracle, 16 Network Circle, MenloPark, CA 94025
+ * or visit www.oracle.com if you need additional information or have any questions.
  */
 package sunlabs.beehive.node.util;
 
-import java.text.DateFormat;
-
 import java.io.IOException;
 import java.io.PrintStream;
-
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.logging.Formatter;
-import java.util.logging.LogManager;
 import java.util.logging.LogRecord;
-
-import sunlabs.beehive.BeehiveObjectId;
 
 /**
  * A simple formatter to help log output from multiple nodes to a single
@@ -48,51 +43,52 @@ import sunlabs.beehive.BeehiveObjectId;
  * are printed.
  */
 public class DOLRLogFormatter extends Formatter {
-//    private final String nodeId;
     private static final String LINESEP = System.getProperty("line.separator");
+
+    private DateFormat dateFormat;
     
     /**
      * Create a new DOLRLogFormatter.
-     * @param nodeId  the ID of the DOLRNode which is logging messages
      */
-    public DOLRLogFormatter(BeehiveObjectId nodeId) {
+    public DOLRLogFormatter() {
         super();         
-//        this.nodeId = prefixObjId(nodeId);
+        this.dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
     }
     
-    /**
-     * Return the prefix of a given {@link BeehiveObjectId}, based on the 
-     * logging property <code>DOLRFormat.prefixSize</code>.
-     * A '.' will be appended to the name if the prefixSize is not zero.
-     *
-     * @param objectId  id to shorten based on logging property
-     * @return shortened objId
-     */
-    public static String prefixObjId(BeehiveObjectId objectId) {
-        LogManager lm = LogManager.getLogManager();
-        
-        // Set the objId to a substring of the actual id, depending
-        // on the prefix size property.
-        String prop = lm.getProperty("DOLRLogFormat.prefixSize");      
-        
-        // prefix defaults to -1 if property is not found (use entire id)
-        final int prefix;
-        if (prop != null) {
-            prefix = Integer.parseInt(lm.getProperty("DOLRLogFormat.prefixSize"));
-        } else {
-            prefix = -1;
-        }
-        
-        final String id;
-        if (prefix > 0) {
-            id = objectId.toString().substring(0, prefix) + ".";
-        } else if (prefix < 0) {
-            id = objectId.toString() + ".";
-        } else {
-            id = "";
-        }
-        return id;
-    }
+//    /**
+//     * Return the prefix of a given {@link BeehiveObjectId}, based on the 
+//     * logging property <code>DOLRFormat.prefixSize</code>.
+//     * A '.' will be appended to the name if the prefixSize is not zero.
+//     *
+//     * @param objectId  id to shorten based on logging property
+//     * @return shortened objId
+//     */
+//    @Deprecated
+//    public static String prefixObjId(BeehiveObjectId objectId) {
+//        LogManager lm = LogManager.getLogManager();
+//        
+//        // Set the objId to a substring of the actual id, depending
+//        // on the prefix size property.
+//        String prop = lm.getProperty("DOLRLogFormat.prefixSize");      
+//        
+//        // prefix defaults to -1 if property is not found (use entire id)
+//        final int prefix;
+//        if (prop != null) {
+//            prefix = Integer.parseInt(lm.getProperty("DOLRLogFormat.prefixSize"));
+//        } else {
+//            prefix = -1;
+//        }
+//        
+//        final String id;
+//        if (prefix > 0) {
+//            id = objectId.toString().substring(0, prefix) + ".";
+//        } else if (prefix < 0) {
+//            id = objectId.toString() + ".";
+//        } else {
+//            id = "";
+//        }
+//        return id;
+//    }
     
     /**
      * Prepend console output with additional information:
@@ -105,10 +101,9 @@ public class DOLRLogFormatter extends Formatter {
      * 
      * {@inheritDoc}
      */
-    @Override public synchronized String format(LogRecord record) {
-        String now = DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.LONG).format(new Date());
+    @Override public String format(LogRecord record) {        
+        String now = this.dateFormat.format(new Date());
         StringBuilder sb = new StringBuilder(now).append(" ").append(record.getLevel()).append(" ");
-        //sb.append(this.nodeId);
         sb.append(Thread.currentThread().getName());
         sb.append(": ");
         sb.append(record.getSourceClassName());

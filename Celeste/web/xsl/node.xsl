@@ -98,7 +98,7 @@
     </xsl:template>
     
     <xsl:template match="titan:route-node">
-      <a class="NodeId" href="http://{@ipAddress}:{@port}"><xsl:value-of select="@objectId"></xsl:value-of></a><br/>
+      <a class="NodeId" href="http://{@ipAddress}:{@http}/node"><xsl:value-of select="@objectId"></xsl:value-of></a><br/>
     </xsl:template>
     
     <!-- Loop through the columns, creating a header for each -->

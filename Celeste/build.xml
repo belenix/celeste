@@ -432,23 +432,16 @@ information or have any questions.
          ================================= -->
     <target name="binary-dist" depends="jars, doc"
             description="==> build tar file for a binary distribution">
-        <jar destfile="${dist.dir}/docs.jar" filesonly="true" >
-            <fileset dir="${javadoc.dir}" />
-        </jar>
         <tar destfile="${dist.dir}/${DSTAMP}-binary.tgz"
              defaultexcludes="yes"
              compression="gzip" >
-            <tarfileset dir="." filemode="755" includes="bin/**" />
-            <tarfileset dir="." filemode="644" includes="QUICKSTART languages/** dist/*.jar"
-                    excludes="languages/bash/** languages/python/*py" />
-            <tarfileset dir="." filemode="755" includes="languages/bash/**" />
-            <tarfileset dir="." filemode="755" includes="languages/python/*py" />
-            <tarfileset dir="." filemode="755" includes="administration/**" />
+            <tarfileset dir="." filemode="755" includes="bin/** administration/**" />
+            <tarfileset dir="." filemode="644" includes="QUICKSTART languages/** dist/*.jar" excludes="languages/bash/** languages/python/*py" />
+            <tarfileset dir="." filemode="755" includes="languages/bash/** languages/python/*py" />
             <tarfileset dir="." filemode="600"
                 includes="etc/jmxremote.password.template \
                         etc/celeste.cf etc/celeste-httpd.cf \
-                        etc/logging.properties" />
-            <tarfileset dir="." filemode="600" includes="admin/multi-installer admin/multi-celeste" />
+                        etc/logging.properties admin/multi-installer admin/multi-celeste" />
             <tarfileset dir="svc" filemode="555"
                 includes="celeste-exec-start"
                 fullpath="dist/celeste-exec-start" />

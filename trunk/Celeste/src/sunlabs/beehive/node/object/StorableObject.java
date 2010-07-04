@@ -41,7 +41,10 @@ import sunlabs.beehive.api.BeehiveObject;
 import sunlabs.beehive.api.ObjectStore;
 import sunlabs.beehive.node.BeehiveMessage;
 import sunlabs.beehive.node.BeehiveNode;
+import sunlabs.beehive.node.BeehiveObjectPool;
 import sunlabs.beehive.node.BeehiveObjectStore;
+import sunlabs.beehive.node.BeehiveMessage.RemoteException;
+import sunlabs.beehive.node.services.PublishDaemon;
 import sunlabs.beehive.node.services.api.Census;
 import sunlabs.beehive.util.DOLRStatus;
 import sunlabs.beehive.util.OrderedProperties;
@@ -78,9 +81,11 @@ public final class StorableObject {
          * @throws IOException if an underlying IOException was thrown while trying to store the object.
          * @throws BeehiveObjectStore.NoSpaceException if there is no space in the object pool to store this object.
          * @throws BeehiveObjectStore.DeleteTokenException if the delete-token encoding for this object is not well-formed
+         * @throws BeehiveObjectStore.UnacceptableObjectException 
+         * @throws BeehiveObjectPool.Exception 
          */
         public T storeObject(T object)
-        throws IOException, BeehiveObjectStore.NoSpaceException, BeehiveObjectStore.DeleteTokenException;
+        throws IOException, BeehiveObjectStore.NoSpaceException, BeehiveObjectStore.DeleteTokenException, BeehiveObjectStore.UnacceptableObjectException, BeehiveObjectPool.Exception;
 
         /**
          * <p>
@@ -98,32 +103,37 @@ public final class StorableObject {
     
     /**
      * Helper method to store an object on the local node.
+     * The returned {@link BeehiveMessage} is the message from the object's root node indicating the status of the publish operation of the stored object.
+     * The payload of the returned message is either an instance of {@link PublishDaemon.PublishObject.Response}
+     * or an {@link Exception} (see {@link BeehiveMessage#getPayload(Class, BeehiveNode)}.
      *
-     * @param handler
-     * @param object
+     * @param handler The instance implementing {@link StorableObject.Handler<? extends StorableObject.Handler.Object>} invoking this method.
+     * @param object An instance implementing {@link StorableObject.Handler.Object} to store.
      * @param message
-     * @return the reply {@link BeehiveMessage} from the node storing the {@link BeehiveObject} {@code object}.
+     * @return The reply {@link BeehiveMessage} containing the response from the {@link BeehiveObjectHandler#publishObject(BeehiveMessage)} method on the root node for this {@code object}.
+     * @throws RemoteException encapsulating an Exception thrown by the storing node. 
      */
-    public static BeehiveMessage storeLocalObject(StorableObject.Handler<? extends StorableObject.Handler.Object> handler, StorableObject.Handler.Object object, BeehiveMessage message) {
+    public static BeehiveMessage storeLocalObject(StorableObject.Handler<? extends StorableObject.Handler.Object> handler, StorableObject.Handler.Object object, BeehiveMessage message) throws RemoteException {
         BeehiveNode node = handler.getNode();
 
-        // Ensure that that the object's TYPE is set in the metadata.
+        // Ensure that that the object's METADATA_TYPE is set in its metadata.
         object.setProperty(ObjectStore.METADATA_TYPE, handler.getName());
 
         try {
             node.getObjectStore().lock(BeehiveObjectStore.ObjectId(object));
+            BeehiveMessage response = null;
             try {
                 node.getObjectStore().store(object);
             } finally {
-                node.getObjectStore().unlock(object);
+                response = node.getObjectStore().unlock(object);
             }
+            
             if (message.isTraced() && handler.getLogger().isLoggable(Level.FINEST)) {
                 handler.getLogger().finest("recv(%5.5s...) stored %s", message.getMessageId(), object.getObjectId());
             }
-
-            BeehiveMessage result = message.composeReply(node.getNodeAddress(), object.getObjectId());
-            result.subjectId = object.getObjectId(); // XXX Should be encoded in the return value.
-            return result;
+            
+            response.subjectId = object.getObjectId(); // The reponse contains the Set of object-ids.
+            return response;
         } catch (BeehiveObjectStore.UnacceptableObjectException e) {
             return message.composeReply(node.getNodeAddress(), DOLRStatus.NOT_ACCEPTABLE, e);
         } catch (BeehiveObjectStore.DeleteTokenException e) {
@@ -137,114 +147,6 @@ public final class StorableObject {
         }
     }
 
-    /**
-     * Store a {@link StorableObject.Handler.Object} object in the global object store.
-     * <p>
-     * The number of copies to store is governed by the value {@code nReplicas} (node
-     * that the value of the object's metadata value {@link ObjectStore.METADATA_REPLICATION_STORE} does not have to be equal to {@code nReplicas}.)
-     * Each copy is stored on a different node, excluding the nodes specified in the {@link Set} {@code excludedNodes}.
-     * </p>
-     * <p>
-     * If a node is selected to store the object and that node already has an object with the same
-     * {@link BeehiveObjectId}, the node replaces the copy with the new copy and signals that the object already existed.
-     * </p>
-     * <p>
-     * If the value of {@code nReplicas} is larger than the number of nodes in the system, this method
-     * will ultimately throw {@link BeehiveObjectStore.NoSpaceException}.
-     * </p>
-     * @param handler The instance of the StorableObject.Handler that is invoking this method.
-     * @param object The StorableObject.Handler.Object to store.
-     * @param nReplicas The number of replicas to store.
-     * @param exclude The Set of nodes to exclude from the candidate set of nodes to store the object.
-     * @param executorService An instance of {@link ExecutorService} to use to store the {@code nReplicas} in parallel.
-     * @throws IOException
-     * @throws BeehiveObjectStore.NoSpaceException
-     */
-    public static StorableObject.Handler.Object storeObject(StorableObject.Handler<? extends StorableObject.Handler.Object> handler,
-            StorableObject.Handler.Object object,
-            int nReplicas,
-            Set<BeehiveObjectId> exclude,
-            ExecutorService executorService)
-    throws IOException, BeehiveObjectStore.NoSpaceException {
-        object.setProperty(ObjectStore.METADATA_TYPE, handler.getName());
-        object.setProperty(ObjectStore.METADATA_DATAHASH, object.getDataId());
-
-        Census census = (Census) handler.getNode().getService("sunlabs.beehive.node.services.CensusDaemon");
-
-        Set<BeehiveObjectId> excludedNodes = new HashSet<BeehiveObjectId>(exclude);
-
-        for (int successfulStores = 0; successfulStores < nReplicas; /**/) {
-            // Get enough nodes from Census to store the object.
-            Map<BeehiveObjectId, OrderedProperties> nodes = census.select(nReplicas - successfulStores, excludedNodes, null);
-            if (nodes.size() == 0) {
-                throw new BeehiveObjectStore.NoSpaceException("No node found to store object %s", object.getObjectId());
-            }
-            if (handler.getLogger().isLoggable(Level.FINE)) {
-                handler.getLogger().fine("%s Selected nodes: %s.", object.getObjectId(), nodes);
-            }
-
-            LinkedList<FutureTask<BeehiveObjectId>> tasks = new LinkedList<FutureTask<BeehiveObjectId>>();
-            CountDownLatch latch = new CountDownLatch(nodes.size());
-            for (BeehiveObjectId destination : nodes.keySet()) {
-                excludedNodes.add(destination);
-                FutureTask<BeehiveObjectId> task = new StoreTask(handler, object, destination, latch);
-                tasks.add(task);
-                if (executorService != null)
-                    executorService.execute(task);
-                else
-                    task.run();
-            }
-
-            // Now collect the results of all the store operations.
-            boolean complained = false;
-            for (;;) {
-                try {
-                    if (latch.await(10000, TimeUnit.MILLISECONDS))
-                        break;
-                    for (FutureTask<BeehiveObjectId> task : tasks) {
-                        if (!task.isDone()) {
-                            handler.getLogger().warning("(thread=%d) waiting for task %s",  Thread.currentThread().getId(), task.toString());
-                        }                        
-                    }
-
-                    complained = true;
-                } catch (InterruptedException e) {
-                    /**/
-                }
-            }
-            if (complained) {
-                handler.getLogger().warning("(id=%d) waiting done.", Thread.currentThread().getId());
-            }
-
-            BeehiveObjectId objectId = null;
-
-            // Collect the results from each of the Tasks started above, counting the successful stores..
-            for (FutureTask<BeehiveObjectId> task : tasks) {
-                try {
-                    BeehiveObjectId result = task.get();
-                    if (result != null) {
-                        if (objectId == null) {
-                            objectId = result;
-                            object.setObjectId(result);
-                        } else {
-                            if (!result.equals(objectId)) {
-                                handler.getLogger().severe(String.format("Inconsistent object-id: Expected %s got %s", objectId, result));
-                            }
-                        }
-                        successfulStores++;
-                    }
-                } catch (ExecutionException e) {
-                    e.printStackTrace();
-                } catch (InterruptedException e) {
-                    // the task was interrupted and did not complete.
-                    e.printStackTrace();
-                }
-            }
-        }
-
-        return object;
-    }
-    
     /**
      * Store a given {@link StorableObject.Handler.Object} object in the global object store.
      * The number of copies to store is presented in the object's meta-data as
@@ -263,21 +165,154 @@ public final class StorableObject {
      * @param handler
      * @param object
      * @throws IOException
+     * @throws BeehiveObjectStore.UnacceptableObjectException 
      */
     public static StorableObject.Handler.Object storeObject(StorableObject.Handler<? extends StorableObject.Handler.Object> handler, StorableObject.Handler.Object object)
-    throws IOException, BeehiveObjectStore.NoSpaceException {
+    throws IOException, BeehiveObjectStore.NoSpaceException, BeehiveObjectStore.UnacceptableObjectException, BeehiveObjectPool.Exception {
         int nReplicas = Integer.parseInt(object.getProperty(ObjectStore.METADATA_REPLICATION_STORE, "1"));
-        // For now parallel stores is turned off.  It can generate a large number of Threads during big writes
-        // with no benefit because the publish operation is ultimately sequential due to its locking.
+        // For now parallel stores is turned off by passing null as the executor to storeObject().
+        // It can generate a large number of Threads during big writes with no benefit because the publish operation is ultimately sequential due to its locking.
         //ExecutorService executor = Executors.newFixedThreadPool(nReplicas);
         return StorableObject.storeObject(handler, object, nReplicas, new HashSet<BeehiveObjectId>(), null);
     }
+
+    /**
+     * @throws BeehiveObjectPool.Exception 
+     * Store a {@link StorableObject.Handler.Object} object in the global object store.
+     * <p>
+     * The number of copies to store is governed by the value {@code nReplicas}
+     * (note that the value of the object's metadata value {@link ObjectStore.METADATA_REPLICATION_STORE} does not have to be equal to {@code nReplicas}.)
+     * Each copy is stored on a different node, excluding the nodes specified in the {@link Set} {@code excludedNodes}.
+     * </p>
+     * <p>
+     * If a node is selected to store the object and that node already has an object with the same
+     * {@link BeehiveObjectId}, the node replaces the copy with the new copy and signals that the object already existed.
+     * </p>
+     * <p>
+     * If the value of {@code nReplicas} is larger than the number of nodes in the system, this method
+     * will ultimately throw {@link BeehiveObjectStore.NoSpaceException}.
+     * </p>
+     * @param handler The instance of the StorableObject.Handler that is invoking this method.
+     * @param object The StorableObject.Handler.Object to store.
+     * @param nReplicas The number of replicas to store.
+     * @param exclude The Set of nodes to exclude from the candidate set of nodes to store the object.
+     * @param executorService An instance of {@link ExecutorService} to use to store the {@code nReplicas} in parallel, or {@code null} to store the objects serially.
+     * @throws IOException
+     * @throws BeehiveObjectStore.NoSpaceException
+     * @throws  
+     */
+    public static StorableObject.Handler.Object storeObject(StorableObject.Handler<? extends StorableObject.Handler.Object> handler,
+            StorableObject.Handler.Object object,
+            int nReplicas,
+            Set<BeehiveObjectId> exclude,
+            ExecutorService executorService)
+    throws IOException, BeehiveObjectStore.NoSpaceException, BeehiveObjectStore.UnacceptableObjectException, BeehiveObjectPool.Exception {
+        object.setProperty(ObjectStore.METADATA_TYPE, handler.getName());
+        object.setProperty(ObjectStore.METADATA_DATAHASH, object.getDataId());
+
+        Census census = (Census) handler.getNode().getService("sunlabs.beehive.node.services.CensusDaemon");
+
+        Set<BeehiveObjectId> excludedNodes = new HashSet<BeehiveObjectId>(exclude);
+
+        for (int successfulStores = 0; successfulStores < nReplicas; /**/) {
+            // Get enough nodes from Census to store the object.
+            Map<BeehiveObjectId, OrderedProperties> nodes = census.select(nReplicas - successfulStores, excludedNodes, null);
+            if (nodes.size() == 0) {
+                throw new BeehiveObjectStore.NoSpaceException("No node found to store object %s", object.getObjectId());
+            }
+            if (handler.getLogger().isLoggable(Level.FINE)) {
+                handler.getLogger().fine("%s on nodes: %s.", object.getObjectId(), nodes.keySet());
+            }
+
+            LinkedList<FutureTask<BeehiveMessage>> tasks = new LinkedList<FutureTask<BeehiveMessage>>();
+            CountDownLatch latch = new CountDownLatch(nodes.size());
+            for (BeehiveObjectId destination : nodes.keySet()) {
+                excludedNodes.add(destination);
+                FutureTask<BeehiveMessage> task = new StoreTask(handler, object, destination, latch);
+                tasks.add(task);
+                if (executorService != null)
+                    executorService.execute(task);
+                else
+                    task.run();
+            }
+
+            // Now collect the results of all the store operations.
+            boolean complainedAboutTime = false;
+            for (;;) {
+                try {
+                    if (latch.await(10000, TimeUnit.MILLISECONDS))
+                        break;
+                    for (FutureTask<BeehiveMessage> task : tasks) {
+                        if (!task.isDone()) {
+                            handler.getLogger().warning("(thread=%d) waiting for task %s",  Thread.currentThread().getId(), task.toString());
+                        }                        
+                    }
+
+                    complainedAboutTime = true;
+                } catch (InterruptedException e) {
+                    /**/
+                }
+            }
+            if (complainedAboutTime) {
+                handler.getLogger().warning("(id=%d) waiting done.", Thread.currentThread().getId());
+            }
+
+
+            // Collect the results from each of the Tasks started above, counting the successful stores..
+            for (FutureTask<BeehiveMessage> task : tasks) {
+                try {
+                    BeehiveMessage publishResult = task.get();
+                    if (true) {
+                        try {
+                            PublishDaemon.PublishObject.Response response = publishResult.getPayload(PublishDaemon.PublishObject.Response.class, handler.getNode());
+                            for (BeehiveObjectId objectId : response.getObjectIds()) { // should only be one object-id.
+                                object.setObjectId(objectId);
+                            }
+                            successfulStores++;
+                        } catch (RemoteException e) {
+                            java.lang.Exception cause = (java.lang.Exception) e.getCause();
+                            if (cause instanceof BeehiveObjectPool.Exception) {
+                                // These exceptions are fatal to the whole store, so immediately get out of here throwing the rest away.
+                                throw (BeehiveObjectPool.Exception) cause;
+                            } else if (cause instanceof BeehiveObjectStore.Exception) {
+                                // These exceptions are related just to the node we asked to store the object.  Continue.
+                                
+                            } else {
+                                e.printStackTrace();
+                            }
+                        } catch (ClassNotFoundException e) {
+                            throw new RuntimeException(e);
+                        }
+                    } else {
+                        BeehiveObjectId objectId = null;
+                        if (publishResult.getStatus().isSuccessful()) {
+                            objectId = publishResult.subjectId;
+                            object.setObjectId(objectId);
+                        } else {
+                            if (!publishResult.equals(objectId)) {
+                                handler.getLogger().severe(String.format("Inconsistent object-id: Expected %s got %s", objectId, publishResult));
+                            }
+                        }
+                        successfulStores++;
+                    }
+                } catch (ExecutionException e) {
+                    e.printStackTrace();
+                } catch (InterruptedException e) {
+                    // the task was interrupted and did not complete.
+                    e.printStackTrace();
+                }
+            }
+        }
+
+        return object;
+    }
+    
 
 
     /**
      * Wrap an invocation of the {@link StorableObject.Store} in a {@link FutureTask} object.
      */
-    public static class StoreTask extends FutureTask<BeehiveObjectId> {
+    public static class StoreTask extends FutureTask<BeehiveMessage> {
         private BeehiveObject object;
         private BeehiveObjectId destination;
 
@@ -295,7 +330,7 @@ public final class StorableObject {
         /**
          * A simple Callable to store a BeehiveObject on a destination node.
          */
-        private static class Store implements Callable<BeehiveObjectId> {
+        private static class Store implements Callable<BeehiveMessage> {
             private  StorableObject.Handler<? extends StorableObject.Handler.Object>  handler;
             private BeehiveObjectId destination;
             private BeehiveObject object;
@@ -308,10 +343,11 @@ public final class StorableObject {
                 this.object = object;
             }
 
-            public BeehiveObjectId call() throws BeehiveNode.NoSuchNodeException {
+            public BeehiveMessage call() throws BeehiveNode.NoSuchNodeException {
                 try {
                     BeehiveMessage reply = this.handler.getNode().sendToNodeExactly(this.destination, this.handler.getName(), "storeLocalObject", this.object);
-                    return reply.getStatus().isSuccessful() ? reply.subjectId : null;
+              
+                    return reply;
                 } finally {
                     if (this.latch != null)
                         this.latch.countDown();

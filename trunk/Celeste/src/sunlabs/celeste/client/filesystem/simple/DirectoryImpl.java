@@ -36,13 +36,14 @@ import java.util.SortedSet;
 import java.util.TreeSet;
 
 import sunlabs.beehive.BeehiveObjectId;
+import sunlabs.beehive.api.Credential;
 import sunlabs.beehive.util.ExponentialBackoff;
 import sunlabs.beehive.util.ExtentBuffer;
 import sunlabs.beehive.util.OrderedProperties;
 
 import sunlabs.celeste.FileIdentifier;
-import sunlabs.celeste.client.Profile_;
 import sunlabs.celeste.client.filesystem.FileAttributes;
+import sunlabs.celeste.client.filesystem.FileException;
 import sunlabs.celeste.node.services.api.AObjectVersionMapAPI;
 
 import static sunlabs.celeste.client.filesystem.FileAttributes.Names.CONTENT_TYPE_NAME;
@@ -268,7 +269,7 @@ public class DirectoryImpl {
      */
     public void create(DirectoryImpl parent, OrderedProperties attributes,
             OrderedProperties clientProperties,
-            Profile_ invokerCredential, char[] invokerPassword)
+            Credential invokerCredential, char[] invokerPassword)
         throws
             FileException.BadVersion,
             FileException.CapacityExceeded,
@@ -348,8 +349,7 @@ public class DirectoryImpl {
     // a reference.  If this entry was the only reference, the file it named
     // will become orphaned.  Callers should take this into account.
     //
-    public void link(String name, FileImpl file, Profile_ accessorProfile,
-            char[] password)
+    public void link(String name, FileImpl file, Credential accessorProfile, char[] password)
         throws
             FileException.BadVersion,
             FileException.CapacityExceeded,
@@ -374,7 +374,7 @@ public class DirectoryImpl {
     //
     //      Still have to figure out how to report this...
     //
-    public void link(String name, FileImpl file, Profile_ accessorProfile,
+    public void link(String name, FileImpl file, Credential accessorProfile,
             char[] requestorPassword, boolean overwriteAllowed)
         throws
             FileException.BadVersion,
@@ -467,7 +467,7 @@ public class DirectoryImpl {
         }
     }
 
-    public void unlink(String name, Profile_ accessorProfile,
+    public void unlink(String name, Credential accessorProfile,
             char[] requestorPassword)
         throws
             FileException.BadVersion,
@@ -497,8 +497,7 @@ public class DirectoryImpl {
     //
     // This operation has linear cost in the size of the directory.
     //
-    public void unlink(FileImpl file, Profile_ accessorProfile,
-            char[] requestorPassword)
+    public void unlink(FileImpl file, Credential accessorProfile, char[] requestorPassword)
         throws
             FileException.BadVersion,
             FileException.CapacityExceeded,
@@ -565,8 +564,7 @@ public class DirectoryImpl {
      *
      * </p>
      */
-    public void setParent(DirectoryImpl newParent, Profile_ accessorProfile,
-            char[] requestorPassword)
+    public void setParent(DirectoryImpl newParent, Credential accessorProfile, char[] requestorPassword)
         throws
             FileException.BadVersion,
             FileException.CapacityExceeded,
@@ -629,8 +627,7 @@ public class DirectoryImpl {
     // XXX: Why does this method take the accessor password in String form
     //      when most others in this class take it in char[] form?
     //
-    public FileIdentifier getFileIdentifier(Profile_ accessorProfile,
-            String accessorPassword, String name)
+    public FileIdentifier getFileIdentifier(Credential accessorProfile, String accessorPassword, String name)
         throws
             FileException.BadVersion,
             FileException.CelesteFailed,
@@ -671,8 +668,7 @@ public class DirectoryImpl {
      * @throws FileException.Runtime
      * @throws FileException.ValidationFailed
      */
-    public SortedSet<String> getAllNames(Profile_ accessorProfile,
-            String accessorPassword)
+    public SortedSet<String> getAllNames(Credential accessorProfile, String accessorPassword)
         throws
             FileException.BadVersion,
             FileException.CelesteFailed,
@@ -728,8 +724,7 @@ public class DirectoryImpl {
      * @throws FileException.Runtime
      * @throws FileException.ValidationFailed
      */
-    public SortedSet<Dirent> getDirents(Profile_ accessorProfile,
-            String accessorPassword)
+    public SortedSet<Dirent> getDirents(Credential accessorProfile, String accessorPassword)
         throws
             FileException.BadVersion,
             FileException.CelesteFailed,
@@ -771,7 +766,7 @@ public class DirectoryImpl {
         return dirents;
     }
 
-    public void purgeForever(Profile_ accessorProfile, char[] password) throws
+    public void purgeForever(Credential accessorProfile, char[] password) throws
             FileException.BadVersion,
             FileException.CelesteFailed,
             FileException.CelesteInaccessible,
@@ -788,7 +783,7 @@ public class DirectoryImpl {
         this.dataEncodingVersion = 0;
     }
 
-    public void markDeleted(Profile_ accessorProfile, char[] requestorPassword)
+    public void markDeleted(Credential accessorProfile, char[] requestorPassword)
         throws
             FileException.BadVersion,
             FileException.CapacityExceeded,
@@ -865,7 +860,7 @@ public class DirectoryImpl {
      * @param annotation        uninterpreted client-supplied information
      *                          associated with the lock
      */
-    public void acquireModificationLock(Profile_ invokerCredential,
+    public void acquireModificationLock(Credential invokerCredential,
             char[] invokerPassword, String lockToken, Serializable annotation)
         throws
             FileException.BadVersion,
@@ -893,13 +888,12 @@ public class DirectoryImpl {
      *                          directory
      * @param invokerPassword   the password for {@code invokerCredential}
      * @param lockToken         the string given as argument to the {@link
-     *                          #acquireModificationLock(Profile_, char[],
+     *                          #acquireModificationLock(Credential, char[],
      *                          String, Serializable)
      *                          acquireModificationLock()} call that acquired
      *                          the lock being released
      */
-    public void releaseModificationLock(Profile_ invokerCredential,
-            char[] invokerPassword, String lockToken)
+    public void releaseModificationLock(Credential invokerCredential, char[] invokerPassword, String lockToken)
         throws
             FileException.BadVersion,
             FileException.CapacityExceeded,
@@ -919,8 +913,7 @@ public class DirectoryImpl {
             invokerPassword, lockToken);
     }
 
-    public AObjectVersionMapAPI.Lock inspectModificationLock(
-            Profile_ invokerCredential, char[] invokerPassword)
+    public AObjectVersionMapAPI.Lock inspectModificationLock(Credential invokerCredential, char[] invokerPassword)
         throws
             FileException.BadVersion,
             FileException.CapacityExceeded,
@@ -1008,7 +1001,7 @@ public class DirectoryImpl {
     // XXX: Add instrumentation to determine where the time's going.
     //
     private void writeDir(OrderedProperties dir,
-            Profile_ accessorProfile, char[] requestorPassword,
+            Credential accessorProfile, char[] requestorPassword,
             BeehiveObjectId initialPredicatedVersion)
         throws
             FileException.BadVersion,
@@ -1113,7 +1106,7 @@ public class DirectoryImpl {
     //
     // XXX: Add instrumentation to determine where the time's going.
     //
-    private OrderedProperties readDir(Profile_ readerCredential, char[] readerPassword)
+    private OrderedProperties readDir(Credential readerCredential, char[] readerPassword)
             throws
                 FileException.BadVersion,
                 FileException.CelesteFailed,

@@ -923,6 +923,9 @@ public final class ApplicationFramework implements XHTMLInspectable {
         Service a = this.get(subjectClass, request.isTraced());
 
         if (a != null) {
+            if (request.isTraced()) {
+                this.log.info("recv(%5.5s) %s %s", request.getMessageId(), subjectClass, request.getSubjectClassMethod());
+            }
             try {
                 /*
                  * IllegalAccessException - if this Method object enforces Java language access control and the underlying method is inaccessible.
@@ -931,18 +934,7 @@ public final class ApplicationFramework implements XHTMLInspectable {
                  * NullPointerException - if the specified object is null and the method is an instance method.
                  * ExceptionInInitializerError - if the initialization provoked by this method fails.
                  */
-                if (request.isTraced()) {
-                    this.log.info("recv(%5.5s) %s %s", request.getMessageId(), subjectClass, request.getSubjectClassMethod());
-                }
-//                if (true) {
-                    return a.invokeMethod(subjectMethod, request);
-//                } else {
-//                    BeehiveMessage result = (BeehiveMessage) a.getClass().getMethod(subjectMethod, BeehiveMessage.class).invoke(a, request);
-//                    if (result == null) {
-//                        return request.composeReply(this.node.getNodeAddress(), DOLRStatus.INTERNAL_SERVER_ERROR, subjectClass);
-//                    }
-//                    return result;
-//                }
+                return a.invokeMethod(subjectMethod, request);
             } catch (IllegalArgumentException illegalArgument) {
                 illegalArgument.printStackTrace(System.err);
                 return request.composeReply(this.node.getNodeAddress(), DOLRStatus.EXPECTATION_FAILED, subjectClass);
@@ -955,8 +947,6 @@ public final class ApplicationFramework implements XHTMLInspectable {
             }
         }
 
-//        String msg = "Unimplemented BeehiveService class: message type=" + request.getType() + ":" + subjectClass;
-//        this.log.severe(msg);
         this.log.severe("Unimplemented BeehiveService class: message type=%s class=%s method=%s (found=%s)", request.getType(), subjectClass, subjectMethod, a);
         return request.composeReply(this.node.getNodeAddress(), DOLRStatus.NOT_IMPLEMENTED);
     }

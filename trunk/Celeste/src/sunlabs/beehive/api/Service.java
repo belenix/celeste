@@ -71,7 +71,7 @@ import sunlabs.beehive.node.util.DOLRLogger;
  * </p>
  * @author Glenn Scott - Sun Microsystems Laboratories
  */
-public interface Service extends /*XHTMLInspectable,*/ Serializable {
+public interface Service extends Serializable {
 
     /**
      * The configuration parameter name controlling the logging level of
@@ -122,8 +122,7 @@ public interface Service extends /*XHTMLInspectable,*/ Serializable {
     /**
      * Restart this {@code Service}.
      * <p>
-     * Restarting typically consists of stopping and starting the
-     *  Service.
+     * Restarting typically consists of stopping and starting the Service.
      * Service implementors need to arrange for all cleanup and
      * re-initialisation requirements of their services.
      * </p>

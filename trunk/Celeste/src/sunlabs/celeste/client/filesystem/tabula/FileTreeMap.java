@@ -41,7 +41,7 @@ import sunlabs.beehive.api.Credential;
 
 import sunlabs.celeste.FileIdentifier;
 import sunlabs.celeste.client.Profile_;
-import sunlabs.celeste.client.filesystem.PathName;
+import sunlabs.celeste.client.filesystem.HierarchicalFileSystem;
 import sunlabs.celeste.node.CelesteACL;
 import sunlabs.celeste.util.ACL;
 import sunlabs.celeste.util.ACL.ACLException;
@@ -327,7 +327,7 @@ public class FileTreeMap extends TreeMap<PathName, FileTreeMap.OccupantInfo> {
             FSException.NotFound,
             FSException.PermissionDenied {
         synchronized (this) {
-            for (PathName ancestorPath : path) {
+            for (HierarchicalFileSystem.FileName ancestorPath : path) {
                 OccupantInfo info = this.get(ancestorPath);
                 if (info == null) {
                     //

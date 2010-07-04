@@ -61,7 +61,6 @@ import sunlabs.beehive.node.UnpublishObjectMessage;
 import sunlabs.beehive.node.BeehiveMessage.RemoteException;
 import sunlabs.beehive.node.object.AbstractObjectHandler;
 import sunlabs.beehive.node.services.api.Publish;
-import sunlabs.beehive.util.DOLRStatus;
 
 /**
  * The Beehive Node Publish Object Daemon
@@ -760,9 +759,18 @@ public final class PublishDaemon extends BeehiveService implements Publish, Publ
 
         public static class Response implements sunlabs.beehive.node.services.api.Publish.Response, Serializable {
             private static final long serialVersionUID = 1L;
+            private Set<BeehiveObjectId> objectIds;
 
             public Response() {
+                this.objectIds = new HashSet<BeehiveObjectId>();
+            }
 
+            public Response(Set<BeehiveObjectId> objectIds) {
+                this.objectIds = objectIds;
+            }
+            
+            public Set<BeehiveObjectId> getObjectIds() {
+                return this.objectIds;
             }
         }
     }

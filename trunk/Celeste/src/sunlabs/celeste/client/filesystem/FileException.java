@@ -22,9 +22,10 @@
  * information or have any questions.
  */
 
-package sunlabs.celeste.client.filesystem.simple;
+package sunlabs.celeste.client.filesystem;
 
-import sunlabs.celeste.client.filesystem.PathName;
+import sunlabs.celeste.client.filesystem.simple.FileImpl;
+import sunlabs.celeste.client.filesystem.tabula.PathName;
 
 /**
  * {@code FileException} and its nested subclasses capture information
@@ -89,6 +90,10 @@ public class FileException extends Exception {
     private final static String RUNTIME = "Runtime error";
     private final static String VALIDATION_FAILED = "File did not validate";
 
+    public FileException() {
+        super();
+    }
+    
     /**
      * Create a file exception not covered by one of the nested {@code
      * FileException} subclasses.
@@ -129,6 +134,29 @@ public class FileException extends Exception {
 
         public BadVersion(Throwable cause) {
             super(BAD_VERSION, cause);
+        }
+    }
+    /**
+     * Signal that the file is busy.
+     * <p>
+     * The file may be locked.
+     * It may already exist when it should not exist.
+     * </p>
+     *
+     */
+    public static class FileBusyException extends FileException {
+        private final static long serialVersionUID = 1L;
+        
+        public FileBusyException() {
+            super();
+        }
+        
+        public FileBusyException(String message) {
+            super(message);
+        }
+
+        public FileBusyException(Throwable cause) {
+            super(cause);
         }
     }
 
@@ -383,7 +411,7 @@ public class FileException extends Exception {
             super(FILE_NOT_FOUND, cause);
         }
 
-        public NotFound(PathName path) {
+        public NotFound(HierarchicalFileSystem.FileName path) {
             super(String.format("%s: %s", FILE_NOT_FOUND, path));
         }
 

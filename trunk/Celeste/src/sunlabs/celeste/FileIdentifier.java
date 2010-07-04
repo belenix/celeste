@@ -50,16 +50,14 @@ public class FileIdentifier implements Serializable {
     private BeehiveObjectId fileId;
 
     /**
-     * Constructs a new {@code FileIdentifier}.
+     * Constructs a new {@code FileIdentifier} from the given {@code nameSpaceId} and {@code fileId}.
      *
      * @param nameSpaceId   the name space containing the file this identifier
      *                      represents
      * @param fileId        the unique identifier of the file this identifier
      *                      represents within its name space
      *
-     * @throws IllegalArgumentException
-     *         if any of {@code nameSpaceId} and {@code fileId} are {@code
-     *         null}
+     * @throws IllegalArgumentException  if any of {@code nameSpaceId} and {@code fileId} are {@code null}
      */
     public FileIdentifier(BeehiveObjectId nameSpaceId, BeehiveObjectId fileId) {
         this.nameSpaceId = nameSpaceId;

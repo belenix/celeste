@@ -67,8 +67,8 @@ import sunlabs.celeste.api.CelesteAPI;
 import sunlabs.celeste.client.CelesteProxy;
 import sunlabs.celeste.client.Profile_;
 import sunlabs.celeste.client.filesystem.CelesteFileSystem;
-import sunlabs.celeste.client.filesystem.PathName;
-import sunlabs.celeste.client.filesystem.simple.FileException;
+import sunlabs.celeste.client.filesystem.FileException;
+import sunlabs.celeste.client.filesystem.tabula.PathName;
 import sunlabs.celeste.client.operation.NewCredentialOperation;
 import sunlabs.celeste.client.operation.NewNameSpaceOperation;
 import sunlabs.celeste.client.operation.ReadProfileOperation;
@@ -726,8 +726,7 @@ public class CelesteFsProfiler {
                     proxy = this.client.getAndRemove(this.client.getAddress());
                     ReadProfileOperation operation = new ReadProfileOperation(credentialId);
 
-                    ResponseMessage result = proxy.readCredential(operation);
-                    client.setCredential(result.get(Profile_.class));
+                    client.setCredential((Profile_) proxy.readCredential(operation));
                 } catch (CelesteException.NotFoundException notFound) {
                     client.setCredential(new Profile_(client.getName(), client.credentialPassword.toCharArray()));
                     NewCredentialOperation operation = new NewCredentialOperation(client.getCredential().getObjectId(), BeehiveObjectId.ZERO, this.replicationParams);

@@ -41,7 +41,6 @@ import sunlabs.asdf.util.Time;
 import sunlabs.asdf.util.Units;
 import sunlabs.asdf.util.AbstractStoredMap.OutOfSpace;
 import sunlabs.asdf.web.XML.XHTML;
-import sunlabs.asdf.web.XML.XML;
 import sunlabs.asdf.web.http.HTTP;
 import sunlabs.beehive.BeehiveObjectId;
 import sunlabs.beehive.api.BeehiveObject;
@@ -119,7 +118,27 @@ public final class BeehiveObjectStore implements ObjectStore {
      *
      *
      */
-    public static class InvalidObjectException extends BeehiveException {
+    abstract public static class Exception extends java.lang.Exception {
+        private static final long serialVersionUID = 1L;
+
+        public Exception() {
+            super();
+        }
+
+        public Exception(Throwable cause) {
+            super(cause);
+        }
+
+        public Exception(String message) {
+            super(message);
+        }
+
+        public Exception(String message, Throwable cause) {
+            super(message, cause);
+        }
+    }
+    
+    public static class InvalidObjectException extends BeehiveObjectStore.Exception {
         private final static long serialVersionUID = 1L;
         public InvalidObjectException() {
             super();
@@ -143,7 +162,7 @@ public final class BeehiveObjectStore implements ObjectStore {
      * or when an object that is not supposed to exist does.
      *
      */
-    public static class ObjectExistenceException extends BeehiveException {
+    public static class ObjectExistenceException extends BeehiveObjectStore.Exception {
         private final static long serialVersionUID = 1L;
         public ObjectExistenceException() {
             super();
@@ -167,7 +186,7 @@ public final class BeehiveObjectStore implements ObjectStore {
      * or when an object that is not supposed to exist does.
      *
      */
-    public static class NotFoundException extends BeehiveException {
+    public static class NotFoundException extends BeehiveObjectStore.Exception {
         private final static long serialVersionUID = 1L;
         public NotFoundException() {
             super();
@@ -190,7 +209,7 @@ public final class BeehiveObjectStore implements ObjectStore {
      *
      *
      */
-    public static class NoSpaceException extends BeehiveException {
+    public static class NoSpaceException extends BeehiveObjectStore.Exception {
         private final static long serialVersionUID = 1L;
         public NoSpaceException() {
             super();
@@ -213,7 +232,7 @@ public final class BeehiveObjectStore implements ObjectStore {
      *
      *
      */
-    public static class DeleteTokenException extends BeehiveException {
+    public static class DeleteTokenException extends BeehiveObjectStore.Exception {
         private static final long serialVersionUID = 1L;
         public DeleteTokenException(String message) {
             super(message);
@@ -252,7 +271,7 @@ public final class BeehiveObjectStore implements ObjectStore {
      * not acceptable to the object store.
      *
      */
-    public static class UnacceptableObjectException extends BeehiveException {
+    public static class UnacceptableObjectException extends BeehiveObjectStore.Exception {
         private final static long serialVersionUID = 1L;
         public UnacceptableObjectException() {
             super();
@@ -277,7 +296,7 @@ public final class BeehiveObjectStore implements ObjectStore {
      * A deleted BeehiveObject has meta-data such that
      * the {@code deleteToken != null && deleteTokenId != null && deleteTokenId.equals(deleteToken.getObjectId())}
      */
-    public static class DeletedObjectException extends BeehiveException {
+    public static class DeletedObjectException extends BeehiveObjectStore.Exception {
         private final static long serialVersionUID = 1L;
         public DeletedObjectException() {
             super();
@@ -477,17 +496,12 @@ public final class BeehiveObjectStore implements ObjectStore {
         }
     }
 
-    public BeehiveObjectId update(BeehiveObject object)
-    throws InvalidObjectException, ObjectExistenceException,
-           NoSpaceException, UnacceptableObjectException {
+    public BeehiveObjectId update(BeehiveObject object) throws InvalidObjectException, ObjectExistenceException, NoSpaceException, UnacceptableObjectException {
         try {
             BeehiveObjectId actualObjectId = BeehiveObjectStore.ObjectId(object);
             object.setObjectId(actualObjectId);
 
             this.locks.assertLock(actualObjectId);
-			//        if (this.locks.lockerId(objectId) != Thread.currentThread().getId()) {
-			//            throw new IllegalStateException("Object must be locked");
-			//        }
             if (!this.containsObject(actualObjectId)) {
                 throw new BeehiveObjectStore.ObjectExistenceException("%s not found",  actualObjectId);
             }
@@ -504,12 +518,10 @@ public final class BeehiveObjectStore implements ObjectStore {
 
     /**
      * Store the given {@link BeehiveObject} in the local store.
-     * The object's BeehiveObjectId is computed and set in the given object.
-     *
+     * The object's {@link BeehiveObjectId} is computed and set in the given object.
      * <p>
      * There is no locking.
      * </p>
-     *
      * @param object
      * @throws BeehiveObjectStore.InvalidObjectException
      * @throws IOException
@@ -531,6 +543,16 @@ public final class BeehiveObjectStore implements ObjectStore {
         }
     }
 
+    /**
+     * {@inheritDoc}
+     * 
+     * NB: There is a small vulnerability here: If the object is stored in the local object store, then the {@link #unlock(BeehiveObject)}
+     * method performs the publish, and the object's handler signals a failure (unacceptable, or whatever), and at that moment this node
+     * reboots just before removing the now stored object, upon restarting the object will be published again due to the normal object publishing mechanism.
+     * But if during the reboot, the root node was also rebooted or replaced it could be possible that the locally stored, previously unacceptable object
+     * will be permitted to remain because the object's root handler will not have the necessary information to reject this object.
+     * 
+     */
     public BeehiveObjectId store(BeehiveObject object)
     throws BeehiveObjectStore.InvalidObjectException, BeehiveObjectStore.NoSpaceException, BeehiveObjectStore.UnacceptableObjectException {
 
@@ -539,8 +561,6 @@ public final class BeehiveObjectStore implements ObjectStore {
             object.setObjectId(actualObjectId);
 
             this.locks.assertLock(actualObjectId);
-            //object.setProperty(BeehiveObjectStore.METADATA_CREATEDTIME, Time.currentTimeInSeconds());
-            //this.fileStore.put(object.getObjectId(), object);
             this.put(object);
             return actualObjectId;
         } catch (IOException e) {
@@ -758,6 +778,12 @@ public final class BeehiveObjectStore implements ObjectStore {
         return this.unlockAndPublish(object, false);
     }
 
+    /**
+     * Returns the BeehiveMessage result from the object's handler publish method.
+     * @param object
+     * @param trace
+     * @return
+     */
     private BeehiveMessage unlockAndPublish(BeehiveObject object, boolean trace) {
     	try {
     		Publish publish = (Publish) this.node.getService("sunlabs.beehive.node.services.PublishDaemon");
@@ -766,7 +792,7 @@ public final class BeehiveObjectStore implements ObjectStore {
 
     		if (!result.getStatus().isSuccessful()) {
     			// This publish was *not* successful we must not store the
-    			// object so forcibly remove it without emitting an unpublish message.
+    			// object. Forcibly remove it without emitting an unpublish message.
     			if (this.node.getLogger().isLoggable(Level.FINE)) {
     				this.node.getLogger().fine("%s signaling to not store object %s", result.getStatus().toString(), object.getObjectId());
     			}

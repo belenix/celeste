@@ -41,6 +41,7 @@ import sunlabs.beehive.api.Service;
 import sunlabs.beehive.api.XHTMLInspectable;
 import sunlabs.beehive.node.BeehiveMessage;
 import sunlabs.beehive.node.BeehiveNode;
+import sunlabs.beehive.node.BeehiveObjectPool;
 import sunlabs.beehive.node.BeehiveObjectStore;
 import sunlabs.beehive.node.BeehiveMessage.RemoteException;
 import sunlabs.beehive.node.BeehiveObjectStore.InvalidObjectException;
@@ -441,6 +442,10 @@ public final class StorableFragmentedObject {
             } catch (IOException e) {
                 node.getLogger().warning(e.toString());
             } catch (ErasureCode.UnsupportedAlgorithmException e) {
+                node.getLogger().severe(e.toString());
+            } catch (UnacceptableObjectException e) {
+                node.getLogger().severe(e.toString());
+            } catch (BeehiveObjectPool.Exception e) {
                 node.getLogger().severe(e.toString());
             }
 

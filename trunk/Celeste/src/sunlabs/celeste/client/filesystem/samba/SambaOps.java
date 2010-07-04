@@ -47,9 +47,10 @@ import sunlabs.celeste.api.CelesteAPI;
 import sunlabs.celeste.client.CelesteProxy;
 import sunlabs.celeste.client.Profile_;
 import sunlabs.celeste.client.filesystem.CelesteFileSystem;
-import sunlabs.celeste.client.filesystem.PathName;
-import sunlabs.celeste.client.filesystem.simple.FileException;
+import sunlabs.celeste.client.filesystem.FileException;
+import sunlabs.celeste.client.filesystem.HierarchicalFileSystem;
 import sunlabs.celeste.client.filesystem.simple.DirectoryImpl.Dirent;
+import sunlabs.celeste.client.filesystem.tabula.PathName;
 import sunlabs.celeste.client.operation.NewCredentialOperation;
 import sunlabs.celeste.node.ProfileCache;
 
@@ -527,10 +528,10 @@ public class SambaOps {
     //      increment of 1.
     //
     private static abstract class OpenFileOrDir {
-        private final CelesteFileSystem.File    file;
+        private final HierarchicalFileSystem.File    file;
         private long                            offset = 0L;
 
-        protected OpenFileOrDir(CelesteFileSystem.File file) {
+        protected OpenFileOrDir(HierarchicalFileSystem.File file) {
             this.file = file;
         }
 
@@ -542,7 +543,7 @@ public class SambaOps {
             this.offset = newOffset;
         }
 
-        public CelesteFileSystem.File getFile() {
+        public HierarchicalFileSystem.File getFile() {
             return this.file;
         }
     }
@@ -562,8 +563,7 @@ public class SambaOps {
         private final boolean   allowWrite;
         private final boolean   appendOnly;
 
-        public OpenFile(CelesteFileSystem.File file, boolean allowRead,
-                boolean allowWrite, boolean appendOnly) {
+        public OpenFile(HierarchicalFileSystem.File file, boolean allowRead, boolean allowWrite, boolean appendOnly) {
             super(file);
             this.allowRead = allowRead;
             this.allowWrite = allowWrite;
@@ -831,7 +831,7 @@ public class SambaOps {
             synchronized (this) {
                 checkFileDescriptor(fd);
                 OpenFileOrDir ofd = this.openFilesOrDirectories.get(fd);
-                CelesteFileSystem.File file = ofd.getFile();
+                HierarchicalFileSystem.File file = ofd.getFile();
                 //
                 // Update the mode entry in the file's metadata.  Only the
                 // access permission bits should be altered.
@@ -858,7 +858,7 @@ public class SambaOps {
             synchronized (this) {
                 checkFileDescriptor(fd);
                 OpenFileOrDir ofd = this.openFilesOrDirectories.get(fd);
-                CelesteFileSystem.File file = ofd.getFile();
+                HierarchicalFileSystem.File file = ofd.getFile();
                 //
                 // NYI...
                 //
@@ -877,7 +877,7 @@ public class SambaOps {
             synchronized (this) {
                 checkFileDescriptor(fd);
                 OpenFileOrDir ofd = this.openFilesOrDirectories.get(fd);
-                CelesteFileSystem.File file = ofd.getFile();
+                HierarchicalFileSystem.File file = ofd.getFile();
                 return this.doStat(file);
             }
         } catch (Throwable t) {
@@ -892,7 +892,7 @@ public class SambaOps {
             synchronized (this) {
                 checkFileDescriptor(fd);
                 OpenFileOrDir ofd = this.openFilesOrDirectories.get(fd);
-                CelesteFileSystem.File file = ofd.getFile();
+                HierarchicalFileSystem.File file = ofd.getFile();
                 file.truncate((long)offset);
             }
         } catch (Throwable t) {
@@ -914,7 +914,7 @@ public class SambaOps {
             synchronized (this) {
                 checkFileDescriptor(fd);
                 OpenFileOrDir ofd = this.openFilesOrDirectories.get(fd);
-                CelesteFileSystem.File file = ofd.getFile();
+                HierarchicalFileSystem.File file = ofd.getFile();
 
                 switch (whence) {
                 case SEEK_SET:
@@ -992,7 +992,7 @@ public class SambaOps {
             //
             synchronized (this) {
                 PathName filePath = new PathName(fname).resolve(this.cwdPath);
-                CelesteFileSystem.File file = null;
+                HierarchicalFileSystem.File file = null;
 
                 //
                 // Create the file if requested.
@@ -1115,7 +1115,7 @@ public class SambaOps {
                 if (!canRead)
                     throw new IOException("reads disallowed");
 
-                CelesteFileSystem.File file = ofd.getFile();
+                HierarchicalFileSystem.File file = ofd.getFile();
                 ByteBuffer buffer = ByteBuffer.wrap(new byte[length]);
                 int bytesRead = file.read(buffer, (long)offset);
                 return new Result.Bytes(buffer.array(), bytesRead);
@@ -1153,7 +1153,7 @@ public class SambaOps {
                 if (!canRead)
                     throw new IOException("reads disallowed");
 
-                CelesteFileSystem.File file = ofd.getFile();
+                HierarchicalFileSystem.File file = ofd.getFile();
                 //
                 // Ought to be able to factor out common code for read and
                 // pread...
@@ -1340,8 +1340,7 @@ public class SambaOps {
     // XXX: Need to define proper semantics for all credentials, including
     //      ones that are unspecified.
     //
-    private CelesteFileSystem.File doCreat(
-            PathName filePath, long uid, long gid, int flags, int mode)
+    private HierarchicalFileSystem.File doCreat(PathName filePath, long uid, long gid, int flags, int mode)
                 throws IOException {
         CelesteFileSystem.File file = null;
         try {
@@ -1386,7 +1385,7 @@ public class SambaOps {
     // XXX: Might be cleaner to split this method into directory and (regular)
     //      file versions.
     //
-    private Result.Attrs doStat(CelesteFileSystem.File file) {
+    private Result.Attrs doStat(HierarchicalFileSystem.File file) {
         Result.Attrs result = null;
 
         try {
@@ -1409,9 +1408,10 @@ public class SambaOps {
                 // access them, which will induce an exception.
                 //
 
-                boolean isDir = file instanceof CelesteFileSystem.Directory;
+                boolean isDir = file instanceof HierarchicalFileSystem.Directory;
 
-                long serialNumber = file.serialNumber();
+//                long serialNumber = file.serialNumber();
+                long serialNumber = 1234567890;
 
                 //
                 // To be consistent with the implementation of the seek
@@ -1420,8 +1420,7 @@ public class SambaOps {
                 //
                 long size = 0;
                 if (isDir) {
-                    CelesteFileSystem.Directory directory =
-                        (CelesteFileSystem.Directory)file;
+                    HierarchicalFileSystem.Directory directory = (HierarchicalFileSystem.Directory) file;
                     size = directory.list().length;
                 } else {
                     size = file.length();
@@ -1430,10 +1429,9 @@ public class SambaOps {
                 // Times must be expressed in Unix-style seconds since the
                 // epoch.
                 //
-                long modTime =
-                    SambaOps.toSecondsSinceEpoch(file.lastModified());
-                long cTime =
-                    SambaOps.toSecondsSinceEpoch(file.lastMetadataChanged());
+                long modTime = SambaOps.toSecondsSinceEpoch(file.lastModified());
+//                long cTime = SambaOps.toSecondsSinceEpoch(file.lastMetadataChanged());
+                long cTime = 1;
                 //
                 // If modes have been stored in this file's metadata use them.
                 // Otherwise, fake them up, choosing to provide unrestricted
@@ -1497,7 +1495,7 @@ public class SambaOps {
                 //
                 boolean canWrite = false;
                 boolean appendOnly = false;
-                CelesteFileSystem.File file = null;
+                HierarchicalFileSystem.File file = null;
                 if (ofd instanceof OpenDirectory)
                     canWrite = false;
                 else if (ofd instanceof OpenFile) {
@@ -1784,7 +1782,7 @@ public class SambaOps {
         try {
             CelesteAPI node = new CelesteProxy(makeAddress(celesteAddress), Time.secondsInMilliseconds(300), TimeUnit.MILLISECONDS);
             ProfileCache pcache = new ProfileCache(node);
-            Profile_ p = null;
+            Credential p = null;
             p = pcache.get(profileName);
             if (p == null) {
                 Profile_ profile = new Profile_(

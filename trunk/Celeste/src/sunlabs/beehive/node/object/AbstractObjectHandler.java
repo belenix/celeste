@@ -88,7 +88,7 @@ public abstract class AbstractObjectHandler extends BeehiveService implements Be
     		for (int i = 0; i < nodes.length && i < 2; i++) {
     			if (!nodes[i].getObjectId().equals(handler.getNode().getObjectId())) {
         			if (handler.getLogger().isLoggable(Level.FINEST)) {
-        				handler.getLogger().finest("re-publish to %s", nodes[i].getObjectId());
+        				handler.getLogger().finest("publish backup to %s", nodes[i].getObjectId());
         			}
     				handler.getNode().sendToNode(nodes[i].getObjectId(), handler.getName(), "publishObject", publishRequest);
     			}

@@ -46,11 +46,13 @@ import sunlabs.beehive.api.ObjectStore;
 import sunlabs.beehive.node.AbstractBeehiveObject;
 import sunlabs.beehive.node.BeehiveMessage;
 import sunlabs.beehive.node.BeehiveNode;
+import sunlabs.beehive.node.BeehiveObjectPool;
 import sunlabs.beehive.node.BeehiveObjectStore;
 import sunlabs.beehive.node.BeehiveMessage.RemoteException;
 import sunlabs.beehive.node.BeehiveObjectStore.DeletedObjectException;
 import sunlabs.beehive.node.BeehiveObjectStore.NoSpaceException;
 import sunlabs.beehive.node.BeehiveObjectStore.NotFoundException;
+import sunlabs.beehive.node.BeehiveObjectStore.UnacceptableObjectException;
 import sunlabs.beehive.node.object.AbstractObjectHandler;
 import sunlabs.beehive.node.object.DeleteableObject;
 import sunlabs.beehive.node.object.MutableObject;
@@ -282,7 +284,8 @@ public final class AnchorObjectHandler extends AbstractObjectHandler implements 
 
             // Reply signifying success, the value of the Publish.Response() is inconsequential.
             // See the storeObject() method below.
-            BeehiveMessage result = message.composeReply(this.node.getNodeAddress(), new PublishDaemon.PublishObject.Response());
+            BeehiveMessage result = message.composeReply(this.node.getNodeAddress(), new PublishDaemon.PublishObject.Response(new HashSet<BeehiveObjectId>(publishRequest.getObjectsToPublish().keySet())));
+//            BeehiveMessage result = message.composeReply(this.node.getNodeAddress(), new PublishDaemon.PublishObject.Response());
 
             if (message.isTraced()) {
                 this.log.finest("reply %s %s", result.getStatus(), result.traceReport());
@@ -374,7 +377,7 @@ public final class AnchorObjectHandler extends AbstractObjectHandler implements 
     }
 
     public AnchorObject.Object storeObject(AnchorObject.Object aObject)
-    throws IOException, BeehiveObjectStore.NoSpaceException, BeehiveObjectStore.DeleteTokenException {
+    throws IOException, BeehiveObjectStore.NoSpaceException, BeehiveObjectStore.DeleteTokenException, BeehiveObjectStore.UnacceptableObjectException, BeehiveObjectPool.Exception{
 
         aObject = (AnchorObject.Object) BeehiveObjectStore.CreateSignatureVerifiedObject(aObject.getObjectId(), aObject);
 
@@ -528,6 +531,13 @@ public final class AnchorObjectHandler extends AbstractObjectHandler implements 
             e.printStackTrace();
             return message.composeReply(this.node.getNodeAddress(), e);
         } catch (RemoteException e) {
+            e.printStackTrace();
+            return message.composeReply(this.node.getNodeAddress(), e);
+        } catch (UnacceptableObjectException e) {
+            e.printStackTrace();
+            return message.composeReply(this.node.getNodeAddress(), e);
+        } catch (BeehiveObjectPool.Exception e) {
+            // TODO Auto-generated catch block
             e.printStackTrace();
             return message.composeReply(this.node.getNodeAddress(), e);
         }

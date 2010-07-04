@@ -1,5 +1,5 @@
 /*
- * Copyright 2007-2009 Sun Microsystems, Inc. All Rights Reserved.
+ * Copyright 2007-2010 Oracle. All Rights Reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER
  *
  * This code is free software; you can redistribute it and/or modify
@@ -17,27 +17,24 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
  * 02110-1301 USA
  *
- * Please contact Sun Microsystems, Inc., 16 Network Circle, Menlo
- * Park, CA 94025 or visit www.sun.com if you need additional
- * information or have any questions.
+ * Please contact Oracle., 16 Network Circle, Menlo Park, CA 94025
+ * or visit www.oracle.com if you need additional information or have any questions.
  */
 
 package sunlabs.celeste.client.filesystem;
 
-import java.io.IOException;
-import java.io.Serializable;
+import static sunlabs.celeste.client.filesystem.FileAttributes.Names.CONTENT_TYPE_NAME;
+import static sunlabs.celeste.client.filesystem.FileAttributes.Names.FILE_SERIAL_NUMBER_NAME;
+import static sunlabs.celeste.client.filesystem.FileSystemAttributes.Names.MAINTAIN_SERIAL_NUMBERS_NAME;
 
+import java.io.IOException;
+import java.io.OutputStream;
+import java.io.Serializable;
 import java.net.InetSocketAddress;
 import java.net.URL;
-
 import java.nio.ByteBuffer;
-import java.nio.MappedByteBuffer;
-import java.nio.channels.FileChannel;
-import java.nio.channels.FileLock;
-import java.nio.channels.ReadableByteChannel;
-import java.nio.channels.WritableByteChannel;
-
 import java.util.HashMap;
+import java.util.Properties;
 import java.util.Set;
 import java.util.SortedSet;
 
@@ -45,30 +42,24 @@ import sunlabs.asdf.util.Time;
 import sunlabs.asdf.util.TimeProfiler;
 import sunlabs.asdf.web.XML.XHTML;
 import sunlabs.asdf.web.http.InternetMediaType;
-
 import sunlabs.beehive.BeehiveObjectId;
 import sunlabs.beehive.api.Credential;
 import sunlabs.beehive.util.ExponentialBackoff;
 import sunlabs.beehive.util.ExtentBuffer;
 import sunlabs.beehive.util.OrderedProperties;
-
 import sunlabs.celeste.CelesteException;
 import sunlabs.celeste.FileIdentifier;
 import sunlabs.celeste.api.CelesteAPI;
 import sunlabs.celeste.client.CelesteProxy;
-import sunlabs.celeste.client.Profile_;
+import sunlabs.celeste.client.ReplicationParameters;
+import sunlabs.celeste.client.CelesteProxy.Cache;
+import sunlabs.celeste.client.filesystem.fast.PathName;
 import sunlabs.celeste.client.filesystem.simple.DirectoryImpl;
-import sunlabs.celeste.client.filesystem.simple.FileException;
 import sunlabs.celeste.client.filesystem.simple.FileImpl;
-import sunlabs.celeste.client.filesystem.simple.FileSystem;
-import sunlabs.celeste.client.filesystem.simple.HierarchicalFileSystem;
 import sunlabs.celeste.client.filesystem.simple.DirectoryImpl.Dirent;
 import sunlabs.celeste.node.CelesteACL;
 import sunlabs.celeste.node.ProfileCache;
 import sunlabs.celeste.util.CelesteEncoderDecoder;
-
-import static sunlabs.celeste.client.filesystem.FileAttributes.Names.*;
-import static sunlabs.celeste.client.filesystem.FileSystemAttributes.Names.MAINTAIN_SERIAL_NUMBERS_NAME;
 
 /**
  * The {@code CelesteFileSystem} class organizes Celeste files and directories
@@ -76,6 +67,121 @@ import static sunlabs.celeste.client.filesystem.FileSystemAttributes.Names.MAINT
  * expected of a POSIX-conformant file system.
  */
 public class CelesteFileSystem implements HierarchicalFileSystem {
+    
+    public static class Factory implements HierarchicalFileSystem.Factory {
+        private InetSocketAddress celeste;
+        private Cache proxyCache;
+        private String credentialName;
+        private String credentialPassword;
+
+        public Factory(InetSocketAddress celeste, Cache proxyCache, String credentialName, String credentialPassword) {
+            this.celeste = celeste;
+            this.proxyCache = proxyCache;
+            this.credentialName = credentialName;
+            this.credentialPassword = credentialPassword;
+        }
+
+        public boolean exists(String name) {
+            try {
+                CelesteFileSystem fileSystem = new CelesteFileSystem(this.celeste, this.proxyCache, name, this.credentialName, this.credentialPassword);
+                return fileSystem.exists();
+            } catch (FileException.BadVersion e) {
+                // TODO Auto-generated catch block
+                e.printStackTrace();
+            } catch (FileException.CelesteFailed e) {
+                // TODO Auto-generated catch block
+                e.printStackTrace();
+            } catch (FileException.CelesteInaccessible e) {
+                // TODO Auto-generated catch block
+                e.printStackTrace();
+            } catch (FileException.CredentialProblem e) {
+                // TODO Auto-generated catch block
+                e.printStackTrace();
+            } catch (FileException.Deleted e) {
+                // TODO Auto-generated catch block
+                e.printStackTrace();
+            } catch (FileException.DirectoryCorrupted e) {
+                // TODO Auto-generated catch block
+                e.printStackTrace();
+            } catch (FileException.IOException e) {
+                // TODO Auto-generated catch block
+                e.printStackTrace();
+            } catch (FileException.PermissionDenied e) {
+                // TODO Auto-generated catch block
+                e.printStackTrace();
+            } catch (FileException.Runtime e) {
+                // TODO Auto-generated catch block
+                e.printStackTrace();
+            } catch (FileException.ValidationFailed e) {
+                // TODO Auto-generated catch block
+                e.printStackTrace();
+            }
+            return false;
+        }
+
+        public HierarchicalFileSystem mount(String name) throws FileException.BadVersion,
+        FileException.CelesteFailed,
+        FileException.CelesteInaccessible,
+        FileException.CredentialProblem,
+        FileException.Deleted,
+        FileException.DirectoryCorrupted,
+        FileException.IOException,
+        FileException.PermissionDenied,
+        FileException.Runtime,
+        FileException.ValidationFailed, FileException.NotFound, IOException, ClassNotFoundException {
+            try {
+                return new CelesteFileSystem(this.celeste, this.proxyCache, name, this.credentialName, this.credentialPassword);
+            } finally {
+
+            }
+        }
+
+        public HierarchicalFileSystem create(String name, String password, OrderedProperties attributes) throws
+            CelesteException.RuntimeException, CelesteException.AlreadyExistsException, CelesteException.NoSpaceException,
+            CelesteException.VerificationException, CelesteException.CredentialException, IOException, ClassNotFoundException, CelesteException.NotFoundException {
+            ReplicationParameters replicationParams = new ReplicationParameters("Credential.Replication.Store=2");
+            try {
+                CelesteFileSystem fileSystem = new CelesteFileSystem(this.celeste, this.proxyCache, name, this.credentialName, this.credentialPassword);
+                fileSystem.newFileSystem(null, attributes);
+                return fileSystem;
+            } catch (FileException.BadVersion e) {
+                throw new CelesteException.RuntimeException(e);
+            } catch (FileException.CelesteFailed e) {
+                throw new CelesteException.RuntimeException(e);
+            } catch (FileException.CelesteInaccessible e) {
+                throw new CelesteException.RuntimeException(e);
+            } catch (FileException.CredentialProblem e) {
+                throw new CelesteException.CredentialException(e);
+            } catch (FileException.Deleted e) {
+                throw new CelesteException.RuntimeException(e);
+            } catch (FileException.DirectoryCorrupted e) {
+                throw new CelesteException.RuntimeException(e);
+            } catch (FileException.PermissionDenied e) {
+                throw new CelesteException.RuntimeException(e);
+            } catch (FileException.Runtime e) {
+                throw new CelesteException.RuntimeException(e);
+            } catch (FileException.ValidationFailed e) {
+                throw new CelesteException.RuntimeException(e);
+            } catch (FileException.CapacityExceeded e) {
+                throw new CelesteException.NoSpaceException(e);
+            } catch (FileException.Exists e) {
+                throw new CelesteException.RuntimeException(e);
+            } catch (FileException.InvalidName e) {
+                throw new CelesteException.RuntimeException(e);
+            } catch (FileException.Locked e) {
+                throw new CelesteException.RuntimeException(e);
+            } catch (FileException.NotFound e) {
+                throw new CelesteException.NotFoundException(e);
+            } catch (FileException.RetriesExceeded e) {
+                throw new CelesteException.RuntimeException(e);
+            } catch (FileException.IOException e) {
+                throw new IOException(e);
+            } finally {
+
+            }
+        }
+    }
+    
     //
     // TimeProfiler configuration information
     //
@@ -87,10 +193,8 @@ public class CelesteFileSystem implements HierarchicalFileSystem {
     // XXX: This ought to be moved into TimeProfiler, so that the checks for
     //      a given enabling can be encapsulated there.
     //
-    private static final String profileConfig = System.getProperty(
-        "sunlabs.celeste.client.filesystem.ProfilerConfiguration", "");
-    private static final String profileOutputFileName = System.getProperty(
-        "sunlabs.celeste.client.filesystem.ProfilerOutputFile");
+    private static final String profileConfig = System.getProperty("sunlabs.celeste.client.filesystem.ProfilerConfiguration", "");
+    private static final String profileOutputFileName = System.getProperty("sunlabs.celeste.client.filesystem.ProfilerOutputFile");
 
     //
     // The address of the Celeste node that this file system handle will use
@@ -114,7 +218,7 @@ public class CelesteFileSystem implements HierarchicalFileSystem {
     //      Alternatively, might be retained as something that can be
     //      optionally set.
     //
-    private final Profile_ invokerProfile;
+    private final Credential invokerProfile;
     private final String invokerPassword;
 
     //
@@ -172,7 +276,7 @@ public class CelesteFileSystem implements HierarchicalFileSystem {
     // In particular, there's no need for that profile to be unlocked, since
     // it's not used to sign (or even verify) anything.
     //
-    private final Profile_ nameSpaceProfile;
+    private final Credential nameSpaceProfile;
 
     private final Superblock superblock;
 
@@ -226,9 +330,7 @@ public class CelesteFileSystem implements HierarchicalFileSystem {
      * @throws FileException.Runtime
      * @throws FileException.ValidationFailed
      */
-    public CelesteFileSystem(InetSocketAddress celesteAddress,
-            CelesteProxy.Cache proxyCache, String nameSpace,
-            String invokerCredentialName, String invokerPassword)
+    public CelesteFileSystem(InetSocketAddress celesteAddress, CelesteProxy.Cache proxyCache, String nameSpace, String invokerCredentialName, String invokerPassword)
         throws
             FileException.BadVersion,
             FileException.CelesteFailed,
@@ -247,8 +349,7 @@ public class CelesteFileSystem implements HierarchicalFileSystem {
         // requirements.
         //
         if (proxyCache == null) {
-            proxyCache = new CelesteProxy.Cache(4,
-                Time.secondsInMilliseconds(0));
+            proxyCache = new CelesteProxy.Cache(4, Time.secondsInMilliseconds(0));
         }
 
         CelesteAPI proxy = null;
@@ -268,11 +369,9 @@ public class CelesteFileSystem implements HierarchicalFileSystem {
         // nameSpaceProfile and invokerProfile credentials, so create it with
         // a short timeout for its entries.
         //
-        final ProfileCache profileCache =
-            new ProfileCache(celesteAddress, proxyCache, 10);
+        final ProfileCache profileCache =  new ProfileCache(celesteAddress, proxyCache, 10);
 
-        this.fileImplCache =
-            new FileImpl.Cache(10, celesteAddress, proxyCache);
+        this.fileImplCache = new FileImpl.Cache(10, celesteAddress, proxyCache);
 
         try {
             this.nameSpaceProfile = profileCache.get(nameSpace);
@@ -280,18 +379,14 @@ public class CelesteFileSystem implements HierarchicalFileSystem {
             throw new FileException.CredentialProblem(e);
         }
         if (this.nameSpaceProfile == null) {
-            Throwable nested = new CelesteException.NotFoundException(
-                String.format("%s: missing name space: \"%s\"",
-                    celesteAddress, nameSpace));
+            Throwable nested = new CelesteException.NotFoundException(String.format("%s: missing name space: \"%s\"", celesteAddress, nameSpace));
             throw new FileException.CredentialProblem(nested);
         }
 
-        boolean profile_exists =
-            profileCache.profileExists(invokerCredentialName);
+        boolean profile_exists = profileCache.profileExists(invokerCredentialName);
         if (!profile_exists) {
             Throwable nested = new CelesteException.NotFoundException(
-                String.format("%s: missing credential: \"%s\"",
-                    celesteAddress, invokerCredentialName));
+                String.format("%s: missing credential: \"%s\"", celesteAddress, invokerCredentialName));
             throw new FileException.CredentialProblem(nested);
         }
 
@@ -305,11 +400,9 @@ public class CelesteFileSystem implements HierarchicalFileSystem {
         } catch (Exception e) {
             throw new FileException.CredentialProblem(e);
         }
-        this.invokerPassword = invokerPassword; // Be very careful about doing this.
+        this.invokerPassword = invokerPassword;
         if (this.invokerProfile == null) {
-            Throwable nested = new CelesteException.NotFoundException(
-                String.format("%s: non-loadable profile: %s",
-                    celesteAddress, invokerCredentialName));
+            Throwable nested = new CelesteException.NotFoundException(String.format("%s: non-loadable profile: %s", celesteAddress, invokerCredentialName));
             throw new FileException.CredentialProblem(nested);
         }
 
@@ -399,8 +492,7 @@ public class CelesteFileSystem implements HierarchicalFileSystem {
     // XXX: Move the description of MaintainSerialNumbers to
     //      FileSystemAttributes when that class is created.
     //
-    public void newFileSystem(OrderedProperties clientProperties,
-            OrderedProperties fileSystemAttributes)
+    public void newFileSystem(OrderedProperties clientProperties, OrderedProperties fileSystemAttributes)
         throws
             FileException.BadVersion,
             FileException.CapacityExceeded,
@@ -476,9 +568,7 @@ public class CelesteFileSystem implements HierarchicalFileSystem {
     // XXX: Move the description of MaintainSerialNumbers to
     //      FileSystemAttributes when that class is created.
     //
-    public void newFileSystem(OrderedProperties clientProperties,
-            OrderedProperties defaultCreationAttributes,
-            OrderedProperties fileSystemAttributes)
+    public void newFileSystem(OrderedProperties clientProperties, OrderedProperties defaultCreationAttributes, OrderedProperties fileSystemAttributes)
         throws
             FileException.BadVersion,
             FileException.CapacityExceeded,
@@ -498,8 +588,7 @@ public class CelesteFileSystem implements HierarchicalFileSystem {
             FileException.Runtime,
             FileException.ValidationFailed {
         try {
-            this.superblock.create(clientProperties, defaultCreationAttributes,
-                fileSystemAttributes);
+            this.superblock.create(clientProperties, defaultCreationAttributes, fileSystemAttributes);
         } catch (FileException.FileSystemNotFound e) {
             //
             // The create call is supposed to cure the conditions that would
@@ -572,7 +661,7 @@ public class CelesteFileSystem implements HierarchicalFileSystem {
      * @throws FileException.Runtime
      * @throws FileException.ValidationFailed
      */
-    public boolean fileExists(PathName path) throws
+    public boolean fileExists(HierarchicalFileSystem.FileName path) throws
             FileException.BadVersion,
             FileException.CelesteFailed,
             FileException.CelesteInaccessible,
@@ -622,15 +711,11 @@ public class CelesteFileSystem implements HierarchicalFileSystem {
     }
 
     /**
-     * Returns the name space associated with this file system.
+     * Returns the name space {@link Credential} associated with this file system.
      *
      * @return  this file system's name space
      */
-    //
-    // Does the return type need to be as specific as Profile_, or would
-    // Credential do?
-    //
-    public Profile_ getNameSpace() {
+    public Credential getNameSpace() {
         return this.nameSpaceProfile;
     }
 
@@ -722,6 +807,7 @@ public class CelesteFileSystem implements HierarchicalFileSystem {
             this.isClosed = true;
         }
 
+        @Deprecated
         public void seek(long offset) {
             synchronized(this.file) {
                 this.file.position(offset);
@@ -783,6 +869,7 @@ public class CelesteFileSystem implements HierarchicalFileSystem {
          *                  stream
          * @param truncate  if {@code true} truncate the file to zero length
          *                  before wrapping it with the output stream
+         * @param bufferSize2 
          *
          * @throws FileException.NotFound
          *      if {@code file} does not exist
@@ -791,8 +878,7 @@ public class CelesteFileSystem implements HierarchicalFileSystem {
          * @throws IOException
          *      if truncating {@code file} fails
          */
-        public CelesteOutputStream(CelesteFileSystem.File file,
-                boolean truncate)
+        public CelesteOutputStream(CelesteFileSystem.File file, boolean truncate, int bufferSize)
             throws
                 FileException.BadVersion,
                 FileException.CelesteFailed,
@@ -805,6 +891,7 @@ public class CelesteFileSystem implements HierarchicalFileSystem {
                 IOException {
             super();
             this.file = file;
+            this.bufferSize = bufferSize;
             synchronized (this.file) {
                 if (!this.file.exists()) {
                     throw new FileException.NotFound();
@@ -837,7 +924,7 @@ public class CelesteFileSystem implements HierarchicalFileSystem {
         // XXX: javadoc refuses to accept the @see tag above, no matter what
         //      variations I try in qualifying the classes it mentions.
         //
-        public CelesteOutputStream(CelesteFileSystem.File file) throws
+        public CelesteOutputStream(CelesteFileSystem.File file, int bufferSize) throws
                 FileException.BadVersion,
                 FileException.CelesteFailed,
                 FileException.CelesteInaccessible,
@@ -847,7 +934,7 @@ public class CelesteFileSystem implements HierarchicalFileSystem {
                 FileException.Runtime,
                 FileException.ValidationFailed,
                 IOException {
-            this(file, true);
+            this(file, true, bufferSize);
         }
 
         @Override
@@ -870,10 +957,8 @@ public class CelesteFileSystem implements HierarchicalFileSystem {
             //
             // XXX: Profiling/Debugging support.
             //
-            boolean debug = CelesteFileSystem.profileConfig.contains(
-                "CelesteFileSystem.CelesteOutputStream.write");
-            TimeProfiler timer = new TimeProfiler(
-                "CelesteFileSystem.COS.write");
+            boolean debug = CelesteFileSystem.profileConfig.contains("CelesteFileSystem.CelesteOutputStream.write");
+            TimeProfiler timer = new TimeProfiler("CelesteFileSystem.COS.write");
 
             //
             // Impedance matching:  Turn the byte array from which we'll write
@@ -899,8 +984,7 @@ public class CelesteFileSystem implements HierarchicalFileSystem {
                     //
                     final int blockSize = this.file.getBlockSize();
                     assert blockSize > 0;
-                    final int bufSize = this.bufferSize == 0 ?
-                        blockSize : this.bufferSize;
+                    final int bufSize = this.bufferSize == 0 ? blockSize : this.bufferSize;
 
                     //
                     // Write from the current offset up to the minimum of the
@@ -908,10 +992,8 @@ public class CelesteFileSystem implements HierarchicalFileSystem {
                     // offset and the requested ending point.
                     //
                     long fileOffset = this.file.position();
-                    long bufferBoundary =
-                        ((fileOffset + bufSize - 1) / bufSize) * bufSize;
-                    int chunkLength = Math.min(
-                        (int)(bufferBoundary - fileOffset), length);
+                    long bufferBoundary =  ((fileOffset + bufSize - 1) / bufSize) * bufSize;
+                    int chunkLength = Math.min((int) (bufferBoundary - fileOffset), length);
                     if (chunkLength > 0) {
                         //System.err.printf(
                         //    "CFS.OS.write: leading %d fragment @ %d%n",
@@ -944,8 +1026,7 @@ public class CelesteFileSystem implements HierarchicalFileSystem {
                         // terribly wrong.
                         //
                         fileOffset = this.file.position();
-                        assert (fileOffset / bufSize) * bufSize ==
-                            fileOffset;
+                        assert (fileOffset / bufSize) * bufSize == fileOffset;
                         int newLimit = src.position() + bufSize;
                         if (newLimit > capacity)
                             newLimit = capacity;
@@ -969,8 +1050,7 @@ public class CelesteFileSystem implements HierarchicalFileSystem {
                     }
                 }
             } catch (FileException e) {
-                String msg = String.format("write to output stream failed: %s",
-                    e.getMessage());
+                String msg = String.format("write to output stream failed: %s", e.getMessage());
                 IOException ioe = new IOException(msg, e);
                 throw ioe;
             }
@@ -981,43 +1061,42 @@ public class CelesteFileSystem implements HierarchicalFileSystem {
             this.isClosed = true;
         }
 
-        /**
-         * Get the size of the buffer used for {@link #write(byte[], int, int)
-         * write()} calls.
-         *
-         * @return  the write buffer size
-         */
-        public int getBufferSize() {
-            return this.bufferSize;
-        }
-
-        /**
-         * <p>
-         *
-         * Set the size of the buffer used for {@link #write(byte[], int, int)
-         * write()} calls.  A value of zero is legal and requests that the
-         * file's block size be used for the buffer size.
-         *
-         * </p><p>
-         *
-         * For best performance, the buffer size should be a multiple of the
-         * file's block size.  Larger multiples consume more temporary heap
-         * space but also improve write performance.
-         *
-         * </p>
-         *
-         * @param bufferSize    the buffer size to use for writes made through
-         *                      this {@code CelesteOutputStream}
-         *
-         * @throws  IllegalArgumentException
-         *          if {@code bufferSize < 0}
-         */
-        public void setBufferSize(int bufferSize) {
-            if (bufferSize < 0)
-                throw new IllegalArgumentException(
-                    "buffer size must be non-negative");
-            this.bufferSize = bufferSize;
-        }
+//        /**
+//         * Get the size of the buffer used for {@link #write(byte[], int, int)
+//         * write()} calls.
+//         *
+//         * @return  the write buffer size
+//         */
+//        public int getBufferSize() {
+//            return this.bufferSize;
+//        }
+//
+//        /**
+//         * <p>
+//         *
+//         * Set the size of the buffer used for {@link #write(byte[], int, int)
+//         * write()} calls.  A value of zero is legal and requests that the
+//         * file's block size be used for the buffer size.
+//         *
+//         * </p><p>
+//         *
+//         * For best performance, the buffer size should be a multiple of the
+//         * file's block size.  Larger multiples consume more temporary heap
+//         * space but also improve write performance.
+//         *
+//         * </p>
+//         *
+//         * @param bufferSize    the buffer size to use for writes made through
+//         *                      this {@code CelesteOutputStream}
+//         *
+//         * @throws  IllegalArgumentException
+//         *          if {@code bufferSize < 0}
+//         */
+//        public void setBufferSize(int bufferSize) {
+//            if (bufferSize < 0)
+//                throw new IllegalArgumentException("buffer size must be non-negative");
+//            this.bufferSize = bufferSize;
+//        }
     }
 
     //
@@ -1065,7 +1144,7 @@ public class CelesteFileSystem implements HierarchicalFileSystem {
      *
      * </p>
      */
-    public class File extends FileSystem.File {
+    public class File implements FileSystem.File {
         //
         // Note that the path field is set once at creation time and isn't
         // updated thereafter.  Since files are subject to renames, the field
@@ -1114,7 +1193,7 @@ public class CelesteFileSystem implements HierarchicalFileSystem {
         //
         // XXX: Need to expose FileImpl.setACL() at this level.
         //
-        private PathName path;
+        private HierarchicalFileSystem.FileName path;
         private final FileIdentifier fid;
         private long offset = 0L;
 
@@ -1138,7 +1217,7 @@ public class CelesteFileSystem implements HierarchicalFileSystem {
          * @param path  the name to be recorded for this file
          * @param file  the object to be used to access the file itself
          */
-        public File(PathName path, FileImpl file) {
+        public File(HierarchicalFileSystem.FileName path, FileImpl file) {
             this.path = path;
             this.fid = file.getFileIdentifier();
         }
@@ -1235,7 +1314,6 @@ public class CelesteFileSystem implements HierarchicalFileSystem {
             }
         }
 
-        @Override
         public long lastModified() throws
                 FileException.BadVersion,
                 FileException.CelesteFailed,
@@ -1292,29 +1370,6 @@ public class CelesteFileSystem implements HierarchicalFileSystem {
             }
         }
 
-        /**
-         * <p>
-         *
-         * Returns the properties associated with this file, in the form of
-         * an {@code OrderedProperties} map containing {@code String} names
-         * and corresponding String values.
-         *
-         * </p><p>
-         *
-         * (A file property is a string-valued item associated with a given
-         * file that the file system implementation stores with the file and
-         * retrieves on request, but otherwise does not use or interpret.)
-         *
-         * </p>
-         *
-         * @return  this file's properties
-         *
-         * @throws FileException.CelesteFailed
-         * @throws FileException.CelesteInaccessible
-         * @throws FileException.IOException
-         * @throws FileException.NotFound
-         * @throws FileException.Runtime
-         */
         public OrderedProperties getClientProperties() throws
                 FileException.BadVersion,
                 FileException.CelesteFailed,
@@ -1331,33 +1386,7 @@ public class CelesteFileSystem implements HierarchicalFileSystem {
                 fs.addAndEvictOld(fileImpl);
             }
         }
-
-        /**
-         * <p>
-         *
-         * Replaces any existing properties associated with this file with the
-         * ones contained in {@code clientProperties}, creating a new version
-         * of the file that differs from the previous version only in the
-         * properties and in the {@link
-         * FileAttributes.Names#METADATA_CHANGED_TIME_NAME metadata changed
-         * time} attribute.
-         *
-         * </p><p>
-         *
-         * (A file property is a string-valued item associated with a given
-         * file that the file system implementation stores with the file and
-         * retrieves on request, but otherwise does not use or interpret.)
-         *
-         * </p>
-         *
-         * @param clientProperties  the properties that are to replace the
-         *                          file's existing properties
-         *
-         * @throws FileException.CredentialProblem
-         *      if the credential supplied when this file's {@code
-         *      CelesteFileSystem} handle was created couldn't be successfully
-         *      used to authorize the file update
-         */
+        
         public void setClientProperties(OrderedProperties clientProperties)
             throws
                 FileException.BadVersion,
@@ -1376,14 +1405,12 @@ public class CelesteFileSystem implements HierarchicalFileSystem {
             final CelesteFileSystem fs = CelesteFileSystem.this;
             FileImpl fileImpl = fs.getAndRemove(this.fid);
             try {
-                fileImpl.setClientProperties(clientProperties,
-                    fs.invokerProfile, fs.getInvokerPassword());
+                fileImpl.setClientProperties(clientProperties, fs.invokerProfile, fs.getInvokerPassword());
             } finally {
                 fs.addAndEvictOld(fileImpl);
             }
         }
 
-        @Override
         public InternetMediaType getContentType() throws
                 FileException.BadVersion,
                 FileException.CelesteFailed,
@@ -1401,7 +1428,6 @@ public class CelesteFileSystem implements HierarchicalFileSystem {
             }
         }
 
-        @Override
         public void setContentType(InternetMediaType type) throws
                 FileException.BadVersion,
                 FileException.CapacityExceeded,
@@ -1498,8 +1524,7 @@ public class CelesteFileSystem implements HierarchicalFileSystem {
          * CelesteOutputStream} that can be used to write to this file, from
          * its current position onward.
          *
-         * @return  a {@code CelesteOutputStream} that can be used to write to
-         *          this file
+         * @return a {@code CelesteOutputStream} that can be used to write to this file
          *
          * @throws FileException.NotFound
          *         if this file does not exist
@@ -1508,7 +1533,7 @@ public class CelesteFileSystem implements HierarchicalFileSystem {
          *
          * @see #getOutputStream(boolean)
          */
-        public CelesteOutputStream getOutputStream() throws
+        public CelesteOutputStream getOutputStream(int bufferSize) throws
                 FileException.BadVersion,
                 FileException.CelesteFailed,
                 FileException.CelesteInaccessible,
@@ -1518,13 +1543,14 @@ public class CelesteFileSystem implements HierarchicalFileSystem {
                 FileException.Runtime,
                 FileException.ValidationFailed,
                 IOException {
-            return this.getOutputStream(false);
+            return this.getOutputStream(false, bufferSize);
         }
 
         /**
-         * Returns an {@code OutputStream} that can be used to write to this
-         * file.  If {@code truncate} is {@code true}, the file is truncated
-         * before being wrapped with the resultant output stream,
+         * Returns an {@link OutputStream} that can be used to write to this file.
+         * If {@code truncate} is {@code true}, the file is truncated before being
+         * wrapped with the resultant output stream.
+         * @param bufferSize 
          *
          * @code truncate   {@code true} if the file is to be truncated before
          *                  becoming accessible through the returned output
@@ -1538,7 +1564,7 @@ public class CelesteFileSystem implements HierarchicalFileSystem {
          * @throws FileException.IsDirectory
          *         if this file is actually a directory
          */
-        public CelesteOutputStream getOutputStream(boolean truncate) throws
+        public CelesteOutputStream getOutputStream(boolean truncate, int bufferSize) throws
                 FileException.BadVersion,
                 FileException.CelesteFailed,
                 FileException.CelesteInaccessible,
@@ -1548,7 +1574,7 @@ public class CelesteFileSystem implements HierarchicalFileSystem {
                 FileException.Runtime,
                 FileException.ValidationFailed,
                 IOException {
-            return new CelesteFileSystem.CelesteOutputStream(this, truncate);
+            return new CelesteFileSystem.CelesteOutputStream(this, truncate, bufferSize);
         }
 
         public int getBlockSize() throws
@@ -1616,8 +1642,7 @@ public class CelesteFileSystem implements HierarchicalFileSystem {
             final CelesteFileSystem fs = CelesteFileSystem.this;
             FileImpl fileImpl = fs.getAndRemove(this.fid);
             try {
-                fileImpl.setACL(fs.invokerProfile, fs.getInvokerPassword(),
-                    null, acl);
+                fileImpl.setACL(fs.invokerProfile, fs.getInvokerPassword(), null, acl);
             } finally {
                 fs.addAndEvictOld(fileImpl);
             }
@@ -1636,7 +1661,7 @@ public class CelesteFileSystem implements HierarchicalFileSystem {
          *
          * </p>
          */
-        public PathName getPathName() {
+        public HierarchicalFileSystem.FileName getPathName() {
             return this.path;
         }
 
@@ -1723,17 +1748,16 @@ public class CelesteFileSystem implements HierarchicalFileSystem {
         //      FileChannel.
         //
 
-        @Override
-        public long transferTo(long position, long count, WritableByteChannel target) {
-            throw new UnsupportedOperationException();
-        }
+//        @Override
+//        public long transferTo(long position, long count, WritableByteChannel target) {
+//            throw new UnsupportedOperationException();
+//        }
+//
+//        @Override
+//        public long transferFrom(ReadableByteChannel src, long position, long count) {
+//            throw new UnsupportedOperationException();
+//        }
 
-        @Override
-        public long transferFrom(ReadableByteChannel src, long position, long count) {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
         public long size() throws IOException {
             //
             // Impedance matching:  The superclass method throws IOException,
@@ -1766,12 +1790,10 @@ public class CelesteFileSystem implements HierarchicalFileSystem {
             }
         }
 
-        @Override
         public long read(ByteBuffer[] dsts, int offset, int length) {
             throw new UnsupportedOperationException();
         }
 
-        @Override
         public int read(ByteBuffer dst) throws IOException {
             synchronized (this) {
                 int bytesRead = this.read(dst, this.offset);
@@ -1780,7 +1802,6 @@ public class CelesteFileSystem implements HierarchicalFileSystem {
             }
         }
 
-        @Override
         public int read(ByteBuffer dst, long position) throws IOException {
             final CelesteFileSystem fs = CelesteFileSystem.this;
             FileImpl fileImpl = fs.getAndRemove(this.fid);
@@ -1793,8 +1814,7 @@ public class CelesteFileSystem implements HierarchicalFileSystem {
                         // Accommodate short reads by pressing on until the
                         // buffer's filled (or there's no more to read).
                         //
-                        bytesRead = fileImpl.read(fs.invokerProfile,
-                            fs.getInvokerPassword(), dst, position);
+                        bytesRead = fileImpl.read(fs.invokerProfile, fs.getInvokerPassword(), dst, position);
                         totalBytesRead += bytesRead;
                         position += bytesRead;
                     } while (dst.remaining() > 0 && bytesRead > 0);
@@ -1808,40 +1828,36 @@ public class CelesteFileSystem implements HierarchicalFileSystem {
             }
         }
 
-        @Override
-        public FileChannel position(long newPosition) {
+        public FileSystem.File position(long newPosition) {
             synchronized (this) {
                 this.offset = newPosition;
             }
             return this;
         }
 
-        @Override
         public long position() {
             synchronized (this) {
                 return this.offset;
             }
         }
 
-        @Override
-        public MappedByteBuffer map(FileChannel.MapMode mode, long position, long size) {
-            return null;
-        }
+//        @Override
+//        public MappedByteBuffer map(FileChannel.MapMode mode, long position, long size) {
+//            return null;
+//        }
 
-        @Override
-        public void force(boolean metaData) {
-            //
-        }
+//        @Override
+//        public void force(boolean metaData) {
+//            //
+//        }
 
         //
         // XXX: Ought to support this method...  To do...
         //
-        @Override
         public long write(ByteBuffer[] srcs, int offset, int length) {
             throw new UnsupportedOperationException();
         }
 
-        @Override
         public int write(ByteBuffer src) throws IOException {
             synchronized (this) {
                 //
@@ -1855,7 +1871,6 @@ public class CelesteFileSystem implements HierarchicalFileSystem {
             }
         }
 
-        @Override
         public int write(ByteBuffer src, long position) throws IOException {
             try {
                 return this.write(new ExtentBuffer(position, src));
@@ -1885,10 +1900,8 @@ public class CelesteFileSystem implements HierarchicalFileSystem {
             //
             // XXX: Profiling/Debugging support.
             //
-            boolean debug = CelesteFileSystem.profileConfig.contains(
-                "CelesteFileSystem.File.write");
-            TimeProfiler timer = new TimeProfiler(
-                "CelesteFileSystem.File.write");
+            boolean debug = CelesteFileSystem.profileConfig.contains("CelesteFileSystem.File.write");
+            TimeProfiler timer = new TimeProfiler("CelesteFileSystem.File.write");
 
             final CelesteFileSystem fs = CelesteFileSystem.this;
             synchronized (this) {
@@ -1896,8 +1909,7 @@ public class CelesteFileSystem implements HierarchicalFileSystem {
                 FileImpl fileImpl = fs.getAndRemove(this.fid);
                 try {
                     timer.stamp("slop");
-                    fileImpl.write(src, fs.invokerProfile,
-                        fs.getInvokerPassword(), null);
+                    fileImpl.write(src, fs.invokerProfile, fs.getInvokerPassword(), null);
                     //
                     // The write succeeded; therefore, the span of src between
                     // its position and limit has been consumed.  Update src
@@ -1942,15 +1954,13 @@ public class CelesteFileSystem implements HierarchicalFileSystem {
             final CelesteFileSystem fs = CelesteFileSystem.this;
             FileImpl fileImpl = fs.getAndRemove(this.fid);
             try {
-                return fileImpl.runExtension(
-                    fs.invokerProfile, fs.getInvokerPassword(), jarFileURLs, args);
+                return fileImpl.runExtension(fs.invokerProfile, fs.getInvokerPassword(), jarFileURLs, args);
             } finally {
                 fs.addAndEvictOld(fileImpl);
             }
         }
 
-        @Override
-        public FileChannel truncate(long size) throws IOException {
+        public FileSystem.File truncate(long size) throws IOException {
             final CelesteFileSystem fs = CelesteFileSystem.this;
             FileImpl fileImpl = fs.getAndRemove(this.fid);
             try {
@@ -1970,15 +1980,15 @@ public class CelesteFileSystem implements HierarchicalFileSystem {
         // has requirements that don't mesh with those of WebDAV locking.
         //
 
-        @Override
-        public FileLock tryLock(long position, long size, boolean shared) {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public FileLock lock(long position, long size, boolean shared) {
-            throw new UnsupportedOperationException();
-        }
+//        @Override
+//        public FileLock tryLock(long position, long size, boolean shared) {
+//            throw new UnsupportedOperationException();
+//        }
+//
+//        @Override
+//        public FileLock lock(long position, long size, boolean shared) {
+//            throw new UnsupportedOperationException();
+//        }
 
         //
         // FileChannel inherits this method from AbstractInterruptibleChannel,
@@ -1988,10 +1998,10 @@ public class CelesteFileSystem implements HierarchicalFileSystem {
         // design implemented to latch onto the FileImpl for the lifetime of
         // this File object, one would release it here.)
         //
-        @Override
-        public void implCloseChannel() throws IOException {
-            //
-        }
+//        @Override
+//        public void implCloseChannel() throws IOException {
+//            //
+//        }
 
         //
         // Other methods
@@ -2063,8 +2073,7 @@ public class CelesteFileSystem implements HierarchicalFileSystem {
             FileImpl fileImpl = null;
             try {
                 fileImpl = fs.getAndRemove(this.fid);
-                fileImpl.releaseModificationLock(
-                    fs.invokerProfile, fs.getInvokerPassword(), null);
+                fileImpl.releaseModificationLock(fs.invokerProfile, fs.getInvokerPassword(), null);
             } finally {
                 fs.addAndEvictOld(fileImpl);
             }
@@ -2085,6 +2094,10 @@ public class CelesteFileSystem implements HierarchicalFileSystem {
         public int hashCode() {
             return this.fid.hashCode();
         }
+
+        public void close() {
+            
+        }
     }
 
     //
@@ -2097,7 +2110,7 @@ public class CelesteFileSystem implements HierarchicalFileSystem {
 
         private final DirectoryImpl directoryImpl;
 
-        public Directory(PathName path, DirectoryImpl directory) {
+        public Directory(HierarchicalFileSystem.FileName path, DirectoryImpl directory) {
             //
             // XXX: Find a way to avoid needing to dig out the DirectoryImpl's
             //      internal FileImpl; it's really none of our business here.
@@ -2152,8 +2165,7 @@ public class CelesteFileSystem implements HierarchicalFileSystem {
                 FileException.PermissionDenied,
                 FileException.Runtime,
                 FileException.ValidationFailed{
-            return this.directoryImpl.getAllNames(
-                CelesteFileSystem.this.invokerProfile, CelesteFileSystem.this.invokerPassword).size();
+            return this.directoryImpl.getAllNames(CelesteFileSystem.this.invokerProfile, CelesteFileSystem.this.invokerPassword).size();
         }
 
         //
@@ -2189,8 +2201,7 @@ public class CelesteFileSystem implements HierarchicalFileSystem {
                 FileException.Runtime,
                 FileException.ValidationFailed {
             final CelesteFileSystem fs = CelesteFileSystem.this;
-            SortedSet<String> names = this.directoryImpl.getAllNames(
-                fs.invokerProfile, fs.invokerPassword);
+            SortedSet<String> names = this.directoryImpl.getAllNames(fs.invokerProfile, fs.invokerPassword);
             return names.toArray(new String[names.size()]);
         }
 
@@ -2284,14 +2295,11 @@ public class CelesteFileSystem implements HierarchicalFileSystem {
             }
             FileImpl f = null;
             try {
-                FileIdentifier fid = this.directoryImpl.getFileIdentifier(
-                    fs.invokerProfile, fs.invokerPassword, leafName);
-                PathName path = new PathName(String.format("%s%s%s",
-                    this.getPathName(), "/", leafName));
+                FileIdentifier fid = this.directoryImpl.getFileIdentifier(fs.invokerProfile, fs.invokerPassword, leafName);
+                HierarchicalFileSystem.FileName path = new PathName(String.format("%s%s%s", this.getPathName(), "/", leafName));
                 f = fs.getAndRemove(fid);
                 if (DirectoryImpl.isDirectory(f)) {
-                    return new CelesteFileSystem.Directory(path,
-                        new DirectoryImpl(f));
+                    return new CelesteFileSystem.Directory(path, new DirectoryImpl(f));
                 }
                 return new CelesteFileSystem.File(path, f);
             } finally {
@@ -2326,12 +2334,12 @@ public class CelesteFileSystem implements HierarchicalFileSystem {
         }
 
         @Override
-        public CelesteOutputStream getOutputStream() throws FileException.IsDirectory {
+        public CelesteOutputStream getOutputStream(int bufferSize) throws FileException.IsDirectory {
             throw new FileException.IsDirectory();
         }
 
         @Override
-        public CelesteOutputStream getOutputStream(boolean truncate) throws
+        public CelesteOutputStream getOutputStream(boolean truncate, int bufferSize) throws
                 FileException.IsDirectory {
             throw new FileException.IsDirectory();
         }
@@ -2366,7 +2374,7 @@ public class CelesteFileSystem implements HierarchicalFileSystem {
         }
 
         @Override
-        public FileChannel truncate(long size) throws IOException {
+        public FileSystem.File truncate(long size) throws IOException {
             throwWrappedIsDirectoryException();
             return null;
         }
@@ -2454,7 +2462,7 @@ public class CelesteFileSystem implements HierarchicalFileSystem {
     //
     // XXX: Modify to return null if path names a nonexistent file?
     //
-    public CelesteFileSystem.File getFile(PathName path) throws
+    public CelesteFileSystem.File getFile(HierarchicalFileSystem.FileName path) throws
             FileException.BadVersion,
             FileException.CelesteFailed,
             FileException.CelesteInaccessible,
@@ -2472,18 +2480,16 @@ public class CelesteFileSystem implements HierarchicalFileSystem {
         try {
             DirectoryImpl parent = traverseToParent(path);
             if (parent == null)
-                throw new FileException.NotFound(path.trimLeafComponent());
-            String leaf = path.getLeafComponent();
+                throw new FileException.NotFound(path.getDirName());
+            String leaf = path.getBaseName();
             if (leaf.equals("/"))
                 return new CelesteFileSystem.Directory(path, parent);
-            FileIdentifier fid = parent.getFileIdentifier(
-                this.invokerProfile, this.invokerPassword, leaf);
+            FileIdentifier fid = parent.getFileIdentifier(this.invokerProfile, this.invokerPassword, leaf);
             if (fid == null)
                 throw new FileException.NotFound(path);
             f = this.getAndRemove(fid);
             if (DirectoryImpl.isDirectory(f)) {
-                return new CelesteFileSystem.Directory(
-                    path, new DirectoryImpl(f));
+                return new CelesteFileSystem.Directory(path, new DirectoryImpl(f));
             }
             return new CelesteFileSystem.File(path, f);
         } finally {
@@ -2513,7 +2519,7 @@ public class CelesteFileSystem implements HierarchicalFileSystem {
     //      denoting these semantics.
     //
 
-    public CelesteFileSystem.File createFile(PathName path) throws
+    public HierarchicalFileSystem.File createFile(HierarchicalFileSystem.FileName path) throws
             FileException.BadVersion,
             FileException.CapacityExceeded,
             FileException.CelesteFailed,
@@ -2531,37 +2537,33 @@ public class CelesteFileSystem implements HierarchicalFileSystem {
             FileException.PermissionDenied,
             FileException.RetriesExceeded,
             FileException.Runtime,
-            FileException.ValidationFailed {
-        String extension = path.getExtension();
-        String contentType =
-            CelesteFileSystem.commonFileExtension(extension).toString();
+            FileException.ValidationFailed,
+            FileException {
+        String extension = path.getNameExtension();
+        String contentType = CelesteFileSystem.commonFileExtension(extension).toString();
         return this.createFile(path, contentType);
     }
 
-    public CelesteFileSystem.File createFile(PathName path,
-            OrderedProperties clientProps)
-        throws
-            FileException.BadVersion,
-            FileException.CapacityExceeded,
-            FileException.CelesteFailed,
-            FileException.CelesteInaccessible,
-            FileException.CredentialProblem,
-            FileException.Deleted,
-            FileException.DirectoryCorrupted,
-            FileException.Exists,
-            FileException.FileSystemNotFound,
-            FileException.IOException,
-            FileException.InvalidName,
-            FileException.Locked,
-            FileException.NotDirectory,
-            FileException.NotFound,
-            FileException.PermissionDenied,
-            FileException.RetriesExceeded,
-            FileException.Runtime,
-            FileException.ValidationFailed {
-        String extension = path.getExtension();
-        String contentType =
-            CelesteFileSystem.commonFileExtension(extension).toString();
+    public HierarchicalFileSystem.File createFile(HierarchicalFileSystem.FileName path, OrderedProperties clientProps) throws FileException.BadVersion,
+    FileException.CapacityExceeded,
+    FileException.CelesteFailed,
+    FileException.CelesteInaccessible,
+    FileException.CredentialProblem,
+    FileException.Deleted,
+    FileException.DirectoryCorrupted,
+    FileException.Exists,
+    FileException.FileSystemNotFound,
+    FileException.IOException,
+    FileException.InvalidName,
+    FileException.Locked,
+    FileException.NotDirectory,
+    FileException.NotFound,
+    FileException.PermissionDenied,
+    FileException.RetriesExceeded,
+    FileException.Runtime,
+    FileException.ValidationFailed {
+        String extension = path.getNameExtension();
+        String contentType = CelesteFileSystem.commonFileExtension(extension).toString();
         return this.createFile(path, contentType, clientProps);
     }
 
@@ -2571,50 +2573,30 @@ public class CelesteFileSystem implements HierarchicalFileSystem {
     //
     //      It might be best to take an InternetMediaType here.
     //
-    public CelesteFileSystem.File createFile(PathName path, String contentType)
-        throws
-            FileException.BadVersion,
-            FileException.CapacityExceeded,
-            FileException.CelesteFailed,
-            FileException.CelesteInaccessible,
-            FileException.CredentialProblem,
-            FileException.Deleted,
-            FileException.DirectoryCorrupted,
-            FileException.Exists,
-            FileException.FileSystemNotFound,
-            FileException.IOException,
-            FileException.InvalidName,
-            FileException.Locked,
-            FileException.NotDirectory,
-            FileException.NotFound,
-            FileException.PermissionDenied,
-            FileException.RetriesExceeded,
-            FileException.Runtime,
-            FileException.ValidationFailed {
+    public HierarchicalFileSystem.File createFile(HierarchicalFileSystem.FileName path, String contentType) throws FileException {
         return this.createFile(path, contentType, null);
     }
 
-    public CelesteFileSystem.File createFile(PathName path, String contentType,
-            OrderedProperties clientProps)
+    public HierarchicalFileSystem.File createFile(HierarchicalFileSystem.FileName path, String contentType, OrderedProperties clientProps)
         throws
-            FileException.BadVersion,
-            FileException.CapacityExceeded,
-            FileException.CelesteFailed,
-            FileException.CelesteInaccessible,
-            FileException.CredentialProblem,
-            FileException.Deleted,
-            FileException.DirectoryCorrupted,
-            FileException.Exists,
-            FileException.FileSystemNotFound,
-            FileException.IOException,
-            FileException.InvalidName,
-            FileException.Locked,
-            FileException.NotDirectory,
-            FileException.NotFound,
-            FileException.PermissionDenied,
-            FileException.RetriesExceeded,
-            FileException.Runtime,
-            FileException.ValidationFailed {
+        FileException.BadVersion,
+        FileException.CapacityExceeded,
+        FileException.CelesteFailed,
+        FileException.CelesteInaccessible,
+        FileException.CredentialProblem,
+        FileException.Deleted,
+        FileException.DirectoryCorrupted,
+        FileException.Exists,
+        FileException.FileSystemNotFound,
+        FileException.IOException,
+        FileException.InvalidName,
+        FileException.Locked,
+        FileException.NotDirectory,
+        FileException.NotFound,
+        FileException.PermissionDenied,
+        FileException.RetriesExceeded,
+        FileException.Runtime,
+        FileException.ValidationFailed {
         OrderedProperties attrs = new OrderedProperties();
         attrs.setProperty(CONTENT_TYPE_NAME, contentType);
         return this.createFile(path, attrs, clientProps);
@@ -2641,9 +2623,7 @@ public class CelesteFileSystem implements HierarchicalFileSystem {
     //      do.  And getting rid of it from calls to traverseToParent() et al
     //      is likely to be difficult...
     //
-    public CelesteFileSystem.File createFile(PathName path,
-            OrderedProperties fileAttributes,
-            OrderedProperties clientProps)
+    public CelesteFileSystem.File createFile(HierarchicalFileSystem.FileName path, Properties fileAttributes, OrderedProperties clientProps)
         throws
             FileException.BadVersion,
             FileException.CapacityExceeded,
@@ -2662,7 +2642,7 @@ public class CelesteFileSystem implements HierarchicalFileSystem {
             FileException.PermissionDenied,
             FileException.RetriesExceeded,
             FileException.Runtime,
-            FileException.ValidationFailed {
+            FileException.ValidationFailed {        
         //
         // 1) Check if the parent exists, and does not contain this leaf name.
         // 2) Make a random new file, and create it in Celeste.
@@ -2675,18 +2655,16 @@ public class CelesteFileSystem implements HierarchicalFileSystem {
         //
         // XXX: Profiling/Debugging support.
         //
-        boolean debug = CelesteFileSystem.profileConfig.contains(
-            "CelesteFileSystem.createFile");
+        boolean debug = CelesteFileSystem.profileConfig.contains("CelesteFileSystem.createFile");
         TimeProfiler timer = new TimeProfiler("CelesteFileSystem.createFile");
 
         FileImpl leafFile = null;
         try {
             DirectoryImpl parent = traverseToParent(path);
-            String leaf = path.getLeafComponent();
+            String leaf = path.getBaseName();
             timer.stamp("lookup");
             try {
-                FileIdentifier fid = parent.getFileIdentifier(
-                    this.invokerProfile, this.invokerPassword, leaf);
+                FileIdentifier fid = parent.getFileIdentifier(this.invokerProfile, this.invokerPassword, leaf);
                 timer.stamp("getfid");
                 if (fid != null) {
                     leafFile = this.getAndRemove(fid);
@@ -2759,18 +2737,15 @@ public class CelesteFileSystem implements HierarchicalFileSystem {
             // owns.
             //
             timer.stamp("serial#");
-            OrderedProperties attrs =
-                this.getCreationAttributes(fileAttributes);
-            attrs.setProperty(FILE_SERIAL_NUMBER_NAME,
-                Long.toString(newSerialNumber));
+            Properties attrs = this.getCreationAttributes(fileAttributes);
+            attrs.setProperty(FILE_SERIAL_NUMBER_NAME, Long.toString(newSerialNumber));
 
             //
             // Create the file and link it into place.
             //
             timer.stamp("props_setup");
             try {
-                leafFile.create(attrs, clientProps,  this.invokerProfile,
-                    this.getInvokerPassword(), thisGroupId);
+                leafFile.create(attrs, clientProps, this.invokerProfile, this.getInvokerPassword(), thisGroupId);
             } catch (FileException.Deleted e) {
                 //
                 // Since we create a random fresh FileIdentifier for the file,
@@ -2781,8 +2756,7 @@ public class CelesteFileSystem implements HierarchicalFileSystem {
                 return this.createFile(path, fileAttributes, clientProps);
             }
             timer.stamp("create");
-            parent.link(leaf, leafFile, this.invokerProfile,
-                this.getInvokerPassword());
+            parent.link(leaf, leafFile, this.invokerProfile, this.getInvokerPassword());
             timer.stamp("link");
             if (debug) {
                 //
@@ -2821,7 +2795,7 @@ public class CelesteFileSystem implements HierarchicalFileSystem {
     //      But until that attribute and corresponding link support is added,
     //      this technique suffices.
     //
-    public void deleteFile(PathName path) throws
+    public void deleteFile(HierarchicalFileSystem.FileName path) throws
             FileException.BadVersion,
             FileException.CapacityExceeded,
             FileException.CelesteFailed,
@@ -2861,7 +2835,7 @@ public class CelesteFileSystem implements HierarchicalFileSystem {
     //      not to purge the file.  (See the XXX preceding the single argument
     //      version of this method.)
     //
-    public void deleteFile(PathName path, boolean purge) throws
+    public void deleteFile(HierarchicalFileSystem.FileName path, boolean purge) throws
             FileException.BadVersion,
             FileException.CapacityExceeded,
             FileException.CelesteFailed,
@@ -2880,12 +2854,12 @@ public class CelesteFileSystem implements HierarchicalFileSystem {
             FileException.RetriesExceeded,
             FileException.Runtime,
             FileException.ValidationFailed {
+       
         FileImpl leafFile = null;
         try {
             DirectoryImpl parent = traverseToParent(path);
-            String leaf = path.getLeafComponent();
-            FileIdentifier fid = parent.getFileIdentifier(
-                this.invokerProfile, this.invokerPassword, leaf);
+            String leaf = path.getBaseName();
+            FileIdentifier fid = parent.getFileIdentifier(this.invokerProfile, this.invokerPassword, leaf);
             if (fid == null)
                 throw new FileException.NotFound();
             leafFile = this.getAndRemove(fid);
@@ -2926,7 +2900,7 @@ public class CelesteFileSystem implements HierarchicalFileSystem {
      * @throws FileException.Exists
      *      if a file or directory already exists at {@code path}
      */
-    public CelesteFileSystem.Directory createDirectory(PathName path)
+    public CelesteFileSystem.Directory createDirectory(HierarchicalFileSystem.FileName path)
         throws
             FileException.BadVersion,
             FileException.Exists,
@@ -2966,8 +2940,7 @@ public class CelesteFileSystem implements HierarchicalFileSystem {
      * @throws FileException.Exists
      *      if a file or directory already exists at {@code path}
      */
-    public CelesteFileSystem.Directory createDirectory(PathName path,
-            OrderedProperties clientProperties)
+    public CelesteFileSystem.Directory createDirectory(HierarchicalFileSystem.FileName path, OrderedProperties clientProperties)
         throws
             FileException.BadVersion,
             FileException.Exists,
@@ -2987,10 +2960,9 @@ public class CelesteFileSystem implements HierarchicalFileSystem {
             FileException.RetriesExceeded,
             FileException.Runtime,
             FileException.ValidationFailed {
-        OrderedProperties attrs = new OrderedProperties();
-        attrs.setProperty(FILE_SERIAL_NUMBER_NAME, Long.toString(
-            this.getUnusedSerialNumber()));
-        return this.createDirectory(path, attrs, clientProperties);
+        OrderedProperties directoryProperties = new OrderedProperties();
+        directoryProperties.setProperty(FILE_SERIAL_NUMBER_NAME, Long.toString(this.getUnusedSerialNumber()));
+        return this.createDirectory(path, directoryProperties, clientProperties);
     }
 
     /**
@@ -3000,7 +2972,7 @@ public class CelesteFileSystem implements HierarchicalFileSystem {
      * directoryAttributes} on the directory.
      *
      * @param path                  the path name of the new directory
-     * @param directoryAttributes   initial attributes for the directory,
+     * @param directoryProperties   initial attributes for the directory,
      *                              which will be restricted to the set
      *                              denoted by {@link
      *                              FileAttributes.WhenSettable#atCreation}
@@ -3015,9 +2987,7 @@ public class CelesteFileSystem implements HierarchicalFileSystem {
      * @throws FileException.Exists
      *      if a file or directory already exists at {@code path}
      */
-    public CelesteFileSystem.Directory createDirectory(PathName path,
-            OrderedProperties directoryAttributes,
-            OrderedProperties clientProperties)
+    public CelesteFileSystem.Directory createDirectory(HierarchicalFileSystem.FileName path, OrderedProperties directoryProperties, OrderedProperties clientProperties)
         throws
             FileException.BadVersion,
             FileException.Exists,
@@ -3038,6 +3008,7 @@ public class CelesteFileSystem implements HierarchicalFileSystem {
             FileException.Runtime,
             FileException.ValidationFailed {
         FileImpl leafFile = null;
+
         try {
             DirectoryImpl parent = traverseToParent(path);
             //
@@ -3048,13 +3019,11 @@ public class CelesteFileSystem implements HierarchicalFileSystem {
             //      invariants.  Check for one of those here.
             //
             if (parent == null)
-                throw new IllegalStateException(String.format(
-                    "%s has no parent directory!", path));
+                throw new IllegalStateException(String.format("%s has no parent directory!", path));
 
-            String leaf = path.getLeafComponent();
+            String leaf = path.getBaseName();
             try {
-                FileIdentifier fid = parent.getFileIdentifier(
-                    this.invokerProfile, this.invokerPassword, leaf);
+                FileIdentifier fid = parent.getFileIdentifier(this.invokerProfile, this.invokerPassword, leaf);
                 if (fid != null)
                     leafFile = this.getAndRemove(fid);
             } catch (FileException.NotFound keepGoing) {
@@ -3077,8 +3046,7 @@ public class CelesteFileSystem implements HierarchicalFileSystem {
             // be placed is now empty.
             //
 
-            DirectoryImpl leafDir = makeDirectoryImpl(
-                this.invokerProfile.getObjectId(), new BeehiveObjectId());
+            DirectoryImpl leafDir = makeDirectoryImpl(this.invokerProfile.getObjectId(), new BeehiveObjectId());
 
             //
             // Discard attributes that can't be set at creation time by client
@@ -3086,10 +3054,8 @@ public class CelesteFileSystem implements HierarchicalFileSystem {
             // specified.  Then augment them with ones that CelesteFileSystem
             // owns.
             //
-            OrderedProperties attrs =
-                this.getCreationAttributes(directoryAttributes);
-            attrs.setProperty(FILE_SERIAL_NUMBER_NAME,
-                Long.toString(this.getUnusedSerialNumber()));
+            OrderedProperties attrs = this.getCreationAttributes(directoryProperties);
+            attrs.setProperty(FILE_SERIAL_NUMBER_NAME, Long.toString(this.getUnusedSerialNumber()));
 
             //
             // XXX: If the create fails, ought to recycle the serial #.
@@ -3100,8 +3066,7 @@ public class CelesteFileSystem implements HierarchicalFileSystem {
             //      add a variant whose second argument was a DirectoryImpl
             //      instance.)
             //
-            leafDir.create(parent, attrs, clientProperties,
-                this.invokerProfile, this.getInvokerPassword());
+            leafDir.create(parent, attrs, clientProperties, this.invokerProfile, this.getInvokerPassword());
             parent.link(leaf, leafDir.getFileImpl(), this.invokerProfile, this.getInvokerPassword());
             return new CelesteFileSystem.Directory(path, leafDir);
         } finally {
@@ -3131,7 +3096,7 @@ public class CelesteFileSystem implements HierarchicalFileSystem {
      * @throws FileException.NotFound
      *         if {@code path} does not name a file or directory
      */
-    public void deleteDirectory(PathName path) throws
+    public void deleteDirectory(HierarchicalFileSystem.FileName path) throws
             FileException.BadVersion,
             FileException.CapacityExceeded,
             FileException.CelesteFailed,
@@ -3168,7 +3133,7 @@ public class CelesteFileSystem implements HierarchicalFileSystem {
         FileImpl leafDirAsFile = null;
         try {
             DirectoryImpl parent = this.traverseToParent(path);
-            String leaf = path.getLeafComponent();
+            String leaf = path.getBaseName();
             FileIdentifier leafDirFid =
                 parent.getFileIdentifier(this.invokerProfile, this.invokerPassword, leaf);
             leafDirAsFile = this.getAndRemove(leafDirFid);
@@ -3209,7 +3174,7 @@ public class CelesteFileSystem implements HierarchicalFileSystem {
     //
     // XXX: Needs attention to delete vs. unlink issues.
     //
-    public void renameFile(PathName srcPath, PathName dstPath) throws
+    public void renameFile(HierarchicalFileSystem.FileName srcPath, HierarchicalFileSystem.FileName dstPath) throws
             FileException.BadVersion,
             FileException.CapacityExceeded,
             FileException.CelesteFailed,
@@ -3230,7 +3195,7 @@ public class CelesteFileSystem implements HierarchicalFileSystem {
             FileException.RetriesExceeded,
             FileException.Runtime,
             FileException.ValidationFailed {
-
+        
         FileImpl srcLeafFile = null;
         FileImpl dstLeafFile = null;
         try {
@@ -3274,7 +3239,7 @@ public class CelesteFileSystem implements HierarchicalFileSystem {
                 lock2nd = srcParent;
             }
             synchronized (lock1st) { synchronized (lock2nd) {
-                String srcLeaf = srcPath.getLeafComponent();
+                String srcLeaf = srcPath.getBaseName();
                 srcLeafFile = this.getAndRemove(srcParent.getFileIdentifier(this.invokerProfile, this.invokerPassword, srcLeaf));
 
                 //
@@ -3285,7 +3250,7 @@ public class CelesteFileSystem implements HierarchicalFileSystem {
                 // and paths are all canonicalized upon creation.  However, I
                 // haven't convinced myself that there are no loopholes.)
                 //
-                String dstLeaf = dstPath.getLeafComponent();
+                String dstLeaf = dstPath.getBaseName();
                 try {
                     dstLeafFile =
                         this.getAndRemove(dstParent.getFileIdentifier(this.invokerProfile, this.invokerPassword, dstLeaf));
@@ -3334,8 +3299,7 @@ public class CelesteFileSystem implements HierarchicalFileSystem {
                         //      empty.  For now, make the check without
                         //      synchronization.
                         //
-                        DirectoryImpl dstLeafDir =
-                            new DirectoryImpl(dstLeafFile);
+                        DirectoryImpl dstLeafDir = new DirectoryImpl(dstLeafFile);
                         if (dstLeafDir.getAllNames(this.invokerProfile, this.invokerPassword).size() > 2)
                             throw new FileException.NotEmpty();
                     }
@@ -3396,7 +3360,7 @@ public class CelesteFileSystem implements HierarchicalFileSystem {
     //      cache of <path, DirectoryImpl> pairs to help.  Or perhaps an even
     //      more radical reorganization is needed.
     //
-    private DirectoryImpl traverseToParent(PathName path) throws
+    private DirectoryImpl traverseToParent(HierarchicalFileSystem.FileName path) throws
             FileException.BadVersion,
             FileException.CelesteFailed,
             FileException.CelesteInaccessible,
@@ -3418,8 +3382,7 @@ public class CelesteFileSystem implements HierarchicalFileSystem {
         //
         DirectoryImpl child = this.getRootDirectory();
         if (child == null)
-            throw new FileException.FileSystemNotFound(
-                this.nameSpaceProfile.getName());
+            throw new FileException.FileSystemNotFound(this.nameSpaceProfile.getName());
         String[] components = path.getComponents();
         for (int i = 0; i < components.length - 1; i++) {
             String component = components[i];
@@ -3435,8 +3398,7 @@ public class CelesteFileSystem implements HierarchicalFileSystem {
             DirectoryImpl parent = child;
             FileImpl f = null;
             try {
-                FileIdentifier fid = parent.getFileIdentifier(
-                    this.invokerProfile, this.invokerPassword, component);
+                FileIdentifier fid = parent.getFileIdentifier(this.invokerProfile, this.invokerPassword, component);
                 if (fid == null)
                     throw new FileException.NotFound(component);
                 f = this.getAndRemove(fid);
@@ -3474,8 +3436,7 @@ public class CelesteFileSystem implements HierarchicalFileSystem {
     // Convenience method that factors out parameters to the DirectoryImpl
     // constructor that are constant for this file system instantiation.
     //
-    private DirectoryImpl makeDirectoryImpl(BeehiveObjectId nameSpaceId,
-            BeehiveObjectId uniqueFileId) {
+    private DirectoryImpl makeDirectoryImpl(BeehiveObjectId nameSpaceId, BeehiveObjectId uniqueFileId) {
         //
         // Use the DirectoryImpl constructor that takes a FileImpl argument,
         // so that we can grab and cache that FileImpl.
@@ -3647,9 +3608,8 @@ public class CelesteFileSystem implements HierarchicalFileSystem {
             // The handle for the superblock directory itself.  N.B.  This is
             // a well-known value (no randomly generated component).
             //
-            Profile_ nameSpaceProfile = this.fileSystem.nameSpaceProfile;
-            this.superblockFileId = new FileIdentifier(
-                nameSpaceProfile.getObjectId(), Superblock.superblockId);
+            Credential nameSpaceProfile = this.fileSystem.nameSpaceProfile;
+            this.superblockFileId = new FileIdentifier(nameSpaceProfile.getObjectId(), Superblock.superblockId);
             FileImpl superblockFile = null;
             try {
                 superblockFile =
@@ -3892,12 +3852,9 @@ public class CelesteFileSystem implements HierarchicalFileSystem {
             //
             if (defaultCreationAttributes == null)
                 defaultCreationAttributes = new OrderedProperties();
-            String encodedDefaultCreationAttributes =
-                CelesteEncoderDecoder.toHexString(
-                    defaultCreationAttributes.toByteArray());
+            String encodedDefaultCreationAttributes = CelesteEncoderDecoder.toHexString(defaultCreationAttributes.toByteArray());
             OrderedProperties superblockProperties = new OrderedProperties();
-            superblockProperties.setProperty(DEFAULT_CREATION_ATTRIBUTES_NAME,
-                encodedDefaultCreationAttributes);
+            superblockProperties.setProperty(DEFAULT_CREATION_ATTRIBUTES_NAME, encodedDefaultCreationAttributes);
             synchronized (this) {
                 //
                 // Drop the default creation attributes in place a bit early
@@ -3922,10 +3879,8 @@ public class CelesteFileSystem implements HierarchicalFileSystem {
                 this.createRootDirectory(clientProperties);
 
             final CelesteFileSystem fs = this.fileSystem;
-            boolean useSerialNumbers =
-                fs.maintainSerialNumbersFromAttrs(fileSystemAttributes);
-            if (useSerialNumbers &&
-                    this.serialNumberManager.serialNumberFile == null)
+            boolean useSerialNumbers = fs.maintainSerialNumbersFromAttrs(fileSystemAttributes);
+            if (useSerialNumbers && this.serialNumberManager.serialNumberFile == null)
                 this.serialNumberManager.create();
         }
 
@@ -3995,8 +3950,7 @@ public class CelesteFileSystem implements HierarchicalFileSystem {
         //      _before_ CelesteFileSystem adds its own attributes.  So note
         //      this requirement and leave the method alone, at least for now.
         //
-        public OrderedProperties getCreationAttributes(
-                OrderedProperties explicitAttributes)
+        public OrderedProperties getCreationAttributes(Properties explicitAttributes)
             throws
                 FileException.BadVersion,
                 FileException.CelesteFailed,
@@ -4075,7 +4029,7 @@ public class CelesteFileSystem implements HierarchicalFileSystem {
             // to create it, catching and ignoring the exception resulting
             // when it already exists.
             //
-            Profile_ invokerProfile = this.fileSystem.invokerProfile;
+            Credential invokerProfile = this.fileSystem.invokerProfile;
             try {
                 //
                 // Use the file system's default creation parameters to create
@@ -4091,12 +4045,9 @@ public class CelesteFileSystem implements HierarchicalFileSystem {
                 //      for the superblock.  Doing so would require adding an
                 //      explicit creationAttributes parameter to this method.
                 //
-                OrderedProperties attrs = this.getCreationAttributes(
-                    new OrderedProperties());
-                attrs.setProperty(FILE_SERIAL_NUMBER_NAME,
-                    SerialNumberManager.SERIAL_SUPER);
-                this.superblock.create(this.superblock, attrs, properties,
-                    invokerProfile, this.fileSystem.getInvokerPassword());
+                OrderedProperties attrs = this.getCreationAttributes(new OrderedProperties());
+                attrs.setProperty(FILE_SERIAL_NUMBER_NAME, SerialNumberManager.SERIAL_SUPER);
+                this.superblock.create(this.superblock, attrs, properties, invokerProfile, this.fileSystem.getInvokerPassword());
             } catch (FileException.Exists e) {
                 //
                 // Ignore.
@@ -4144,13 +4095,10 @@ public class CelesteFileSystem implements HierarchicalFileSystem {
                 //      an explicit creationAttributes parameter to this
                 //      method.
                 //
-                OrderedProperties attrs = this.getCreationAttributes(
-                    new OrderedProperties());
-                attrs.setProperty(FILE_SERIAL_NUMBER_NAME,
-                    SerialNumberManager.SERIAL_ROOT);
-                Profile_ invokerProfile = this.fileSystem.invokerProfile;
-                root.create(root, attrs, clientProperties,
-                    invokerProfile, this.fileSystem.getInvokerPassword());
+                OrderedProperties attrs = this.getCreationAttributes(new OrderedProperties());
+                attrs.setProperty(FILE_SERIAL_NUMBER_NAME,SerialNumberManager.SERIAL_ROOT);
+                Credential invokerProfile = this.fileSystem.invokerProfile;
+                root.create(root, attrs, clientProperties, invokerProfile, this.fileSystem.getInvokerPassword());
 
                 //
                 // Attempt to link an entry for the tentative root into the
@@ -4158,8 +4106,7 @@ public class CelesteFileSystem implements HierarchicalFileSystem {
                 // the link will fail, and the existing directory should be
                 // used in place of the one created above.
                 //
-                this.superblock.link(Superblock.ROOT, rootAsFile,
-                    this.fileSystem.invokerProfile, this.fileSystem.getInvokerPassword(), false);
+                this.superblock.link(Superblock.ROOT, rootAsFile, this.fileSystem.invokerProfile, this.fileSystem.getInvokerPassword(), false);
                 this.rootDir = root;
             } catch (FileException.Exists e) {
                 //
@@ -4334,18 +4281,13 @@ public class CelesteFileSystem implements HierarchicalFileSystem {
                 // Create a tentative serial number file to go along with its
                 // tentative handle.
                 //
-                Profile_ invokerProfile =
-                    this.superblock.fileSystem.invokerProfile;
+                Credential invokerProfile = this.superblock.fileSystem.invokerProfile;
                 BeehiveObjectId groupId = BeehiveObjectId.ZERO;
                 // thisGroupId = this.superblock.fileSystem.groupProfile;
                 OrderedProperties attrs = new OrderedProperties();
-                attrs.setProperty(CONTENT_TYPE_NAME,
-                    InternetMediaType.Text.Plain.toString());
-                attrs.setProperty(FILE_SERIAL_NUMBER_NAME, Long.toString(
-                    SerialNumberManager.SERIAL_SERIAL));
-                serialNumberFile.create(attrs, null, invokerProfile,
-                    this.superblock.fileSystem.getInvokerPassword(),
-                    groupId);
+                attrs.setProperty(CONTENT_TYPE_NAME, InternetMediaType.Text.Plain.toString());
+                attrs.setProperty(FILE_SERIAL_NUMBER_NAME, Long.toString(SerialNumberManager.SERIAL_SERIAL));
+                serialNumberFile.create(attrs, null, invokerProfile, this.superblock.fileSystem.getInvokerPassword(), groupId);
 
                 //
                 // Attempt to link an entry for the tentative serial number
@@ -4514,8 +4456,7 @@ public class CelesteFileSystem implements HierarchicalFileSystem {
     //
     // Convenience access to the Superblock method.
     //
-    private OrderedProperties getCreationAttributes(
-            OrderedProperties explicitAttributes)
+    private OrderedProperties getCreationAttributes(Properties explicitAttributes)
     throws
             FileException.BadVersion,
             FileException.CelesteFailed,

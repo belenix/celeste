@@ -76,9 +76,6 @@ public class SetFileLengthOperation extends UpdateOperation {
     @Override
     public String toString() {
         String result = super.toString() 
-        + " version=" + Long.toString(SetFileLengthOperation.serialVersionUID)
-        + " profileId=" + super.getClientId().toString()
-        + " VObjectId=" + this.predicatedVersionId.toString()
         + " Length=" + Long.toString(this.length);
         return result;
     }

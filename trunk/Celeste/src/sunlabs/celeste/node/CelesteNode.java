@@ -49,7 +49,9 @@ import sunlabs.beehive.api.Credential;
 import sunlabs.beehive.api.ObjectStore;
 import sunlabs.beehive.node.AbstractBeehiveObject;
 import sunlabs.beehive.node.BeehiveNode;
+import sunlabs.beehive.node.BeehiveObjectPool;
 import sunlabs.beehive.node.BeehiveObjectStore;
+import sunlabs.beehive.node.BeehiveObjectStore.UnacceptableObjectException;
 import sunlabs.beehive.node.object.MutableObject;
 import sunlabs.beehive.node.object.ExtensibleObject.JarClassLoader;
 import sunlabs.beehive.node.services.object.CredentialObject;
@@ -66,7 +68,6 @@ import sunlabs.celeste.ResponseMessage;
 import sunlabs.celeste.CelesteException.AccessControlException;
 import sunlabs.celeste.api.CelesteAPI;
 import sunlabs.celeste.client.ClientMetaData;
-import sunlabs.celeste.client.Profile_;
 import sunlabs.celeste.client.ReplicationParameters;
 import sunlabs.celeste.client.operation.AbstractCelesteOperation;
 import sunlabs.celeste.client.operation.CelesteOperation;
@@ -104,7 +105,7 @@ import sunlabs.celeste.util.ACL;
  * </p>
  * <p>
  * An {@code AObject} object-id is formed from the object-id of the file
- * creator's {@link sunlabs.celeste.client.Profile_} and the hash
+ * creator's {@link Credential} and the hash
  * (represented by an object-id) of an arbitrary string (like a file-name)
  * supplied by the file's ({@code AObject}'s) creator.)
  * </p>
@@ -162,7 +163,7 @@ public final class CelesteNode extends BeehiveNode implements CelesteAPI {
      * @param signature the {@link Credential.Signature} on the operation and any additional {@link BeehiveObjectId} instances as parameters.
      * @param objectIds an array of {@link BeehiveObjectId} instances which are also used as data to verify with the signature.
      *
-     * @throws CelesteException.VerificationException if the signature cannot be verified
+     * @throws CelesteException.VerificationException if the signature does not verify
      * @throws CelesteException.CredentialException
      * @throws CelesteException.RuntimeException
      * @throws CelesteException.AccessControlException
@@ -177,6 +178,9 @@ public final class CelesteNode extends BeehiveNode implements CelesteAPI {
         try {
             if (signature != null) {
                 try {
+                    if (operation.getClientId() == null) {
+                        throw new CelesteException.CredentialException("Credential object-id is null.");
+                    }
                     Credential clientCredential = this.getProfile(operation.getClientId());
                     BeehiveObjectId[] ids = new BeehiveObjectId[objectIds.length + 1];
                     ids[0] = operation.getId();
@@ -330,6 +334,10 @@ public final class CelesteNode extends BeehiveNode implements CelesteAPI {
             throw new CelesteException.RuntimeException(e);
         } catch (MutableObject.DeletedException e) {
             throw new CelesteException.DeletedException(e);
+        } catch (UnacceptableObjectException e) {
+            throw new CelesteException.AlreadyExistsException(e);
+        } catch (BeehiveObjectPool.Exception e) {
+            throw new CelesteException.AlreadyExistsException(e); // XXX Needs a better exception.
         } finally {
             timingProfiler.stamp("remainder");
             timingProfiler.printCSV(System.out);
@@ -349,28 +357,20 @@ public final class CelesteNode extends BeehiveNode implements CelesteAPI {
     private ProfileCache credentialCache;
 
     private Credential getProfile(BeehiveObjectId credentialId)
-        throws IOException, CelesteException.CredentialException,
-               CelesteException.AccessControlException,
-               CelesteException.NotFoundException,
-               CelesteException.RuntimeException {
+        throws IOException, CelesteException.AccessControlException, CelesteException.NotFoundException, CelesteException.RuntimeException {
 
         // not using get() in the cache but instead manually putting it into
         // it avoids doubly performing verification that is present both in get()
         // and in readProfile(). It does exist in get() because that is mostly
         // relevant on the client side.
-        Profile_ profile = this.credentialCache.getCachedOnly(credentialId);
-        if (profile == null) {
+        Credential credential = this.credentialCache.getCachedOnly(credentialId);
+        if (credential == null) {
             ReadProfileOperation readCredential = new ReadProfileOperation(credentialId);
-            ResponseMessage msg = this.readCredential(readCredential);
-            try {
-                profile = msg.get(Profile_.class);
-                this.credentialCache.put(profile);
-            } catch (Throwable e) {
-                e.printStackTrace();
-                return null;
-            }
+            credential = this.readCredential(readCredential);
+            if (credential != null)
+                this.credentialCache.put(credential);
         }
-        return profile;
+        return credential;
     }
 
     public OrderedProperties writeFile(WriteFileOperation operation, Credential.Signature signature, ByteBuffer buffer)
@@ -635,6 +635,10 @@ public final class CelesteNode extends BeehiveNode implements CelesteAPI {
             throw new CelesteException.RuntimeException(e);
         } catch (MutableObject.DeletedException e) {
             throw new CelesteException.DeletedException(e);
+        } catch (BeehiveObjectStore.UnacceptableObjectException e) {
+            throw new CelesteException.RuntimeException(e);
+        } catch (BeehiveObjectPool.Exception e) {
+            throw new CelesteException.RuntimeException(e);
         } finally {
             timingProfiler.stamp("remainder");
             timingProfiler.printCSV(System.out);
@@ -998,6 +1002,10 @@ public final class CelesteNode extends BeehiveNode implements CelesteAPI {
             throw new CelesteException.RuntimeException(e);
         } catch (MutableObject.DeletedException e) {
             throw new CelesteException.DeletedException(e);
+        } catch (BeehiveObjectStore.UnacceptableObjectException e) {
+            throw new CelesteException.RuntimeException(e);
+        } catch (BeehiveObjectPool.Exception e) {
+            throw new CelesteException.RuntimeException(e);
         } finally {
             timingProfiler.stamp("remainder");
             timingProfiler.printCSV(System.out);
@@ -1239,11 +1247,14 @@ public final class CelesteNode extends BeehiveNode implements CelesteAPI {
         }
     }
 
-    public BeehiveObject.Metadata newCredential(NewCredentialOperation operation, Credential.Signature signature, Profile_ credential)
+    public BeehiveObject.Metadata newCredential(NewCredentialOperation operation, Credential.Signature signature, Credential credential)
     throws IOException,
             CelesteException.RuntimeException, CelesteException.AlreadyExistsException,
             CelesteException.NoSpaceException, CelesteException.VerificationException, CelesteException.CredentialException {
 
+        // XXX It must be an error to create a credential more than once because a second credential would have the same name but a different key pair.
+        //
+        
         TimeProfiler timing = new TimeProfiler(operation.getOperationName());
         try {
             //
@@ -1268,14 +1279,13 @@ public final class CelesteNode extends BeehiveNode implements CelesteAPI {
                 // If we were to follow the pattern defined by AObjects, we
                 // would call a create() operation that
                 // CredentialOperationHandler defines.  But that would just
-                // return a Profile_ and we already have one in our hands.
+                // return a Credential and we already have one in our hands.
                 //
                 // All that's needed beyond that is to store credential.
                 //
-                CredentialObject handler = (CredentialObject)this.getService(BEEHIVE_OBJECT_PKG + ".CredentialObjectHandler");
+                CredentialObject handler = (CredentialObject) this.getService(BEEHIVE_OBJECT_PKG + ".CredentialObjectHandler");
                 assert handler != null;
-                //System.err.printf("newCredential: cred name: %s%n",
-                //    credential.getName());
+
                 handler.storeObject(credential);
                 return credential.getMetadata();
             } else {
@@ -1287,12 +1297,16 @@ public final class CelesteNode extends BeehiveNode implements CelesteAPI {
             throw new CelesteException.CredentialException(e);
         } catch (Credential.Exception e) {
             throw new CelesteException.CredentialException(e);
+        } catch (UnacceptableObjectException e) {
+            throw new CelesteException.AlreadyExistsException(e);
+        } catch (BeehiveObjectPool.Exception e) {
+            throw new CelesteException.AlreadyExistsException(e);
         } finally {
             timing.print(System.out);
         }
     }
 
-    public BeehiveObject.Metadata newNameSpace(NewNameSpaceOperation operation, Credential.Signature signature, Profile_ credential)
+    public BeehiveObject.Metadata newNameSpace(NewNameSpaceOperation operation, Credential.Signature signature, Credential credential)
     throws IOException,
             CelesteException.RuntimeException, CelesteException.AlreadyExistsException,
             CelesteException.NoSpaceException, CelesteException.VerificationException, CelesteException.CredentialException {
@@ -1308,7 +1322,7 @@ public final class CelesteNode extends BeehiveNode implements CelesteAPI {
             //
             // XXX What does this check actually mean?  In this use case,
             // the profile only needs to verify a signature, not generate one.
-            // Yet this is test to ensure that the Profile can generate one.
+            // Yet this is test to ensure that the Credential can generate one.
             if (credential.isLimited())
                 throw new CelesteException.CredentialException("credential must support sign() operation");
             if (credential.verify(signature, operation.getId())) {
@@ -1327,7 +1341,7 @@ public final class CelesteNode extends BeehiveNode implements CelesteAPI {
                 // If we were to follow the pattern defined by AObjects, we
                 // would call a create() operation that
                 // CredentialOperationHandler defines.  But that would just
-                // return a Profile_ and we already have one in our hands.
+                // return a Credential and we already have one in our hands.
                 //
                 // All that's needed beyond that is to store credential.
                 //
@@ -1346,14 +1360,18 @@ public final class CelesteNode extends BeehiveNode implements CelesteAPI {
             throw new CelesteException.CredentialException(e);
         } catch (NumberFormatException e) {
             throw new CelesteException.RuntimeException(e);
+        } catch (BeehiveObjectStore.UnacceptableObjectException e) {
+            throw new CelesteException.AlreadyExistsException(e);
+        } catch (BeehiveObjectPool.Exception e) {
+            throw new CelesteException.AlreadyExistsException(e);
         } finally {
             timing.print(System.out);
         }
     }
 
-    public ResponseMessage readCredential(ReadProfileOperation operation)
-    throws IOException,
-    CelesteException.CredentialException, CelesteException.AccessControlException, CelesteException.NotFoundException, CelesteException.RuntimeException {
+    // XXX Return the value, not a ResponseMessage.  ResponseMessage occludes exceptions and makes the client unwrap it, instead of the client-side API.
+    public Credential readCredential(ReadProfileOperation operation)
+    throws IOException, CelesteException.NotFoundException, CelesteException.RuntimeException {
 
         TimeProfiler timing = new TimeProfiler(operation.getOperationName());
 
@@ -1369,7 +1387,8 @@ public final class CelesteNode extends BeehiveNode implements CelesteAPI {
             // XXX: What about metadata in the reply?  For now I'm punting by
             //      returning an empty property map, but is this right?
             //
-            return new ResponseMessage(new OrderedProperties(), credential);
+            return credential;
+            //return new ResponseMessage(new OrderedProperties(), credential);
         } catch (BeehiveObjectStore.DeletedObjectException e) {
             throw new CelesteException.RuntimeException(e);
         } catch (BeehiveObjectStore.NotFoundException e) {
@@ -1481,6 +1500,10 @@ public final class CelesteNode extends BeehiveNode implements CelesteAPI {
                 throw new CelesteException.RuntimeException(e);
             } catch (MutableObject.DeletedException e) {
                 throw new CelesteException.DeletedException(e);
+            } catch (BeehiveObjectStore.UnacceptableObjectException e) {
+                throw new CelesteException.RuntimeException(e);
+            } catch (BeehiveObjectPool.Exception e) {
+                throw new CelesteException.RuntimeException(e);
             }
         } finally {
             timing.print(System.out);
@@ -1700,6 +1723,10 @@ public final class CelesteNode extends BeehiveNode implements CelesteAPI {
             throw new CelesteException.NotFoundException(e);
         } catch (MutableObject.DeletedException e) {
             throw new CelesteException.DeletedException(e);
+        } catch (BeehiveObjectStore.UnacceptableObjectException e) {
+            throw new CelesteException.RuntimeException(e);
+        } catch (BeehiveObjectPool.Exception e) {
+            throw new CelesteException.RuntimeException(e);
         } finally {
             timing.print(System.out);
         }

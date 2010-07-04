@@ -76,9 +76,10 @@ import sunlabs.celeste.api.CelesteAPI;
 import sunlabs.celeste.client.CelesteProxy;
 import sunlabs.celeste.client.Profile_;
 import sunlabs.celeste.client.filesystem.CelesteFileSystem;
-import sunlabs.celeste.client.filesystem.PathName;
-import sunlabs.celeste.client.filesystem.simple.FileException;
+import sunlabs.celeste.client.filesystem.FileException;
+import sunlabs.celeste.client.filesystem.HierarchicalFileSystem;
 import sunlabs.celeste.client.filesystem.simple.FileImpl;
+import sunlabs.celeste.client.filesystem.tabula.PathName;
 import sunlabs.celeste.client.operation.NewCredentialOperation;
 import sunlabs.celeste.client.operation.ReadProfileOperation;
 
@@ -699,9 +700,8 @@ public final class CelesteHTTPd implements CelesteHTTPdMBean {
                 // There is now a second operation to create a file, where you
                 // pass in the ContentType (as string).
                 //
-                CelesteFileSystem.File file =
-                    session.fileSystem.createFile(path);
-                DataOutputStream o = new DataOutputStream(new BufferedOutputStream(file.getOutputStream(), file.getBlockSize()));
+                HierarchicalFileSystem.File file = session.fileSystem.createFile(path);
+                DataOutputStream o = new DataOutputStream(new BufferedOutputStream(file.getOutputStream(false, file.getBlockSize()), file.getBlockSize()));
                 long length = request.getMessage().getBody().writeTo(o);
                 o.close();
                 long stop = System.currentTimeMillis();
@@ -939,10 +939,10 @@ public final class CelesteHTTPd implements CelesteHTTPdMBean {
 
             if (fileOrDirectory instanceof CelesteFileSystem.Directory) {
                 CelesteFileSystem.Directory directory = (CelesteFileSystem.Directory) fileOrDirectory;
-                PathName dirPath = directory.getPathName();
+                HierarchicalFileSystem.FileName dirPath = directory.getPathName();
                 StringBuilder result = new StringBuilder();
                 for (String entryName : directory.list()) {
-                    PathName entryPath = dirPath.appendComponent(entryName);
+                    HierarchicalFileSystem.FileName entryPath = dirPath.append(entryName);
                     CelesteFileSystem.File file = directory.getFile(entryName);
                     String info = String.format("%s %d %d %s",
                             file.getContentType(), file.length(),
@@ -952,8 +952,9 @@ public final class CelesteHTTPd implements CelesteHTTPdMBean {
                 return new HttpResponse(HTTP.Response.Status.OK, new HttpContent.Text.Plain("%s", result));
             }
 
+            fileOrDirectory.position(start);
             CelesteFileSystem.CelesteInputStream input = fileOrDirectory.getInputStream();
-            input.seek(start);
+            //input.seek(start);
 
             if (start == 0 && stop == fileOrDirectory.length()) {
                 HTTP.Response response = new HttpResponse(HTTP.Response.Status.OK,
@@ -1355,13 +1356,13 @@ public final class CelesteHTTPd implements CelesteHTTPdMBean {
                 // If content type is "?", then the file system must attempt
                 // to infer the proper value.
                 //
-                CelesteFileSystem.File file = null;
+                HierarchicalFileSystem.File file = null;
                 if (contentType.equals("?")) {
                     file = session.fileSystem.createFile(filePath);
                 } else {
                     file = session.fileSystem.createFile(filePath, contentType);
                 }
-                OutputStream o = new BufferedOutputStream(file.getOutputStream(), 8*1024*1024);
+                OutputStream o = new BufferedOutputStream(file.getOutputStream(false, 8*1024*1024), 8*1024*1024);
                 
                 InputStream in = fdat.getBody().toInputStream();
                 byte buffer[] = new byte[8192];
@@ -1801,8 +1802,6 @@ public final class CelesteHTTPd implements CelesteHTTPdMBean {
             this.celesteProxy.readCredential(op);
             return true;
         } catch (CelesteException.CredentialException e) {
-            // fall through
-        } catch (CelesteException.AccessControlException e) {
             // fall through
         } catch (CelesteException.NotFoundException e) {
             // fall through

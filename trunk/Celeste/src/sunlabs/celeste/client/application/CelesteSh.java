@@ -170,7 +170,7 @@ public class CelesteSh {
     }
 
     private static Credential getCredential(CelesteAPI celeste, BeehiveObjectId credentialId) throws IOException, Credential.Exception, Exception {
-        return celeste.readCredential(new ReadProfileOperation(credentialId)).get(Profile_.class);
+        return celeste.readCredential(new ReadProfileOperation(credentialId));
     }
 
     /**
@@ -224,20 +224,13 @@ public class CelesteSh {
     }
 
 
-
-    // This is actually just creating a credential for the name space.
     public int configure(String command, Stack<String> options, Stats stats) {
         if (command == null) {
             System.out.println("configure");
             return -1;
         }
         try {
-//            String credentialName = options.pop();
-//            String passphrase = options.pop();
-//
-//            Profile_ credential = new Profile_(credentialName, passphrase.toCharArray());
             ProbeOperation operation = new ProbeOperation();
-//            Credential.Signature signature = credential.sign(passphrase.toCharArray(), operation.getId());
 
             this.celeste.probe(operation);
             return 0;
@@ -275,9 +268,11 @@ public class CelesteSh {
                     return -1;
                 }
             }
-            BeehiveObjectId requestorId = parseObjectId(options.pop());
+            String requestorName = options.pop();
+            BeehiveObjectId requestorId = parseObjectId(requestorName);
             String requestorPassword = options.pop();
-            BeehiveObjectId nameSpaceId = parseObjectId(options.pop());
+            String nameSpaceName = options.pop();
+            BeehiveObjectId nameSpaceId = parseObjectId(nameSpaceName);
             String nameSpacePassword = options.pop();
             BeehiveObjectId fileId = parseObjectId(options.pop());
             BeehiveObjectId ownerId = parseObjectId(options.pop());
@@ -288,7 +283,15 @@ public class CelesteSh {
             long timeToLive = Long.parseLong(options.pop());
 
             Credential clientCredential = CelesteSh.getCredential(celeste, requestorId);
+            if (clientCredential == null) {
+                System.err.printf("Credential '%s' not found.%n", requestorName);
+                return -1;
+            }
             Credential nameSpaceCredential = CelesteSh.getCredential(celeste, nameSpaceId);
+            if (nameSpaceCredential == null) {
+                System.err.printf("Credential '%s' not found.%n", nameSpaceName);
+                return -1;
+            }
 
             BeehiveObjectId deleteToken = new BeehiveObjectId((nameSpaceId.toString() + fileId.toString() + userSuppliedData).getBytes());
             BeehiveObjectId deleteTokenId = deleteToken.getObjectId();
@@ -360,7 +363,7 @@ public class CelesteSh {
                 replicationParams = options.pop();
             }
 
-            Profile_ credential = new Profile_(nameSpaceName, passphrase.toCharArray());
+            Credential credential = new Profile_(nameSpaceName, passphrase.toCharArray());
             NewNameSpaceOperation operation = new NewNameSpaceOperation(credential.getObjectId(), BeehiveObjectId.ZERO, replicationParams);
             Credential.Signature signature = credential.sign(passphrase.toCharArray(), operation.getId());
 
@@ -392,7 +395,7 @@ public class CelesteSh {
                 replicationParams = options.pop();
             }
 
-            Profile_ credential = new Profile_(credentialName, passphrase.toCharArray());
+            Credential credential = new Profile_(credentialName, passphrase.toCharArray());
             NewCredentialOperation operation = new NewCredentialOperation(credential.getObjectId(), BeehiveObjectId.ZERO, replicationParams);
             Credential.Signature signature = credential.sign(passphrase.toCharArray(), operation.getId());
 
@@ -1320,8 +1323,6 @@ public class CelesteSh {
                     successful = true;
                 } catch (CelesteException.CredentialException e) {
                     successful = false;
-                } catch (CelesteException.AccessControlException e) {
-                    successful = false;
                 } catch (CelesteException.NotFoundException e) {
                     successful = false;
                 } catch (CelesteException.RuntimeException e) {
@@ -1493,14 +1494,8 @@ public class CelesteSh {
             if (!options.empty())
                 metaDataOutput = options.pop();
 
-            ResponseMessage reply = this.celeste.readCredential(new ReadProfileOperation(credentialId));
-            Profile_ eb = reply.get(Profile_.class);
-
-            if (metaDataOutput != null) {
-                if (reply.getMetadata() != null) {
-                    reply.getMetadata().store(new FileOutputStream(metaDataOutput), "");
-                }
-            }
+            Credential credential= this.celeste.readCredential(new ReadProfileOperation(credentialId));
+            
             return 0;
         } catch (Exception e) {
             System.err.printf("%s%n", e.toString());

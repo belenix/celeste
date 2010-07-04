@@ -26,30 +26,30 @@ package sunlabs.celeste.client.filesystem.tabula;
 
 import java.net.InetSocketAddress;
 
-import sunlabs.celeste.client.filesystem.PathName;
+import sunlabs.celeste.client.filesystem.HierarchicalFileSystem;
 import sunlabs.celeste.util.ACL.ACLException;
 
 public abstract class FSException extends Exception {
     private static final long serialVersionUID = 0L;
 
-    private final PathName path;
+    private final HierarchicalFileSystem.FileName path;
 
-    protected FSException(PathName path) {
+    protected FSException(HierarchicalFileSystem.FileName path) {
         super();
         this.path = path;
     }
 
-    protected FSException(PathName path, String message) {
+    protected FSException(HierarchicalFileSystem.FileName path, String message) {
         super(message);
         this.path = path;
     }
 
-    protected FSException(PathName path, Throwable cause) {
+    protected FSException(HierarchicalFileSystem.FileName path, Throwable cause) {
         super(cause);
         this.path = path;
     }
 
-    protected FSException(PathName path, String message, Throwable cause) {
+    protected FSException(HierarchicalFileSystem.FileName path, String message, Throwable cause) {
         super(message, cause);
         this.path = path;
     }
@@ -61,7 +61,7 @@ public abstract class FSException extends Exception {
      *
      * @return  the {@code PathName} of the entity triggering this exception
      */
-    public PathName getPath() {
+    public HierarchicalFileSystem.FileName getPath() {
         return this.path;
     }
 
@@ -257,7 +257,7 @@ public abstract class FSException extends Exception {
 
         private final Lock lock;
 
-        public Locked(PathName path, Lock lock) {
+        public Locked(HierarchicalFileSystem.FileName path, Lock lock) {
             super(path);
             this.lock = lock;
         }
@@ -277,7 +277,7 @@ public abstract class FSException extends Exception {
     public static class NotDirectory extends FSException {
         private static final long serialVersionUID = 0L;
 
-        public NotDirectory(PathName path) {
+        public NotDirectory(HierarchicalFileSystem.FileName path) {
             super(path);
         }
     }
@@ -289,7 +289,7 @@ public abstract class FSException extends Exception {
     public static class NotEmpty extends FSException {
         private static final long serialVersionUID = 0L;
 
-        public NotEmpty(PathName path) {
+        public NotEmpty(HierarchicalFileSystem.FileName path) {
             super(path);
         }
     }
@@ -301,7 +301,7 @@ public abstract class FSException extends Exception {
     public static class NotFile extends FSException {
         private static final long serialVersionUID = 0L;
 
-        public NotFile(PathName path) {
+        public NotFile(HierarchicalFileSystem.FileName path) {
             super(path);
         }
     }
@@ -313,7 +313,7 @@ public abstract class FSException extends Exception {
     public static class NotFound extends FSException {
         private static final long serialVersionUID = 0L;
 
-        public NotFound(PathName path) {
+        public NotFound(HierarchicalFileSystem.FileName path) {
             super(path);
         }
     }
@@ -325,7 +325,7 @@ public abstract class FSException extends Exception {
     public static class NotLocked extends FSException {
         private static final long serialVersionUID = 0L;
 
-        public NotLocked(PathName path) {
+        public NotLocked(HierarchicalFileSystem.FileName path) {
             super(path);
         }
     }
@@ -341,12 +341,12 @@ public abstract class FSException extends Exception {
 
         private final ACLException aclException;
 
-        public PermissionDenied(PathName path) {
+        public PermissionDenied(HierarchicalFileSystem.FileName path) {
             super(path, (Throwable)null);
             this.aclException = null;
         }
 
-        public PermissionDenied(PathName path, ACLException aclException) {
+        public PermissionDenied(HierarchicalFileSystem.FileName path, ACLException aclException) {
             super(path, aclException);
             this.aclException = aclException;
         }

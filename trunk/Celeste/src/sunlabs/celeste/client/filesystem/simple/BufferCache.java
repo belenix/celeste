@@ -53,6 +53,7 @@ import sunlabs.beehive.util.ExtentMap;
 import sunlabs.beehive.util.WeakMBeanRegistrar;
 
 import sunlabs.celeste.CelesteException;
+import sunlabs.celeste.client.filesystem.FileException;
 
 import static java.lang.Math.max;
 

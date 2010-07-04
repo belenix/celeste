@@ -63,9 +63,9 @@ import sunlabs.celeste.client.Profile_;
 import sunlabs.celeste.client.ReplicationParameters;
 import sunlabs.celeste.client.filesystem.CelesteFileSystem;
 import sunlabs.celeste.client.filesystem.FileAttributes;
-import sunlabs.celeste.client.filesystem.PathName;
-import sunlabs.celeste.client.filesystem.CelesteFileSystem.CelesteOutputStream;
-import sunlabs.celeste.client.filesystem.simple.FileException;
+import sunlabs.celeste.client.filesystem.FileException;
+import sunlabs.celeste.client.filesystem.HierarchicalFileSystem;
+import sunlabs.celeste.client.filesystem.tabula.PathName;
 import sunlabs.celeste.client.operation.NewCredentialOperation;
 import sunlabs.celeste.client.operation.NewNameSpaceOperation;
 import sunlabs.celeste.client.operation.ReadProfileOperation;
@@ -79,6 +79,7 @@ public class CelesteFs {
     private InetSocketAddress celeste;
     private long timeOutSeconds;
     private final CelesteProxy.Cache proxyCache;
+    private HierarchicalFileSystem.Factory factory;
 
     //
     // The default size used for buffers in methods that copy data from one
@@ -87,14 +88,19 @@ public class CelesteFs {
     //
     private final static int defaultBufferSize = 32 * 1024 * 1024;
 
-    protected CelesteFs(InetSocketAddress celeste, DataOutputStream logFile, long timeOutSeconds) {
+    protected CelesteFs(InetSocketAddress celeste, DataOutputStream logFile, long timeOutSeconds, String identity, String password) {
         this.properties = new Properties();
         this.properties.setProperty("verbose", "false");
         this.celeste = celeste;
         this.timeOutSeconds = timeOutSeconds;
         this.proxyCache = new CelesteProxy.Cache(4, Time.secondsInMilliseconds(this.timeOutSeconds));
+        this.factory = new CelesteFileSystem.Factory(celeste, this.proxyCache, identity, password);
     }
 
+    private void close() {
+        
+    }
+    
     /**
      * Return the proxy cache that this {@code CelesteFs} instance uses.
      *
@@ -119,11 +125,10 @@ public class CelesteFs {
      * @throws CelesteException.CredentialException
      * @throws ClassNotFoundException
      */
-    public void createCredential(String name, String password, ReplicationParameters replicationParams)
-    throws Credential.Exception, IOException, CelesteException.RuntimeException, CelesteException.AlreadyExistsException,
-      CelesteException.NoSpaceException, CelesteException.VerificationException, CelesteException.CredentialException, ClassNotFoundException,
-      FileException.CelesteInaccessible  {
-        Profile_ credential = new Profile_(name, password.toCharArray());
+    public void createCredential(String name, String password, ReplicationParameters replicationParams) throws Credential.Exception, IOException,
+      CelesteException.RuntimeException, CelesteException.AlreadyExistsException, CelesteException.NoSpaceException, CelesteException.VerificationException,
+      CelesteException.CredentialException, ClassNotFoundException, FileException.CelesteInaccessible  {
+        Credential credential = new Profile_(name, password.toCharArray());
         NewCredentialOperation operation = new NewCredentialOperation(credential.getObjectId(), BeehiveObjectId.ZERO, replicationParams);
         Credential.Signature signature = credential.sign(password.toCharArray(), operation.getId());
 
@@ -131,6 +136,16 @@ public class CelesteFs {
         try {
             proxy = this.proxyCache.getAndRemove(this.celeste);
             proxy.newCredential(operation, signature, credential);
+        } catch (CelesteException.CredentialException e) {
+            throw e;
+        } catch (CelesteException.AlreadyExistsException e) {
+            throw e;
+        } catch (CelesteException.RuntimeException e) {
+            throw e;
+        } catch (CelesteException.NoSpaceException e) {
+            throw e;
+        } catch (CelesteException.VerificationException e) {
+            throw e;
         } catch (Exception e) {
             throw new FileException.CelesteInaccessible(e);
         } finally {
@@ -193,18 +208,18 @@ public class CelesteFs {
     //
     // XXX: Get rid of replicationParams.
     //
-    public void createFileSystem(String creatorName, String creatorPassword, String fileSystemName, String fileSystemPassword, OrderedProperties attrs, String replicationParams)
+    public void createFileSystem(String creatorName, String creatorPassword, String fileSystemName, String fileSystemPassword, OrderedProperties fileSystemAttributes, String replicationParams)
     throws Credential.Exception, IOException, CelesteException.RuntimeException, CelesteException.AlreadyExistsException,
-      CelesteException.NoSpaceException, CelesteException.VerificationException, CelesteException.CredentialException, ClassNotFoundException, FileException {
+      CelesteException.NoSpaceException, CelesteException.VerificationException, CelesteException.CredentialException, ClassNotFoundException, FileException, CelesteException.NotFoundException {
         //
         // Make the name space credential that represents the filesystem.
         //
         CelesteAPI proxy = null;
         try {
             proxy = this.proxyCache.getAndRemove(this.celeste);
-            Profile_ fileSystemCredential = new Profile_(fileSystemName, fileSystemPassword.toCharArray());
+            Credential fileSystemCredential = new Profile_(fileSystemName, fileSystemPassword.toCharArray());
             NewNameSpaceOperation operation = new NewNameSpaceOperation(fileSystemCredential.getObjectId(), BeehiveObjectId.ZERO, replicationParams);
-            // XXX I think there is a bug here. This needs to be signed by the client credential.
+            // XXX I think there is a bug here. This should be signed by the client credential.
             Credential.Signature signature = fileSystemCredential.sign(fileSystemPassword.toCharArray(), operation.getId());
             // XXX if this fails, it isn't reported properly.
             proxy.newNameSpace(operation, signature, fileSystemCredential);
@@ -221,9 +236,9 @@ public class CelesteFs {
         //      newFileSystem() to be used, so that callers can supply
         //      default creation attributes.
         //
-        CelesteFileSystem fileSystem = new CelesteFileSystem(
-            this.celeste, this.proxyCache, fileSystemName, creatorName, creatorPassword);
-        fileSystem.newFileSystem(null, attrs);
+        
+        HierarchicalFileSystem.Factory factory = new CelesteFileSystem.Factory(celeste, proxyCache, creatorName, creatorPassword);
+        factory.create(fileSystemName, fileSystemName, fileSystemAttributes);
     }
 
     //
@@ -236,9 +251,7 @@ public class CelesteFs {
     //      as defaults for files and directories created within it) should be
     //      specified using "--attr ReplicationParameters=<whatever>".
     //
-    public int mkfs(InetSocketAddress celeste,
-            String creatorName, String creatorPassword,
-            String command, Stack<String> options, Stats stats)
+    public int mkfs(String command, Stack<String> options, Stats stats)
     throws IOException {
         String replicationParams = "Credential.Replication.Store=2; AObject.Replication.Store=2; VObject.Replication.Store=2; BObject.Replication.Store=2;";
         //
@@ -276,9 +289,9 @@ public class CelesteFs {
             //
             // Make the name space credential that represents the filesystem.
             //
-            Profile_ fileSystemCredential = new Profile_(fileSystemName, fileSystemPassword.toCharArray());
+            Credential fileSystemCredential = new Profile_(fileSystemName, fileSystemPassword.toCharArray());
             NewNameSpaceOperation operation = new NewNameSpaceOperation(fileSystemCredential.getObjectId(), BeehiveObjectId.ZERO, replicationParams);
-            // XXX I think there is a bug here. This needs to be signed by the client credential.
+
             Credential.Signature signature = fileSystemCredential.sign(fileSystemPassword.toCharArray(), operation.getId());
             proxy = this.proxyCache.getAndRemove(this.celeste);
 
@@ -292,8 +305,9 @@ public class CelesteFs {
             //      newFileSystem() to be used, so that callers can supply
             //      default creation attributes.
             //
-            CelesteFileSystem fileSystem = new CelesteFileSystem(celeste, this.proxyCache, fileSystemName, creatorName, creatorPassword);
-            fileSystem.newFileSystem(null, attrs);
+            HierarchicalFileSystem fileSystem = this.factory.create(fileSystemName, fileSystemPassword, attrs);
+
+
             stats.addMessage("%s", fileSystemName);
             return 0;
         } catch (Profile_.Exception e) {
@@ -322,9 +336,7 @@ public class CelesteFs {
     //
     // XXX: Needs better error checking for argument processing.
     //
-    public int mkdir(InetSocketAddress celeste, String myIdName,
-            String password, String command, Stack<String> options, Stats stats)
-        throws Exception, IOException, Credential.Exception {
+    public int mkdir(String command, Stack<String> options, Stats stats) throws Exception, IOException, Credential.Exception {
 
         boolean pFlag = false;
 
@@ -349,8 +361,7 @@ public class CelesteFs {
                     String operand = options.pop();
                     String[] keyValue = operand.split("=", 2);
                     if (keyValue.length != 2) {
-                        System.err.printf("malformed %s operand: %s%n",
-                            option, operand);
+                        System.err.printf("malformed %s operand: %s%n", option, operand);
                         return 1;
                     }
                     if (isAttr)
@@ -368,8 +379,7 @@ public class CelesteFs {
                 String fileSystemName = tokens[1];
                 fullPath = "/" + (tokens.length >= 3 ? tokens[2] : "");
 
-                CelesteFileSystem fileSystem = new CelesteFileSystem(
-                    celeste, this.proxyCache, fileSystemName, myIdName, password);
+                HierarchicalFileSystem fileSystem = this.factory.mount(fileSystemName);
 
                 if (pFlag) {
                     String accumulator = "";
@@ -378,8 +388,7 @@ public class CelesteFs {
                         accumulator = accumulator.replaceAll("/+", "/");
                         if (accumulator.compareTo("/") != 0) {
                             try {
-                                fileSystem.createDirectory(
-                                    new PathName(accumulator), attrs, props);
+                                fileSystem.createDirectory(new PathName(accumulator), attrs, props);
                             } catch (FileException.Exists ignore) {
                                 //
                                 // Having intermediate directories already
@@ -408,10 +417,10 @@ public class CelesteFs {
         return 0;
     }
 
-    public void deleteDirectory(CelesteFileSystem fileSystem, PathName name) throws FileException {
-        CelesteFileSystem.File file = fileSystem.getFile(name);
+    public void deleteDirectory(HierarchicalFileSystem fileSystem, PathName name) throws FileException, IOException, ClassNotFoundException {
+        HierarchicalFileSystem.File file = fileSystem.getFile(name);
         if (file.isDirectory()) {
-            CelesteFileSystem.Directory dir = (CelesteFileSystem.Directory) file;
+            HierarchicalFileSystem.Directory dir = (HierarchicalFileSystem.Directory) file;
             for (String n : dir.list()) {
                 if (n.compareTo(".") != 0 && n.compareTo("..") != 0 ) {
                     deleteDirectory(fileSystem, name.appendComponent(n));
@@ -423,8 +432,7 @@ public class CelesteFs {
         }
     }
 
-    public int deleteFile(InetSocketAddress celeste, String myIdName, String password, String command, Stack<String> options, Stats stats)
-    throws IOException {
+    public int deleteFile(String command, Stack<String> options, Stats stats) throws IOException {
         //
         // At this point, it is perfectly legal to delete a directory with
         // content.  What happens is that all files in that directory are
@@ -438,12 +446,12 @@ public class CelesteFs {
                 String[] tokens = fullPath.split("/", 3);
                 String fileSystemName = tokens[1];
                 fullPath = "/" + (tokens.length >= 3 ? tokens[2] : "");
-                CelesteFileSystem fileSystem = new CelesteFileSystem(
-                    celeste, this.proxyCache, fileSystemName, myIdName, password);
+
+                HierarchicalFileSystem fileSystem = this.factory.mount(fileSystemName);
 
                 PathName path = new PathName(fullPath);
 
-                CelesteFileSystem.File file = fileSystem.getFile(path);
+                HierarchicalFileSystem.File file = fileSystem.getFile(path);
                 if (file.isDirectory()) {
                     this.deleteDirectory(fileSystem, path);
                 } else {
@@ -451,7 +459,7 @@ public class CelesteFs {
                 }
             }
         } catch (Exception e) {
-            System.err.printf("%s%n", e.getLocalizedMessage());
+            System.err.printf("%s%n", e.toString());
             if (this.properties.getProperty("verbose", "false").equals("true")) {
                 e.printStackTrace();
             }
@@ -461,7 +469,7 @@ public class CelesteFs {
         return 0;
     }
 
-    public int preadFile(InetSocketAddress celeste, String myIdName, String password, String command, Stack<String> options, Stats stats)
+    public int preadFile(String command, Stack<String> options, Stats stats)
     throws IOException, FileException {
         try {
             String fullPath = options.pop();
@@ -474,15 +482,13 @@ public class CelesteFs {
 
             int length = options.empty() ? -1 : Integer.parseInt(options.pop());
 
-            CelesteFileSystem fileSystem = new CelesteFileSystem(
-                celeste, this.proxyCache, fileSystemName, myIdName, password);
+            HierarchicalFileSystem fileSystem = this.factory.mount(fileSystemName);
 
             PathName path = new PathName(fullPath);
-            CelesteFileSystem.File fileOrDirectory = fileSystem.getFile(path);
+            HierarchicalFileSystem.File fileOrDirectory = fileSystem.getFile(path);
             fileOrDirectory.position(offset);
 
-            CelesteFileSystem.CelesteInputStream input = fileOrDirectory.getInputStream();
-            input.seek(offset);
+            InputStream input = fileOrDirectory.getInputStream();
 
             byte[] buffer = new byte[fileOrDirectory.getBlockSize()];
 
@@ -501,7 +507,8 @@ public class CelesteFs {
             stats.addMessage("%s/%s %s bytes", fileSystemName, fullPath, length == -1 ? fileOrDirectory.length() : length);
 
         } catch (Exception e) {
-            System.err.printf("%s%n", e.getLocalizedMessage());
+            e.printStackTrace();
+            System.err.printf("%s%n", e.toString());
             if (this.properties.getProperty("verbose", "false").equals("true")) {
                 e.printStackTrace();
             }
@@ -511,8 +518,7 @@ public class CelesteFs {
         return 0;
     }
 
-    public int readdir(InetSocketAddress celeste, String myIdName, String password, String command, Stack<String> options, Stats stats)
-    throws IOException, FileException {
+    public int readdir(String command, Stack<String> options, Stats stats) throws IOException, FileException {
         try {
             boolean lFlag = false;
 
@@ -531,14 +537,13 @@ public class CelesteFs {
             String fileSystemName = tokens[1];
             fullPath = "/" + (tokens.length >= 3 ? tokens[2] : "");
 
-            CelesteFileSystem fileSystem = new CelesteFileSystem(
-                celeste, this.proxyCache, fileSystemName, myIdName, password);
+            HierarchicalFileSystem fileSystem = this.factory.mount(fileSystemName);
 
             PathName path = new PathName(fullPath);
-            CelesteFileSystem.File fileOrDirectory = fileSystem.getFile(path);
+            HierarchicalFileSystem.File fileOrDirectory = fileSystem.getFile(path);
 
-            if (fileOrDirectory instanceof CelesteFileSystem.Directory) {
-                CelesteFileSystem.Directory directory = (CelesteFileSystem.Directory) fileOrDirectory;
+            if (fileOrDirectory instanceof HierarchicalFileSystem.Directory) {
+                HierarchicalFileSystem.Directory directory = (HierarchicalFileSystem.Directory) fileOrDirectory;
                 for (String entryName : directory.list()) {
                     if (lFlag) {
                         System.out.printf("%s%n", new String(path + "/" + entryName).replaceAll("/+", "/"));
@@ -551,7 +556,7 @@ public class CelesteFs {
 
             return 1;
         } catch (Exception e) {
-            System.err.printf("%s%n", e.getLocalizedMessage());
+            System.err.printf("%s%n", e.toString());
             if (this.properties.getProperty("verbose", "false").equals("true")) {
                 e.printStackTrace();
             }
@@ -559,16 +564,14 @@ public class CelesteFs {
         }
     }
 
-    public int testFile(InetSocketAddress celeste, String myIdName, String password, String command, Stack<String> options, Stats stats)
-    throws IOException, FileException {
+    public int testFile(String command, Stack<String> options, Stats stats) throws IOException, FileException {
         boolean eFlag = false;
         boolean dFlag = false;
         String typeFlag = null;
         boolean credentialFlag = false;
         boolean filesystemFlag = false;
         boolean successful = false;
-        boolean verbose =
-            this.properties.getProperty("verbose", "false").equals("true");
+        boolean verbose = this.properties.getProperty("verbose", "false").equals("true");
 
         if (options.peek().startsWith("-")) {
             String option = options.pop();
@@ -620,15 +623,7 @@ public class CelesteFs {
         if (filesystemFlag) {
             String fileSystemName = options.pop();
 
-            try {
-                CelesteFileSystem cfs = new CelesteFileSystem(
-                    celeste, this.proxyCache, fileSystemName, myIdName, password);
-                successful = cfs.exists();
-            } catch (FileException e) {
-                if (verbose)
-                    e.printStackTrace(System.err);
-                successful = false;
-            }
+            successful = factory.exists(fileSystemName);
             if (verbose)
                 System.out.println(successful ? "true" : "false");
             return successful ? 0 : 1;
@@ -640,26 +635,16 @@ public class CelesteFs {
         fullPath = "/" + (tokens.length >= 3 ? tokens[2] : "");
         PathName path = new PathName(fullPath);
 
-        if (myIdName == null) {
-            System.err.printf("missing --identifier%n");
-            return -1;
-        }
-        if (password == null) {
-            System.err.printf("missing --password%n");
-            return -1;
-        }
-
         try {
-            CelesteFileSystem fileSystem = new CelesteFileSystem(
-                celeste, this.proxyCache, fileSystemName, myIdName, password);
+            HierarchicalFileSystem fileSystem = this.factory.mount(fileSystemName);
 
             if (fileSystem.fileExists(path)) {
-                CelesteFileSystem.File fileOrDirectory = fileSystem.getFile(path);
+                HierarchicalFileSystem.File fileOrDirectory = fileSystem.getFile(path);
 //                System.out.printf("test: %s%n", fileOrDirectory.getClass());
                 if (typeFlag != null) {
                     successful = fileOrDirectory.getContentType().equals(typeFlag);
                 } else if (dFlag) {
-                    successful = fileOrDirectory instanceof CelesteFileSystem.Directory;
+                    successful = fileOrDirectory instanceof HierarchicalFileSystem.Directory;
 //                    System.out.printf("dflag: %b%n", successful);
                 } else if (eFlag) {
                     successful = true;
@@ -672,8 +657,7 @@ public class CelesteFs {
         } catch (Exception e) {
             if (verbose) {
                 e.printStackTrace(System.err);
-                System.err.printf("%s %s %s%n", path, e.getLocalizedMessage(),
-                    e.toString());
+                System.err.printf("%s %s %s%n", path, e.toString(), e.toString());
             }
             successful = false;
         }
@@ -682,14 +666,8 @@ public class CelesteFs {
             System.out.println(successful ? "true" : "false");
         return successful ? 0 : 1;
     }
-
-    //
-    // XXX: Needs better error checking for argument processing.
-    //
-    public int createFile(InetSocketAddress celesteAddress, String myIdName,
-            String password, String command, Stack<String> options, Stats stats)
-        throws
-            IOException {
+    
+    public int createFile(String command, Stack<String> options, Stats stats) throws IOException {
         //
         // Gather up attributes and client-supplied metadata ("properties") to
         // be applied to the file's initial version.
@@ -744,15 +722,15 @@ public class CelesteFs {
             String[] tokens = fullPath.split("/", 3);
             String fileSystemName = tokens[1];
             fullPath = "/" + (tokens.length >= 3 ? tokens[2] : "");
+            
+            HierarchicalFileSystem fileSystem = this.factory.mount(fileSystemName);
 
-            CelesteFileSystem fileSystem = new CelesteFileSystem(celesteAddress, this.proxyCache, fileSystemName, myIdName, password);
-
-            PathName path = new PathName(fullPath);
+            HierarchicalFileSystem.FileName path = new PathName(fullPath);
 
             fileSystem.createFile(path, attrs, props);
             stats.addMessage("%s/%s", fileSystemName, fullPath);
         } catch (Exception e) {
-            stats.addMessage("%s", e.getLocalizedMessage());
+            stats.addMessage("%s", e.toString());
             if (this.properties.getProperty("verbose", "false").equals("true")) {
                 e.printStackTrace();
             }
@@ -763,19 +741,14 @@ public class CelesteFs {
 
     /**
      * <p>
-     *
      * Open a file and return its contents as a byte array.  If {@code name}
      * is {@code "-"}, use {@code System.in} as the file.
-     *
      * </p><p>
-     *
      * Note that the entire file will be read into a byte array in memory.  A
      * large file can consume all available memory.
-     *
      * </p>
      *
-     * @param name  the name of the file to be opened or {@code "-"} for
-     *              {@code System.in}
+     * @param name  the name of the file to be opened or {@code "-"} for {@code System.in}
      *
      * @return  a byte array containing the contents of the file
      */
@@ -817,8 +790,7 @@ public class CelesteFs {
         }
     }
 
-    public int writeFile(InetSocketAddress celeste, String myIdName, String password, String command, Stack<String> options, Stats stats)
-    throws IOException {
+    public int writeFile(String command, Stack<String> options, Stats stats) throws IOException {
         try {
             String fullPath = options.pop();
             String[] tokens = fullPath.split("/", 3);
@@ -830,15 +802,14 @@ public class CelesteFs {
 
             String inputPath = options.empty() ? "-" : options.pop();
 
-            CelesteFileSystem fileSystem = new CelesteFileSystem(
-                celeste, this.proxyCache, fileSystemName, myIdName, password);
+            HierarchicalFileSystem fileSystem = this.factory.mount(fileSystemName);
 
-            CelesteFileSystem.File outputfile = fileSystem.getFile(path);
+            HierarchicalFileSystem.File outputfile = fileSystem.getFile(path);
             ByteBuffer data = ByteBuffer.wrap(readNamedFile(inputPath));
             outputfile.write(data, offset);
 
         } catch (Exception e) {
-            System.err.printf("%s%n", e.getLocalizedMessage());
+            System.err.printf("%s%n", e.toString());
             if (this.properties.getProperty("verbose", "false").equals("true")) {
                 e.printStackTrace();
             }
@@ -876,7 +847,7 @@ public class CelesteFs {
      *
      * @return  {@code 0} on success and {@code -1} on failure
      */
-    public int writeFileChunked(InetSocketAddress celeste, String myIdName, String password, String command, Stack<String> options, Stats stats) {
+    public int writeFileChunked(String command, Stack<String> options, Stats stats) {
         try {
             //
             // Check for options.
@@ -886,8 +857,7 @@ public class CelesteFs {
                 options.pop();
                 bufferSize = Integer.parseInt(options.pop());
                 if (bufferSize <= 0)
-                    throw new IllegalArgumentException(
-                        "buffer size must be positive");
+                    throw new IllegalArgumentException("buffer size must be positive");
             }
 
             String fullPath = options.pop();
@@ -900,10 +870,9 @@ public class CelesteFs {
 
             String inputPath = options.empty() ? "-" : options.pop();
 
-            CelesteFileSystem fileSystem = new CelesteFileSystem(
-                celeste, this.proxyCache, fileSystemName, myIdName, password);
+            HierarchicalFileSystem fileSystem = this.factory.mount(fileSystemName);
 
-            CelesteFileSystem.File outputfile = fileSystem.getFile(path);
+            HierarchicalFileSystem.File outputfile = fileSystem.getFile(path);
 
             //
             // Force the buffer size to be the largest multiple of the block
@@ -918,8 +887,7 @@ public class CelesteFs {
 
             byte[] buffer = new byte[bufferSize];
 
-            InputStream fin = inputPath.equals("-") ?
-                System.in : new FileInputStream(inputPath);
+            InputStream fin = inputPath.equals("-") ? System.in : new FileInputStream(inputPath);
 
             outputfile.position(offset);
             while (true) {
@@ -931,7 +899,7 @@ public class CelesteFs {
                 outputfile.write(data);
             }
         } catch (Exception e) {
-            System.err.printf("%s%n", e.getLocalizedMessage());
+            System.err.printf("%s%n", e.toString());
             if (this.properties.getProperty("verbose", "false").equals("true")) {
                 e.printStackTrace();
             }
@@ -940,7 +908,7 @@ public class CelesteFs {
         return 0;
     }
 
-    public int pwriteFile(InetSocketAddress celeste, String myIdName, String password, String command, Stack<String> options, Stats stats) {
+    public int pwriteFile(String command, Stack<String> options, Stats stats) {
         try {
             //
             // Check for options.
@@ -950,8 +918,7 @@ public class CelesteFs {
                 options.pop();
                 bufferSize = Integer.parseInt(options.pop());
                 if (bufferSize <= 0)
-                    throw new IllegalArgumentException(
-                        "buffer size must be positive");
+                    throw new IllegalArgumentException("buffer size must be positive");
             }
 
             //
@@ -970,10 +937,12 @@ public class CelesteFs {
             //
             // Look up the Celeste file to be written.
             //
-            CelesteFileSystem fileSystem = new CelesteFileSystem(
-                celeste, this.proxyCache, fileSystemName, myIdName, password);
+
+//            HierarchicalFileSystem.Factory factory = new CelesteFileSystem.Factory(celeste, this.proxyCache, myIdName, password);
+            HierarchicalFileSystem fileSystem = this.factory.mount(fileSystemName);
+            
             PathName path = new PathName(fullPath);
-            CelesteFileSystem.File file = fileSystem.getFile(path);
+            HierarchicalFileSystem.File file = fileSystem.getFile(path);
 
             //
             // Force the buffer size to be the largest multiple of the block
@@ -992,8 +961,7 @@ public class CelesteFs {
             // wrapping.  Ensure that buffer sizes are set properly
             // throughout.
             //
-            CelesteOutputStream fos = file.getOutputStream(false);
-            fos.setBufferSize(bufferSize);
+            OutputStream fos = file.getOutputStream(false, bufferSize);
             OutputStream o = new BufferedOutputStream(fos, bufferSize);
 
             file.position(offset);
@@ -1016,7 +984,7 @@ public class CelesteFs {
             o.close();
             stats.addMessage("%s/%s %s bytes", fileSystemName, fullPath, length);
         } catch (Exception e) {
-            stats.addMessage("%s", e.getLocalizedMessage());
+            stats.addMessage("%s", e.toString());
             if (this.properties.getProperty("verbose", "false").equals("true")) {
                 e.printStackTrace();
             }
@@ -1043,7 +1011,7 @@ public class CelesteFs {
 
             CelesteFileSystem fileSystem = new CelesteFileSystem(celeste, this.proxyCache, fileSystemName, myIdName, password);
 
-            PathName path = new PathName(fullPath);
+            HierarchicalFileSystem.FileName path = new PathName(fullPath);
             CelesteFileSystem.File file = fileSystem.getFile(path);
 
             URL[] jarFileURLs = new URL[urls.length];
@@ -1054,7 +1022,7 @@ public class CelesteFs {
             Serializable result = file.runExtension(jarFileURLs, argList.toArray(new String[argList.size()]));
             System.out.printf("%s%n", result);
         } catch (Exception e) {
-            System.err.printf("%s%n", e.getLocalizedMessage());
+            System.err.printf("%s%n", e.toString());
             if (this.properties.getProperty("verbose", "false").equals("true")) {
                 e.printStackTrace();
             }
@@ -1063,8 +1031,7 @@ public class CelesteFs {
         return 0;
     }
 
-    public int setFileLength(InetSocketAddress celeste, String myIdName, String password, String command, Stack<String> options, Stats stats)
-    throws IOException {
+    public int setFileLength(String command, Stack<String> options, Stats stats) throws IOException {
         try {
             String fullPath = options.pop();
             String[] tokens = fullPath.split("/", 3);
@@ -1073,14 +1040,13 @@ public class CelesteFs {
 
             long length = options.empty() ? 0 : Long.parseLong(options.pop());
 
-            CelesteFileSystem fileSystem = new CelesteFileSystem(
-                celeste, this.proxyCache, fileSystemName, myIdName, password);
+            HierarchicalFileSystem fileSystem = factory.mount(fileSystemName);
 
-            PathName path = new PathName(fullPath);
-            CelesteFileSystem.File file = fileSystem.getFile(path);
+            HierarchicalFileSystem.FileName path = new PathName(fullPath);
+            HierarchicalFileSystem.File file = fileSystem.getFile(path);
             file.truncate(length);
         } catch (Exception e) {
-            System.err.printf("%s%n", e.getLocalizedMessage());
+            System.err.printf("%s%n", e.toString());
             if (this.properties.getProperty("verbose", "false").equals("true")) {
                 e.printStackTrace();
             }
@@ -1089,8 +1055,7 @@ public class CelesteFs {
         return 0;
     }
 
-    public int statFile(InetSocketAddress celeste, String myIdName, String password, String command, Stack<String> options, Stats stats)
-    throws IOException {
+    public int statFile(String command, Stack<String> options, Stats stats) throws IOException {
         boolean lOption = false;
         boolean sOption = false;
         boolean pOption = false;
@@ -1121,19 +1086,18 @@ public class CelesteFs {
 
             PathName path = new PathName(fullPath);
             try {
-                CelesteFileSystem fileSystem = new CelesteFileSystem(
-                    celeste, this.proxyCache, fileSystemName, myIdName, password);
+                HierarchicalFileSystem fileSystem = this.factory.mount(fileSystemName);
 
-                CelesteFileSystem.File file = fileSystem.getFile(path);
+                HierarchicalFileSystem.File file = fileSystem.getFile(path);
 
-                if (file instanceof CelesteFileSystem.Directory) {
-                    CelesteFileSystem.Directory directory = (CelesteFileSystem.Directory) file;
+                if (file instanceof HierarchicalFileSystem.Directory) {
+                    HierarchicalFileSystem.Directory directory = (HierarchicalFileSystem.Directory) file;
                     for (String entryName : directory.list()) {
-                        CelesteFileSystem.File f = directory.getFile(entryName);
+                        HierarchicalFileSystem.File f = directory.getFile(entryName);
                         if (oneOption) {
                             System.out.printf("%s%n", entryName);
                         } else if (lOption) {
-                            if (f instanceof CelesteFileSystem.Directory) {
+                            if (f instanceof HierarchicalFileSystem.Directory) {
                                 String d = String.format("%1$tF %1$tT", new java.util.Date(f.lastModified()));
                                 System.out.printf("%-25.25s %21d %s %s%n", f.getContentType(), f.length(), d, entryName);
                             } else {
@@ -1173,7 +1137,7 @@ public class CelesteFs {
                 stats.addMessage("%s/%s", fileSystemName, path);
             } catch (Exception e) {
                 if (verbose) {
-                    System.err.printf("%s%n", e.getLocalizedMessage());
+                    System.err.printf("%s%n", e.toString());
                     e.printStackTrace(System.err);
                 }
                 return 1;
@@ -1203,8 +1167,7 @@ public class CelesteFs {
      *
      * </p>
      */
-    public int getFileAttributes(InetSocketAddress celeste, String myIdName,
-            String password, String command, Stack<String> options, Stats stats) throws IOException {
+    public int getFileAttributes(String command, Stack<String> options, Stats stats) throws IOException {
 
         Set<String> attrNames = new HashSet<String>();
         gatherNames("--attr", options, attrNames);
@@ -1230,15 +1193,17 @@ public class CelesteFs {
         PathName path = new PathName(fullPath);
 
         try {
-            CelesteFileSystem fileSystem = new CelesteFileSystem(
-                celeste, this.proxyCache, fileSystemName, myIdName, password);
-            CelesteFileSystem.File file = fileSystem.getFile(path);
+            HierarchicalFileSystem fileSystem = this.factory.mount(fileSystemName);
+            HierarchicalFileSystem.File file = fileSystem.getFile(path);
 
             OrderedProperties attrs = file.getAttributes(attrNames);
             attrs.store(System.out, "");
             return 0;
         } catch (FileException e) {
             throw new IOException(e);
+        } catch (ClassNotFoundException e) {
+            e.printStackTrace();
+            return -1;
         }
     }
 
@@ -1262,9 +1227,7 @@ public class CelesteFs {
      *
      * </p>
      */
-    public int getFileProperties(InetSocketAddress celeste, String myIdName,
-            String password, String command, Stack<String> options, Stats stats) throws
-                IOException {
+    public int getFileProperties(String command, Stack<String> options, Stats stats) throws IOException {
 
         Set<String> propNames = new HashSet<String>();
         gatherNames("--prop", options, propNames);
@@ -1280,8 +1243,7 @@ public class CelesteFs {
         // of the file whose attributes are desired.
         //
         if (options.size() != 1)
-            throw new IllegalArgumentException(
-                "getFileAttributes: exactly one file name required");
+            throw new IllegalArgumentException("getFileAttributes: exactly one file name required");
 
         String fullPath = options.pop();
         String[] tokens = fullPath.split("/", 3);
@@ -1290,9 +1252,8 @@ public class CelesteFs {
         PathName path = new PathName(fullPath);
 
         try {
-            CelesteFileSystem fileSystem = new CelesteFileSystem(
-                celeste, this.proxyCache, fileSystemName, myIdName, password);
-            CelesteFileSystem.File file = fileSystem.getFile(path);
+            HierarchicalFileSystem fileSystem = this.factory.mount(fileSystemName);
+            HierarchicalFileSystem.File file = fileSystem.getFile(path);
 
             OrderedProperties props = file.getClientProperties();
             if (propNames != null) {
@@ -1314,6 +1275,9 @@ public class CelesteFs {
             return 0;
         } catch (FileException e) {
             throw new IOException(e);
+        } catch (ClassNotFoundException e) {
+            e.printStackTrace();
+            return -1;
         }
     }
 
@@ -1322,8 +1286,7 @@ public class CelesteFs {
     // named by optionFlag, stripping out each occurrence and its corresponding
     // operand and adding the operands to the operands set.
     //
-    private void gatherNames(String optionFlag, Stack<String>options,
-            Set<String> operands) {
+    private void gatherNames(String optionFlag, Stack<String>options, Set<String> operands) {
         //
         // March through options looking for occurrences of optionFlag,
         // stripping them out and adding their corresponding operands to
@@ -1338,8 +1301,7 @@ public class CelesteFs {
             String item = options.get(index);
             if (item.equals(optionFlag)) {
                 if (index == 0)
-                    throw new IllegalArgumentException(String.format(
-                        "missing operand for %s flag", optionFlag));
+                    throw new IllegalArgumentException(String.format("missing operand for %s flag", optionFlag));
                 operands.add(options.get(index - 1));
                 //
                 // Remove the option and its operand, and adjust index to
@@ -1354,8 +1316,7 @@ public class CelesteFs {
         }
     }
 
-    public int renameFile(InetSocketAddress celeste, String myIdName, String password, String command, Stack<String> options, Stats stats)
-    throws IOException {
+    public int renameFile(String command, Stack<String> options, Stats stats) throws IOException {
         //
         // At this point, it is perfectly legal to delete a directory with
         // content.  What happens is that all files in that directory are
@@ -1377,20 +1338,19 @@ public class CelesteFs {
                 if (!fromFileSystemName.equals(toFileSystemName)) {
                     System.err.println("Cannot move across filesystems");
                 }
-                CelesteFileSystem fileSystem = new CelesteFileSystem(
-                    celeste, this.proxyCache, fromFileSystemName, myIdName, password);
+                HierarchicalFileSystem fileSystem = this.factory.mount(fromFileSystemName);
 
-                PathName fromName = new PathName(fromPath);
-                PathName toName = new PathName(toPath);
+                HierarchicalFileSystem.FileName fromName = new PathName(fromPath);
+                HierarchicalFileSystem.FileName toName = new PathName(toPath);
 
                 try {
                     fileSystem.renameFile(fromName, toName);
                 } catch (FileException e) {
-                    System.err.printf("Cannot rename file %s to %s%nn", fromName, toName);
+                    System.err.printf("Cannot rename file %s to %s: %s%nn", fromName, toName, e);
                 }
             }
         } catch (Exception e) {
-            System.err.printf("%s%n", e.getLocalizedMessage());
+            System.err.printf("%s%n", e.toString());
             if (this.properties.getProperty("verbose", "false").equals("true")) {
                 e.printStackTrace();
             }
@@ -1412,7 +1372,15 @@ public class CelesteFs {
 
     public static int interactive(InetSocketAddress celeste, String identity, String password) {
         System.out.printf("%s%n%s%n", release, Copyright.miniNotice);
-        CelesteFs celestefs = new CelesteFs(celeste, null, 300);
+        if (identity == null) {
+            System.err.printf("Identity not set.  Use --identity <name>%n");
+            return -1;
+        }
+        if (password == null) {
+            System.err.printf("Password not set.  Use --password <name>%n");
+            return -1;
+        }
+        CelesteFs celestefs = new CelesteFs(celeste, null, 300, identity, password);
 
         Stats stats = new Stats("");
         while (true) {
@@ -1434,9 +1402,11 @@ public class CelesteFs {
                         System.out.println("getAttributes [-attr name]... <pathname>");
                         System.out.println("getProperties [-prop name]... <pathname>");
                         System.out.println("ls [-ls1] <pathname>");
+                        System.out.println("identity name");
                         System.out.println("mkdir[-p] [--attr|--prop <name>=<value>]... <pathname>");
                         System.out.println("mkfs [--attr <name>=<value>]... <root-name>");
                         System.out.println("mkid");
+                        System.out.println("password password");
                         System.out.println("pread <pathname> [<offset> [<length>]]");
                         System.out.println("pwrite [--buffer-size <n>] <pathname> [<offset> <fileToWrite>]");
                         System.out.println("write-file <pathname> <offset> <fileToWrite>");
@@ -1460,46 +1430,43 @@ public class CelesteFs {
                         }
                         status = 0;
                     } else if (command.equals("mkfs")) {
-                        status = celestefs.mkfs(celeste, identity, password, command, options, stats);
+                        status = celestefs.mkfs(command, options, stats);
                     } else if (command.equals("mkid")) {
                         status = celestefs.mkid(identity, password, command, options, stats);
                     } else if (command.equals("mkdir")) {
-                        status = celestefs.mkdir(celeste, identity, password, command, options, stats);
+                        status = celestefs.mkdir(command, options, stats);
                     } else if (command.equals("pread")) {
-                        status = celestefs.preadFile(celeste, identity, password, command, options, stats);
+                        status = celestefs.preadFile(command, options, stats);
                     } else if (command.equals("write-file")) {
-                        status = celestefs.writeFile(celeste, identity, password, command, options, stats);
+                        status = celestefs.writeFile(command, options, stats);
                     } else if (command.equals("write")) {
-                        status = celestefs.writeFileChunked(celeste, identity, password, command, options, stats);
+                        status = celestefs.writeFileChunked(command, options, stats);
                     } else if (command.equals("pwrite")) {
-                        status = celestefs.pwriteFile(celeste, identity, password, command, options, stats);
+                        status = celestefs.pwriteFile(command, options, stats);
                     } else if (command.equals("create")) {
-                        status = celestefs.createFile(celeste, identity, password, command, options, stats);
+                        status = celestefs.createFile(command, options, stats);
                     } else if (command.equals("getAttributes")) {
-                        status = celestefs.getFileAttributes(celeste, identity, password, command, options, stats);
+                        status = celestefs.getFileAttributes(command, options, stats);
                     } else if (command.equals("getProperties")) {
-                        status = celestefs.getFileProperties(celeste, identity, password, command, options, stats);
+                        status = celestefs.getFileProperties(command, options, stats);
                     } else if (command.equals("ls") ) {
-                        status = celestefs.statFile(celeste, identity, password, command, options, stats);
+                        status = celestefs.statFile(command, options, stats);
                     } else if (command.equals("rm") ) {
-                        status = celestefs.deleteFile(celeste, identity, password, command, options, stats);
+                        status = celestefs.deleteFile(command, options, stats);
                     } else if (command.equals("readdir") ) {
-                        status = celestefs.readdir(celeste, identity, password, command, options, stats);
+                        status = celestefs.readdir(command, options, stats);
                     } else if (command.equals("rename") ) {
-                        status = celestefs.renameFile(celeste, identity, password, command, options, stats);
+                        status = celestefs.renameFile(command, options, stats);
                     } else if (command.equals("test") ) {
-                        status = celestefs.testFile(celeste, identity, password, command, options, stats);
+                        status = celestefs.testFile(command, options, stats);
                     } else if (command.equals("set-length") ) {
-                        status = celestefs.setFileLength(celeste, identity, password, command, options, stats);
-                    } else if (command.equals("password") || command.equals("pw") ) {
-                        try {
-                            password = options.pop();
-                        } catch (EmptyStackException e) {
-                            System.out.printf("%s%n", password);
-                        }
+                        status = celestefs.setFileLength(command, options, stats);
                     } else if (command.equals("identity") || command.equals("id") ) {
                         try {
                             identity = options.pop();
+                            password = options.pop();
+                            celestefs.close();
+                            celestefs = new CelesteFs(celeste, null, 300, identity, password);
                         } catch (EmptyStackException e) {
                             System.out.printf("%s%n", identity);
                         }
@@ -1632,64 +1599,53 @@ public class CelesteFs {
                 System.exit(interactive(celeste, identity, password));
             }
 
-            CelesteFs celestefs = new CelesteFs(celeste, null, timeOut);
+            CelesteFs celestefs = new CelesteFs(celeste, null, timeOut, identity, password);
             celestefs.properties.setProperty("verbose", verboseFlag ? "true" : "false");
 
-
-//            if (identity == null) {
-//                System.err.printf("missing --id <name>%n");
-//            }
-//            if (password == null) {
-//                System.err.printf("missing --password <password>%n");
-//            }
-//            if (identity == null || password == null) {
-//                System.exit(1);
-//            }
             int status = 0;
-
 
             while (!options.empty()) {
                 String command = options.pop();
                 long startTime = System.currentTimeMillis();
                 if (command.equals("mkfs")) {
-                    status = celestefs.mkfs(celeste, identity, password, command, options, stats);
+                    status = celestefs.mkfs(command, options, stats);
                 } else if (command.equals("mkid")) {
                     status = celestefs.mkid(identity, password, command, options, stats);
                 } else if (command.equals("mkdir")) {
-                    status = celestefs.mkdir(celeste, identity, password, command, options, stats);
+                    status = celestefs.mkdir(command, options, stats);
                 } else if (command.equals("pread")) {
-                    status = celestefs.preadFile(celeste, identity, password, command, options, stats);
+                    status = celestefs.preadFile(command, options, stats);
                 } else if (command.equals("write-file")) {
-                    status = celestefs.writeFile(celeste, identity, password, command, options, stats);
+                    status = celestefs.writeFile(command, options, stats);
                 } else if (command.equals("write")) {
-                    status = celestefs.writeFileChunked(celeste, identity, password, command, options, stats);
+                    status = celestefs.writeFileChunked(command, options, stats);
                 } else if (command.equals("pwrite")) {
-                    status = celestefs.pwriteFile(celeste, identity, password, command, options, stats);
+                    status = celestefs.pwriteFile(command, options, stats);
                 } else if (command.equals("create")) {
-                    status = celestefs.createFile(celeste, identity, password, command, options, stats);
+                    status = celestefs.createFile(command, options, stats);
                 } else if (command.equals("getAttributes")) {
-                    status = celestefs.getFileAttributes(celeste, identity, password, command, options, stats);
+                    status = celestefs.getFileAttributes(command, options, stats);
                 } else if (command.equals("getProperties")) {
-                    status = celestefs.getFileProperties(celeste, identity, password, command, options, stats);
+                    status = celestefs.getFileProperties(command, options, stats);
                 } else if (command.equals("ls")) {
-                    status = celestefs.statFile(celeste, identity, password, command, options, stats);
+                    status = celestefs.statFile(command, options, stats);
                 } else if (command.equals("rm")) {
-                    status = celestefs.deleteFile(celeste, identity, password, command, options, stats);
+                    status = celestefs.deleteFile(command, options, stats);
                 } else if (command.equals("readdir")) {
-                    status = celestefs.readdir(celeste, identity, password, command, options, stats);
+                    status = celestefs.readdir(command, options, stats);
                 } else if (command.equals("rename") ) {
-                    status = celestefs.renameFile(celeste, identity, password, command, options, stats);
+                    status = celestefs.renameFile(command, options, stats);
                 } else if (command.equals("run-extension") ) {
                     status = celestefs.runExtension(celeste, identity, password, command, options, stats);
                 } else if (command.equals("test") ) {
-                    status = celestefs.testFile(celeste, identity, password, command, options, stats);
+                    status = celestefs.testFile(command, options, stats);
                 } else if (command.equals("set-length") ) {
-                    status = celestefs.setFileLength(celeste, identity, password, command, options, stats);
+                    status = celestefs.setFileLength(command, options, stats);
                 } else {
                     System.err.printf("unknown command %s: Use --help for help.%n", command);
                     System.exit(1);
                 }
-                System.err.printf("%1$tF %1$tT %1$tZ [%2$.2f s] %3$-7.7s %4$s%n",
+                System.err.printf("%1$tF %1$tT %1$tZ [%2$.2fs] %3$-15.15s %4$s%n",
                         System.currentTimeMillis(),
                                 (System.currentTimeMillis() - startTime) / 1000.0,
                                 command,

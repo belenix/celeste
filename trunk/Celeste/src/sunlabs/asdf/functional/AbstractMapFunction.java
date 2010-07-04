@@ -58,8 +58,9 @@ abstract public class AbstractMapFunction<I,O> implements MapFunction<I,O> {
             this.exception = e;
             if ((e instanceof ExecutionException) || (e instanceof InterruptedException)) {
                 this.exception = e;
+            } else {
+                throw new IllegalArgumentException(String.format("Must be either java.util.concurrent.ExecutionException or java.lang.InterruptedException.  Got %s", e.toString()));
             }
-            throw new IllegalArgumentException(String.format("Must be either ExecutionException or InterruptedException.  Got %s", e.toString()));
         }
 
         public T get() throws ExecutionException, InterruptedException {

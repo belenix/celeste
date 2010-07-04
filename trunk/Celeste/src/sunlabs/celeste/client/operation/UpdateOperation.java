@@ -31,7 +31,7 @@ import sunlabs.celeste.client.ClientMetaData;
 /**
  * {@code UpdateOperation} is the base class for all operations that update or
  * create a Celeste file.  It adds client-supplied metadata to the basic
- * {@code CelesteOperation} class.
+ * {@1link AbstractCelesteOperation} class.
  */
 //
 // N.B.  Does not override toString(), since the ClientMetaData class doesn't

@@ -280,8 +280,7 @@ public class Profiler {
                 try {
                     ReadProfileOperation operation = new ReadProfileOperation(credentialId);
 
-                    ResponseMessage result = client.celeste.readCredential(operation);
-                    client.setCredential(result.get(Profile_.class));
+                    client.setCredential((Profile_) client.celeste.readCredential(operation));
                 } catch (CelesteException.NotFoundException notFound) {
                     client.setCredential(new Profile_(client.getName(), client.credentialPassword.toCharArray()));
                     NewCredentialOperation operation = new NewCredentialOperation(client.getCredential().getObjectId(), BeehiveObjectId.ZERO, this.replicationParams);
@@ -385,8 +384,7 @@ public class Profiler {
                     BeehiveObjectId nameSpaceId = new BeehiveObjectId((client.getName() + "ns").getBytes());
                     ReadProfileOperation operation = new ReadProfileOperation(nameSpaceId);
 
-                    ResponseMessage result = client.celeste.readCredential(operation);
-                    client.nameSpaces.add(result.get(Profile_.class).getObjectId());
+                    client.nameSpaces.add(client.celeste.readCredential(operation).getObjectId());
                 } catch (CelesteException.NotFoundException notFound) {
 
                     Profile_ nameSpaceCredential = new Profile_(this.client.credential.getName() + "ns", client.credentialPassword.toCharArray());

@@ -9,7 +9,7 @@ import sunlabs.asdf.web.http.HTTP;
 import sunlabs.asdf.web.http.WebDAV;
 import sunlabs.asdf.web.http.HTTP.Authenticate;
 import sunlabs.celeste.client.CelesteProxy;
-import sunlabs.celeste.client.filesystem.simple.FileException;
+import sunlabs.celeste.client.filesystem.FileException;
 
 public class CelesteBackend implements WebDAV.Backend {
     private InetSocketAddress celeste;

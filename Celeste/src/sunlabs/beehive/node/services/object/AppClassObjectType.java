@@ -43,6 +43,7 @@ import sunlabs.beehive.api.ObjectStore;
 import sunlabs.beehive.node.AbstractBeehiveObject;
 import sunlabs.beehive.node.BeehiveMessage;
 import sunlabs.beehive.node.BeehiveNode;
+import sunlabs.beehive.node.BeehiveObjectPool;
 import sunlabs.beehive.node.BeehiveObjectStore;
 import sunlabs.beehive.node.BeehiveMessage.RemoteException;
 import sunlabs.beehive.node.object.AbstractObjectHandler;
@@ -50,7 +51,6 @@ import sunlabs.beehive.node.object.RetrievableObject;
 import sunlabs.beehive.node.object.StorableObject;
 import sunlabs.beehive.node.services.BeehiveService;
 import sunlabs.beehive.node.services.api.AppClass;
-import sunlabs.beehive.util.DOLRStatus;
 
 /**
  * This service currently does nothing except mark
@@ -161,7 +161,7 @@ public class AppClassObjectType extends AbstractObjectHandler implements AppClas
         public BeehiveObjectId getDataId() {
             BeehiveObjectId objectId = new BeehiveObjectId("".getBytes());
             for (AppClass.AppClassObject.InfoList.AppClassLoadingInfo i : this.infoList) {
-                objectId.add(i.getClassBytes());
+                objectId = objectId.add(i.getClassBytes());
             }
             return objectId;
         }
@@ -215,7 +215,7 @@ public class AppClassObjectType extends AbstractObjectHandler implements AppClas
     }
 
     public AppClass.AppClassObject storeObject(AppClass.AppClassObject aObject)
-    throws IOException, BeehiveObjectStore.NoSpaceException, BeehiveObjectStore.DeleteTokenException {
+    throws IOException, BeehiveObjectStore.NoSpaceException, BeehiveObjectStore.DeleteTokenException, BeehiveObjectStore.UnacceptableObjectException, BeehiveObjectPool.Exception {
         aObject = (AppClass.AppClassObject) BeehiveObjectStore.CreateSignatureVerifiedObject(aObject.getObjectId(), aObject);
 
         return (AppClass.AppClassObject) StorableObject.storeObject(this, aObject);

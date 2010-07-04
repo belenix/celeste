@@ -42,9 +42,11 @@ timeToLive=86400
 set -x
 ${CELESTEHOME}/bin/celestefs           --id ${myId} --password ${myPassword} mkid
 ${CELESTEHOME}/bin/celestefs --verbose                                       test -c ${myId}
+#echo This must fail.
 #${CELESTEHOME}/bin/celestefs --verbose                                       test -c ${myId}xxx
 ${CELESTEHOME}/bin/celestefs           --id ${myId} --password ${myPassword} mkfs ${fileSystemName} ${fileSystemPassword}
 ${CELESTEHOME}/bin/celestefs --verbose --id ${myId} --password ${myPassword} test -f ${fileSystemName}
+#echo This must fail.
 #${CELESTEHOME}/bin/celestefs --verbose                                       test -f ${fileSystemName}xxx
 ${CELESTEHOME}/bin/celestefs           --id ${myId} --password ${myPassword} ls -l /${fileSystemName}/
 ${CELESTEHOME}/bin/celestefs           --id ${myId} --password ${myPassword} readdir /${fileSystemName}/
@@ -52,6 +54,7 @@ ${CELESTEHOME}/bin/celestefs           --id ${myId} --password ${myPassword} cre
 echo "Hello World" | ${CELESTEHOME}/bin/celestefs --id ${myId} --password ${myPassword} pwrite /${fileSystemName}/fubar 0
 ${CELESTEHOME}/bin/celestefs           --id ${myId} --password ${myPassword} ls -l /${fileSystemName}/fubar
 ${CELESTEHOME}/bin/celestefs           --id ${myId} --password ${myPassword} pread /${fileSystemName}/fubar 0 -1
+${CELESTEHOME}/bin/celestefs           --id ${myId} --password ${myPassword} pread /${fileSystemName}/fubar 1 -1
 
 ${CELESTEHOME}/bin/celestefs           --id ${myId} --password ${myPassword} set-length /${fileSystemName}/fubar 6
 ${CELESTEHOME}/bin/celestefs           --id ${myId} --password ${myPassword} ls -l /${fileSystemName}/fubar
@@ -61,8 +64,11 @@ ${CELESTEHOME}/bin/celestefs --id ${myId} --password ${myPassword} mkdir /${file
 ${CELESTEHOME}/bin/celestefs --id ${myId} --password ${myPassword} create /${fileSystemName}/foo/bar
 echo "Hello World" | ${CELESTEHOME}/bin/celestefs --id ${myId} --password ${myPassword} pwrite /${fileSystemName}/foo/bar 0
 ${CELESTEHOME}/bin/celestefs --id ${myId} --password ${myPassword} pread /${fileSystemName}/foo/bar 0 -1
-${CELESTEHOME}/bin/celestefs --id ${myId} --password ${myPassword} rm /${fileSystemName}/foo/bar
+
+${CELESTEHOME}/bin/celestefs --id ${myId} --password ${myPassword} rename /${fileSystemName}/foo/bar /${fileSystemName}/foo/bar2
+
+${CELESTEHOME}/bin/celestefs --id ${myId} --password ${myPassword} rm /${fileSystemName}/foo/bar2
 echo The following commands MUST fail.
-${CELESTEHOME}/bin/celestefs --id ${myId} --password ${myPassword} pread /${fileSystemName}/foo/bar 0 -1
-${CELESTEHOME}/bin/celestefs --id ${myId} --password ${myPassword} --verbose test -e /${fileSystemName}/foo/bar
+${CELESTEHOME}/bin/celestefs --id ${myId} --password ${myPassword} pread /${fileSystemName}/foo/bar2 0 -1
+${CELESTEHOME}/bin/celestefs --id ${myId} --password ${myPassword} --verbose test -e /${fileSystemName}/foo/bar2
 exit 0

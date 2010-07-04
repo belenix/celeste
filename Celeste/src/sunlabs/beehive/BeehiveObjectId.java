@@ -472,6 +472,10 @@ public class BeehiveObjectId implements Comparable<BeehiveObjectId>, Serializabl
         return 0;
     }
 
+    /**
+     * Compute the object-id of this object-id.
+     * @return The object-id of this object-id.
+     */
     public BeehiveObjectId getObjectId() {
         return new BeehiveObjectId(this.getBytes());
     }
@@ -488,7 +492,7 @@ public class BeehiveObjectId implements Comparable<BeehiveObjectId>, Serializabl
     }
 
     /**
-     *
+     * Return the integer value of the n'th hexadecimal digit in this object-id. 
      * @param n
      * @return The integer value of the digit at position <code>n</code>.
      */

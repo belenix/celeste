@@ -53,6 +53,7 @@ import sunlabs.beehive.api.ObjectStore;
 import sunlabs.beehive.node.AbstractBeehiveObject;
 import sunlabs.beehive.node.BeehiveMessage;
 import sunlabs.beehive.node.BeehiveNode;
+import sunlabs.beehive.node.BeehiveObjectPool;
 import sunlabs.beehive.node.BeehiveObjectStore;
 import sunlabs.beehive.node.BeehiveMessage.RemoteException;
 import sunlabs.beehive.node.BeehiveObjectStore.DeletedObjectException;
@@ -789,7 +790,9 @@ public final class VersionObjectHandler extends AbstractObjectHandler implements
                 this.log.fine("VersionObject.publishObject(%s): step 2%n", message);
             }
 
-            return message.composeReply(this.node.getNodeAddress(), new PublishDaemon.PublishObject.Response());
+            // Dup the getObjectsToPublish set as it's backed by a Map and is not serializable.
+            return message.composeReply(this.node.getNodeAddress(), new PublishDaemon.PublishObject.Response(new HashSet<BeehiveObjectId>(publishRequest.getObjectsToPublish().keySet())));
+//            return message.composeReply(this.node.getNodeAddress(), new PublishDaemon.PublishObject.Response());
         } catch (ClassNotFoundException e) {
             e.printStackTrace();
             return message.composeReply(this.node.getNodeAddress(), e);
@@ -834,7 +837,8 @@ public final class VersionObjectHandler extends AbstractObjectHandler implements
         }
     }
 
-    public VersionObject.Object storeObject(VersionObject.Object vObject) throws IOException, BeehiveObjectStore.NoSpaceException, BeehiveObjectStore.DeleteTokenException {
+    public VersionObject.Object storeObject(VersionObject.Object vObject)
+    throws IOException, BeehiveObjectStore.NoSpaceException, BeehiveObjectStore.DeleteTokenException, BeehiveObjectStore.UnacceptableObjectException, BeehiveObjectPool.Exception {
         StorableObject.storeObject(this, vObject);
         return vObject;
     }
@@ -883,6 +887,12 @@ public final class VersionObjectHandler extends AbstractObjectHandler implements
             e.printStackTrace();
             return message.composeReply(this.node.getNodeAddress(), e);
         } catch (RemoteException e) {
+            e.printStackTrace();
+            return message.composeReply(this.node.getNodeAddress(), e);
+        } catch (BeehiveObjectStore.UnacceptableObjectException e) {
+            e.printStackTrace();
+            return message.composeReply(this.node.getNodeAddress(), e);
+        } catch (BeehiveObjectPool.Exception e) {
             e.printStackTrace();
             return message.composeReply(this.node.getNodeAddress(), e);
         }

@@ -33,11 +33,10 @@ import sunlabs.beehive.node.object.RetrievableObject;
 import sunlabs.beehive.node.object.StorableObject;
 
 /**
- * A {@code Credential} represents an identity of an external entity such as a user or organisation.
+ * A {@code Credential} represents an identity of an external entity such as a user, organisation, application, etc.
  * Credentials provide the ability to create and verify a signature of a list of {@link BeehiveObjectId} instances.
  */
-public interface Credential extends Serializable,
-        StorableObject.Handler.Object, RetrievableObject.Handler.Object, InspectableObject.Handler.Object {
+public interface Credential extends Serializable, StorableObject.Handler.Object, RetrievableObject.Handler.Object, InspectableObject.Handler.Object {
 
     /**
      * Signal that a {@code Credential} cannot be used to accomplish a particular task (such as signing and
@@ -174,7 +173,15 @@ public interface Credential extends Serializable,
      */
     public BeehiveObjectId getObjectId();
 
-
+    /**
+     *
+     * Returns {@code true} if this {@code Credential} is limited only to
+     * verifying signatures created by its corresponding unlimited version.
+     *
+     * @return {@code true} if this credential is verify-only.
+     */
+    public boolean isLimited();
+    
     /**
      * Sign the collection of {@link BeehiveObjectId} instances.
      *
@@ -187,12 +194,10 @@ public interface Credential extends Serializable,
      *
      * @throws Credential.Exception
      */
-    public Credential.Signature sign(char[] password, BeehiveObjectId... ids)
-        throws Credential.Exception;
+    public Credential.Signature sign(char[] password, BeehiveObjectId... ids) throws Credential.Exception;
 
     /**
-     * Verify that a given {@code Signature} was signed by this {@code
-     * Credential}.
+     * Verify that a given {@code Signature} was signed by this {@code Credential}.
      *
      * @param signature the signature object to verify
      * @param           ids the array of object ids which the signature is
@@ -204,6 +209,11 @@ public interface Credential extends Serializable,
      *
      * @throws Credential.Exception
      */
-    public boolean verify(Credential.Signature signature, BeehiveObjectId... ids)
-        throws Credential.Exception;
+    public boolean verify(Credential.Signature signature, BeehiveObjectId... ids) throws Credential.Exception;
+
+    public String getName();
+
+    public byte[] decrypt(char[] invokerPassword, byte[] encryptedDeleteToken) throws Credential.Exception;
+
+    public byte[] encrypt(byte[] bytes) throws Credential.Exception;
 }

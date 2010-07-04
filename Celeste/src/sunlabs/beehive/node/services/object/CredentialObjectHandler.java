@@ -1,5 +1,5 @@
 /*
- * Copyright 2009 Sun Microsystems, Inc. All Rights Reserved.
+ * Copyright 2009-2010 Oracle. All Rights Reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER
  *
  * This code is free software; you can redistribute it and/or modify
@@ -17,8 +17,8 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
  * 02110-1301 USA
  *
- * Please contact Sun Microsystems, Inc., 16 Network Circle, Menlo
- * Park, CA 94025 or visit www.sun.com if you need additional
+ * Please contact Oracle, 16 Network Circle, Menlo
+ * Park, CA 94025 or visit www.oracle.com if you need additional
  * information or have any questions.
  */
 
@@ -26,7 +26,9 @@ package sunlabs.beehive.node.services.object;
 
 import java.io.IOException;
 import java.net.URI;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.logging.Level;
 
 import javax.management.InstanceAlreadyExistsException;
@@ -38,16 +40,18 @@ import sunlabs.asdf.web.XML.XHTML;
 import sunlabs.asdf.web.http.HTTP;
 import sunlabs.beehive.BeehiveObjectId;
 import sunlabs.beehive.api.Credential;
+import sunlabs.beehive.api.BeehiveObject.Metadata;
 import sunlabs.beehive.node.BeehiveMessage;
 import sunlabs.beehive.node.BeehiveNode;
+import sunlabs.beehive.node.BeehiveObjectPool;
 import sunlabs.beehive.node.BeehiveObjectStore;
 import sunlabs.beehive.node.BeehiveMessage.RemoteException;
+import sunlabs.beehive.node.Publishers.PublishRecord;
 import sunlabs.beehive.node.object.AbstractObjectHandler;
 import sunlabs.beehive.node.object.RetrievableObject;
 import sunlabs.beehive.node.object.StorableObject;
 import sunlabs.beehive.node.services.BeehiveService;
 import sunlabs.beehive.node.services.PublishDaemon;
-import sunlabs.beehive.util.DOLRStatus;
 
 public final class CredentialObjectHandler extends AbstractObjectHandler implements CredentialObject {
     private final static long serialVersionUID = 1L;
@@ -78,10 +82,27 @@ public final class CredentialObjectHandler extends AbstractObjectHandler impleme
     public BeehiveMessage publishObject(BeehiveMessage msg) {
         try {
             PublishDaemon.PublishObject.Request publishRequest = msg.getPayload(PublishDaemon.PublishObject.Request.class, this.node);
+            if (this.log.isLoggable(Level.FINE)) {
+                this.log.fine("node %s publishing %s", publishRequest.getPublisherAddress().getObjectId(), publishRequest.getObjectsToPublish());
+            }
+
+            // Don't add a new object if it differs from the objects we already have with this object-id.
+            for (Map.Entry<BeehiveObjectId, Metadata> object : publishRequest.getObjectsToPublish().entrySet()) {
+                Set<PublishRecord> alreadyPublishedObjects = this.node.getObjectPublishers().getPublishers(object.getKey());
+                if (alreadyPublishedObjects.size() > 0) {
+                    for (PublishRecord record : alreadyPublishedObjects) {
+                        String dataHash = record.getMetadataProperty(BeehiveObjectStore.METADATA_DATAHASH, "error");
+                        if (dataHash.compareTo(object.getValue().getProperty(BeehiveObjectStore.METADATA_DATAHASH)) != 0) {
+                            return msg.composeReply(this.node.getNodeAddress(), new BeehiveObjectPool.DisallowedDuplicateException("Credential already exists"));
+                        }
+                        break;
+                    }
+                }
+            }
 
             AbstractObjectHandler.publishObjectBackup(this, publishRequest);
-
-            return msg.composeReply(this.node.getNodeAddress(), new PublishDaemon.PublishObject.Response());
+            // Dup the getObjectsToPublish set as it's backed by a Map and is not serializable.
+            return msg.composeReply(this.node.getNodeAddress(), new PublishDaemon.PublishObject.Response(new HashSet<BeehiveObjectId>(publishRequest.getObjectsToPublish().keySet())));
         } catch (ClassNotFoundException e) {
             e.printStackTrace();
             return msg.composeReply(this.node.getNodeAddress(), e);
@@ -126,7 +147,6 @@ public final class CredentialObjectHandler extends AbstractObjectHandler impleme
     //
 
     public BeehiveMessage storeLocalObject(BeehiveMessage message) {
-
         if (this.log.isLoggable(Level.FINER)) {
             this.log.finest("%s", message.traceReport());
         }
@@ -135,25 +155,12 @@ public final class CredentialObjectHandler extends AbstractObjectHandler impleme
             BeehiveMessage reply = StorableObject.storeLocalObject(this, credential, message);
             return reply;
         } catch (ClassNotFoundException e) {
-            e.printStackTrace();
             return message.composeReply(node.getNodeAddress(), e);
         } catch (ClassCastException e) {
-            e.printStackTrace();
             return message.composeReply(node.getNodeAddress(), e);
         } catch (RemoteException e) {
-            e.printStackTrace();
             return message.composeReply(node.getNodeAddress(), e);
         }
-        
-//        try {
-//            Credential credential = message.get(Credential.class, this.node);
-//            BeehiveMessage reply =
-//                StorableObject.storeLocalObject(this, credential, message);
-//            return reply;
-//        } catch (ClassNotFoundException e) {
-//            e.printStackTrace();
-//            return message.composeReply(node.getNodeAddress(), DOLRStatus.BAD_REQUEST);
-//        }
     }
 
     //
@@ -173,8 +180,7 @@ public final class CredentialObjectHandler extends AbstractObjectHandler impleme
 
     public Credential storeObject(Credential credential) throws
             IOException,
-            BeehiveObjectStore.NoSpaceException,
-            BeehiveObjectStore.DeleteTokenException {
+            BeehiveObjectStore.NoSpaceException,BeehiveObjectStore.DeleteTokenException, BeehiveObjectStore.UnacceptableObjectException, BeehiveObjectPool.Exception {
         //
         // Store the credential under its stated object id (rather than under
         // the id that its contents would dictate).

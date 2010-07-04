@@ -58,11 +58,13 @@ import sunlabs.beehive.api.ObjectStore;
 import sunlabs.beehive.node.AbstractBeehiveObject;
 import sunlabs.beehive.node.BeehiveMessage;
 import sunlabs.beehive.node.BeehiveNode;
+import sunlabs.beehive.node.BeehiveObjectPool;
 import sunlabs.beehive.node.BeehiveObjectStore;
 import sunlabs.beehive.node.BeehiveMessage.RemoteException;
 import sunlabs.beehive.node.BeehiveObjectStore.DeletedObjectException;
 import sunlabs.beehive.node.BeehiveObjectStore.NoSpaceException;
 import sunlabs.beehive.node.BeehiveObjectStore.NotFoundException;
+import sunlabs.beehive.node.BeehiveObjectStore.UnacceptableObjectException;
 import sunlabs.beehive.node.object.AbstractObjectHandler;
 import sunlabs.beehive.node.object.DeleteableObject;
 import sunlabs.beehive.node.object.ExtensibleObject;
@@ -375,7 +377,8 @@ public final class BlockObjectHandler extends AbstractObjectHandler implements B
             DeleteableObject.publishObjectHelper(this, publishRequest);
             AbstractObjectHandler.publishObjectBackup(this, publishRequest);
 
-            return message.composeReply(this.node.getNodeAddress(), new PublishDaemon.PublishObject.Response());
+            return message.composeReply(this.node.getNodeAddress(), new PublishDaemon.PublishObject.Response(new HashSet<BeehiveObjectId>(publishRequest.getObjectsToPublish().keySet())));
+//            return message.composeReply(this.node.getNodeAddress(), new PublishDaemon.PublishObject.Response());
         } catch (ClassNotFoundException e) {
             e.printStackTrace();
             return message.composeReply(this.node.getNodeAddress(), e);
@@ -455,7 +458,8 @@ public final class BlockObjectHandler extends AbstractObjectHandler implements B
         return body;
     }
 
-    public BlockObject.Object storeObject(BlockObject.Object bObject) throws IOException, BeehiveObjectStore.NoSpaceException, BeehiveObjectStore.DeleteTokenException {
+    public BlockObject.Object storeObject(BlockObject.Object bObject) throws IOException, BeehiveObjectStore.NoSpaceException,
+      BeehiveObjectStore.DeleteTokenException, BeehiveObjectStore.UnacceptableObjectException, BeehiveObjectPool.Exception {
         StorableObject.storeObject(this, bObject);
         return bObject;
     }
@@ -653,6 +657,12 @@ public final class BlockObjectHandler extends AbstractObjectHandler implements B
             e.printStackTrace();
             return message.composeReply(this.node.getNodeAddress(), e);
         } catch (RemoteException e) {
+            e.printStackTrace();
+            return message.composeReply(this.node.getNodeAddress(), e);
+        } catch (UnacceptableObjectException e) {
+            e.printStackTrace();
+            return message.composeReply(this.node.getNodeAddress(), e);
+        } catch (BeehiveObjectPool.Exception e) {
             e.printStackTrace();
             return message.composeReply(this.node.getNodeAddress(), e);
         }

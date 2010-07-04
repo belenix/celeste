@@ -101,16 +101,17 @@ public class CreateFileOperation extends UpdateOperation {
      * Creates a {@code CreateFileOperation} object encapsulating the fields
      * given as arguments.
      *
-     * @param fileIdentifier The {@link FileIdentifier} of the file to create.
-     * @param deleteTokenId     the {@code BeehiveObjectId} the file's delete token.
-     * @param timeToLive        the maximum number of seconds that this file will exist.
-     * @param blockObjectSize   the maximum size of the data blocks for this file.
-     * @param replicationParams a String representation of the replication parameters (See {@link ReplicationParameters}) to be used for the file.
-     * @param clientMetaData    a {@link ClientMetaData} instance containing client-supplied metadata for this file.
-     * @param ownerId           the {@code BeehiveObjectId} of the {@link Credential} recorded as owning the file's initial version
-     * @param groupId           the {@code BeehiveObjectId} of the {@link Credential} recorded as the group of the initial file version
-     * @param acl               the access control list (See {@link CelesteACL}) to be attached to the file's initial version.
-     * @param signWrites        If {@code true}, all modifications to the file require the data to be signed.
+     * @param requestorId       The {@code BeehiveObjectId} of the requestor's {@code Credential} (See {@link Credential#getObjectId()}.
+     * @param fileIdentifier    The {@link FileIdentifier} of the file to create.
+     * @param deleteTokenId     The {@code BeehiveObjectId} the file's delete token.
+     * @param timeToLive        The maximum number of seconds that this file will exist.
+     * @param blockObjectSize   The maximum size of the data blocks for this file.
+     * @param replicationParams The String representation of the replication parameters (See {@link ReplicationParameters}) to be used for the file.
+     * @param clientMetaData    The {@link ClientMetaData} instance containing client-supplied metadata for this file.
+     * @param ownerId           The {@code BeehiveObjectId} of the {@link Credential} recorded as owning the file's initial version
+     * @param groupId           The {@code BeehiveObjectId} of the {@link Credential} recorded as the group of the initial file version
+     * @param acl               The access control list (See {@link CelesteACL}) to be attached to the file's initial version.
+     * @param signWrites        If {@code true}, all modifications to the file require that the data to be signed.
      *
      * @see ReplicationParameters
      * @see CelesteACL
@@ -137,16 +138,17 @@ public class CreateFileOperation extends UpdateOperation {
      * Creates a {@code CreateFileOperation} object encapsulating the fields
      * given as arguments.
      *
-       * @param fileIdentifier The {@link FileIdentifier} of the file to create.
-     * @param deleteTokenId     the {@code BeehiveObjectId} the file's delete token.
-     * @param timeToLive        the maximum number of seconds that this file will exist.
-     * @param blockObjectSize   the maximum size of the data blocks for this file.
-     * @param replicationParams the {@link ReplicationParameters} to be used for the file.
+     * @param requestorId       The {@code BeehiveObjectId} of the requestor's {@code Credential} (See {@link Credential#getObjectId()}.
+     * @param fileIdentifier    The {@link FileIdentifier} of the file to create.
+     * @param deleteTokenId     The {@code BeehiveObjectId} the file's delete token.
+     * @param timeToLive        The maximum number of seconds that this file will exist.
+     * @param blockObjectSize   The maximum size of the data blocks for this file.
+     * @param replicationParams The {@link ReplicationParameters} to be used for the file.
      * @param clientMetaData a  {@link ClientMetaData} instance containing client-supplied metadata for this file.
-     * @param ownerId           the {@code BeehiveObjectId} of the {@link Credential} recorded as owning the file's initial version
-     * @param groupId           the {@code BeehiveObjectId} of the {@link Credential} recorded as the group of the initial file version
-     * @param acl               the access control list (See {@link CelesteACL}) to be attached to the file's initial version.
-     * @param signWrites        if {@code true}, all modifications to the file require the data to be signed.
+     * @param ownerId           The {@code BeehiveObjectId} of the {@link Credential} recorded as owning the file's initial version
+     * @param groupId           The {@code BeehiveObjectId} of the {@link Credential} recorded as the group of the initial file version
+     * @param acl               The access control list (See {@link CelesteACL}) to be attached to the file's initial version.
+     * @param signWrites        If {@code true}, all modifications to the file require the data to be signed.
      *
      * @see ReplicationParameters
      * @see CelesteACL

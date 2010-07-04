@@ -1,5 +1,5 @@
 /*
- * Copyright 2009 Sun Microsystems, Inc. All Rights Reserved.
+ * Copyright 2009-2010 Oracle. All Rights Reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER
  *
  * This code is free software; you can redistribute it and/or modify
@@ -17,11 +17,9 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
  * 02110-1301 USA
  *
- * Please contact Sun Microsystems, Inc., 16 Network Circle, Menlo
- * Park, CA 94025 or visit www.sun.com if you need additional
- * information or have any questions.
+ * Please contact Oracle, 16 Network Circle, Menlo Park, CA 94025
+ * or visit www.oracle.com if you need additional information or have any questions.
  */
-
 package sunlabs.celeste.client.application;
 
 import java.io.FileInputStream;
@@ -174,7 +172,7 @@ public class WebDAVServer extends HTTPServer {
 
             String localAddress = InetAddress.getLocalHost().getHostAddress();
 
-            System.out.printf("WebDAVServer using Celeste at %s. http://%s:%d%n", celesteAddress, localAddress, webDAVPort);
+            System.out.printf("WebDAVServer  http://%s:%d%nUsing Celeste at %s.%n", localAddress, webDAVPort, celesteAddress);
             System.out.println(Release.ThisRevision());
 
             while (true) {

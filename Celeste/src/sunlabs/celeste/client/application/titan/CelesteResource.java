@@ -18,15 +18,15 @@ import java.util.Properties;
 import sunlabs.asdf.web.http.HTTP;
 import sunlabs.asdf.web.http.InternetMediaType;
 import sunlabs.asdf.web.http.WebDAV;
-import sunlabs.asdf.web.http.HTTP.BadRequestException;
 import sunlabs.asdf.web.http.HTTP.Identity;
 import sunlabs.asdf.web.http.HTTP.Request;
 import sunlabs.asdf.web.http.HTTP.Response;
 import sunlabs.beehive.util.OrderedProperties;
 import sunlabs.celeste.client.CelesteProxy;
 import sunlabs.celeste.client.filesystem.CelesteFileSystem;
-import sunlabs.celeste.client.filesystem.PathName;
-import sunlabs.celeste.client.filesystem.simple.FileException;
+import sunlabs.celeste.client.filesystem.FileException;
+import sunlabs.celeste.client.filesystem.HierarchicalFileSystem;
+import sunlabs.celeste.client.filesystem.tabula.PathName;
 
 public class CelesteResource extends WebDAV.AbstractResource implements WebDAV.Resource.DAV1, WebDAV.Resource.DAV2, WebDAV.Resource.DAV3 /*WebDAV.Apache*/ {
     private final String fileSystemName;
@@ -202,7 +202,7 @@ public class CelesteResource extends WebDAV.AbstractResource implements WebDAV.R
         CelesteFileSystem.File file = this.getFile();
         try {
             // Compute the pathname of the destination relative to the conventional "file-system" name in the URI.
-            PathName dest = new PathName(CelesteBackend.getCelesteFileName(destination));
+            HierarchicalFileSystem.FileName dest = new PathName(CelesteBackend.getCelesteFileName(destination));
 //            System.out.printf("move %s -> %s%n", file.getPathName(), dest);
             file.getFileSystem().renameFile(file.getPathName(), dest);
             return HTTP.Response.Status.CREATED;
@@ -262,7 +262,7 @@ public class CelesteResource extends WebDAV.AbstractResource implements WebDAV.R
             throw new HTTP.InternalServerErrorException(this.getURI(), e);
         } catch (FileException.CelesteInaccessible e) {
             throw new HTTP.InternalServerErrorException(this.getURI(), e);
-        } catch (sunlabs.celeste.client.filesystem.simple.FileException.IOException e) {
+        } catch (sunlabs.celeste.client.filesystem.FileException.IOException e) {
             throw new HTTP.InternalServerErrorException(this.getURI(), e);
         } catch (FileException.NotFound e) {
             throw new HTTP.NotFoundException(this.getURI(), e);
@@ -296,7 +296,7 @@ public class CelesteResource extends WebDAV.AbstractResource implements WebDAV.R
             throw new HTTP.InternalServerErrorException(this.getURI(), e);
         } catch (FileException.CelesteInaccessible e) {
             throw new HTTP.InternalServerErrorException(this.getURI(), e);
-        } catch (sunlabs.celeste.client.filesystem.simple.FileException.IOException e) {
+        } catch (sunlabs.celeste.client.filesystem.FileException.IOException e) {
             throw new HTTP.InternalServerErrorException(this.getURI(), e);
         } catch (FileException.NotFound e) {
             throw new HTTP.NotFoundException(this.getURI(), e);
@@ -329,7 +329,7 @@ public class CelesteResource extends WebDAV.AbstractResource implements WebDAV.R
             throw new HTTP.InternalServerErrorException(this.getURI(), e);
         } catch (FileException.CelesteInaccessible e) {
             throw new HTTP.InternalServerErrorException(this.getURI(), e);
-        } catch (sunlabs.celeste.client.filesystem.simple.FileException.IOException e) {
+        } catch (sunlabs.celeste.client.filesystem.FileException.IOException e) {
             throw new HTTP.InternalServerErrorException(this.getURI(), e);
         } catch (FileException.NotFound e) {
             throw new HTTP.NotFoundException(this.getURI(), e);
@@ -363,7 +363,7 @@ public class CelesteResource extends WebDAV.AbstractResource implements WebDAV.R
             throw new HTTP.InternalServerErrorException(this.getURI(), e);
         } catch (FileException.CelesteInaccessible e) {
             throw new HTTP.InternalServerErrorException(this.getURI(), e);
-        } catch (sunlabs.celeste.client.filesystem.simple.FileException.IOException e) {
+        } catch (sunlabs.celeste.client.filesystem.FileException.IOException e) {
             throw new HTTP.InternalServerErrorException(this.getURI(), e);
         } catch (FileException.NotFound e) {
             throw new HTTP.NotFoundException(this.getURI(), e);
@@ -504,7 +504,7 @@ public class CelesteResource extends WebDAV.AbstractResource implements WebDAV.R
         try {
             CelesteFileSystem.File f = this.getFile();
             int blockSize = f.getBlockSize();
-            OutputStream fout = f.getOutputStream(true);
+            OutputStream fout = f.getOutputStream(true, f.getBlockSize());
             return new BufferedOutputStream(fout, blockSize);
         } catch (FileException.BadVersion e) {
             throw new HTTP.InternalServerErrorException(this.getURI(), e);

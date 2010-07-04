@@ -69,7 +69,6 @@ public abstract class CelesteException extends BeehiveException {
      * 
      * @author Glenn Scott, Sun Microsystems Laboratories, Sun Microsystems, Inc.
      */
-    @Deprecated
     public static class CredentialException extends CelesteException {
         private final static long serialVersionUID = 1L;
 
@@ -116,7 +115,7 @@ public abstract class CelesteException extends BeehiveException {
     }
 
     /**
-     * This exception signals some "resource" was not found.
+     * Signals that a resource necessary for the completion of the operation was not found.
      */
     public static class NotFoundException extends CelesteException {
         private final static long serialVersionUID = 1L;
@@ -261,8 +260,7 @@ public abstract class CelesteException extends BeehiveException {
     }
 
     /**
-     * Signals that a CelesteOperation parameter is either malformed, or is otherwise
-     * discovered to be incorrect or incompatible with the operation being performed.
+     * Signals that a {@link CelesteOperation} parameter is either malformed, or is otherwise incorrect or incompatible with the operation being performed.
      */
     public static class IllegalParameterException extends CelesteException {
         private final static long serialVersionUID = 1L;
@@ -284,6 +282,10 @@ public abstract class CelesteException extends BeehiveException {
         }
     }
     
+    /**
+     * Signal that a signature was required and the supplied signature does not verify the associated data.
+     * 
+     */
     public static class VerificationException extends CelesteException {
         private final static long serialVersionUID = 1L;
 
@@ -360,6 +362,9 @@ public abstract class CelesteException extends BeehiveException {
         }
     }
     
+    /**
+     * Signals that there was not enough storage space in the system to complete the operation.
+     */
     public static class NoSpaceException extends CelesteException {
         private final static long serialVersionUID = 1L;
 

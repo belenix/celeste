@@ -24,14 +24,27 @@
 
 package sunlabs.celeste.client.filesystem.simple;
 
+import static java.lang.Math.min;
+import static sunlabs.celeste.client.filesystem.FileAttributes.Names.ACL_NAME;
+import static sunlabs.celeste.client.filesystem.FileAttributes.Names.BLOCK_SIZE_NAME;
+import static sunlabs.celeste.client.filesystem.FileAttributes.Names.CACHE_ENABLED_NAME;
+import static sunlabs.celeste.client.filesystem.FileAttributes.Names.CLIENT_METADATA_NAME;
+import static sunlabs.celeste.client.filesystem.FileAttributes.Names.CONTENT_TYPE_NAME;
+import static sunlabs.celeste.client.filesystem.FileAttributes.Names.CREATED_TIME_NAME;
+import static sunlabs.celeste.client.filesystem.FileAttributes.Names.DELETION_TIME_TO_LIVE_NAME;
+import static sunlabs.celeste.client.filesystem.FileAttributes.Names.FILE_SERIAL_NUMBER_NAME;
+import static sunlabs.celeste.client.filesystem.FileAttributes.Names.IS_DELETED_NAME;
+import static sunlabs.celeste.client.filesystem.FileAttributes.Names.METADATA_CHANGED_TIME_NAME;
+import static sunlabs.celeste.client.filesystem.FileAttributes.Names.MODIFIED_TIME_NAME;
+import static sunlabs.celeste.client.filesystem.FileAttributes.Names.REPLICATION_PARAMETERS_NAME;
+import static sunlabs.celeste.client.filesystem.FileAttributes.Names.SIGN_MODIFICATIONS_NAME;
+import static sunlabs.celeste.client.filesystem.FileAttributes.Names.TIME_TO_LIVE_NAME;
+
 import java.io.IOException;
 import java.io.Serializable;
-
 import java.net.InetSocketAddress;
 import java.net.URL;
-
 import java.nio.ByteBuffer;
-
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
@@ -40,6 +53,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
@@ -50,17 +64,14 @@ import sunlabs.asdf.jmx.JMX;
 import sunlabs.asdf.util.Time;
 import sunlabs.asdf.util.TimeProfiler;
 import sunlabs.asdf.web.XML.XHTML;
-
 import sunlabs.beehive.BeehiveObjectId;
 import sunlabs.beehive.api.Credential;
-import sunlabs.beehive.node.util.DOLRLogFormatter;
 import sunlabs.beehive.util.Extent;
 import sunlabs.beehive.util.ExtentBuffer;
 import sunlabs.beehive.util.ExtentBufferStreamer;
 import sunlabs.beehive.util.ExtentImpl;
 import sunlabs.beehive.util.LRUCache;
 import sunlabs.beehive.util.OrderedProperties;
-
 import sunlabs.celeste.CelesteException;
 import sunlabs.celeste.FileIdentifier;
 import sunlabs.celeste.ResponseMessage;
@@ -69,6 +80,7 @@ import sunlabs.celeste.client.CelesteProxy;
 import sunlabs.celeste.client.ClientMetaData;
 import sunlabs.celeste.client.Profile_;
 import sunlabs.celeste.client.filesystem.FileAttributes;
+import sunlabs.celeste.client.filesystem.FileException;
 import sunlabs.celeste.client.filesystem.simple.BufferCache.ReadResult;
 import sunlabs.celeste.client.operation.CreateFileOperation;
 import sunlabs.celeste.client.operation.DeleteFileOperation;
@@ -88,10 +100,6 @@ import sunlabs.celeste.node.ProfileCache;
 import sunlabs.celeste.node.services.api.AObjectVersionMapAPI;
 import sunlabs.celeste.util.CelesteEncoderDecoder;
 import sunlabs.celeste.util.ACL.Disposition;
-
-import static java.lang.Math.min;
-
-import static sunlabs.celeste.client.filesystem.FileAttributes.Names.*;
 
 /**
  * FileImpl represents files as they are stored in Celeste.
@@ -340,10 +348,10 @@ public class FileImpl {
     // after use.
     //
     private class CelesteReader extends BufferCache.Reader {
-        private Profile_ readerCredential;
+        private Credential readerCredential;
         private char[] readerPassword; /// XXX DO NOT DO THIS.
 
-        public CelesteReader(Profile_ readerId, char[] readerPassword) {
+        public CelesteReader(Credential readerId, char[] readerPassword) {
             super();
             this.readerCredential = readerId;
             this.readerPassword = readerPassword;
@@ -820,9 +828,7 @@ public class FileImpl {
     //
     // XXX: groupid should perhaps be treated as an attribute.
     //
-    public void create(OrderedProperties attributes,
-            OrderedProperties clientProperties, Profile_ invokerCredential,
-            char[] invokerPassword, BeehiveObjectId groupId)
+    public void create(Properties attributes, OrderedProperties clientProperties, Credential invokerCredential, char[] invokerPassword, BeehiveObjectId groupId)
         throws
             FileException.BadVersion,
             FileException.CapacityExceeded,
@@ -865,8 +871,7 @@ public class FileImpl {
         BeehiveObjectId dthash = new BeehiveObjectId(dtoken).getObjectId();
         byte[] tentativeEncryptedDeleteToken = null;
         try {
-            tentativeEncryptedDeleteToken =
-                invokerCredential.encrypt(dtoken.getBytes());
+            tentativeEncryptedDeleteToken = invokerCredential.encrypt(dtoken.getBytes());
         } catch (Credential.Exception e) {
             throw new FileException.CredentialProblem(e);
         }
@@ -2066,9 +2071,9 @@ public class FileImpl {
     /**
      * <p>
      *
-     * Return this file's serial number if it was set at {@link
-     * #create(OrderedProperties, OrderedProperties, Profile_, char[],
-     * BeehiveObjectId) create()} time or {@code 0} if not.
+     * Return this file's serial number if it was set at
+     * {@link #create(OrderedProperties, OrderedProperties, Credential, char[], BeehiveObjectId) create()}
+     * time or {@code 0} if not.
      *
      * </p><p>
      *
@@ -2248,8 +2253,7 @@ public class FileImpl {
     //
     // XXX: Supply a predicated version of this method as well?
     //
-    public void setClientProperties(OrderedProperties clientProperties,
-            Profile_ invokerCredential, char[] invokerPassword)
+    public void setClientProperties(OrderedProperties clientProperties, Credential invokerCredential, char[] invokerPassword)
         throws
             FileException.BadVersion,
             FileException.CapacityExceeded,
@@ -2264,8 +2268,7 @@ public class FileImpl {
             FileException.RetriesExceeded,
             FileException.Runtime,
             FileException.ValidationFailed {
-        doTruncate(-1, false, clientProperties, invokerCredential,
-            invokerPassword, null);
+        doTruncate(-1, false, clientProperties, invokerCredential, invokerPassword, null);
     }
 
     /**
@@ -2316,7 +2319,7 @@ public class FileImpl {
     //      interfaces (getFileLength() or getLatestVersionId()) to advance to
     //      the now-latest version.
     //
-    public int read(Profile_ readerCredential, char[] readerPassword,
+    public int read(Credential readerCredential, char[] readerPassword,
             byte[] destBuffer, int destOffset, int maxReadLen, long fileOffset)
         throws
             FileException.BadVersion,
@@ -2329,8 +2332,7 @@ public class FileImpl {
             FileException.PermissionDenied,
             FileException.Runtime,
             FileException.ValidationFailed {
-        ExtentBuffer extentBuffer = this.read(
-            readerCredential, readerPassword, maxReadLen, fileOffset);
+        ExtentBuffer extentBuffer = this.read(readerCredential, readerPassword, maxReadLen, fileOffset);
         int length = min(maxReadLen, extentBuffer.getLength());
         extentBuffer.get(destBuffer, destOffset, length).position(0);
         return extentBuffer.getLength();
@@ -2370,8 +2372,7 @@ public class FileImpl {
      *
      * @return  the number of bytes read
      */
-    public int read(Profile_ readerCredential, char[] readerPassword,
-            ByteBuffer destBuffer, long fileOffset)
+    public int read(Credential readerCredential, char[] readerPassword, ByteBuffer destBuffer, long fileOffset)
         throws
             FileException.BadVersion,
             FileException.CelesteFailed,
@@ -2464,8 +2465,7 @@ public class FileImpl {
     //      any, but if there are, defensive programming dictates that this
     //      method not be fooled by them.)
     //
-    public ExtentBuffer read(Profile_ readerCredential, char[] readerPassword,
-            int maxLength, long fileOffset)
+    public ExtentBuffer read(Credential readerCredential, char[] readerPassword, int maxLength, long fileOffset)
         throws
             FileException.BadVersion,
             FileException.CelesteFailed,
@@ -2655,8 +2655,7 @@ public class FileImpl {
     // XXX: Need to decide and document whether a successful write updates
     //      source's position.  (It almost certainly should.)
     //
-    public void write(ExtentBuffer source, Profile_ invokerCredential,
-            char[] invokerPassword, BeehiveObjectId predicatedVersion)
+    public void write(ExtentBuffer source, Credential invokerCredential, char[] invokerPassword, BeehiveObjectId predicatedVersion)
         throws
             FileException.BadVersion,
             FileException.CapacityExceeded,
@@ -2809,8 +2808,7 @@ public class FileImpl {
      *                          to produce signatures
      */
     public void write(byte[] sourceBuffer, int sourceOffset, int writeLen,
-            long fileStartOffset, Profile_ invokerCredential,
-            char[] invokerPassword)
+            long fileStartOffset, Credential invokerCredential, char[] invokerPassword)
         throws
             FileException.BadVersion,
             FileException.CapacityExceeded,
@@ -2856,9 +2854,8 @@ public class FileImpl {
         //    this.getFileLength(true));
     }
 
-    private BeehiveObjectId tryWriteVersion(BeehiveObjectId versionId,
-            ExtentBuffer source, OrderedProperties props,
-            WriteFileOperation op, Profile_ invokerCredential,
+    private BeehiveObjectId tryWriteVersion(BeehiveObjectId versionId, ExtentBuffer source, OrderedProperties props,
+            WriteFileOperation op, Credential invokerCredential,
             char[] invokerPassword)
         throws
             FileException.BadVersion,
@@ -2979,8 +2976,7 @@ public class FileImpl {
         return null;
     }
 
-    public void truncate(long offset, Profile_ invokerCredential,
-            char[] invokerPassword)
+    public void truncate(long offset, Credential invokerCredential, char[] invokerPassword)
         throws
             FileException.BadVersion,
             FileException.CapacityExceeded,
@@ -2999,8 +2995,7 @@ public class FileImpl {
             invokerCredential, invokerPassword, null);
     }
 
-    public void truncate(long offset, Profile_ invokerCredential,
-            char[] invokerPassword, BeehiveObjectId predicatedVersion)
+    public void truncate(long offset, Credential invokerCredential, char[] invokerPassword, BeehiveObjectId predicatedVersion)
         throws
             FileException.BadVersion,
             FileException.CapacityExceeded,
@@ -3039,7 +3034,7 @@ public class FileImpl {
     //      class, if not to this method).
     //
     private void doTruncate(long offset, boolean markDeleted,
-            OrderedProperties clientProperties, Profile_ invokerCredential,
+            OrderedProperties clientProperties, Credential invokerCredential,
             char[] invokerPassword, BeehiveObjectId predicatedVersion)
         throws
             FileException.BadVersion,
@@ -3177,7 +3172,7 @@ public class FileImpl {
     //
     private BeehiveObjectId tryTruncateVersion(BeehiveObjectId versionId,
             OrderedProperties props, SetFileLengthOperation operation,
-            Profile_ invokerCredential, char[] invokerPassword)
+            Credential invokerCredential, char[] invokerPassword)
         throws
             FileException.BadVersion,
             FileException.CapacityExceeded,
@@ -3256,9 +3251,7 @@ public class FileImpl {
     // A successful invocation updates the file's metadata change time
     // attribute as well as whatever attributes are explicitly supplied.
     //
-    private void setFileAttributes(OrderedProperties requestedAttrs,
-            Profile_ invokerCredential, char[] invokerPassword,
-            BeehiveObjectId predicatedVersion)
+    private void setFileAttributes(OrderedProperties requestedAttrs, Credential invokerCredential, char[] invokerPassword, BeehiveObjectId predicatedVersion)
         throws
             FileException.BadVersion,
             FileException.CapacityExceeded,
@@ -3382,8 +3375,7 @@ public class FileImpl {
         }
     }
 
-    public Serializable runExtension(Profile_ invokerCredential,
-            char[] invokerPassword, URL[] jarFileURLs, String[] args)
+    public Serializable runExtension(Credential invokerCredential, char[] invokerPassword, URL[] jarFileURLs, String[] args)
         throws
             FileException.BadVersion,
             FileException.CapacityExceeded,
@@ -3397,12 +3389,10 @@ public class FileImpl {
             FileException.RetriesExceeded,
             FileException.Runtime,
             FileException.ValidationFailed {
-        return this.doRunExtension(false, null, invokerCredential,
-            invokerPassword, null, jarFileURLs, args);
+        return this.doRunExtension(false, null, invokerCredential, invokerPassword, null, jarFileURLs, args);
     }
 
-    public Serializable runExtension(Profile_ invokerCredential,
-            char[] invokerPassword, BeehiveObjectId predicatedVersion,
+    public Serializable runExtension(Credential invokerCredential, char[] invokerPassword, BeehiveObjectId predicatedVersion,
             URL[] jarFileURLs, String[] args)
         throws
             FileException.BadVersion,
@@ -3417,12 +3407,10 @@ public class FileImpl {
             FileException.RetriesExceeded,
             FileException.Runtime,
             FileException.ValidationFailed {
-        return this.doRunExtension(false, null, invokerCredential,
-            invokerPassword, predicatedVersion, jarFileURLs, args);
+        return this.doRunExtension(false, null, invokerCredential, invokerPassword, predicatedVersion, jarFileURLs, args);
     }
 
-    private Serializable doRunExtension(boolean markDeleted,
-            OrderedProperties clientProperties, Profile_ invokerCredential,
+    private Serializable doRunExtension(boolean markDeleted, OrderedProperties clientProperties, Credential invokerCredential,
             char[] invokerPassword, BeehiveObjectId predicatedVersion,
             URL[] jarFileURLs, String[] args)
         throws
@@ -3446,30 +3434,23 @@ public class FileImpl {
         // version id coincides with Celeste's.  This code is vulnerable to
         // livelock, but retryCount limits the vulnerability.
         //
-        BeehiveObjectId latestVersionId = (predicatedVersion != null) ?
-            predicatedVersion : this.latestVersionId;
+        BeehiveObjectId latestVersionId = (predicatedVersion != null) ? predicatedVersion : this.latestVersionId;
         //
         // This truncate will be predicated on the version named by
         // latestVersionId.  Get the version's metadata and verify that the
         // truncate has some prospect of succeeding.
         //
-        VersionMetadata versionMetadata =
-            versionToMetadata.get(latestVersionId);
+        VersionMetadata versionMetadata = versionToMetadata.get(latestVersionId);
         if (versionMetadata.isDeleted) {
             throw new FileException.Deleted();
         }
 
-        ExtensibleOperation operation = new ExtensibleOperation(
-            this.getFileIdentifier(),
-            invokerCredential.getObjectId(), jarFileURLs, args);
+        ExtensibleOperation operation = new ExtensibleOperation(this.getFileIdentifier(), invokerCredential.getObjectId(), jarFileURLs, args);
 
-        return tryRunExtension(latestVersionId, operation, invokerCredential,
-            invokerPassword);
+        return tryRunExtension(latestVersionId, operation, invokerCredential, invokerPassword);
     }
 
-    private Serializable tryRunExtension(BeehiveObjectId versionId,
-            ExtensibleOperation operation, Profile_ invokerCredential,
-            char[] invokerPassword)
+    private Serializable tryRunExtension(BeehiveObjectId versionId, ExtensibleOperation operation, Credential invokerCredential, char[] invokerPassword)
         throws
             FileException.BadVersion,
             FileException.CapacityExceeded,
@@ -3483,21 +3464,12 @@ public class FileImpl {
             FileException.ValidationFailed {
 
         try {
-            Credential.Signature sig =
-                invokerCredential.sign(invokerPassword, operation.getId());
+            Credential.Signature sig = invokerCredential.sign(invokerPassword, operation.getId());
             ResponseMessage reply = null;
             CelesteAPI proxy = null;
             try {
                 proxy = this.proxyCacheGetAndRemove(this.socketAddr);
                 reply = proxy.runExtension(operation, sig, null);
-
-                //BeehiveObjectId latestVersionId = null;
-                //OrderedProperties metaData = reply.getMetadata();
-                //if (metaData != null) {
-                //    latestVersionId =
-                //        this.processReplyMetadata(reply.getMetadata());
-                //    this.latestVersionId = latestVersionId;
-                //}
 
                 return reply.get(Serializable.class);
             } catch (CelesteException.CredentialException e) {
@@ -3536,7 +3508,7 @@ public class FileImpl {
      * @param invokerCredential the profile to be used to perform the expunge
      * @param invokerPassword   the password for {@code invokerCredential}
      */
-    public void purgeForever(Profile_ invokerCredential, char[] invokerPassword)
+    public void purgeForever(Credential invokerCredential, char[] invokerPassword)
         throws
             FileException.BadVersion,
             FileException.CelesteFailed,
@@ -3555,8 +3527,7 @@ public class FileImpl {
             versionToMetadata.get(this.latestVersionId);
         byte[] raw_token = null;
         try {
-            raw_token = invokerCredential.decrypt(invokerPassword,
-                versionMetadata.encryptedDeleteToken);
+            raw_token = invokerCredential.decrypt(invokerPassword, versionMetadata.encryptedDeleteToken);
         } catch (Credential.Exception e) {
             throw new FileException.CredentialProblem(e);
         }
@@ -3690,7 +3661,7 @@ public class FileImpl {
      * @throws FileException.Runtime
      * @throws FileException.ValidationFailed
      */
-    public void markDeleted(Profile_ invokerCredential, char[] invokerPassword)
+    public void markDeleted(Credential invokerCredential, char[] invokerPassword)
         throws
             FileException.BadVersion,
             FileException.CapacityExceeded,
@@ -3723,8 +3694,8 @@ public class FileImpl {
      *                          if any version will do
      * @param newOwner          the credential identifying the new owner
      */
-    public void setOwner(Profile_ invokerCredential, char[] invokerPassword,
-            BeehiveObjectId predicatedVersion, Profile_ newOwner)
+    public void setOwner(Credential invokerCredential, char[] invokerPassword,
+            BeehiveObjectId predicatedVersion, Credential newOwner)
         throws
             FileException.BadVersion,
             FileException.CapacityExceeded,
@@ -3833,8 +3804,7 @@ public class FileImpl {
     }
 
     private BeehiveObjectId trySetOwner(OrderedProperties props,
-            SetOwnerAndGroupOperation op, Profile_ invokerCredential,
-            char[] invokerPassword)
+            SetOwnerAndGroupOperation op, Credential invokerCredential, char[] invokerPassword)
         throws
             FileException.BadVersion,
             FileException.CapacityExceeded,
@@ -3914,8 +3884,7 @@ public class FileImpl {
      *                          if any version will do
      * @param acl               the file's new access control list
      */
-    public void setACL(Profile_ invokerCredential, char[] invokerPassword,
-            BeehiveObjectId predicatedVersion, CelesteACL acl)
+    public void setACL(Credential invokerCredential, char[] invokerPassword, BeehiveObjectId predicatedVersion, CelesteACL acl)
         throws
             FileException.BadVersion,
             FileException.CapacityExceeded,
@@ -4006,9 +3975,7 @@ public class FileImpl {
         }
     }
 
-    private BeehiveObjectId trySetACL(OrderedProperties props,
-            SetACLOperation op, Profile_ invokerCredential,
-            char[] invokerPassword)
+    private BeehiveObjectId trySetACL(OrderedProperties props, SetACLOperation op, Credential invokerCredential, char[] invokerPassword)
         throws
             FileException.BadVersion,
             FileException.CapacityExceeded,
@@ -4089,7 +4056,7 @@ public class FileImpl {
      *                          if any version will do
      * @param contentType       the file's new content type attribute value
      */
-    public void setContentType(Profile_ invokerCredential,
+    public void setContentType(Credential invokerCredential,
             char[] invokerPassword, BeehiveObjectId predicatedVersion,
             String contentType)
         throws
@@ -4124,9 +4091,7 @@ public class FileImpl {
      * @param deletionTimeToLive    the file's new deletion time to live
      *                              attribute value
      */
-    public void setDeletionTimeToLive(Profile_ invokerCredential,
-            char[] invokerPassword, BeehiveObjectId predicatedVersion,
-            long deletionTimeToLive)
+    public void setDeletionTimeToLive(Credential invokerCredential, char[] invokerPassword, BeehiveObjectId predicatedVersion, long deletionTimeToLive)
         throws
             FileException.BadVersion,
             FileException.CapacityExceeded,
@@ -4174,8 +4139,7 @@ public class FileImpl {
     // Since FileImpl has no notion of a directory hierarchy, the WebDAV
     // concept of lock depth (1 or infinity) doesn't apply at this level.
     //
-    public void acquireModificationLock(Profile_ invokerCredential,
-            char[] invokerPassword, String lockToken, Serializable annotation)
+    public void acquireModificationLock(Credential invokerCredential, char[] invokerPassword, String lockToken, Serializable annotation)
         throws
             FileException.BadVersion,
             FileException.CapacityExceeded,
@@ -4259,13 +4223,11 @@ public class FileImpl {
      * @param invokerCredential the credential of the entity unlocking the file
      * @param invokerPassword   the password for {@code invokerCredential}
      * @param lockToken         the string given as argument to the {@link
-     *                          #acquireModificationLock(Profile_, char[],
-     *                          String, Serializable)
+     *                          #acquireModificationLock(Credential, char[], String, Serializable)
      *                          acquireModificationLock()} call that acquired
      *                          the lock being released
      */
-    public void releaseModificationLock(Profile_ invokerCredential,
-            char[] invokerPassword, String lockToken)
+    public void releaseModificationLock(Credential invokerCredential, char[] invokerPassword, String lockToken)
         throws
             FileException.BadVersion,
             FileException.CapacityExceeded,
@@ -4343,8 +4305,7 @@ public class FileImpl {
         }
     }
 
-    public AObjectVersionMapAPI.Lock inspectModificationLock(
-            Profile_ invokerCredential, char[] invokerPassword)
+    public AObjectVersionMapAPI.Lock inspectModificationLock(Credential invokerCredential, char[] invokerPassword)
         throws
             FileException.BadVersion,
             FileException.CapacityExceeded,
@@ -4579,7 +4540,7 @@ public class FileImpl {
     // defaults come from the static defaultCreationAttributes map.
     //
 
-    private CelesteACL aclFromAttrs(OrderedProperties attrs) {
+    private CelesteACL aclFromAttrs(Properties attrs) {
         String rawACL = attrs.getProperty(ACL_NAME);
         if (rawACL == null) {
             rawACL = FileImpl.defaultCreationAttributes.getProperty(ACL_NAME);
@@ -4598,7 +4559,7 @@ public class FileImpl {
         }
     }
 
-    private int blockSizeFromAttrs(OrderedProperties attrs) {
+    private int blockSizeFromAttrs(Properties attrs) {
         String rawBlockSize = attrs.getProperty(BLOCK_SIZE_NAME);
         if (rawBlockSize == null)
             rawBlockSize = FileImpl.defaultCreationAttributes.getProperty(
@@ -4606,7 +4567,7 @@ public class FileImpl {
         return Integer.valueOf(rawBlockSize);
     }
 
-    private boolean cacheEnabledFromAttrs(OrderedProperties attrs) {
+    private boolean cacheEnabledFromAttrs(Properties attrs) {
         String rawCacheEnabled = attrs.getProperty(CACHE_ENABLED_NAME);
         if (rawCacheEnabled == null)
             rawCacheEnabled = FileImpl.defaultCreationAttributes.getProperty(
@@ -4621,8 +4582,7 @@ public class FileImpl {
     //      client-supplied properties rather than something intended to be
     //      exposed directly to clients.
     //
-    private OrderedProperties clientPropertiesFromAttrs(
-            OrderedProperties attrs) {
+    private OrderedProperties clientPropertiesFromAttrs(Properties attrs) {
         String rawClientMetadata = attrs.getProperty(CLIENT_METADATA_NAME);
         if (rawClientMetadata == null)
             return new OrderedProperties();
@@ -4632,7 +4592,7 @@ public class FileImpl {
         return clientProperties;
     }
 
-    private String contentTypeFromAttrs(OrderedProperties attrs) {
+    private String contentTypeFromAttrs(Properties attrs) {
         String rawContentType = attrs.getProperty(CONTENT_TYPE_NAME);
         if (rawContentType == null)
             rawContentType = FileImpl.defaultCreationAttributes.getProperty(
@@ -4640,7 +4600,7 @@ public class FileImpl {
         return rawContentType;
     }
 
-    private long deletionTimeToLiveFromAttrs(OrderedProperties attrs) {
+    private long deletionTimeToLiveFromAttrs(Properties attrs) {
         String rawDeletionTimeToLive =
             attrs.getProperty(DELETION_TIME_TO_LIVE_NAME);
         if (rawDeletionTimeToLive == null) {
@@ -4650,14 +4610,14 @@ public class FileImpl {
         return Long.valueOf(rawDeletionTimeToLive);
     }
 
-    private boolean isDeletedFromAttrs(OrderedProperties attrs) {
+    private boolean isDeletedFromAttrs(Properties attrs) {
         String rawIsDeleted = attrs.getProperty(IS_DELETED_NAME);
         if (rawIsDeleted == null)
             return false;
         return Boolean.valueOf(rawIsDeleted);
     }
 
-    private long metadataChangedTimeFromAttrs(OrderedProperties attrs) {
+    private long metadataChangedTimeFromAttrs(Properties attrs) {
         String rawMetadataModificationTime =
             attrs.getProperty(METADATA_CHANGED_TIME_NAME);
         if (rawMetadataModificationTime == null)
@@ -4665,7 +4625,7 @@ public class FileImpl {
         return Long.valueOf(rawMetadataModificationTime);
     }
 
-    private long modifiedTimeFromAttrs(OrderedProperties attrs) {
+    private long modifiedTimeFromAttrs(Properties attrs) {
         String rawModifiedTime =
             attrs.getProperty(MODIFIED_TIME_NAME);
         if (rawModifiedTime == null)
@@ -4673,7 +4633,7 @@ public class FileImpl {
         return Long.valueOf(rawModifiedTime);
     }
 
-    private String replicationParamsFromAttrs(OrderedProperties attrs) {
+    private String replicationParamsFromAttrs(Properties attrs) {
         String rawReplicationParams =
             attrs.getProperty(REPLICATION_PARAMETERS_NAME);
         if (rawReplicationParams == null) {
@@ -4683,14 +4643,14 @@ public class FileImpl {
         return rawReplicationParams;
     }
 
-    private long serialNumberFromAttrs(OrderedProperties attrs) {
+    private long serialNumberFromAttrs(Properties attrs) {
         String rawSerialNumber = attrs.getProperty(FILE_SERIAL_NUMBER_NAME);
         if (rawSerialNumber == null)
             return 0;
         return Long.valueOf(rawSerialNumber);
     }
 
-    private boolean signModificationsFromAttrs(OrderedProperties attrs) {
+    private boolean signModificationsFromAttrs(Properties attrs) {
         String rawSignModifications =
             attrs.getProperty(SIGN_MODIFICATIONS_NAME);
         if (rawSignModifications == null) {
@@ -4700,7 +4660,7 @@ public class FileImpl {
         return Boolean.valueOf(rawSignModifications);
     }
 
-    private long timeToLiveFromAttrs(OrderedProperties attrs) {
+    private long timeToLiveFromAttrs(Properties attrs) {
         String rawTimeToLive = attrs.getProperty(TIME_TO_LIVE_NAME);
         if (rawTimeToLive == null) {
             rawTimeToLive = FileImpl.defaultCreationAttributes.getProperty(
@@ -5053,8 +5013,7 @@ public class FileImpl {
     // Now (perhaps temporarily) public, to allow FileImpl clients to more
     // easily debug their code.
     //
-    public static String dumpFile(FileImpl file, Profile_ readerCredential,
-            char[] readerPassword)
+    public static String dumpFile(FileImpl file, Credential readerCredential, char[] readerPassword)
         throws
             FileException.BadVersion,
             FileException.CelesteFailed,
@@ -5100,7 +5059,7 @@ public class FileImpl {
         try {
             String owner = "none";
             if (ownerId != null) {
-                Profile_ p = cache.get(ownerId);
+                Credential p = cache.get(ownerId);
                 if (p != null)
                     owner = p.getName();
             }
@@ -5124,14 +5083,14 @@ public class FileImpl {
     // given Celeste node and erasure coder.  If the Profile does not exist in
     // the cache, it is created.
     //
-    private static Profile_ obtainProfile(ProfileCache cache, String name,
+    private static Credential obtainProfile(ProfileCache cache, String name,
             String passwd, CelesteProxy node, String coder)
             throws
             FileException.CredentialProblem,
             FileException.Runtime,
             IOException {
 
-        Profile_ p = null;
+        Credential p = null;
         try {
             p = cache.get(name);
         } catch (Exception e) {
@@ -5142,11 +5101,8 @@ public class FileImpl {
         try {
             if (p == null) {
                 p = new Profile_(name, passwd.toCharArray());
-                NewCredentialOperation operation = new NewCredentialOperation(
-                    p.getObjectId(), BeehiveObjectId.ZERO,
-                    coder);
-                Credential.Signature signature =
-                    p.sign(passwd.toCharArray(), operation.getId());
+                NewCredentialOperation operation = new NewCredentialOperation(p.getObjectId(), BeehiveObjectId.ZERO, coder);
+                Credential.Signature signature = p.sign(passwd.toCharArray(), operation.getId());
                 node.newCredential(operation, signature, p);
             }
         } catch (ClassNotFoundException e) {
@@ -5241,15 +5197,13 @@ public class FileImpl {
             // and owner for the file(s) created during the test.
             //
             String pPassword = "12345";
-            Profile_ p = FileImpl.obtainProfile(pcache, profileName, pPassword,
-                node, replicationParams);
+            Credential p = FileImpl.obtainProfile(pcache, profileName, pPassword, node, replicationParams);
 
             //
             // Set up a profile to be used for a negative ACL check.
             //
             String pOtherPassword = "23456";
-            Profile_ pOther = FileImpl.obtainProfile(pcache, otherProfileName,
-                pOtherPassword, node, replicationParams);
+            Credential pOther = FileImpl.obtainProfile(pcache, otherProfileName, pOtherPassword, node, replicationParams);
 
             //
             // Cons up an identifier for a new file and then create a handle

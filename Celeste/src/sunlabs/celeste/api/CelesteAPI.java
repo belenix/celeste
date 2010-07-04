@@ -35,7 +35,6 @@ import sunlabs.beehive.api.Credential;
 import sunlabs.beehive.util.OrderedProperties;
 import sunlabs.celeste.CelesteException;
 import sunlabs.celeste.ResponseMessage;
-import sunlabs.celeste.client.Profile_;
 import sunlabs.celeste.client.operation.CreateFileOperation;
 import sunlabs.celeste.client.operation.DeleteFileOperation;
 import sunlabs.celeste.client.operation.ExtensibleOperation;
@@ -63,7 +62,10 @@ import sunlabs.celeste.node.services.object.VersionObject;
  * </p>
  */
 public interface CelesteAPI extends Closeable {
+    /** The API uses serialized Java object representations of operations */
     public static final String CLIENT_PROTOCOL_OBJECT = "object";
+    
+    /** The API uses text representations of operations */
     public static final String CLIENT_PROTOCOL_TEXT = "text";
     
     /** The {@link BeehiveObjectId} file's {@link AnchorObject} */
@@ -277,7 +279,7 @@ public interface CelesteAPI extends Closeable {
      * @throws CelesteException.NoSpaceException
      * @throws CelesteException.VerificationException
      */
-    public BeehiveObject.Metadata newCredential(NewCredentialOperation operation, Credential.Signature signature, Profile_ credential)
+    public BeehiveObject.Metadata newCredential(NewCredentialOperation operation, Credential.Signature signature, Credential credential)
     throws IOException, ClassNotFoundException,
            CelesteException.RuntimeException, CelesteException.AlreadyExistsException,
            CelesteException.NoSpaceException, CelesteException.VerificationException, CelesteException.CredentialException;
@@ -299,7 +301,7 @@ public interface CelesteAPI extends Closeable {
      * @throws CelesteException.VerificationException
      * @throws CelesteException.CredentialException
      */
-    public BeehiveObject.Metadata newNameSpace(NewNameSpaceOperation operation, Credential.Signature signature, Profile_ credential)
+    public BeehiveObject.Metadata newNameSpace(NewNameSpaceOperation operation, Credential.Signature signature, Credential credential)
     throws IOException, ClassNotFoundException,
            CelesteException.RuntimeException, CelesteException.AlreadyExistsException,
            CelesteException.NoSpaceException, CelesteException.VerificationException, CelesteException.CredentialException;
@@ -315,13 +317,11 @@ public interface CelesteAPI extends Closeable {
      * </p>
      * 
      * @throws CelesteException.CredentialException 
-     * @throws CelesteException.AccessControlException 
      * @throws CelesteException.RuntimeException 
      * @throws CelesteException.NotFoundException 
      */
-     public ResponseMessage readCredential(ReadProfileOperation operation)
-     throws IOException, ClassNotFoundException,
-            CelesteException.CredentialException, CelesteException.AccessControlException, CelesteException.NotFoundException, CelesteException.RuntimeException;
+     public Credential readCredential(ReadProfileOperation operation)
+     throws IOException, ClassNotFoundException, CelesteException.CredentialException, CelesteException.NotFoundException, CelesteException.RuntimeException;
 
     /**
      * Changes the owner and group of a Celeste file.
@@ -339,6 +339,7 @@ public interface CelesteAPI extends Closeable {
      * @throws CelesteException.DeletedException 
      * @throws CelesteException.NoSpaceException 
      * @throws CelesteException.NotFoundException 
+     * @throws CelesteException.AlreadyExistsException 
      */
     public OrderedProperties setOwnerAndGroup(SetOwnerAndGroupOperation operation, Credential.Signature signature)
     throws IOException, ClassNotFoundException,
@@ -428,8 +429,8 @@ public interface CelesteAPI extends Closeable {
     CelesteException.FileNotLocked, CelesteException.FileLocked;    
 
     /**
-     * Returns the address and port of the CelesteNode providing this {@code
-     * CelesteAPI} implementation.
+     * Returns the address and port of the CelesteNode providing this
+     * {@code CelesteAPI} implementation.
      *
      * @return the {@code InetSocketAddress} of the underlying Celeste node
      */

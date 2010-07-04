@@ -153,8 +153,7 @@ public class PrincipalAttestation implements Serializable {
     public boolean verifyVersion(ProfileCache cache, BeehiveObjectId versionId)
 	throws Exception, Credential.Exception {
 
-        Profile_ attestingProfile =
-            cache.get(this.attestingId, this.attestingVersionId);
+        Credential attestingProfile = cache.get(this.attestingId, this.attestingVersionId);
         return attestingProfile.verify(this.signature, this.attesteeId);
     }
 
@@ -162,16 +161,15 @@ public class PrincipalAttestation implements Serializable {
     // Return true if this token represents a valid attestation with respect
     // to the current version of the attesting entity.
     //
-    public boolean verifyCurrent(ProfileCache cache)
-	throws Exception, Credential.Exception {
+    public boolean verifyCurrent(ProfileCache cache) throws Exception, Credential.Exception {
 
-        Profile_ attestingProfile = cache.get(this.attestingId);
+        Credential attestingProfile = cache.get(this.attestingId);
         //
         // If attestingProfile's keying material has changed since the
         // signature was created, then verification of the signature against
         // the data used to create it will fail.
         //
-	return attestingProfile.verify(this.signature, this.attesteeId);
+        return attestingProfile.verify(this.signature, this.attesteeId);
     }
 
     /**

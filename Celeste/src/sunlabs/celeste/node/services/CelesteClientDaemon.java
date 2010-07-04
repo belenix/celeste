@@ -274,7 +274,7 @@ public class CelesteClientDaemon extends BeehiveService {
                 // indicate something catastrophic.
                 try {
                     this.oos = new ObjectOutputStream(outputStream);
-                    oos.flush(); // Make stream header visible to client.
+                    oos.flush(); // Write the stream header to make it readable by the client now.
                     this.ois = new ObjectInputStream(this.socket.getInputStream());
                     //
                     // Begin by reading a CelesteOperation from the ObjectInputStream.
@@ -324,6 +324,7 @@ public class CelesteClientDaemon extends BeehiveService {
                     CelesteClientDaemon.this.log.fine("%s when communicating with client", e.toString());
                     e.printStackTrace();
                 } catch (Exception e) {
+                    e.printStackTrace();
                     ResponseMessage reply = new ResponseMessage(e);
                     try {
                         oos.writeObject(reply);
@@ -423,7 +424,7 @@ public class CelesteClientDaemon extends BeehiveService {
         return this.celesteNode.readFile(operation, signature);
     }
 
-    public ResponseMessage performOperation(ReadProfileOperation operation, ObjectInputStream ois)
+    public Credential performOperation(ReadProfileOperation operation, ObjectInputStream ois)
     throws IOException, ClassNotFoundException,
     CelesteException.CredentialException, CelesteException.AccessControlException, CelesteException.NotFoundException, CelesteException.RuntimeException {
 

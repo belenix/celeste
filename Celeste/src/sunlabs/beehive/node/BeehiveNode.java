@@ -24,7 +24,6 @@ package sunlabs.beehive.node;
 
 import java.io.BufferedOutputStream;
 import java.io.ByteArrayOutputStream;
-import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.EOFException;
 import java.io.File;
@@ -80,9 +79,7 @@ import sunlabs.asdf.util.Time;
 import sunlabs.asdf.util.Units;
 import sunlabs.asdf.web.XML.XHTML;
 import sunlabs.asdf.web.XML.XML;
-import sunlabs.asdf.web.XML.XML.Content;
 import sunlabs.asdf.web.http.HTTP;
-import sunlabs.asdf.web.http.InternetMediaType;
 import sunlabs.beehive.BeehiveObjectId;
 import sunlabs.beehive.Copyright;
 import sunlabs.beehive.Release;
@@ -101,8 +98,6 @@ import sunlabs.beehive.node.services.api.Census;
 import sunlabs.beehive.node.services.api.Publish;
 import sunlabs.beehive.node.services.xml.TitanXML;
 import sunlabs.beehive.node.services.xml.TitanXML.XMLNode;
-import sunlabs.beehive.node.services.xml.TitanXML.XMLObjectStore;
-import sunlabs.beehive.node.services.xml.TitanXML.XMLRoutingTable;
 import sunlabs.beehive.node.util.DOLRLogger;
 import sunlabs.beehive.node.util.DOLRLoggerMBean;
 import sunlabs.beehive.util.DOLRStatus;
@@ -229,7 +224,7 @@ public class BeehiveNode implements NodeMBean {
         private BeehiveNode node;
         
         public RequestHandler(BeehiveNode node, BeehiveMessage request, ChannelHandler channel) {
-            super(Thread.currentThread().getName());
+            super(String.format("%s.RequestHandler", node.getObjectId()));
             this.node = node;
             this.request = request;
             this.channel = channel;                
@@ -1234,6 +1229,10 @@ public class BeehiveNode implements NodeMBean {
     public BeehiveMessage receive(BeehiveMessage request) {
         BeehiveObjectId destinationNodeId = request.getDestinationNodeId();
 
+        if (destinationNodeId == null) {
+            System.out.printf("destination node is null%n");
+        }
+        
         if (destinationNodeId.equals(this.getObjectId())) {
             // Any message other than route-to-node or route-to-object would indicate an ObjectId collision.
             if (request.isTraced()) {

@@ -63,29 +63,23 @@ import sunlabs.celeste.node.CelesteNode;
 import sunlabs.celeste.util.CelesteIO;
 
 /**
- * The {@code CelesteProxy} class is as a proxy for client invocations of methods in
- * the {@code Celeste} interface.  It relays such invocations to a remote {@code Celeste} node
- * and retrieves and returns their results to the original caller.  The remote implementation is identified by
- * its {@code URL}.
+ * The {@code CelesteProxy} class is the primary client interface to Celeste and is a proxy for client invocations of methods in
+ * the {@code Celeste} interface.
+ * It relays such invocations to a remote {@code Celeste} node and retrieves and returns their results to the original caller.
+ * The remote node is identified by its {@code URL}.
  */
 public class CelesteProxy implements CelesteAPI {
     /**
      * <p>
-     *
      * A cache for {@code CelesteProxy} instances.
-     *
      * </p><p>
-     *
      * The class provides two cache variants:  one for communicating with
      * Celeste nodes running on remote hosts, and another for communicating
      * with a Celeste node running in the caller's address space.
-     *
      * </p><p>
-     *
      * Callers should obtain and release entries from the cache according to
-     * the design pattern described in {@link sunlabs.beehive.util.LRUCache
-     * LRUCache's class comment}.
-     *
+     * the design pattern described in
+     * {@link sunlabs.beehive.util.LRUCache}.
      * </p>
      */
     //
@@ -100,27 +94,22 @@ public class CelesteProxy implements CelesteAPI {
         private final static long serialVersionUID = 1L;
 
         /**
-         * Creates a cache for handling {@code CelesteProxy} connections to a
-         * remote Celeste node.  The cache treats each proxy instance as
-         * exclusive use and specifies that each instance should use {@code
-         * timeOutMillis} as its {@link Socket} timeout value for communicating to a remote
-         * node. See {@link Socket#setSoTimeout(int)}.
+         * Creates a cache for handling {@code CelesteAPI} proxy connections to a remote Celeste node.
+         * The cache treats each proxy instance as exclusive use and specifies that each instance should use {@code timeOutMillis} as its {@link Socket}
+         * timeout value for communicating to a remote node.
+         * See {@link Socket#setSoTimeout(int)}.
          *
-         * @param capacity      the maximum number of entries the cache should
-         *                      contain
-         * @param timeOutMillis the timeout value to use when communicating
-         *                      through a proxy to a remote Celeste node
+         * @param capacity      the maximum number of entries the cache should contain
+         * @param timeOutMillis the timeout value to use when communicating through a proxy to a remote Celeste node
          */
         public Cache(int capacity, long timeOutMillis) {
             this(capacity, true, new ProxyFactory(timeOutMillis, TimeUnit.MILLISECONDS));
         }
 
         /**
-         * Creates a cache for handling  {@code CelesteProxy} connections to a
-         * Celeste node that's part of the caller's address space.
+         * Creates a cache for handling {@code CelesteAPI} connections to a Celeste node that's part of the caller's address space.
          *
-         * @param celesteNode   the Celeste node to which the cache's proxy
-         *                      will make calls
+         * @param celesteNode   the Celeste node to which the cache's proxy will make calls
          */
         public Cache(CelesteNode celesteNode) {
             this(1, false, new DirectCelesteReferenceFactory(celesteNode));
@@ -129,8 +118,7 @@ public class CelesteProxy implements CelesteAPI {
         //
         // Private constructor that does the real work.
         //
-        private Cache(int capacity, boolean exclusiveItemUse,
-                LRUCache.Factory<InetSocketAddress, CelesteAPI> factory) {
+        private Cache(int capacity, boolean exclusiveItemUse, LRUCache.Factory<InetSocketAddress, CelesteAPI> factory) {
             super(capacity, factory, exclusiveItemUse, null);
         }
 
@@ -167,8 +155,7 @@ public class CelesteProxy implements CelesteAPI {
             this.timeUnit = timeUnit;
         }
 
-        public CelesteAPI newInstance(InetSocketAddress addr) throws
-                Exception {
+        public CelesteAPI newInstance(InetSocketAddress addr) throws IOException {
             return new CelesteProxy(addr, this.timeOut, this.timeUnit);
         }
     }
@@ -565,9 +552,8 @@ public class CelesteProxy implements CelesteAPI {
         return (ResponseMessage) reply;
     }
 
-    public ResponseMessage readCredential(ReadProfileOperation operation)
-    throws IOException, ClassNotFoundException,
-           CelesteException.CredentialException, CelesteException.AccessControlException, CelesteException.NotFoundException, CelesteException.RuntimeException {
+    public Credential readCredential(ReadProfileOperation operation)
+    throws IOException, ClassNotFoundException, CelesteException.CredentialException, CelesteException.NotFoundException, CelesteException.RuntimeException {
 
         this.objectOutputStream.reset();
         this.objectOutputStream.writeObject(operation);
@@ -578,8 +564,6 @@ public class CelesteProxy implements CelesteAPI {
             // XXX There must be a better way.
             if (reason instanceof CelesteException.CredentialException)
                 throw (CelesteException.CredentialException) reason;
-            if (reason instanceof CelesteException.AccessControlException)
-                throw (CelesteException.AccessControlException) reason;
             if (reason instanceof CelesteException.NotFoundException)
                 throw (CelesteException.NotFoundException) reason;
             if (reason instanceof CelesteException.RuntimeException)
@@ -589,10 +573,10 @@ public class CelesteProxy implements CelesteAPI {
 
             return null;
         }
-        return (ResponseMessage) reply;
+        return (Credential) reply;
     }
 
-    public BeehiveObject.Metadata newCredential(NewCredentialOperation operation, Credential.Signature signature, Profile_ profile)
+    public BeehiveObject.Metadata newCredential(NewCredentialOperation operation, Credential.Signature signature, Credential profile)
     throws IOException, ClassNotFoundException,
         CelesteException.RuntimeException, CelesteException.AlreadyExistsException,
         CelesteException.NoSpaceException, CelesteException.VerificationException, CelesteException.CredentialException {
@@ -626,7 +610,7 @@ public class CelesteProxy implements CelesteAPI {
         return (BeehiveObject.Metadata) reply;
     }
 
-    public BeehiveObject.Metadata newNameSpace(NewNameSpaceOperation operation, Credential.Signature signature, Profile_ profile)
+    public BeehiveObject.Metadata newNameSpace(NewNameSpaceOperation operation, Credential.Signature signature, Credential profile)
     throws IOException, ClassNotFoundException,
         CelesteException.RuntimeException, CelesteException.AlreadyExistsException,
         CelesteException.NoSpaceException, CelesteException.VerificationException, CelesteException.CredentialException {

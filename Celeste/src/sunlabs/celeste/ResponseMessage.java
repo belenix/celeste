@@ -41,6 +41,14 @@ import sunlabs.beehive.util.OrderedProperties;
 public class ResponseMessage implements Serializable {
     private final static long serialVersionUID = 1L;
     
+    public static class RemoteException extends Exception {
+        private static final long serialVersionUID = 1L;
+
+        public RemoteException(Throwable throwable) {
+            super(throwable);
+        }
+    }
+    
     private OrderedProperties metadata;
     private Serializable object;
     
@@ -66,13 +74,13 @@ public class ResponseMessage implements Serializable {
      * @param <C> the class of the encapsulated return instance.
      * @param klasse the expected class of the encapsulated return object.
      * @throws ClassCastException if the encapsulated return object is not the the expected class
-     * @throws Exception if the result contains an Exception thrown by the Celeste node.
-     */
-    public <C> C get(Class<? extends C> klasse) throws ClassCastException, Exception {
+     * @throws RemoteException if the result contains an {@link Throwable} thrown by the Celeste node.
+     */ 
+    public <C> C get(Class<? extends C> klasse) throws ClassCastException, RemoteException {
         try {
             // XXX This should throw a specific encapsulated Exception, not just Exception.
             if (this.object instanceof Exception) {
-                throw (Exception) this.object;
+                throw new RemoteException((Throwable) this.object);
             }
             return klasse.cast(this.object);
         } catch (ClassCastException e) {

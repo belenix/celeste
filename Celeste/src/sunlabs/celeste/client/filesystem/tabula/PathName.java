@@ -22,7 +22,7 @@
  * information or have any questions.
  */
 
-package sunlabs.celeste.client.filesystem;
+package sunlabs.celeste.client.filesystem.tabula;
 
 import java.io.Serializable;
 
@@ -33,6 +33,8 @@ import java.util.List;
 import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.regex.Pattern;
+
+import sunlabs.celeste.client.filesystem.HierarchicalFileSystem;
 
 /**
  * <p>
@@ -93,25 +95,20 @@ import java.util.regex.Pattern;
 //      at the beginning.  Should the rules be augmented to squash such
 //      components out?  (I.e., should they enforce ".." == "." at the root?)
 //
-public class PathName implements Serializable, Comparable<PathName>,
-        Iterable<PathName> {
+public class PathName implements Serializable, Comparable<PathName>, Iterable<HierarchicalFileSystem.FileName>, HierarchicalFileSystem.FileName {
     private static final long serialVersionUID = 0L;
 
     /**
      * <p>
-     *
      * Provides iterators that deliver a sequence of path names, one for each
      * component of the corresponding base {@code PathName} instance.
-     *
      * </p><p>
-     *
      * The iterators that this class provides are not thread safe; if multiple
      * threads are to share a given iterator, they must provide their own
      * synchronization to coordinate their use of that iterator.
-     *
      * </p>
      */
-    public class PathIterator implements Iterator<PathName> {
+    public class PathIterator implements Iterator<HierarchicalFileSystem.FileName> {
         private int index = 0;
         private String[] components = PathName.this.getComponents();
         private StringBuilder accumulatingPath = new StringBuilder();
@@ -126,7 +123,7 @@ public class PathName implements Serializable, Comparable<PathName>,
             return this.index < this.components.length;
         }
 
-        public PathName next() {
+        public HierarchicalFileSystem.FileName next() {
             //
             // If the base path name is absolute avoid adding a separator
             // immediately after the root component, which is itself
@@ -186,10 +183,13 @@ public class PathName implements Serializable, Comparable<PathName>,
      */
     public PathName appendComponent(String component) {
         if (component == null || component.indexOf(separator) != -1)
-            throw new IllegalArgumentException(
-                "component null or contains separator");
+            throw new IllegalArgumentException("component null or contains separator");
         return new PathName(
             String.format("%s%s%s", this.pathName, separator, component));
+    }
+    
+    public PathName append(String component) {
+        return this.appendComponent(component);
     }
 
     /**
@@ -276,7 +276,7 @@ public class PathName implements Serializable, Comparable<PathName>,
      *
      * @return  the final comnponent's extension.
      */
-    public String getExtension() {
+    public String getNameExtension() {
         String component = this.getLeafComponent();
         int dotLoc = component.lastIndexOf('.');
         if (dotLoc == -1 || dotLoc == component.length() - 1)
@@ -368,7 +368,7 @@ public class PathName implements Serializable, Comparable<PathName>,
      * The result is formed by appending "/.." to this path name's canonical
      * string representation and then applying the canonicalization rules
      * described in the
-     * {@link sunlabs.celeste.client.filesystem.PathName class comment}.
+     * {@link sunlabs.celeste.client.filesystem.tabula.PathName class comment}.
      *
      * </p>
      *
@@ -518,7 +518,7 @@ public class PathName implements Serializable, Comparable<PathName>,
      * this {@code PathName}'s first component and successively proceed deeper
      * into the path until it finally returns all of this {@code PathName}.
      */
-    public Iterator<PathName> iterator() {
+    public Iterator<HierarchicalFileSystem.FileName> iterator() {
         return new PathIterator();
     }
 
@@ -604,5 +604,17 @@ public class PathName implements Serializable, Comparable<PathName>,
                 sb.append(separator);
         }
         return sb.toString();
+    }
+
+    public int size() {
+        // TODO Auto-generated method stub
+        return 0;
+    }
+    
+    public static void main(String[] args) {
+        PathName p = new PathName("/a/b/c");
+        for (String s : p.getComponents()) {
+            System.out.printf("%s%n", s);
+        }
     }
 }

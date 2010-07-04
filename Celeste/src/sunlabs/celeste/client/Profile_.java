@@ -99,6 +99,7 @@ public class Profile_ extends AbstractBeehiveObject implements Credential {
     private final PublicKey publicKey;
     private final boolean limited;
     private transient BeehiveObjectId cachedId;
+    private BeehiveObjectId dataId;
 
     /**
      * Create a new Profile_ based on a newly generated key pair, with the
@@ -210,18 +211,17 @@ public class Profile_ extends AbstractBeehiveObject implements Credential {
 
     /**
      * Decrypt the private key with the provided password and return it.
+     * 
+     * @throws Credential.Exception
      */
-    public PrivateKey getPrivateKey(char[] password)
-        throws Credential.Exception {
+    public PrivateKey getPrivateKey(char[] password) throws Credential.Exception {
 
         if (this.encryptedPrivateKey == null) {
             throw new Credential.Exception("no private key provided");
         }
         try {
             Cipher cipher = getCipher(password, Cipher.UNWRAP_MODE);
-            return (PrivateKey)
-                cipher.unwrap(this.encryptedPrivateKey, Profile_.KEY_TYPE,
-                    Cipher.PRIVATE_KEY);
+            return (PrivateKey) cipher.unwrap(this.encryptedPrivateKey, Profile_.KEY_TYPE, Cipher.PRIVATE_KEY);
         } catch (GeneralSecurityException ex) {
             throw new Credential.Exception(ex);
         }
@@ -233,15 +233,17 @@ public class Profile_ extends AbstractBeehiveObject implements Credential {
 
     @Override
     public BeehiveObjectId getDataId() {
-        //
-        // Hash together everything that distinguishes this profile from any
-        // other object stored in Beehive.  (Since the cachedId field is
-        // derived from the name field, it's not included.)
-        //
-        BeehiveObjectId id = new BeehiveObjectId(this.name.getBytes());
-        id.add(this.encryptedPrivateKey);
-        id.add(this.publicKey.getEncoded());
-        return id;
+        if (this.dataId == null) {
+            //
+            // Hash together everything that distinguishes this profile from any
+            // other object stored in Beehive.  (Since the cachedId field is
+            // derived from the name field, it's not included.)
+            //
+            BeehiveObjectId id = new BeehiveObjectId(this.name.getBytes());
+            id = id.add(this.encryptedPrivateKey);
+            this.dataId = id.add(this.publicKey.getEncoded());
+        }
+        return this.dataId;
     }
 
     /**
@@ -256,8 +258,7 @@ public class Profile_ extends AbstractBeehiveObject implements Credential {
      * @throws Credential.Exception encapsulating a {@link GeneralSecurityException}
      * instance thrown by the underlying {@link java.security.Signature} system.
      */
-    public Credential.Signature sign(char[] password, BeehiveObjectId... ids)
-        throws Credential.Exception {
+    public Credential.Signature sign(char[] password, BeehiveObjectId... ids) throws Credential.Exception {
 
         try {
             String algorithm = Profile_.DIGITAL_SIGNATURE_ALGORITHM;

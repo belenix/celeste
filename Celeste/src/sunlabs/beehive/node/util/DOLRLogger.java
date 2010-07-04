@@ -53,23 +53,23 @@ public class DOLRLogger implements DOLRLoggerMBean {
     // Map to allow unique integers to be assigned to unique names.
     private static Map<String, Integer> nameIndexMap = new HashMap<String, Integer>();
 
-    // Utility routine which hands back a unique name be appending
-    // a number to a name.
-    // We don't expect this to be called too many times per VM,
-    // so we don't worry about the number wrapping.
-    private synchronized static String getUniqueName(String name) {
-        Integer id = nameIndexMap.get(name);
-        int value = 0;
-        if (id == null) {
-            // We've never seen this name before.
-            nameIndexMap.put(name, Integer.valueOf(0));
-        } else {
-            value = id.intValue();
-            value++;
-            nameIndexMap.put(name, Integer.valueOf(value));
-        }
-        return name + value;
-    }
+//    // Utility routine which hands back a unique name be appending
+//    // a number to a name.
+//    // We don't expect this to be called too many times per VM,
+//    // so we don't worry about the number wrapping.
+//    private synchronized static String getUniqueName(String name) {
+//        Integer id = nameIndexMap.get(name);
+//        int value = 0;
+//        if (id == null) {
+//            // We've never seen this name before.
+//            nameIndexMap.put(name, Integer.valueOf(0));
+//        } else {
+//            value = id.intValue();
+//            value++;
+//            nameIndexMap.put(name, Integer.valueOf(value));
+//        }
+//        return name + value;
+//    }
 
     /**
      * Create a new DOLRLogger instance which wraps a
@@ -102,7 +102,7 @@ public class DOLRLogger implements DOLRLoggerMBean {
 //             application, if multiple Nodes are created in one VM).
 //            this.logger = Logger.getLogger(getUniqueName(name));
 
-            this.logger = Logger.getLogger(name + nodeId.toString());
+            this.logger = Logger.getLogger(name);// + nodeId.toString());
 
             // File for logging output.
 
@@ -117,9 +117,17 @@ public class DOLRLogger implements DOLRLoggerMBean {
             // We assume we were started with no ConsoleHandler attached
             // to the root logger, which allows us to do global operations
             // in the logging config file, like set levels for applications.
-            Handler ch = new ConsoleHandler();
-            ch.setFormatter(new DOLRLogFormatter());
-            this.logger.addHandler(ch);
+            boolean gotConsoleHandler = false;
+            for (Handler h : this.logger.getHandlers()) {
+                if (h instanceof ConsoleHandler)
+                    gotConsoleHandler = true;
+            }
+            if (!gotConsoleHandler) {
+                Handler ch = new ConsoleHandler();
+                ch.setFormatter(new DOLRLogFormatter());
+                this.logger.addHandler(ch);
+            }
+            
             this.logger.setUseParentHandlers(false);
         } catch (IOException e) {
             e.printStackTrace();

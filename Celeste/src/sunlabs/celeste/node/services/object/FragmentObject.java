@@ -43,6 +43,7 @@ import sunlabs.beehive.api.ObjectStore;
 import sunlabs.beehive.node.AbstractBeehiveObject;
 import sunlabs.beehive.node.BeehiveMessage;
 import sunlabs.beehive.node.BeehiveNode;
+import sunlabs.beehive.node.BeehiveObjectPool;
 import sunlabs.beehive.node.BeehiveObjectStore;
 import sunlabs.beehive.node.PublishObjectMessage;
 import sunlabs.beehive.node.BeehiveMessage.RemoteException;
@@ -201,7 +202,8 @@ public final class FragmentObject extends AbstractObjectHandler implements FObje
         return new FObject(deleteTokenId, timeToLive, metaData, data, replicationParams);
     }
 
-    public FObjectType.FObject storeObject(FObjectType.FObject fObject) throws IOException, BeehiveObjectStore.NoSpaceException, BeehiveObjectStore.DeleteTokenException {
+    public FObjectType.FObject storeObject(FObjectType.FObject fObject)
+    throws IOException, BeehiveObjectStore.NoSpaceException, BeehiveObjectStore.DeleteTokenException, BeehiveObjectStore.UnacceptableObjectException, BeehiveObjectPool.Exception {
 
         BeehiveObject object = StorableObject.storeObject(this, fObject);
         return (FObjectType.FObject) object;

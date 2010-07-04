@@ -44,8 +44,8 @@ import sunlabs.celeste.FileIdentifier;
 import sunlabs.celeste.api.CelesteAPI;
 import sunlabs.celeste.client.CelesteProxy;
 import sunlabs.celeste.client.Profile_;
-import sunlabs.celeste.client.filesystem.PathName;
-import sunlabs.celeste.client.filesystem.simple.FileException;
+import sunlabs.celeste.client.filesystem.FileException;
+import sunlabs.celeste.client.filesystem.HierarchicalFileSystem;
 import sunlabs.celeste.client.filesystem.simple.FileImpl;
 import sunlabs.celeste.client.filesystem.tabula.FileTreeMap.DirectoryInfo;
 import sunlabs.celeste.client.filesystem.tabula.FileTreeMap.FileInfo;
@@ -375,7 +375,7 @@ public class TabulaFileSystem {
     //
     // The file system's name space
     //
-    private final Profile_ nameSpaceProfile;
+    private final Credential nameSpaceProfile;
 
     //
     // The address of the Celeste node that this file system handle will use
@@ -389,7 +389,7 @@ public class TabulaFileSystem {
     // authenticate all interactions with Celeste made through this file
     // system handle.
     //
-    private final Profile_          invokerCredential;
+    private final Credential          invokerCredential;
     private final BeehiveObjectId   invokerId;
     private final String            invokerPassword;
 
@@ -571,7 +571,7 @@ public class TabulaFileSystem {
     // Does the return type need to be as specific as Profile_, or would
     // Credential do?
     //
-    public Profile_ getNameSpace() {
+    public Credential getNameSpace() {
         return this.nameSpaceProfile;
     }
 
@@ -1073,7 +1073,7 @@ public class TabulaFileSystem {
                 //      folding the check into the name space update that
                 //      accomplishes the rename.
                 //
-                for (PathName p : to) {
+                for (HierarchicalFileSystem.FileName p : to) {
                     OccupantInfo info = this.fileTreeMap.get(p);
                     if (info == null) {
                         //

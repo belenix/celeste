@@ -25,7 +25,6 @@
 package sunlabs.celeste.client.filesystem;
 
 import sunlabs.celeste.client.filesystem.simple.FileImpl;
-import sunlabs.celeste.client.filesystem.tabula.PathName;
 
 /**
  * {@code FileException} and its nested subclasses capture information
@@ -441,6 +440,23 @@ public class FileException extends Exception {
 
         public RetriesExceeded(Throwable cause) {
             super(RETRIES_EXCEEDED, cause);
+        }
+    }
+
+    public static class Retry extends FileException {
+        private final static long serialVersionUID = 1L;
+        private static String message = "Retry Operation";
+
+        public Retry(String message) {
+            super(message);
+        }
+
+        public Retry() {
+            this(Retry.message);
+        }
+
+        public Retry(Throwable cause) {
+            super(message, cause);
         }
     }
 

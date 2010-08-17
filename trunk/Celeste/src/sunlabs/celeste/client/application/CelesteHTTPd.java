@@ -915,7 +915,7 @@ public final class CelesteHTTPd implements CelesteHTTPdMBean {
 
         try {
             CelesteFileSystem.File fileOrDirectory =
-                session.fileSystem.getFile(path);
+                session.fileSystem.getNode(path);
 
             long start = 0;
             long stop = fileOrDirectory.length();
@@ -1055,7 +1055,7 @@ public final class CelesteHTTPd implements CelesteHTTPdMBean {
         PathName path = this.extractPath(uri);
 
         try {
-            CelesteFileSystem.File file = session.fileSystem.getFile(path);
+            CelesteFileSystem.File file = session.fileSystem.getNode(path);
             String info = file.getContentType() + " " + file.length() + " " +
             file.lastModified() + " " + path.toString();
             return new HttpResponse(HTTP.Response.Status.OK, new HttpContent.Text.Plain("%s\n", info));
@@ -1098,7 +1098,7 @@ public final class CelesteHTTPd implements CelesteHTTPdMBean {
 
             try {
                 CelesteFileSystem.File file =
-                    session.fileSystem.getFile(directoryPath);
+                    session.fileSystem.getNode(directoryPath);
 
                 if (file instanceof CelesteFileSystem.Directory) {
                     //

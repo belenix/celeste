@@ -25,8 +25,10 @@ package sunlabs.celeste.client.filesystem;
 import java.io.IOException;
 import java.util.Properties;
 
+import sunlabs.beehive.api.Credential;
 import sunlabs.beehive.util.OrderedProperties;
 import sunlabs.celeste.CelesteException;
+import sunlabs.celeste.client.filesystem.FileException.Retry;
 
 /**
  * A Hierarchical File-system is a file-system organised
@@ -51,7 +53,7 @@ public interface HierarchicalFileSystem extends FileSystem {
          * @throws IOException 
          * @throws ClassNotFoundException 
          */
-        public HierarchicalFileSystem mount(String name) throws FileException.BadVersion,
+        public HierarchicalFileSystem mount(String fileSystemName) throws FileException.BadVersion,
             FileException.NotFound,
             FileException.CelesteFailed,
             FileException.CelesteInaccessible,
@@ -68,14 +70,15 @@ public interface HierarchicalFileSystem extends FileSystem {
          * @param name
          * @return
          */
-        public boolean exists(String name);
+        public boolean exists(String fileSystemName);
 
         /**
-         * 
-         * @param name
-         * @param password
+         * Create the named file system, using {@code fileSystemName} and {@code password} to initialise the file-system.
+         * Note that the credential for the creating entity must already exist, see {@link #createCredential()}.
+         * @param fileSystemName the name of the filesystem (this is not necessarily a path name).
+         * @param password the password used to initialise the file system's credential. 
          * @param attributes
-         * @return
+         * @return the created {@link HierarchicalFileSystem}.
          * @throws CelesteException.RuntimeException
          * @throws CelesteException.AlreadyExistsException
          * @throws CelesteException.NoSpaceException
@@ -85,9 +88,32 @@ public interface HierarchicalFileSystem extends FileSystem {
          * @throws ClassNotFoundException
          * @throws CelesteException.NotFoundException
          */
-        public HierarchicalFileSystem create(String name, String password, OrderedProperties attributes)
-            throws CelesteException.RuntimeException, CelesteException.AlreadyExistsException, CelesteException.NoSpaceException,
-            CelesteException.VerificationException, CelesteException.CredentialException, IOException, ClassNotFoundException, CelesteException.NotFoundException;
+        public HierarchicalFileSystem create(String fileSystemName, String password, OrderedProperties attributes)
+            throws CelesteException.RuntimeException, CelesteException.NoSpaceException,
+            CelesteException.VerificationException, CelesteException.CredentialException, IOException, ClassNotFoundException, CelesteException.NotFoundException,
+            FileSystem.AlreadyExistsException;
+
+        /**
+         * Create the {@link Credential} of the entity manipulating this FileSystem.
+         * 
+         * @return the {@link Credential} of the entity manipulating this FileSystem.
+         * @throws Credential.Exception 
+         * @throws CelesteException.RuntimeException 
+         */
+        public Credential createCredential() throws Credential.Exception, CelesteException.RuntimeException;
+        /**
+         * Get the {@link Credential} of the entity manipulating this FileSystem.
+         * 
+         * @return the {@link Credential} of the entity manipulating this FileSystem.
+         */
+        public String getCredentialName();
+        
+        /**
+         * Get the {@link Credential} password of the entity manipulating this FileSystem.
+         * 
+         * @return the {@link Credential} password of the entity manipulating this FileSystem.
+         */
+        public String getCredentialPassword();
     }
     
     public interface FileName extends Iterable<HierarchicalFileSystem.FileName>, FileSystem.FileName {
@@ -178,13 +204,35 @@ public interface HierarchicalFileSystem extends FileSystem {
 
     public void deleteDirectory(HierarchicalFileSystem.FileName path) throws FileException;
 
-    public FileSystem.File getFile(HierarchicalFileSystem.FileName path) throws FileException;
-    
-    public FileSystem.File createFile(FileName path, Properties attrs, OrderedProperties props) throws FileException;
+    /**
+     * 
+     * @param path
+     * @param fileProperties
+     * @param userProperties
+     * @return
+     * @throws FileException
+     */
+    public FileSystem.File createFile(FileName path, Properties fileProperties, OrderedProperties userProperties) throws FileException;
 
     public void deleteFile(HierarchicalFileSystem.FileName path) throws FileException, IOException, ClassNotFoundException;
 
-    public interface Directory {
+    public interface Directory extends FileSystem.Node {
+        /**
+         * Return an array of Strings containing the names of the children Nodes.
+         * 
+         * @return
+         * @throws FileException.BadVersion
+         * @throws FileException.CelesteFailed
+         * @throws FileException.CelesteInaccessible
+         * @throws FileException.CredentialProblem
+         * @throws FileException.Deleted
+         * @throws FileException.DirectoryCorrupted
+         * @throws FileException.IOException
+         * @throws FileException.NotFound
+         * @throws FileException.PermissionDenied
+         * @throws FileException.Runtime
+         * @throws FileException.ValidationFailed
+         */
         public String[] list() throws
         FileException.BadVersion,
         FileException.CelesteFailed,
@@ -246,6 +294,10 @@ public interface HierarchicalFileSystem extends FileSystem {
     FileException.NotDirectory,
     FileException.PermissionDenied,
     FileException.Runtime,
-    FileException.ValidationFailed;
+    FileException.ValidationFailed, FileException.Retry;
+
+    public FileSystem.Node getNode(HierarchicalFileSystem.FileName path) throws FileException.NotFound, FileException.IOException, FileException.BadVersion,
+        FileException.CelesteFailed, FileException.CelesteInaccessible, FileException.CredentialProblem, FileException.Deleted, FileException.DirectoryCorrupted,
+        FileException.FileSystemNotFound, FileException.NotDirectory, FileException.PermissionDenied, FileException.Runtime, FileException.ValidationFailed, FileException.Retry;
 
 }

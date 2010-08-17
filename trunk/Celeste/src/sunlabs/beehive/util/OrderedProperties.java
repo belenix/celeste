@@ -26,6 +26,8 @@ package sunlabs.beehive.util;
 import java.io.BufferedWriter;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -139,7 +141,7 @@ public class OrderedProperties extends java.util.Properties implements XHTMLInsp
         return ByteBuffer.wrap(this.toByteArray());
     }
 
-    public synchronized void load(ByteBuffer buffer) {
+    public void load(ByteBuffer buffer) {
         ByteArrayInputStream bin = new ByteArrayInputStream(buffer.array(), buffer.arrayOffset(), buffer.limit());
         try {
             this.load(bin);
@@ -147,13 +149,22 @@ public class OrderedProperties extends java.util.Properties implements XHTMLInsp
             throw new RuntimeException(io);
         }
     }
+
+    public void load(File file) throws IOException {
+        InputStream in = new FileInputStream(file);
+        try {
+            this.load(in);
+        } finally {
+            in.close();
+        }
+    }
+
     
     // This is the biggest departure from java.util.Properties,
     // we must have the properties ordered in order to be able to
     // hash property lists to the same value.
     @Override
-    public synchronized void store(OutputStream out, String comments)
-    throws IOException {
+    public void store(OutputStream out, String comments) throws IOException {
         BufferedWriter awriter;
         awriter = new BufferedWriter(new OutputStreamWriter(out, "UTF-8"));
         if (comments != null)
@@ -168,8 +179,7 @@ public class OrderedProperties extends java.util.Properties implements XHTMLInsp
             try {
                 val = (String) get(key);
             } catch (ClassCastException e) {
-                String msg = String.format("key: %s: %s",
-                    key, e.getMessage());
+                String msg = String.format("key: %s: %s", key, e.getMessage());
                 ClassCastException withKey = new ClassCastException(msg);
                 withKey.initCause(e);
                 throw withKey;

@@ -62,7 +62,7 @@ public class CelesteResource extends WebDAV.AbstractResource implements WebDAV.R
     
     private boolean testPathName(PathName name) {
         try {
-            this.getFileSystem().getFile(name);
+            this.getFileSystem().getNode(name);
             return true;
         } catch (Exception e) {
             return false;
@@ -76,7 +76,7 @@ public class CelesteResource extends WebDAV.AbstractResource implements WebDAV.R
       HTTP.UnauthorizedException, HTTP.ConflictException {
 
         try {
-            return this.getFileSystem().getFile(path);
+            return this.getFileSystem().getNode(path);
         } catch (FileException.BadVersion e) {
             throw new HTTP.InternalServerErrorException(this.getURI(), e);
         } catch (FileException.CelesteFailed e) {

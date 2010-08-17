@@ -1485,16 +1485,13 @@ public class CelesteSh {
             return -1;
         }
         String output = "-";
-        String metaDataOutput = null;
 
         try {
             BeehiveObjectId credentialId = parseObjectId(options.pop());
             if (!options.empty())
                 output = options.pop();
-            if (!options.empty())
-                metaDataOutput = options.pop();
 
-            Credential credential= this.celeste.readCredential(new ReadProfileOperation(credentialId));
+            Credential credential = this.celeste.readCredential(new ReadProfileOperation(credentialId));
             
             return 0;
         } catch (Exception e) {
@@ -1513,7 +1510,7 @@ public class CelesteSh {
     private static void Usage() {
         System.out.println(Release.ThisRevision());
         System.out.println(Copyright.miniNotice);
-        System.out.println("Usage: CelesteClient --help | [--celeste-address <address>:<port>] [--verbose] [--timeout <seconds>] [operation]");
+        System.out.println("Options:  --help | [--celeste-address <address>:<port>] [--verbose] [--timeout <seconds>] [operation]");
         System.out.println("operation is one of:");
         CelesteSh celestesh = new CelesteSh(null);
         Stats stats = new Stats("");

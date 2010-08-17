@@ -1566,7 +1566,7 @@ public class SambaOps {
         synchronized (this) {
             PathName pathName = new PathName(path).resolve(this.cwdPath);
             try {
-                return this.fileSystem.getFile(pathName);
+                return this.fileSystem.getNode(pathName);
             } catch (FileException e) {
                 IOException ioe = new IOException("getFile failed (File Exception)");
                 ioe.initCause(e);
@@ -1581,7 +1581,7 @@ public class SambaOps {
     private CelesteFileSystem.File lookUpFile(PathName pathName)
             throws IOException {
         try {
-            return this.fileSystem.getFile(pathName);
+            return this.fileSystem.getNode(pathName);
         } catch (FileException e) {
             IOException ioe = new IOException("getFile failed (File Exception)");
             ioe.initCause(e);

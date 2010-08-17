@@ -2063,8 +2063,7 @@ public class FileImpl {
             FileException.NotFound,
             FileException.Runtime,
             FileException.ValidationFailed {
-        VersionMetadata versionMetadata = refetch ? this.refreshMetadata() :
-            this.versionToMetadata.get(this.latestVersionId);
+        VersionMetadata versionMetadata = refetch ? this.refreshMetadata() : this.versionToMetadata.get(this.latestVersionId);
         return versionMetadata.contentType;
     }
 
@@ -4822,18 +4821,14 @@ public class FileImpl {
     // has been initialized.  Return an OrderedProperties object holding all
     // the metadata from the argument.
     //
-    private OrderedProperties setOrCheckCommonMetadata(
-            ClientMetaData fileImplMetadata, OrderedProperties celesteMetadata)
-        throws
-            FileException.BadVersion,
+    private OrderedProperties setOrCheckCommonMetadata(ClientMetaData fileImplMetadata, OrderedProperties celesteMetadata) throws FileException.BadVersion,
             FileException.ValidationFailed {
         //
         // Get version-independent information from attributes that Celeste
         // understands an interprets.  (There's currently only one such
         // attribute: the replication parameters.)
         //
-        String putativeReplicationParams = celesteMetadata.getProperty(
-            CelesteAPI.DEFAULTREPLICATIONPARAMETERS_NAME);
+        String putativeReplicationParams = celesteMetadata.getProperty(CelesteAPI.DEFAULTREPLICATIONPARAMETERS_NAME);
 
         //
         // Convert fileImplMetadata into a usable (OrderedProperties) form.
@@ -4843,13 +4838,10 @@ public class FileImpl {
         OrderedProperties props = new OrderedProperties();
         props.load(ByteBuffer.wrap(fileImplMetadata.getContext()));
 
-        int putativeDataEncodingVersion =
-            Integer.parseInt(props.getProperty(FileImpl.VERSION_NAME));
-        long putativeCreatedTime =
-            Long.parseLong(props.getProperty(CREATED_TIME_NAME));
+        int putativeDataEncodingVersion = Integer.parseInt(props.getProperty(FileImpl.VERSION_NAME));
+        long putativeCreatedTime = Long.parseLong(props.getProperty(CREATED_TIME_NAME));
         long putativeSerialNumber = this.serialNumberFromAttrs(props);
-        boolean putativeSignModifications =
-            this.signModificationsFromAttrs(props);
+        boolean putativeSignModifications = this.signModificationsFromAttrs(props);
         long putativeTimeToLive = this.timeToLiveFromAttrs(props);
 
         //
@@ -4875,12 +4867,10 @@ public class FileImpl {
                 //
                 // XXX: How much paranoia is justified here?
                 //
-                if (putativeDataEncodingVersion !=
-                        FileImpl.defaultDataEncodingVersion)
+                if (putativeDataEncodingVersion != FileImpl.defaultDataEncodingVersion)
                     throw new FileException.BadVersion();
                 if (this.createdTime != putativeCreatedTime) {
-                    System.err.printf("createdTime %d != putative %d\n",
-                        this.createdTime, putativeCreatedTime);
+                    System.err.printf("createdTime %d != putative %d\n", this.createdTime, putativeCreatedTime);
                     System.err.println(props.toString());
                     throw new FileException.ValidationFailed();
                 }

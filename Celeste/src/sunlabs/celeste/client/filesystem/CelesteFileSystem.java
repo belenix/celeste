@@ -44,19 +44,23 @@ import sunlabs.asdf.web.XML.XHTML;
 import sunlabs.asdf.web.http.InternetMediaType;
 import sunlabs.beehive.BeehiveObjectId;
 import sunlabs.beehive.api.Credential;
+import sunlabs.beehive.api.Credential.Exception;
 import sunlabs.beehive.util.ExponentialBackoff;
 import sunlabs.beehive.util.ExtentBuffer;
 import sunlabs.beehive.util.OrderedProperties;
 import sunlabs.celeste.CelesteException;
 import sunlabs.celeste.FileIdentifier;
+import sunlabs.celeste.CelesteException.AlreadyExistsException;
 import sunlabs.celeste.api.CelesteAPI;
 import sunlabs.celeste.client.CelesteProxy;
+import sunlabs.celeste.client.Profile_;
 import sunlabs.celeste.client.ReplicationParameters;
 import sunlabs.celeste.client.CelesteProxy.Cache;
-import sunlabs.celeste.client.filesystem.fast.PathName;
 import sunlabs.celeste.client.filesystem.simple.DirectoryImpl;
 import sunlabs.celeste.client.filesystem.simple.FileImpl;
 import sunlabs.celeste.client.filesystem.simple.DirectoryImpl.Dirent;
+import sunlabs.celeste.client.operation.NewCredentialOperation;
+import sunlabs.celeste.client.operation.NewNameSpaceOperation;
 import sunlabs.celeste.node.CelesteACL;
 import sunlabs.celeste.node.ProfileCache;
 import sunlabs.celeste.util.CelesteEncoderDecoder;
@@ -119,9 +123,7 @@ public class CelesteFileSystem implements HierarchicalFileSystem {
             return false;
         }
 
-        public HierarchicalFileSystem mount(String name) throws FileException.BadVersion,
-        FileException.CelesteFailed,
-        FileException.CelesteInaccessible,
+        public HierarchicalFileSystem mount(String name) throws FileException.BadVersion, FileException.CelesteFailed, FileException.CelesteInaccessible,
         FileException.CredentialProblem,
         FileException.Deleted,
         FileException.DirectoryCorrupted,
@@ -136,13 +138,18 @@ public class CelesteFileSystem implements HierarchicalFileSystem {
             }
         }
 
-        public HierarchicalFileSystem create(String name, String password, OrderedProperties attributes) throws
-            CelesteException.RuntimeException, CelesteException.AlreadyExistsException, CelesteException.NoSpaceException,
-            CelesteException.VerificationException, CelesteException.CredentialException, IOException, ClassNotFoundException, CelesteException.NotFoundException {
+        public HierarchicalFileSystem create(String name, String password, OrderedProperties fileSystemAttributes) throws CelesteException.RuntimeException,
+            CelesteException.NoSpaceException, CelesteException.NotFoundException, CelesteException.VerificationException, CelesteException.CredentialException,
+            IOException, ClassNotFoundException,
+            FileSystem.AlreadyExistsException {
             ReplicationParameters replicationParams = new ReplicationParameters("Credential.Replication.Store=2");
             try {
+                // Create the NameSpace.
+                // Construct the FileSystem instance.
+                createNameSpace(this.celeste, this.proxyCache, name, password, "Credential.Replication.Store=2");
+                
                 CelesteFileSystem fileSystem = new CelesteFileSystem(this.celeste, this.proxyCache, name, this.credentialName, this.credentialPassword);
-                fileSystem.newFileSystem(null, attributes);
+                fileSystem.newFileSystem(null, fileSystemAttributes);
                 return fileSystem;
             } catch (FileException.BadVersion e) {
                 throw new CelesteException.RuntimeException(e);
@@ -165,7 +172,7 @@ public class CelesteFileSystem implements HierarchicalFileSystem {
             } catch (FileException.CapacityExceeded e) {
                 throw new CelesteException.NoSpaceException(e);
             } catch (FileException.Exists e) {
-                throw new CelesteException.RuntimeException(e);
+                throw new FileSystem.AlreadyExistsException(e);
             } catch (FileException.InvalidName e) {
                 throw new CelesteException.RuntimeException(e);
             } catch (FileException.Locked e) {
@@ -176,6 +183,57 @@ public class CelesteFileSystem implements HierarchicalFileSystem {
                 throw new CelesteException.RuntimeException(e);
             } catch (FileException.IOException e) {
                 throw new IOException(e);
+            } catch (CelesteException.AlreadyExistsException e) {
+                throw new FileSystem.AlreadyExistsException(e);
+            } catch (Credential.Exception e) {
+                throw new CelesteException.CredentialException(e);
+            } finally {
+
+            }
+        }
+
+        public Credential createCredential() throws Credential.Exception, CelesteException.RuntimeException {
+            Credential credential = new Profile_(this.credentialName, this.credentialPassword.toCharArray());
+            NewCredentialOperation operation = new NewCredentialOperation(credential.getObjectId(), BeehiveObjectId.ZERO, "Credential.Replication.Store=2");
+            Credential.Signature signature = credential.sign(this.credentialPassword.toCharArray(), operation.getId());
+
+            CelesteAPI proxy = null;
+            try {
+                proxy = proxyCache.getAndRemove(celeste);
+                proxy.newCredential(operation, signature, credential);
+                return credential;
+            } catch (java.lang.Exception e) {
+                throw new CelesteException.RuntimeException(e);
+            } finally {
+                proxyCache.addAndEvictOld(celeste, proxy);
+            }
+        }
+        
+        public String getCredentialName() {
+            return this.credentialName;
+        }
+
+        public String getCredentialPassword() {
+            return this.credentialPassword;
+        }
+        
+        private static void createNameSpace(InetSocketAddress celeste, Cache proxyCache, String nameSpaceName, String nameSpacePassword, String replicationParams)
+        throws Credential.Exception, IOException, CelesteException.RuntimeException, CelesteException.AlreadyExistsException,
+        CelesteException.NoSpaceException, CelesteException.VerificationException, CelesteException.CredentialException, ClassNotFoundException {
+
+            try {
+                CelesteAPI proxy = proxyCache.getAndRemove(celeste);
+                try {
+                    Profile_ fileSystemCredential = new Profile_(nameSpaceName, nameSpacePassword.toCharArray());
+                    NewNameSpaceOperation operation = new NewNameSpaceOperation(fileSystemCredential.getObjectId(), BeehiveObjectId.ZERO, replicationParams);
+                    Credential.Signature signature = fileSystemCredential.sign(nameSpacePassword.toCharArray(), operation.getId());
+                    proxy.newNameSpace(operation, signature, fileSystemCredential);
+                } finally {
+                    proxyCache.addAndEvictOld(celeste, proxy);
+                }
+            } catch (java.lang.Exception e) {
+                e.printStackTrace();
+                throw new CelesteException.RuntimeException(e);
             } finally {
 
             }
@@ -356,7 +414,7 @@ public class CelesteFileSystem implements HierarchicalFileSystem {
         try {
             proxy = proxyCache.getAndRemove(celesteAddress);
             this.networkId = proxy.getNetworkObjectId();
-        } catch (Exception e) {
+        } catch (java.lang.Exception e) {
             throw new FileException.CelesteInaccessible(e);
         } finally {
             proxyCache.addAndEvictOld(celesteAddress, proxy);
@@ -375,7 +433,7 @@ public class CelesteFileSystem implements HierarchicalFileSystem {
 
         try {
             this.nameSpaceProfile = profileCache.get(nameSpace);
-        } catch (Exception e) {
+        } catch (java.lang.Exception e) {
             throw new FileException.CredentialProblem(e);
         }
         if (this.nameSpaceProfile == null) {
@@ -385,8 +443,7 @@ public class CelesteFileSystem implements HierarchicalFileSystem {
 
         boolean profile_exists = profileCache.profileExists(invokerCredentialName);
         if (!profile_exists) {
-            Throwable nested = new CelesteException.NotFoundException(
-                String.format("%s: missing credential: \"%s\"", celesteAddress, invokerCredentialName));
+            Throwable nested = new CelesteException.NotFoundException(String.format("%s: missing credential: \"%s\"", celesteAddress, invokerCredentialName));
             throw new FileException.CredentialProblem(nested);
         }
 
@@ -397,7 +454,7 @@ public class CelesteFileSystem implements HierarchicalFileSystem {
         //
         try {
             this.invokerProfile = profileCache.get(invokerCredentialName);
-        } catch (Exception e) {
+        } catch (java.lang.Exception e) {
             throw new FileException.CredentialProblem(e);
         }
         this.invokerPassword = invokerPassword;
@@ -676,8 +733,8 @@ public class CelesteFileSystem implements HierarchicalFileSystem {
         synchronized(this) {
             FileImpl fileImpl = null;
             try {
-                final CelesteFileSystem.File file = this.getFile(path);
-                fileImpl = CelesteFileSystem.this.getAndRemove(file.fid);
+                final FileSystem.File file = this.getNode(path);
+                fileImpl = CelesteFileSystem.this.getAndRemove(file.getFileIdentifier());
                 return fileImpl.fileExists();
             } catch (FileException.Deleted e) {
                 return false;
@@ -1140,7 +1197,7 @@ public class CelesteFileSystem implements HierarchicalFileSystem {
      * as {@link #read(ByteBuffer)} and {@link #write(ByteBuffer)}.  This
      * offset position is initialized to {@code 0L} whenever a fresh {@code
      * File} instance is created, such as by way of calling the {@link
-     * CelesteFileSystem#getFile(PathName)} method.
+     * CelesteFileSystem#getNode(PathName)} method.
      *
      * </p>
      */
@@ -2105,8 +2162,7 @@ public class CelesteFileSystem implements HierarchicalFileSystem {
     //      ontological question...  (They both probably ought to extend
     //      something that provides their common behavior.)
     //
-    public class Directory extends CelesteFileSystem.File
-            implements HierarchicalFileSystem.Directory {
+    public class Directory extends CelesteFileSystem.File implements HierarchicalFileSystem.Directory {
 
         private final DirectoryImpl directoryImpl;
 
@@ -2164,7 +2220,7 @@ public class CelesteFileSystem implements HierarchicalFileSystem {
                 FileException.NotFound,
                 FileException.PermissionDenied,
                 FileException.Runtime,
-                FileException.ValidationFailed{
+                FileException.ValidationFailed {
             return this.directoryImpl.getAllNames(CelesteFileSystem.this.invokerProfile, CelesteFileSystem.this.invokerPassword).size();
         }
 
@@ -2462,7 +2518,7 @@ public class CelesteFileSystem implements HierarchicalFileSystem {
     //
     // XXX: Modify to return null if path names a nonexistent file?
     //
-    public CelesteFileSystem.File getFile(HierarchicalFileSystem.FileName path) throws
+    public CelesteFileSystem.File getNode(HierarchicalFileSystem.FileName path) throws
             FileException.BadVersion,
             FileException.CelesteFailed,
             FileException.CelesteInaccessible,
@@ -3822,9 +3878,7 @@ public class CelesteFileSystem implements HierarchicalFileSystem {
         //      The default creation attributes are encoded into a property
         //      that's set on the superblock.
         //
-        public void create(OrderedProperties clientProperties,
-                OrderedProperties defaultCreationAttributes,
-                OrderedProperties fileSystemAttributes) throws
+        public void create(OrderedProperties clientProperties, OrderedProperties defaultCreationAttributes, OrderedProperties fileSystemAttributes) throws
                     FileException.BadVersion,
                     FileException.CapacityExceeded,
                     FileException.CelesteFailed,
@@ -4525,7 +4579,7 @@ public class CelesteFileSystem implements HierarchicalFileSystem {
         FileImpl fileImpl = null;
         try {
             fileImpl = this.fileImplCache.getAndRemove(fid);
-        } catch (Exception cantHappen) {
+        } catch (java.lang.Exception e) {
             //
         }
         return fileImpl;

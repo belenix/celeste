@@ -31,6 +31,7 @@ import java.util.Set;
 
 import sunlabs.asdf.web.http.InternetMediaType;
 import sunlabs.beehive.util.OrderedProperties;
+import sunlabs.celeste.FileIdentifier;
 
 /**
  * An interface to a file system.
@@ -39,18 +40,34 @@ import sunlabs.beehive.util.OrderedProperties;
  */
 public interface FileSystem {
     
-    public interface FileName {
+    /**
+     * A FileSystem Node is any nameable entity within the FileSystem.
+     * It can be a regular file, a directory, anything that can be named.
+     *
+     */
+    public interface Node {
         /**
-         * Return the extension part of this file name.
-         * he extension is the suffix characters following the final {@code '.'} character.
-         * If the extension is missing, return the empty string.
-         *
-         * @return the extension part of this file name.
+         * Return {@code true} if this {@link Node} is present in the file system.
+         * 
+         * @return {@code true} if this {@link Node} is present in the file system, {@code false} otherwise.
+         * @throws FileException.BadVersion
+         * @throws FileException.CelesteFailed
+         * @throws FileException.CelesteInaccessible
+         * @throws FileException.IOException
+         * @throws FileException.Runtime
+         * @throws FileException.ValidationFailed
          */
-        public String getNameExtension();        
-    }
-    
-    public interface File {
+        public boolean exists() throws FileException.BadVersion, FileException.CelesteFailed, FileException.CelesteInaccessible,
+        FileException.IOException, FileException.Runtime, FileException.ValidationFailed;
+
+        public OrderedProperties getAttributes(Set<String> attrNames) throws
+        FileException.BadVersion,
+        FileException.CelesteFailed,
+        FileException.CelesteInaccessible,
+        FileException.IOException,
+        FileException.NotFound,
+        FileException.Runtime,
+        FileException.ValidationFailed;
 
         /**
          * Return the time that this file was last modified.  The time is
@@ -68,7 +85,7 @@ public interface FileSystem {
             FileException.NotFound,
             FileException.Runtime,
             FileException.ValidationFailed;
-
+        
         /**
          * <p>
          * Returns the properties associated with this file, in the form of
@@ -96,6 +113,108 @@ public interface FileSystem {
                 FileException.NotFound,
                 FileException.Runtime,
                 FileException.ValidationFailed;
+
+        public InternetMediaType getContentType() throws
+            FileException.BadVersion,
+            FileException.CelesteFailed,
+            FileException.CelesteInaccessible,
+            FileException.IOException,
+            FileException.NotFound,
+            FileException.Runtime,
+            FileException.ValidationFailed;
+
+        public long length() throws
+                FileException.BadVersion,
+                FileException.CelesteFailed,
+                FileException.CelesteInaccessible,
+                FileException.CredentialProblem,
+                FileException.Deleted,
+                FileException.DirectoryCorrupted,
+                FileException.IOException,
+                FileException.NotFound,
+                FileException.PermissionDenied,
+                FileException.Runtime,
+                FileException.ValidationFailed;
+    }
+
+    abstract public class Exception extends java.lang.Exception {
+       
+
+        private static final long serialVersionUID = 1L;
+        
+        public Exception() {
+            super();
+        }
+        
+        public Exception(String message) {
+            super(message);
+        }
+
+        public Exception(Throwable cause) {
+            super(cause);
+        }
+        
+        public Exception(String format, Object...args) {
+            super(String.format(format, args));
+        }        
+    }
+    
+    public class AlreadyExistsException extends FileSystem.Exception {
+        private static final long serialVersionUID = 1L;
+
+        public AlreadyExistsException() {
+            super();
+        }
+
+        public AlreadyExistsException(String message) {
+            super(message);
+        }
+
+        public AlreadyExistsException(Throwable cause) {
+            super(cause);
+        }
+
+        public AlreadyExistsException(String format, Object... args) {
+            super(format, args);
+        }
+    }
+    
+    public interface FileName {
+        /**
+         * Return the extension part of this file name.
+         * he extension is the suffix characters following the final {@code '.'} character.
+         * If the extension is missing, return the empty string.
+         *
+         * @return the extension part of this file name.
+         */
+        public String getNameExtension();
+        
+        public FileName append(String name);
+    }
+    
+    public interface File extends FileSystem.Node {
+        abstract public class Exception extends java.lang.Exception {
+            private static final long serialVersionUID = 1L;
+            
+            public Exception() {
+                super();
+            }
+            
+            public Exception(String message) {
+                super(message);
+            }
+
+            public Exception(Throwable cause) {
+                super(cause);
+            }
+            
+            public Exception(String format, Object...args) {
+                super(String.format(format, args));
+            }        
+        }
+
+
+
 
         /**
          * <p>
@@ -134,14 +253,6 @@ public interface FileSystem {
                 FileException.Runtime,
                 FileException.ValidationFailed;
 
-        public InternetMediaType getContentType() throws
-            FileException.BadVersion,
-            FileException.CelesteFailed,
-            FileException.CelesteInaccessible,
-            FileException.IOException,
-            FileException.NotFound,
-            FileException.Runtime,
-            FileException.ValidationFailed;
 
         public void setContentType(InternetMediaType type) throws
             FileException.BadVersion,
@@ -162,8 +273,6 @@ public interface FileSystem {
 
         public void close();
 
-        public boolean exists() throws FileException.BadVersion, FileException.CelesteFailed, FileException.CelesteInaccessible,
-            FileException.IOException, FileException.Runtime, FileException.ValidationFailed;
         
         public long read(ByteBuffer[] dsts, int offset, int length);
 
@@ -181,19 +290,6 @@ public interface FileSystem {
 
         public long position();
 
-        public long length() throws
-                FileException.BadVersion,
-                FileException.CelesteFailed,
-                FileException.CelesteInaccessible,
-                FileException.CredentialProblem,
-                FileException.Deleted,
-                FileException.DirectoryCorrupted,
-                FileException.IOException,
-                FileException.NotFound,
-                FileException.PermissionDenied,
-                FileException.Runtime,
-                FileException.ValidationFailed;
-
         // XXX This should be in the metadata and not a specialized method.
         public int getBlockSize() throws
                 FileException.BadVersion,
@@ -210,6 +306,15 @@ public interface FileSystem {
          * @return {@code true} if this file is a directory.
          */
         public boolean isDirectory();
+
+        /**
+         * Return this file's {@code FileIdentifier}, its identifier within
+         * the underlying Celeste file store.
+         *
+         * @return this file's file-identifier
+         * @throws FileException.NotFound if this File does not have a FileIdentifier (file 
+         */
+        public FileIdentifier getFileIdentifier() throws FileException.NotFound;
 
         public InputStream getInputStream() throws
         FileException.BadVersion,
@@ -231,14 +336,6 @@ public interface FileSystem {
         FileException.Runtime,
         FileException.ValidationFailed,
         IOException;
-
-        public OrderedProperties getAttributes(Set<String> attrNames) throws
-        FileException.BadVersion,
-        FileException.CelesteFailed,
-        FileException.CelesteInaccessible,
-        FileException.IOException,
-        FileException.NotFound,
-        FileException.Runtime,
-        FileException.ValidationFailed;
     }
+    
 }

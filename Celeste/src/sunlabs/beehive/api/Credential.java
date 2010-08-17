@@ -44,6 +44,7 @@ public interface Credential extends Serializable, StorableObject.Handler.Object,
      * (e.g. missing private key) or a cryptographic problem (e.g. a
      * configuration problem or corrupted data).
      */
+    // XXX This should be merged with CelesteException.CredentialException
     public static class Exception extends java.lang.Exception {
         private static final long serialVersionUID = 1L;
 

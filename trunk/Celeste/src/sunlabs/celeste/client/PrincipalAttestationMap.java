@@ -28,7 +28,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 
-import sunlabs.beehive.BeehiveObjectId;
+import sunlabs.titan.BeehiveObjectId;
 
 public class PrincipalAttestationMap extends
         HashMap<BeehiveObjectId, PrincipalAttestation> {

@@ -4,11 +4,11 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.Serializable;
 
-import sunlabs.beehive.BeehiveObjectId;
 import sunlabs.celeste.CelesteException;
 import sunlabs.celeste.FileIdentifier;
 import sunlabs.celeste.node.CelesteACL.CelesteOps;
 import sunlabs.celeste.node.services.CelesteClientDaemon;
+import sunlabs.titan.BeehiveObjectId;
 
 public class InspectLockOperation extends AbstractCelesteOperation {
     private static final long serialVersionUID = 1L;

@@ -39,15 +39,6 @@ import java.util.concurrent.Executors;
 import sunlabs.asdf.functional.AbstractMapFunction;
 import sunlabs.asdf.functional.AbstractReduceFunction;
 import sunlabs.asdf.functional.MapFunction;
-import sunlabs.beehive.BeehiveObjectId;
-import sunlabs.beehive.node.BeehiveMessage;
-import sunlabs.beehive.node.BeehiveNode;
-import sunlabs.beehive.node.BeehiveObjectStore;
-import sunlabs.beehive.node.object.BeehiveObjectHandler;
-import sunlabs.beehive.node.object.ExtensibleObject;
-import sunlabs.beehive.node.object.MutableObject;
-import sunlabs.beehive.node.services.api.BeehiveExtension;
-import sunlabs.beehive.util.ExtentBuffer;
 import sunlabs.celeste.client.operation.ExtensibleOperation;
 import sunlabs.celeste.node.CelesteNode;
 import sunlabs.celeste.node.CelesteACL.CelesteOps;
@@ -58,6 +49,15 @@ import sunlabs.celeste.node.services.object.BlockObjectHandler;
 import sunlabs.celeste.node.services.object.VersionObject;
 import sunlabs.celeste.node.services.object.VersionObjectHandler;
 import sunlabs.celeste.node.services.object.VersionObject.BadManifestException;
+import sunlabs.titan.BeehiveObjectId;
+import sunlabs.titan.node.BeehiveMessage;
+import sunlabs.titan.node.BeehiveNode;
+import sunlabs.titan.node.BeehiveObjectStore;
+import sunlabs.titan.node.object.BeehiveObjectHandler;
+import sunlabs.titan.node.object.ExtensibleObject;
+import sunlabs.titan.node.object.MutableObject;
+import sunlabs.titan.node.services.api.BeehiveExtension;
+import sunlabs.titan.util.ExtentBuffer;
 
 /**
  * An example Word Count Beehive extension.

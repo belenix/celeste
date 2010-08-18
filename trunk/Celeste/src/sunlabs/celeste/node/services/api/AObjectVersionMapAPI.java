@@ -25,13 +25,13 @@ package sunlabs.celeste.node.services.api;
 
 import java.io.Serializable;
 
-import sunlabs.beehive.BeehiveObjectId;
-import sunlabs.beehive.node.object.BeehiveObjectHandler;
-import sunlabs.beehive.node.object.InspectableObject;
-import sunlabs.beehive.node.object.MutableObject;
 import sunlabs.celeste.client.operation.LockFileOperation;
 import sunlabs.celeste.node.services.object.AnchorObject;
 import sunlabs.celeste.node.services.object.VersionObject;
+import sunlabs.titan.BeehiveObjectId;
+import sunlabs.titan.node.object.BeehiveObjectHandler;
+import sunlabs.titan.node.object.InspectableObject;
+import sunlabs.titan.node.object.MutableObject;
 
 /**
  * The interface to the AnchorObject to VersionObject map.

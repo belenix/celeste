@@ -66,11 +66,6 @@ import sunlabs.asdf.web.http.HttpResponse;
 import sunlabs.asdf.web.http.HttpSession;
 import sunlabs.asdf.web.http.InternetMediaType;
 import sunlabs.asdf.web.http.NameSpace;
-import sunlabs.beehive.BeehiveObjectId;
-import sunlabs.beehive.Copyright;
-import sunlabs.beehive.Release;
-import sunlabs.beehive.api.Credential;
-import sunlabs.beehive.util.WeakMBeanRegistrar;
 import sunlabs.celeste.CelesteException;
 import sunlabs.celeste.api.CelesteAPI;
 import sunlabs.celeste.client.CelesteProxy;
@@ -82,6 +77,11 @@ import sunlabs.celeste.client.filesystem.simple.FileImpl;
 import sunlabs.celeste.client.filesystem.tabula.PathName;
 import sunlabs.celeste.client.operation.NewCredentialOperation;
 import sunlabs.celeste.client.operation.ReadProfileOperation;
+import sunlabs.titan.BeehiveObjectId;
+import sunlabs.titan.Copyright;
+import sunlabs.titan.Release;
+import sunlabs.titan.api.Credential;
+import sunlabs.titan.util.WeakMBeanRegistrar;
 
 /**
  * <style>

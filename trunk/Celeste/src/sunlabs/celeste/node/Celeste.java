@@ -40,12 +40,12 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 
 import sunlabs.asdf.util.Time;
-import sunlabs.beehive.Copyright;
-import sunlabs.beehive.node.BeehiveNode;
-import sunlabs.beehive.node.BeehiveNode.ConfigurationException;
-import sunlabs.beehive.node.services.WebDAVDaemon;
-import sunlabs.beehive.util.OrderedProperties;
 import sunlabs.celeste.node.services.CelesteClientDaemon;
+import sunlabs.titan.Copyright;
+import sunlabs.titan.node.BeehiveNode;
+import sunlabs.titan.node.BeehiveNode.ConfigurationException;
+import sunlabs.titan.node.services.WebDAVDaemon;
+import sunlabs.titan.util.OrderedProperties;
 
 /**
  * <p>

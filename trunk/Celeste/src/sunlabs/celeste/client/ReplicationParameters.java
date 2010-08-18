@@ -23,7 +23,7 @@
  */
 package sunlabs.celeste.client;
 
-import sunlabs.beehive.util.OrderedProperties;
+import sunlabs.titan.util.OrderedProperties;
 
 /**
  * Contains information about the replication policy for a Celeste file.

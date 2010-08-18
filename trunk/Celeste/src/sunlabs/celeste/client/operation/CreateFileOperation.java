@@ -28,14 +28,14 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.Serializable;
 
-import sunlabs.beehive.BeehiveObjectId;
-import sunlabs.beehive.api.Credential;
 import sunlabs.celeste.CelesteException;
 import sunlabs.celeste.FileIdentifier;
 import sunlabs.celeste.client.ClientMetaData;
 import sunlabs.celeste.client.ReplicationParameters;
 import sunlabs.celeste.node.CelesteACL;
 import sunlabs.celeste.node.services.CelesteClientDaemon;
+import sunlabs.titan.BeehiveObjectId;
+import sunlabs.titan.api.Credential;
 
 /**
  * Create a Celeste file.

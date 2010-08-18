@@ -32,14 +32,14 @@ import java.util.Map;
 
 import sunlabs.asdf.web.XML.XHTML;
 import sunlabs.asdf.web.http.HTTP;
-import sunlabs.beehive.BeehiveObjectId;
-import sunlabs.beehive.api.Credential;
 import sunlabs.celeste.CelesteException;
 import sunlabs.celeste.FileIdentifier;
 import sunlabs.celeste.client.ClientMetaData;
 import sunlabs.celeste.client.filesystem.simple.FileProperties;
 import sunlabs.celeste.node.CelesteACL;
 import sunlabs.celeste.node.services.CelesteClientDaemon;
+import sunlabs.titan.BeehiveObjectId;
+import sunlabs.titan.api.Credential;
 
 public class WriteFileOperation extends UpdateOperation {
     private static final long serialVersionUID = 1L;

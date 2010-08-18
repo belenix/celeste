@@ -27,16 +27,16 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 
-import sunlabs.beehive.BeehiveObjectId;
-import sunlabs.beehive.api.BeehiveObject;
-import sunlabs.beehive.node.BeehiveMessage;
-import sunlabs.beehive.node.BeehiveObjectStore;
-import sunlabs.beehive.node.BeehiveMessage.RemoteException;
-import sunlabs.beehive.node.object.BeehiveObjectHandler;
-import sunlabs.beehive.node.object.DeleteableObject;
 import sunlabs.celeste.node.CelesteNode;
 import sunlabs.celeste.node.erasurecode.ErasureCode;
 import sunlabs.celeste.node.services.object.FObjectType;
+import sunlabs.titan.BeehiveObjectId;
+import sunlabs.titan.api.BeehiveObject;
+import sunlabs.titan.node.BeehiveMessage;
+import sunlabs.titan.node.BeehiveObjectStore;
+import sunlabs.titan.node.BeehiveMessage.RemoteException;
+import sunlabs.titan.node.object.BeehiveObjectHandler;
+import sunlabs.titan.node.object.DeleteableObject;
 
 public final class RetrievableFragmentedObject {
     public interface Handler<T extends BeehiveObject> extends BeehiveObjectHandler {

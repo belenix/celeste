@@ -56,10 +56,6 @@ import java.util.concurrent.ThreadPoolExecutor;
 
 import sunlabs.asdf.util.Time;
 
-import sunlabs.beehive.BeehiveObjectId;
-import sunlabs.beehive.Release;
-import sunlabs.beehive.api.Credential;
-import sunlabs.beehive.util.OrderedProperties;
 
 import sunlabs.celeste.CelesteException;
 import sunlabs.celeste.ResponseMessage;
@@ -74,6 +70,10 @@ import sunlabs.celeste.client.operation.NewNameSpaceOperation;
 import sunlabs.celeste.client.operation.ReadProfileOperation;
 import sunlabs.celeste.node.CelesteACL;
 import sunlabs.celeste.util.ACL;
+import sunlabs.titan.BeehiveObjectId;
+import sunlabs.titan.Release;
+import sunlabs.titan.api.Credential;
+import sunlabs.titan.util.OrderedProperties;
 
 import static sunlabs.celeste.client.filesystem.FileAttributes.Names.*;
 

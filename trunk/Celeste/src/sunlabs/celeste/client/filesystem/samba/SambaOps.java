@@ -39,9 +39,6 @@ import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
 import sunlabs.asdf.util.Time;
-import sunlabs.beehive.BeehiveObjectId;
-import sunlabs.beehive.api.Credential;
-import sunlabs.beehive.util.OrderedProperties;
 
 import sunlabs.celeste.api.CelesteAPI;
 import sunlabs.celeste.client.CelesteProxy;
@@ -53,6 +50,9 @@ import sunlabs.celeste.client.filesystem.simple.DirectoryImpl.Dirent;
 import sunlabs.celeste.client.filesystem.tabula.PathName;
 import sunlabs.celeste.client.operation.NewCredentialOperation;
 import sunlabs.celeste.node.ProfileCache;
+import sunlabs.titan.BeehiveObjectId;
+import sunlabs.titan.api.Credential;
+import sunlabs.titan.util.OrderedProperties;
 
 
 /**

@@ -26,9 +26,9 @@ package sunlabs.celeste.client.filesystem.tabula;
 
 import java.util.Set;
 
-import sunlabs.beehive.BeehiveObjectId;
 
 import sunlabs.celeste.util.ACL;
+import sunlabs.titan.BeehiveObjectId;
 
 //
 // XXX: Should this class exist independently or should it be folded into

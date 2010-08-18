@@ -25,9 +25,9 @@ package sunlabs.celeste;
 
 import java.io.Serializable;
 
-import sunlabs.beehive.BeehiveObjectId;
-import sunlabs.beehive.api.Credential;
 import sunlabs.celeste.node.services.object.AnchorObject;
+import sunlabs.titan.BeehiveObjectId;
+import sunlabs.titan.api.Credential;
 
 /**
  * A Celeste File Identifier.

@@ -64,14 +64,6 @@ import sunlabs.asdf.jmx.JMX;
 import sunlabs.asdf.util.Time;
 import sunlabs.asdf.util.TimeProfiler;
 import sunlabs.asdf.web.XML.XHTML;
-import sunlabs.beehive.BeehiveObjectId;
-import sunlabs.beehive.api.Credential;
-import sunlabs.beehive.util.Extent;
-import sunlabs.beehive.util.ExtentBuffer;
-import sunlabs.beehive.util.ExtentBufferStreamer;
-import sunlabs.beehive.util.ExtentImpl;
-import sunlabs.beehive.util.LRUCache;
-import sunlabs.beehive.util.OrderedProperties;
 import sunlabs.celeste.CelesteException;
 import sunlabs.celeste.FileIdentifier;
 import sunlabs.celeste.ResponseMessage;
@@ -100,6 +92,14 @@ import sunlabs.celeste.node.ProfileCache;
 import sunlabs.celeste.node.services.api.AObjectVersionMapAPI;
 import sunlabs.celeste.util.CelesteEncoderDecoder;
 import sunlabs.celeste.util.ACL.Disposition;
+import sunlabs.titan.BeehiveObjectId;
+import sunlabs.titan.api.Credential;
+import sunlabs.titan.util.Extent;
+import sunlabs.titan.util.ExtentBuffer;
+import sunlabs.titan.util.ExtentBufferStreamer;
+import sunlabs.titan.util.ExtentImpl;
+import sunlabs.titan.util.LRUCache;
+import sunlabs.titan.util.OrderedProperties;
 
 /**
  * FileImpl represents files as they are stored in Celeste.
@@ -113,7 +113,7 @@ public class FileImpl {
      * </p><p>
      *
      * Callers should obtain and release entries from the cache according to
-     * the design pattern described in {@link sunlabs.beehive.util.LRUCache
+     * the design pattern described in {@link sunlabs.titan.util.LRUCache
      * LRUCache's class comment}.
      *
      * </p>
@@ -160,7 +160,7 @@ public class FileImpl {
 
     /**
      * A factory class for producing {@code FileImpl} instances.  Intended to
-     * be used in conjunction with a {@link sunlabs.beehive.util.LRUCache
+     * be used in conjunction with a {@link sunlabs.titan.util.LRUCache
      * LRUCache} for reusing such instances.
      */
     private static class Factory implements
@@ -2439,7 +2439,7 @@ public class FileImpl {
      * consumed the entire local buffer or because the file contains
      * insufficient data to satisfy the read.  To determine how many bytes
      * were actually read, invoke the {@link
-     * sunlabs.beehive.util.ExtentBuffer#remaining() remaining()} method on
+     * sunlabs.titan.util.ExtentBuffer#remaining() remaining()} method on
      * the resulting extent buffer.
      *
      * </p>

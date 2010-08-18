@@ -31,10 +31,10 @@ import java.util.Map;
 
 import sunlabs.asdf.web.XML.XHTML;
 import sunlabs.asdf.web.http.HTTP;
-import sunlabs.beehive.BeehiveObjectId;
 import sunlabs.celeste.FileIdentifier;
 import sunlabs.celeste.node.CelesteACL;
 import sunlabs.celeste.node.services.CelesteClientDaemon;
+import sunlabs.titan.BeehiveObjectId;
 
 /**
  * The base class implementing the {@link CelesteOperation} interface.

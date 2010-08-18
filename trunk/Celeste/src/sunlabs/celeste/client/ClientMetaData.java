@@ -30,8 +30,8 @@ import java.nio.ByteBuffer;
 
 import java.util.Arrays;
 
-import sunlabs.beehive.BeehiveObjectId;
 import sunlabs.celeste.util.CelesteEncoderDecoder;
+import sunlabs.titan.BeehiveObjectId;
 
 /**
  * <p>

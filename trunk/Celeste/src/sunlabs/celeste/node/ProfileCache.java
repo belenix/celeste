@@ -29,13 +29,13 @@ import java.net.InetSocketAddress;
 import java.util.Hashtable;
 
 import sunlabs.asdf.util.Time;
-import sunlabs.beehive.BeehiveObjectId;
-import sunlabs.beehive.api.Credential;
 import sunlabs.celeste.CelesteException;
 import sunlabs.celeste.api.CelesteAPI;
 import sunlabs.celeste.client.CelesteProxy;
 import sunlabs.celeste.client.Profile_;
 import sunlabs.celeste.client.operation.ReadProfileOperation;
+import sunlabs.titan.BeehiveObjectId;
+import sunlabs.titan.api.Credential;
 
 /**
  * A {@code ProfileCache} maintains a cache of recently used {@code Profile_}

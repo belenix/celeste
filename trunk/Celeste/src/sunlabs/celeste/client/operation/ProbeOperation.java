@@ -3,10 +3,10 @@ package sunlabs.celeste.client.operation;
 import java.io.ObjectInputStream;
 import java.io.Serializable;
 
-import sunlabs.beehive.api.Credential;
 import sunlabs.celeste.FileIdentifier;
 import sunlabs.celeste.node.CelesteACL.CelesteOps;
 import sunlabs.celeste.node.services.CelesteClientDaemon;
+import sunlabs.titan.api.Credential;
 
 public class ProbeOperation extends AbstractCelesteOperation {
     /**

@@ -26,8 +26,8 @@ package sunlabs.celeste;
 
 import java.io.Serializable;
 
-import sunlabs.beehive.node.AbstractBeehiveObject;
-import sunlabs.beehive.util.OrderedProperties;
+import sunlabs.titan.node.AbstractBeehiveObject;
+import sunlabs.titan.util.OrderedProperties;
 
 /**
  * This class is used to communicate results from Celeste to the Celeste client.

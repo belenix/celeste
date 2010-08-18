@@ -35,10 +35,6 @@ import java.util.SortedSet;
 
 import sunlabs.asdf.util.Time;
 
-import sunlabs.beehive.BeehiveObjectId;
-import sunlabs.beehive.api.Credential;
-import sunlabs.beehive.util.ExtentBuffer;
-import sunlabs.beehive.util.OrderedProperties;
 
 import sunlabs.celeste.FileIdentifier;
 import sunlabs.celeste.api.CelesteAPI;
@@ -56,6 +52,10 @@ import sunlabs.celeste.node.CelesteACL;
 import sunlabs.celeste.node.ProfileCache;
 import sunlabs.celeste.util.ACL;
 import sunlabs.celeste.util.ACL.ACLException;
+import sunlabs.titan.BeehiveObjectId;
+import sunlabs.titan.api.Credential;
+import sunlabs.titan.util.ExtentBuffer;
+import sunlabs.titan.util.OrderedProperties;
 
 import static sunlabs.celeste.client.filesystem.FileAttributes.Names.CONTENT_TYPE_NAME;
 

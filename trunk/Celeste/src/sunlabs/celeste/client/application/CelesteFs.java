@@ -52,11 +52,6 @@ import java.util.Stack;
 
 import sunlabs.asdf.util.Time;
 import sunlabs.asdf.web.http.InternetMediaType;
-import sunlabs.beehive.BeehiveObjectId;
-import sunlabs.beehive.Copyright;
-import sunlabs.beehive.Release;
-import sunlabs.beehive.api.Credential;
-import sunlabs.beehive.util.OrderedProperties;
 import sunlabs.celeste.CelesteException;
 import sunlabs.celeste.FileIdentifier;
 import sunlabs.celeste.ResponseMessage;
@@ -74,6 +69,11 @@ import sunlabs.celeste.client.filesystem.PathName;
 import sunlabs.celeste.client.operation.ExtensibleOperation;
 import sunlabs.celeste.client.operation.NewCredentialOperation;
 import sunlabs.celeste.client.operation.ReadProfileOperation;
+import sunlabs.titan.BeehiveObjectId;
+import sunlabs.titan.Copyright;
+import sunlabs.titan.Release;
+import sunlabs.titan.api.Credential;
+import sunlabs.titan.util.OrderedProperties;
 
 /**
  *
@@ -1136,7 +1136,7 @@ public class CelesteFs {
      *
      * Fetches attributes associated with the file given as the last command
      * line argument, returning them in their {@link
-     * sunlabs.beehive.util.OrderedProperties#store(OutputStream, String)
+     * sunlabs.titan.util.OrderedProperties#store(OutputStream, String)
      * stored} {@code OrderedProperties} form.
      *
      * </p><p>
@@ -1196,7 +1196,7 @@ public class CelesteFs {
      *
      * Fetches properties associated with the file given as the last command
      * line argument, returning them in their {@link
-     * sunlabs.beehive.util.OrderedProperties#store(OutputStream, String)
+     * sunlabs.titan.util.OrderedProperties#store(OutputStream, String)
      * stored} {@code OrderedProperties} form.
      *
      * </p><p>

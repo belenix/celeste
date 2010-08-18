@@ -48,11 +48,6 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
 import sunlabs.asdf.util.Time;
-import sunlabs.beehive.BeehiveObjectId;
-import sunlabs.beehive.Copyright;
-import sunlabs.beehive.Release;
-import sunlabs.beehive.api.Credential;
-import sunlabs.beehive.util.OrderedProperties;
 import sunlabs.celeste.CelesteException;
 import sunlabs.celeste.FileIdentifier;
 import sunlabs.celeste.ResponseMessage;
@@ -68,6 +63,11 @@ import sunlabs.celeste.client.operation.ProbeOperation;
 import sunlabs.celeste.client.operation.ReadFileOperation;
 import sunlabs.celeste.client.operation.ReadProfileOperation;
 import sunlabs.celeste.client.operation.WriteFileOperation;
+import sunlabs.titan.BeehiveObjectId;
+import sunlabs.titan.Copyright;
+import sunlabs.titan.Release;
+import sunlabs.titan.api.Credential;
+import sunlabs.titan.util.OrderedProperties;
 
 /**
  * The Celeste Profiler is an application that simulates multiple simultaneous clients

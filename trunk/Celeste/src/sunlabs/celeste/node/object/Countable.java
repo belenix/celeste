@@ -23,9 +23,9 @@
  */
 package sunlabs.celeste.node.object;
 
-import sunlabs.beehive.api.BeehiveObject;
-import sunlabs.beehive.node.BeehiveMessage;
-import sunlabs.beehive.node.object.BeehiveObjectHandler;
+import sunlabs.titan.api.BeehiveObject;
+import sunlabs.titan.node.BeehiveMessage;
+import sunlabs.titan.node.object.BeehiveObjectHandler;
 
 /**
  *

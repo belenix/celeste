@@ -24,9 +24,9 @@
 
 package sunlabs.celeste.client.operation;
 
-import sunlabs.beehive.BeehiveObjectId;
 import sunlabs.celeste.FileIdentifier;
 import sunlabs.celeste.client.ClientMetaData;
+import sunlabs.titan.BeehiveObjectId;
 
 /**
  * {@code UpdateOperation} is the base class for all operations that update or

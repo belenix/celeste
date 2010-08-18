@@ -1,5 +1,5 @@
 /*
- * Copyright 2007-2010 Sun Microsystems, Inc. All Rights Reserved.
+ * Copyright 2007-2010 Oracle. All Rights Reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER
  *
  * This code is free software; you can redistribute it and/or modify
@@ -17,8 +17,8 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
  * 02110-1301 USA
  *
- * Please contact Sun Microsystems, Inc., 16 Network Circle, Menlo
- * Park, CA 94025 or visit www.sun.com if you need additional
+ * Please contact Oracle, 16 Network Circle, Menlo
+ * Park, CA 94025 or visit www.oracle.com if you need additional
  * information or have any questions.
  */
 
@@ -43,26 +43,6 @@ import java.util.logging.Level;
 
 import sunlabs.asdf.functional.MapFunction;
 import sunlabs.asdf.util.TimeProfiler;
-import sunlabs.beehive.BeehiveObjectId;
-import sunlabs.beehive.api.BeehiveObject;
-import sunlabs.beehive.api.Credential;
-import sunlabs.beehive.api.ObjectStore;
-import sunlabs.beehive.node.AbstractBeehiveObject;
-import sunlabs.beehive.node.BeehiveNode;
-import sunlabs.beehive.node.BeehiveObjectPool;
-import sunlabs.beehive.node.BeehiveObjectStore;
-import sunlabs.beehive.node.BeehiveObjectStore.UnacceptableObjectException;
-import sunlabs.beehive.node.object.MutableObject;
-import sunlabs.beehive.node.object.ExtensibleObject.JarClassLoader;
-import sunlabs.beehive.node.services.object.CredentialObject;
-import sunlabs.beehive.node.util.DOLRLogger;
-import sunlabs.beehive.util.BufferableExtent;
-import sunlabs.beehive.util.BufferableExtentImpl;
-import sunlabs.beehive.util.DOLRStatus;
-import sunlabs.beehive.util.ExtentBuffer;
-import sunlabs.beehive.util.ExtentBufferMap;
-import sunlabs.beehive.util.ExtentBufferStreamer;
-import sunlabs.beehive.util.OrderedProperties;
 import sunlabs.celeste.CelesteException;
 import sunlabs.celeste.ResponseMessage;
 import sunlabs.celeste.CelesteException.AccessControlException;
@@ -94,20 +74,39 @@ import sunlabs.celeste.node.services.object.AnchorObject;
 import sunlabs.celeste.node.services.object.BlockObject;
 import sunlabs.celeste.node.services.object.VersionObject;
 import sunlabs.celeste.util.ACL;
+import sunlabs.titan.BeehiveObjectId;
+import sunlabs.titan.api.BeehiveObject;
+import sunlabs.titan.api.Credential;
+import sunlabs.titan.api.ObjectStore;
+import sunlabs.titan.node.AbstractBeehiveObject;
+import sunlabs.titan.node.BeehiveNode;
+import sunlabs.titan.node.BeehiveObjectPool;
+import sunlabs.titan.node.BeehiveObjectStore;
+import sunlabs.titan.node.BeehiveObjectStore.UnacceptableObjectException;
+import sunlabs.titan.node.object.MutableObject;
+import sunlabs.titan.node.object.ExtensibleObject.JarClassLoader;
+import sunlabs.titan.node.services.object.CredentialObject;
+import sunlabs.titan.node.util.DOLRLogger;
+import sunlabs.titan.util.BufferableExtent;
+import sunlabs.titan.util.BufferableExtentImpl;
+import sunlabs.titan.util.DOLRStatus;
+import sunlabs.titan.util.ExtentBuffer;
+import sunlabs.titan.util.ExtentBufferMap;
+import sunlabs.titan.util.ExtentBufferStreamer;
+import sunlabs.titan.util.OrderedProperties;
 
 /**
  * <p>
  * A {@code CelesteNode} instance provides access to a low level file
- * abstraction through a specific DOLR node.  At this level, there is no
+ * abstraction through a specific Titan node.  At this level, there is no
  * notion of a hierarchical file system name space.  Files act simply as data
  * containers.  File names are simply the object-id of their
  * {@link sunlabs.celeste.node.services.object.AnchorObjectHandler.AObject}s.
  * </p>
  * <p>
- * An {@code AObject} object-id is formed from the object-id of the file
- * creator's {@link Credential} and the hash
+ * An {@code AnchorObject} object-id is formed from the object-id of the file creator's {@link Credential} and the hash
  * (represented by an object-id) of an arbitrary string (like a file-name)
- * supplied by the file's ({@code AObject}'s) creator.)
+ * supplied by the file's ({@code AnchorObject}'s) creator.)
  * </p>
  * <p>
  * Read and write operations operate over explicitly specified ranges; no
@@ -117,9 +116,10 @@ import sunlabs.celeste.util.ACL;
  * </p>
  */
 public final class CelesteNode extends BeehiveNode implements CelesteAPI {
-    public final static String SERVICE_PKG = "sunlabs.celeste.node.services";
+    public final static String PACKAGE = CelesteNode.class.getPackage().getName();
+    public final static String SERVICE_PKG = PACKAGE + ".services"; //"sunlabs.celeste.node.services";
     public final static String OBJECT_PKG = "sunlabs.celeste.node.services.object";
-    public final static String BEEHIVE_OBJECT_PKG = "sunlabs.beehive.node.services.object";
+    public final static String BEEHIVE_OBJECT_PKG = "sunlabs.titan.node.services.object";
 
 //    public static final boolean bObjectPrefetchNext = true;
 //    public static final boolean bObjectCacheRetrieved = false;
@@ -129,14 +129,14 @@ public final class CelesteNode extends BeehiveNode implements CelesteAPI {
     public CelesteNode(OrderedProperties properties) throws IOException, ConfigurationException {
         super(properties);
 
-        this.log = new DOLRLogger("sunlabs.celeste.node.CelesteNode", this.getObjectId(), this.getSpoolDirectory(), 1024*1024, 10);
+        this.log = new DOLRLogger(this.getClass().getName(), this.getObjectId(), this.getSpoolDirectory(), 1024*1024, 10);
 
         this.credentialCache = new ProfileCache(this);
 
         // Load and start any applications that have long-running operations.
         // Any other applications will be loaded lazily as needed.
 
-        CelesteClientDaemon clientProtocolDaemon = (CelesteClientDaemon) this.getService(SERVICE_PKG + ".CelesteClientDaemon");
+        CelesteClientDaemon clientProtocolDaemon = (CelesteClientDaemon) this.getService(CelesteClientDaemon.class.getName());
         clientProtocolDaemon.setCelesteNode(this);
     }
 
@@ -629,7 +629,7 @@ public final class CelesteNode extends BeehiveNode implements CelesteAPI {
             throw new CelesteException.RuntimeException(e);
         } catch (BeehiveObjectStore.NotFoundException e) {
             throw new CelesteException.NotFoundException(e);
-        } catch (sunlabs.beehive.node.object.MutableObject.NotFoundException e) {
+        } catch (sunlabs.titan.node.object.MutableObject.NotFoundException e) {
             throw new CelesteException.NotFoundException(e);
         } catch (MutableObject.ProtocolException e) {
             throw new CelesteException.RuntimeException(e);
@@ -1378,7 +1378,7 @@ public final class CelesteNode extends BeehiveNode implements CelesteAPI {
         final BeehiveObjectId credentialId = operation.getCredentialId();
 
         try {
-            final CredentialObject handler = (CredentialObject) this.getService("sunlabs.beehive.node.services.object.CredentialObjectHandler");
+            final CredentialObject handler = (CredentialObject) this.getService("sunlabs.titan.node.services.object.CredentialObjectHandler");
             assert handler != null;
             Credential credential = handler.retrieve(credentialId);
             if (credential == null)
@@ -1436,7 +1436,7 @@ public final class CelesteNode extends BeehiveNode implements CelesteAPI {
                 throw new CelesteException.RuntimeException(e);
             } catch (MutableObject.ProtocolException e) {
                 throw new CelesteException.RuntimeException(e);
-            } catch (sunlabs.beehive.node.object.MutableObject.NotFoundException e) {
+            } catch (sunlabs.titan.node.object.MutableObject.NotFoundException e) {
                 throw new CelesteException.NotFoundException("Cannot determine current version for %s", operation.getFileIdentifier());
             }
 

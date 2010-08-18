@@ -26,7 +26,7 @@ package sunlabs.celeste.client.filesystem.tabula;
 
 import java.io.Serializable;
 
-import sunlabs.beehive.BeehiveObjectId;
+import sunlabs.titan.BeehiveObjectId;
 
 /**
  * Information characterizing a lock applied to the occupant of a position in a

@@ -30,8 +30,8 @@ import java.nio.ByteBuffer;
 import java.util.Set;
 
 import sunlabs.asdf.web.http.InternetMediaType;
-import sunlabs.beehive.util.OrderedProperties;
 import sunlabs.celeste.FileIdentifier;
+import sunlabs.titan.util.OrderedProperties;
 
 /**
  * An interface to a file system.

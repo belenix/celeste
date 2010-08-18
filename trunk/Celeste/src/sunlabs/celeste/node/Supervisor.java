@@ -39,10 +39,10 @@ import java.util.concurrent.Executors;
 
 import sunlabs.asdf.util.Attributes;
 import sunlabs.asdf.util.Time;
-import sunlabs.beehive.Copyright;
-import sunlabs.beehive.Release;
-import sunlabs.beehive.node.BeehiveNode.ConfigurationException;
-import sunlabs.beehive.util.OrderedProperties;
+import sunlabs.titan.Copyright;
+import sunlabs.titan.Release;
+import sunlabs.titan.node.BeehiveNode.ConfigurationException;
+import sunlabs.titan.util.OrderedProperties;
 
 public class Supervisor {
     public final static Attributes.Prototype JavaArguments = new Attributes.Prototype(Supervisor.class, "JavaArguments", "-server",

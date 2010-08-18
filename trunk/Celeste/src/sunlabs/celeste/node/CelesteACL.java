@@ -35,11 +35,11 @@ import java.util.EnumSet;
 import java.util.List;
 import java.util.Set;
 
-import sunlabs.beehive.BeehiveObjectId;
 
 import sunlabs.celeste.node.services.object.VersionObject;
 import sunlabs.celeste.util.ACL;
 import sunlabs.celeste.util.CelesteEncoderDecoder;
+import sunlabs.titan.BeehiveObjectId;
 
 import static sunlabs.celeste.util.ACL.Disposition.grant;
 

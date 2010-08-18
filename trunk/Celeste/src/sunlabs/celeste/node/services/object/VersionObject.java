@@ -32,25 +32,25 @@ import java.util.SortedMap;
 
 import sunlabs.asdf.web.XML.XHTML;
 import sunlabs.asdf.web.http.HTTP;
-import sunlabs.beehive.BeehiveObjectId;
-import sunlabs.beehive.api.BeehiveObject;
-import sunlabs.beehive.api.Credential;
-import sunlabs.beehive.exception.BeehiveException;
-import sunlabs.beehive.node.BeehiveObjectStore;
-import sunlabs.beehive.node.BeehiveMessage.RemoteException;
-import sunlabs.beehive.node.object.AccessControlledObject;
-import sunlabs.beehive.node.object.DeleteableObject;
-import sunlabs.beehive.node.object.ExtensibleObject;
-import sunlabs.beehive.node.object.InspectableObject;
-import sunlabs.beehive.node.object.ReplicatableObject;
-import sunlabs.beehive.node.object.RetrievableObject;
-import sunlabs.beehive.node.object.StorableObject;
 import sunlabs.celeste.client.ClientMetaData;
 import sunlabs.celeste.client.ReplicationParameters;
 import sunlabs.celeste.client.operation.AbstractCelesteOperation;
 import sunlabs.celeste.client.operation.CelesteOperation;
 import sunlabs.celeste.client.operation.CreateFileOperation;
 import sunlabs.celeste.node.CelesteACL;
+import sunlabs.titan.BeehiveObjectId;
+import sunlabs.titan.api.BeehiveObject;
+import sunlabs.titan.api.Credential;
+import sunlabs.titan.exception.BeehiveException;
+import sunlabs.titan.node.BeehiveObjectStore;
+import sunlabs.titan.node.BeehiveMessage.RemoteException;
+import sunlabs.titan.node.object.AccessControlledObject;
+import sunlabs.titan.node.object.DeleteableObject;
+import sunlabs.titan.node.object.ExtensibleObject;
+import sunlabs.titan.node.object.InspectableObject;
+import sunlabs.titan.node.object.ReplicatableObject;
+import sunlabs.titan.node.object.RetrievableObject;
+import sunlabs.titan.node.object.StorableObject;
 
 /**
  * A {@code VersionObject} is a {@link BeehiveObject} that contains the information about

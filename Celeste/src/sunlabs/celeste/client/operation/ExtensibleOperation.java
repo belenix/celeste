@@ -29,11 +29,11 @@ import java.io.ObjectInputStream;
 import java.io.Serializable;
 import java.net.URL;
 
-import sunlabs.beehive.BeehiveObjectId;
 import sunlabs.celeste.CelesteException;
 import sunlabs.celeste.FileIdentifier;
 import sunlabs.celeste.node.CelesteACL;
 import sunlabs.celeste.node.services.CelesteClientDaemon;
+import sunlabs.titan.BeehiveObjectId;
 
 public class ExtensibleOperation extends AbstractCelesteOperation {
     private static final long serialVersionUID = 1L;

@@ -42,12 +42,6 @@ import sunlabs.asdf.util.Time;
 import sunlabs.asdf.util.TimeProfiler;
 import sunlabs.asdf.web.XML.XHTML;
 import sunlabs.asdf.web.http.InternetMediaType;
-import sunlabs.beehive.BeehiveObjectId;
-import sunlabs.beehive.api.Credential;
-import sunlabs.beehive.api.Credential.Exception;
-import sunlabs.beehive.util.ExponentialBackoff;
-import sunlabs.beehive.util.ExtentBuffer;
-import sunlabs.beehive.util.OrderedProperties;
 import sunlabs.celeste.CelesteException;
 import sunlabs.celeste.FileIdentifier;
 import sunlabs.celeste.CelesteException.AlreadyExistsException;
@@ -64,6 +58,12 @@ import sunlabs.celeste.client.operation.NewNameSpaceOperation;
 import sunlabs.celeste.node.CelesteACL;
 import sunlabs.celeste.node.ProfileCache;
 import sunlabs.celeste.util.CelesteEncoderDecoder;
+import sunlabs.titan.BeehiveObjectId;
+import sunlabs.titan.api.Credential;
+import sunlabs.titan.api.Credential.Exception;
+import sunlabs.titan.util.ExponentialBackoff;
+import sunlabs.titan.util.ExtentBuffer;
+import sunlabs.titan.util.OrderedProperties;
 
 /**
  * The {@code CelesteFileSystem} class organizes Celeste files and directories

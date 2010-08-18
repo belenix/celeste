@@ -24,13 +24,13 @@
 
 package sunlabs.celeste.node.services.object;
 
-import sunlabs.beehive.BeehiveObjectId;
-import sunlabs.beehive.api.BeehiveObject;
-import sunlabs.beehive.node.BeehiveObjectStore;
-import sunlabs.beehive.node.object.DeleteableObject;
-import sunlabs.beehive.node.object.RetrievableObject;
-import sunlabs.beehive.node.object.StorableObject;
 import sunlabs.celeste.client.ReplicationParameters;
+import sunlabs.titan.BeehiveObjectId;
+import sunlabs.titan.api.BeehiveObject;
+import sunlabs.titan.node.BeehiveObjectStore;
+import sunlabs.titan.node.object.DeleteableObject;
+import sunlabs.titan.node.object.RetrievableObject;
+import sunlabs.titan.node.object.StorableObject;
 
 /**
  * Methods used by the FObject Application.

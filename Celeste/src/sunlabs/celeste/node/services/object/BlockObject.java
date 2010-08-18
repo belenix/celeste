@@ -32,18 +32,18 @@ import java.util.concurrent.FutureTask;
 
 import sunlabs.asdf.functional.AbstractMapFunction;
 import sunlabs.asdf.functional.MapFunction;
-import sunlabs.beehive.BeehiveObjectId;
-import sunlabs.beehive.api.BeehiveObject;
-import sunlabs.beehive.node.object.DeleteableObject;
-import sunlabs.beehive.node.object.ExtensibleObject;
-import sunlabs.beehive.node.object.InspectableObject;
-import sunlabs.beehive.node.object.ReplicatableObject;
-import sunlabs.beehive.node.object.RetrievableObject;
-import sunlabs.beehive.node.object.StorableObject;
-import sunlabs.beehive.util.BufferableExtent;
-import sunlabs.beehive.util.ExtentBufferMap;
 import sunlabs.celeste.client.ReplicationParameters;
 import sunlabs.celeste.node.services.object.BlockObjectHandler.MappableBlockObjectReader;
+import sunlabs.titan.BeehiveObjectId;
+import sunlabs.titan.api.BeehiveObject;
+import sunlabs.titan.node.object.DeleteableObject;
+import sunlabs.titan.node.object.ExtensibleObject;
+import sunlabs.titan.node.object.InspectableObject;
+import sunlabs.titan.node.object.ReplicatableObject;
+import sunlabs.titan.node.object.RetrievableObject;
+import sunlabs.titan.node.object.StorableObject;
+import sunlabs.titan.util.BufferableExtent;
+import sunlabs.titan.util.ExtentBufferMap;
 
 /**
  * <p>

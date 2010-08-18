@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<!--
+<p>
+Copyright 2007-2010 Oracle. All Rights Reserved.
+DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER
+</p><p>
+This code is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License version 2
+only, as published by the Free Software Foundation.
+</p><p>
+This code is distributed in the hope that it will be useful, but
+WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+General Public License version 2 for more details (a copy is
+included in the LICENSE file that accompanied this code).
+</p><p>
+You should have received a copy of the GNU General Public License
+version 2 along with this work; if not, write to the Free Software
+Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
+02110-1301 USA
+</p><p>
+Please contact Oracle, 16 Network Circle, Menlo
+Park, CA 94025 or visit www.oracle.com if you need additional
+information or have any questions.
+</p>
+-->
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+<title>sunlabs.titan.node.services.object</title>
+</head>
+<body>
+<p>
+Utility classes related to Titan node functions.
+</p>
+<h3>
+Extent Management
+</h3>
+<p>
+An extent is half open interval that includes the position denoted by
+its start offset and excludes the position denoted by its end offset.
+The {@code Extent} interface defines the basic behavior expected of an
+extent and the {@code ExtentImpl} class provides a bare bones
+implementation.  The interface includes methods for examining extent
+bounds, for determining whether an extent is
+{@link sunlabs.titan.util.Extent#isVacuous() vacuous},
+for determining whether two extents have a non-vacuous intersection, and
+for producing that intersection.
+
+</p><p>
+
+The {@code BufferableExtent} interface specializes {@code Extent} to
+allow for a buffer to be associated with a given extent.  {@code
+ExtentBuffer} implements this interface and acts as a logical extension
+to {@link java.nio.ByteBuffer} that allows byte buffers to be treated
+as extents.  The class provides versions of all the {@code ByteBuffer}
+methods that are adapted to extent buffers and augments the {@code
+Extent} methods with ones that produce {@code ExtentBuffer} results
+(and that therefore cannot share names with the corresponding {@code
+Extent} methods).
+
+</p><p>
+
+Extents can be gathered together into maps, and the package provides
+{@code ExtentMap} and {@code ExtentBufferMap} classes that do so for
+undifferentiated extents and extent buffers respectively.  In addition
+to the normal {@code Map} operations, these classes provide methods to
+fetch submaps containing extents overlapping a given extent, to return
+a map containing the intersection against a given extent, and so on.
+
+</p>
+
+<h3>
+LRUCache
+</h3>
+
+The package provides the {@code LRUCache} class and several associated
+helper classes for maintaining a LRU cache of keyed objects.
+                
+<div class="bottom">Copyright 2007-2009 Sun Microsystems, Inc. All Rights Reserved. See accompanying LICENSE file for terms.
+ <a href="./doc-files/copyright.html">Terms</a>.</div>
+</body>

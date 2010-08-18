@@ -30,8 +30,8 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
-import sunlabs.beehive.util.OrderedProperties;
 import sunlabs.celeste.node.services.object.BlockObject;
+import sunlabs.titan.util.OrderedProperties;
 
 /**
  * <p>

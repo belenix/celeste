@@ -24,7 +24,7 @@
 
 package sunlabs.celeste.client.filesystem;
 
-import sunlabs.beehive.BeehiveObjectId;
+import sunlabs.titan.BeehiveObjectId;
 
 /**
  * <p>

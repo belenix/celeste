@@ -27,19 +27,19 @@ package sunlabs.celeste.node.services.object;
 import java.io.IOException;
 import java.io.Serializable;
 
-import sunlabs.beehive.BeehiveObjectId;
-import sunlabs.beehive.api.BeehiveObject;
-import sunlabs.beehive.api.XHTMLInspectable;
-import sunlabs.beehive.node.BeehiveObjectStore;
-import sunlabs.beehive.node.BeehiveMessage.RemoteException;
-import sunlabs.beehive.node.object.DeleteableObject;
-import sunlabs.beehive.node.object.InspectableObject;
-import sunlabs.beehive.node.object.ReplicatableObject;
-import sunlabs.beehive.node.object.RetrievableObject;
-import sunlabs.beehive.util.DOLRStatus;
 import sunlabs.celeste.FileIdentifier;
 import sunlabs.celeste.client.ReplicationParameters;
 import sunlabs.celeste.node.services.api.AObjectVersionMapAPI;
+import sunlabs.titan.BeehiveObjectId;
+import sunlabs.titan.api.BeehiveObject;
+import sunlabs.titan.api.XHTMLInspectable;
+import sunlabs.titan.node.BeehiveObjectStore;
+import sunlabs.titan.node.BeehiveMessage.RemoteException;
+import sunlabs.titan.node.object.DeleteableObject;
+import sunlabs.titan.node.object.InspectableObject;
+import sunlabs.titan.node.object.ReplicatableObject;
+import sunlabs.titan.node.object.RetrievableObject;
+import sunlabs.titan.util.DOLRStatus;
 
 /**
  * An AnchorObject is a {@link BeehiveObject} that represents, and contains information about,

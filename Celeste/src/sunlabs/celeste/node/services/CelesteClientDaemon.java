@@ -50,11 +50,6 @@ import javax.management.NotCompliantMBeanException;
 import sunlabs.asdf.util.Attributes;
 import sunlabs.asdf.web.XML.XHTML;
 import sunlabs.asdf.web.http.HTTP;
-import sunlabs.beehive.api.BeehiveObject;
-import sunlabs.beehive.api.Credential;
-import sunlabs.beehive.node.BeehiveNode;
-import sunlabs.beehive.node.services.BeehiveService;
-import sunlabs.beehive.util.OrderedProperties;
 import sunlabs.celeste.CelesteException;
 import sunlabs.celeste.ResponseMessage;
 import sunlabs.celeste.api.CelesteAPI;
@@ -79,6 +74,11 @@ import sunlabs.celeste.client.operation.UnlockFileOperation;
 import sunlabs.celeste.client.operation.WriteFileOperation;
 import sunlabs.celeste.node.CelesteNode;
 import sunlabs.celeste.util.CelesteIO;
+import sunlabs.titan.api.BeehiveObject;
+import sunlabs.titan.api.Credential;
+import sunlabs.titan.node.BeehiveNode;
+import sunlabs.titan.node.services.BeehiveService;
+import sunlabs.titan.util.OrderedProperties;
 
 /**
  * Network Socket based Celeste client interface.

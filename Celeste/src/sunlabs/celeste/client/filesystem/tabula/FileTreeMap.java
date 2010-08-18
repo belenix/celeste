@@ -36,8 +36,6 @@ import java.util.Map;
 import java.util.SortedSet;
 import java.util.TreeMap;
 
-import sunlabs.beehive.BeehiveObjectId;
-import sunlabs.beehive.api.Credential;
 
 import sunlabs.celeste.FileIdentifier;
 import sunlabs.celeste.client.Profile_;
@@ -45,6 +43,8 @@ import sunlabs.celeste.client.filesystem.HierarchicalFileSystem;
 import sunlabs.celeste.node.CelesteACL;
 import sunlabs.celeste.util.ACL;
 import sunlabs.celeste.util.ACL.ACLException;
+import sunlabs.titan.BeehiveObjectId;
+import sunlabs.titan.api.Credential;
 
 /**
  * Maintains an association between path names and references to corresponding

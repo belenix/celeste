@@ -40,11 +40,11 @@ import javax.crypto.spec.PBEParameterSpec;
 
 import sunlabs.asdf.web.XML.XHTML;
 import sunlabs.asdf.web.http.HTTP;
-import sunlabs.beehive.BeehiveObjectId;
-import sunlabs.beehive.api.BeehiveObject;
-import sunlabs.beehive.api.Credential;
-import sunlabs.beehive.node.AbstractBeehiveObject;
-import sunlabs.beehive.node.services.object.CredentialObjectHandler;
+import sunlabs.titan.BeehiveObjectId;
+import sunlabs.titan.api.BeehiveObject;
+import sunlabs.titan.api.Credential;
+import sunlabs.titan.node.AbstractBeehiveObject;
+import sunlabs.titan.node.services.object.CredentialObjectHandler;
 
 /**
  * A Profile represents a responsible entity to and for Celeste.

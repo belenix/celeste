@@ -100,7 +100,7 @@ information or have any questions.
     <!-- =================================
           target: jars
          ================================= -->
-    <target name="jars" depends="beehive, celeste, sortgen, wordcount, Phidoux.jar"
+    <target name="jars" depends="titan, celeste, sortgen, wordcount, Phidoux.jar"
         description="==> builds all jar files"/>
 
     <!-- =================================
@@ -134,23 +134,23 @@ information or have any questions.
 
 
     <!-- =================================
-          target: beehive
+          target: titan
          ================================= -->
-    <target name="beehive" depends="compile,scmversion" description="==> build Beehive">
+    <target name="titan" depends="compile,scmversion" description="==> build Titan">
         <mkdir dir="${dist.dir}" />
-        <jar destfile="${dist.dir}/beehive.jar" filesonly="true" 
+        <jar destfile="${dist.dir}/titan.jar" filesonly="true" 
              >
-            <fileset dir="${build.classes.dir}" includes="sunlabs/beehive/** sunlabs/asdf/io/** sunlabs/asdf/jmx/** sunlabs/asdf/util/**  sunlabs/asdf/functional/**" />
+            <fileset dir="${build.classes.dir}" includes="sunlabs/titan/** sunlabs/asdf/io/** sunlabs/asdf/jmx/** sunlabs/asdf/util/**  sunlabs/asdf/functional/**" />
             <fileset dir="" includes="web/**" />
             <manifest>
-                <attribute name="Main-Class" value="sunlabs.beehive.node.Beehive" />
+                <attribute name="Main-Class" value="sunlabs.titan.node.Beehive" />
                 <attribute name="Class-Path" value="${Phidoux.jar}" />
                 <attribute name="Built-By" value="${user.name}.${DSTAMP}" />
                 <attribute name="Sealed" value="true" />
-                <attribute name="Specification-Title" value="Sun Labs Beehive" />
-                <attribute name="Specification-Version" value="2010.5.10" />
+                <attribute name="Specification-Title" value="Sun Labs Titan" />
+                <attribute name="Specification-Version" value="2010.8.17" />
                 <attribute name="Specification-Vendor" value="${manifest.vendor}" />
-                <attribute name="Implementation-Title" value="sunlabs.beehive" />
+                <attribute name="Implementation-Title" value="sunlabs.titan" />
                 <attribute name="Implementation-Version" value="${scm_version}" />
                 <attribute name="Implementation-Vendor" value="${manifest.vendor}" />
             </manifest>
@@ -169,7 +169,7 @@ information or have any questions.
             <fileset dir=""                     includes="web/**" />
             <manifest>
                 <attribute name="Main-Class"             value="sunlabs.celeste.node.Celeste" />
-                <attribute name="Class-Path"             value="beehive.jar ${Phidoux.jar}" />
+                <attribute name="Class-Path"             value="titan.jar ${Phidoux.jar}" />
                 <attribute name="Built-By"               value="${user.name}.${DSTAMP}" />
                 <attribute name="Sealed"                 value="true" />
                 <attribute name="Specification-Title"    value="Sun Labs Celeste" />

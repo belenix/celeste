@@ -25,10 +25,10 @@ package sunlabs.celeste.client;
 
 import java.io.Serializable;
 
-import sunlabs.beehive.BeehiveObjectId;
-import sunlabs.beehive.api.Credential;
 import sunlabs.celeste.node.ProfileCache;
 import sunlabs.celeste.util.CelesteEncoderDecoder;
+import sunlabs.titan.BeehiveObjectId;
+import sunlabs.titan.api.Credential;
 
 //
 // Contains information recording an attestation of one principal by another.

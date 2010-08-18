@@ -1,8 +1,8 @@
 package sunlabs.celeste;
 
-import sunlabs.beehive.exception.BeehiveException;
-import sunlabs.beehive.node.AbstractBeehiveObject;
-import sunlabs.beehive.util.OrderedProperties;
+import sunlabs.titan.exception.BeehiveException;
+import sunlabs.titan.node.AbstractBeehiveObject;
+import sunlabs.titan.util.OrderedProperties;
 
 public abstract class CelesteException extends BeehiveException {
     private final static long serialVersionUID = 1L;

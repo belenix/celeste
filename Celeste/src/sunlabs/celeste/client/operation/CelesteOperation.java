@@ -3,9 +3,9 @@ package sunlabs.celeste.client.operation;
 import java.io.ObjectInputStream;
 import java.io.Serializable;
 
-import sunlabs.beehive.BeehiveObjectId;
 import sunlabs.celeste.node.CelesteACL;
 import sunlabs.celeste.node.services.CelesteClientDaemon;
+import sunlabs.titan.BeehiveObjectId;
 
 public interface CelesteOperation extends Serializable {
 

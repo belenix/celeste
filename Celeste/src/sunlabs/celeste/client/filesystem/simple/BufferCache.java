@@ -44,16 +44,16 @@ import javax.management.ObjectName;
 import sunlabs.asdf.jmx.JMX;
 import sunlabs.asdf.web.XML.XML;
 import sunlabs.asdf.web.XML.XHTML.Table;
-import sunlabs.beehive.BeehiveObjectId;
-import sunlabs.beehive.util.Extent;
-import sunlabs.beehive.util.ExtentBuffer;
-import sunlabs.beehive.util.ExtentBufferMap;
-import sunlabs.beehive.util.ExtentImpl;
-import sunlabs.beehive.util.ExtentMap;
-import sunlabs.beehive.util.WeakMBeanRegistrar;
 
 import sunlabs.celeste.CelesteException;
 import sunlabs.celeste.client.filesystem.FileException;
+import sunlabs.titan.BeehiveObjectId;
+import sunlabs.titan.util.Extent;
+import sunlabs.titan.util.ExtentBuffer;
+import sunlabs.titan.util.ExtentBufferMap;
+import sunlabs.titan.util.ExtentImpl;
+import sunlabs.titan.util.ExtentMap;
+import sunlabs.titan.util.WeakMBeanRegistrar;
 
 import static java.lang.Math.max;
 

@@ -33,7 +33,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 
-import sunlabs.beehive.util.OrderedProperties;
+import sunlabs.titan.util.OrderedProperties;
 
 // an alternate philosophy would be to have getters and setters for all these properties,
 // and not expose the key names to other classes.

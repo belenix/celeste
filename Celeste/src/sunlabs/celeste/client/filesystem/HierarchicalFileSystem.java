@@ -25,10 +25,10 @@ package sunlabs.celeste.client.filesystem;
 import java.io.IOException;
 import java.util.Properties;
 
-import sunlabs.beehive.api.Credential;
-import sunlabs.beehive.util.OrderedProperties;
 import sunlabs.celeste.CelesteException;
 import sunlabs.celeste.client.filesystem.FileException.Retry;
+import sunlabs.titan.api.Credential;
+import sunlabs.titan.util.OrderedProperties;
 
 /**
  * A Hierarchical File-system is a file-system organised

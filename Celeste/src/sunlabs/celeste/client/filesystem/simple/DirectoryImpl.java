@@ -35,16 +35,16 @@ import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
 
-import sunlabs.beehive.BeehiveObjectId;
-import sunlabs.beehive.api.Credential;
-import sunlabs.beehive.util.ExponentialBackoff;
-import sunlabs.beehive.util.ExtentBuffer;
-import sunlabs.beehive.util.OrderedProperties;
 
 import sunlabs.celeste.FileIdentifier;
 import sunlabs.celeste.client.filesystem.FileAttributes;
 import sunlabs.celeste.client.filesystem.FileException;
 import sunlabs.celeste.node.services.api.AObjectVersionMapAPI;
+import sunlabs.titan.BeehiveObjectId;
+import sunlabs.titan.api.Credential;
+import sunlabs.titan.util.ExponentialBackoff;
+import sunlabs.titan.util.ExtentBuffer;
+import sunlabs.titan.util.OrderedProperties;
 
 import static sunlabs.celeste.client.filesystem.FileAttributes.Names.CONTENT_TYPE_NAME;
 

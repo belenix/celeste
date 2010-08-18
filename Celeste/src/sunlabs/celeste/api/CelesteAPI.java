@@ -29,10 +29,6 @@ import java.io.Serializable;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 
-import sunlabs.beehive.BeehiveObjectId;
-import sunlabs.beehive.api.BeehiveObject;
-import sunlabs.beehive.api.Credential;
-import sunlabs.beehive.util.OrderedProperties;
 import sunlabs.celeste.CelesteException;
 import sunlabs.celeste.ResponseMessage;
 import sunlabs.celeste.client.operation.CreateFileOperation;
@@ -54,6 +50,10 @@ import sunlabs.celeste.client.operation.WriteFileOperation;
 import sunlabs.celeste.node.services.object.AnchorObject;
 import sunlabs.celeste.node.services.object.BlockObject;
 import sunlabs.celeste.node.services.object.VersionObject;
+import sunlabs.titan.BeehiveObjectId;
+import sunlabs.titan.api.BeehiveObject;
+import sunlabs.titan.api.Credential;
+import sunlabs.titan.util.OrderedProperties;
 
 /**
  * The basic Celeste file store interface.

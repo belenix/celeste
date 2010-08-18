@@ -35,11 +35,6 @@ import java.net.Socket;
 import java.nio.ByteBuffer;
 import java.util.concurrent.TimeUnit;
 
-import sunlabs.beehive.BeehiveObjectId;
-import sunlabs.beehive.api.BeehiveObject;
-import sunlabs.beehive.api.Credential;
-import sunlabs.beehive.util.LRUCache;
-import sunlabs.beehive.util.OrderedProperties;
 import sunlabs.celeste.CelesteException;
 import sunlabs.celeste.ResponseMessage;
 import sunlabs.celeste.api.CelesteAPI;
@@ -61,6 +56,11 @@ import sunlabs.celeste.client.operation.UnlockFileOperation;
 import sunlabs.celeste.client.operation.WriteFileOperation;
 import sunlabs.celeste.node.CelesteNode;
 import sunlabs.celeste.util.CelesteIO;
+import sunlabs.titan.BeehiveObjectId;
+import sunlabs.titan.api.BeehiveObject;
+import sunlabs.titan.api.Credential;
+import sunlabs.titan.util.LRUCache;
+import sunlabs.titan.util.OrderedProperties;
 
 /**
  * The {@code CelesteProxy} class is the primary client interface to Celeste and is a proxy for client invocations of methods in
@@ -79,7 +79,7 @@ public class CelesteProxy implements CelesteAPI {
      * </p><p>
      * Callers should obtain and release entries from the cache according to
      * the design pattern described in
-     * {@link sunlabs.beehive.util.LRUCache}.
+     * {@link sunlabs.titan.util.LRUCache}.
      * </p>
      */
     //

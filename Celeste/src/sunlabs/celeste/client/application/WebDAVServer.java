@@ -48,9 +48,9 @@ import sunlabs.asdf.web.http.HTTP;
 import sunlabs.asdf.web.http.HTTPServer;
 import sunlabs.asdf.web.http.WebDAV;
 import sunlabs.asdf.web.http.WebDAVNameSpace;
-import sunlabs.beehive.Release;
 import sunlabs.celeste.client.CelesteProxy;
-import sunlabs.celeste.client.application.titan.CelesteBackend;
+import sunlabs.celeste.client.application.webdav.CelesteBackend;
+import sunlabs.titan.Release;
 
 /**
  * This is a work in progress.

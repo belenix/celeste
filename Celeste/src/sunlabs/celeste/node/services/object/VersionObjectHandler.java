@@ -971,7 +971,7 @@ public final class VersionObjectHandler extends AbstractObjectHandler implements
             this.deleteObject(previousVObjectId, profferedDeleteToken, timeToLive);
         }
 
-        BlockObject bObjectHandler = (BlockObject) this.node.getService(CelesteNode.OBJECT_PKG + ".BlockObjectHandler");
+        BlockObject bObjectHandler = this.node.getService(BlockObjectHandler.class);
         for (Long offset : vObject.getBObjectList().keySet()) {
             BlockObject.Object.Reference reference = vObject.getBObjectReference(offset);
             bObjectHandler.deleteObject(reference.getObjectId(), profferedDeleteToken, timeToLive);

@@ -667,8 +667,8 @@ public final class NeighbourMap {
          * @see java.util.Comparator#compare(java.lang.Object, java.lang.Object)
          */
         public int compare(NodeAddress a, NodeAddress b) {
-            int aOrder = this.root.comparer(a.getObjectId());
-            int bOrder = this.root.comparer(b.getObjectId());
+            int aOrder = this.root.distance(a.getObjectId());
+            int bOrder = this.root.distance(b.getObjectId());
             int order = (aOrder - bOrder);
             if (order == 0) {
                 int hint = a.getObjectId().compareTo(b.getObjectId());
@@ -715,7 +715,7 @@ public final class NeighbourMap {
             }
         });
 
-        myId.comparer(otherId);
+        myId.distance(otherId);
 
 
 

@@ -106,14 +106,14 @@ public class CelesteProxy implements CelesteAPI {
             this(capacity, true, new ProxyFactory(timeOutMillis, TimeUnit.MILLISECONDS));
         }
 
-        /**
-         * Creates a cache for handling {@code CelesteAPI} connections to a Celeste node that's part of the caller's address space.
-         *
-         * @param celesteNode   the Celeste node to which the cache's proxy will make calls
-         */
-        public Cache(CelesteNode celesteNode) {
-            this(1, false, new DirectCelesteReferenceFactory(celesteNode));
-        }
+//        /**
+//         * Creates a cache for handling {@code CelesteAPI} connections to a Celeste node that's part of the caller's address space.
+//         *
+//         * @param celesteNode   the Celeste node to which the cache's proxy will make calls
+//         */
+//        public Cache(CelesteNode celesteNode) {
+//            this(1, false, new DirectCelesteReferenceFactory(celesteNode));
+//        }
 
         //
         // Private constructor that does the real work.
@@ -166,19 +166,18 @@ public class CelesteProxy implements CelesteAPI {
     // ProxyCache needs a new instance.  It's intended for use in situations
     // where the client is linked in directly with the Celeste implementation.
     //
-    private static class DirectCelesteReferenceFactory implements
-            LRUCache.Factory<InetSocketAddress, CelesteAPI> {
-        private final CelesteNode celesteNode;
-
-        public DirectCelesteReferenceFactory(CelesteNode celesteNode) {
-            this.celesteNode = celesteNode;
-        }
-
-        public CelesteAPI newInstance(InetSocketAddress addr) throws Exception {
-            //System.err.printf("DirectProxyCache miss: %s%n", addr);
-            return this.celesteNode;
-        }
-    }
+//    private static class DirectCelesteReferenceFactory implements LRUCache.Factory<InetSocketAddress, CelesteAPI> {
+//        private final CelesteNode celesteNode;
+//
+//        public DirectCelesteReferenceFactory(CelesteNode celesteNode) {
+//            this.celesteNode = celesteNode;
+//        }
+//
+//        public CelesteAPI newInstance(InetSocketAddress addr) throws Exception {
+//            //System.err.printf("DirectProxyCache miss: %s%n", addr);
+//            return this.celesteNode;
+//        }
+//    }
 
     private final Socket newSocket;
     private final InetSocketAddress address;

@@ -43,6 +43,7 @@ import sunlabs.asdf.web.http.HTTP;
 import sunlabs.celeste.FileIdentifier;
 import sunlabs.celeste.client.ReplicationParameters;
 import sunlabs.celeste.node.CelesteNode;
+import sunlabs.celeste.node.services.AObjectVersionService;
 import sunlabs.celeste.node.services.api.AObjectVersionMapAPI;
 import sunlabs.titan.BeehiveObjectId;
 import sunlabs.titan.api.BeehiveObject;
@@ -437,7 +438,7 @@ public final class AnchorObjectHandler extends AbstractObjectHandler implements 
         // XXX (EXPOSE TOKEN AND CHANGE APPLICATION NAME?)
 
         try {
-            AObjectVersionMapAPI aObjectVersionHandler = (AObjectVersionMapAPI) this.node.getService(CelesteNode.SERVICE_PKG + ".AObjectVersionService");
+            AObjectVersionMapAPI aObjectVersionHandler = this.node.getService(AObjectVersionService.class);
 
             VersionObject.Object.Reference vObjectReference = aObjectVersionHandler.getValue(aObject.getObjectId(), aObject.getAObjectVersionMapParams()).getReference();
 
@@ -454,7 +455,7 @@ public final class AnchorObjectHandler extends AbstractObjectHandler implements 
             // we assume that it's for an earlier version and ignore it.
             // XXX THIS IS NOT A GOOD WAY OF ACHIEVING THIS GOAL, AS IT IS NOT ATOMIC
 
-            VersionObject vObjectHandler = (VersionObject) this.node.getService(CelesteNode.OBJECT_PKG + ".VersionObjectHandler");
+            VersionObject vObjectHandler = this.node.getService(VersionObjectHandler.class);
             vObjectHandler.deleteObject(vObjectReference.getObjectId(), profferedDeleteToken, timeToLive);
 
             aObject.delete(profferedDeleteToken, timeToLive);

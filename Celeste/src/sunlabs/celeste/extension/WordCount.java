@@ -42,8 +42,11 @@ import sunlabs.asdf.functional.MapFunction;
 import sunlabs.celeste.client.operation.ExtensibleOperation;
 import sunlabs.celeste.node.CelesteNode;
 import sunlabs.celeste.node.CelesteACL.CelesteOps;
+import sunlabs.celeste.node.services.AObjectVersionService;
 import sunlabs.celeste.node.services.api.AObjectVersionMapAPI;
 import sunlabs.celeste.node.services.object.AnchorObject;
+
+import sunlabs.celeste.node.services.object.AnchorObjectHandler;
 import sunlabs.celeste.node.services.object.BlockObject;
 import sunlabs.celeste.node.services.object.BlockObjectHandler;
 import sunlabs.celeste.node.services.object.VersionObject;
@@ -82,7 +85,7 @@ import sunlabs.titan.util.ExtentBuffer;
 public class WordCount implements ExtensibleObject.Extension<HashMap<String,Long>> {
     private final static long serialVersionUID = 1L;
 
-    private CelesteNode node;
+    private BeehiveNode node;
     private ExtensibleOperation operation;
     private ExtensibleObject.JarClassLoader classLoader;
 
@@ -119,14 +122,14 @@ public class WordCount implements ExtensibleObject.Extension<HashMap<String,Long
         	System.out.printf("%s%n", arg);
         }
 
-        AnchorObject anchorObjectHandler = (AnchorObject) this.node.getService("sunlabs.celeste.node.services.object.AnchorObjectHandler");
-        VersionObject versionObjectHandler = this.node.getService(VersionObject.class, "sunlabs.celeste.node.services.object.VersionObjectHandler");
+        AnchorObject anchorObjectHandler = (AnchorObject) this.node.getService(AnchorObjectHandler.class);
+        VersionObject versionObjectHandler = this.node.getService(VersionObjectHandler.class);
         AnchorObject.Object aObject = anchorObjectHandler.retrieve(operation.getFileIdentifier());
 
         // If the object-id of the VersionObject is not supplied (signaled by being null or all zeros),
         // we must fetch the current VersionObject object-id.
         if (vObjectId == null || vObjectId.equals(BeehiveObjectId.ZERO)) {
-            AObjectVersionMapAPI aObjectVersionMap = (AObjectVersionMapAPI) this.node.getService("sunlabs.celeste.node.services.AObjectVersionService");
+            AObjectVersionMapAPI aObjectVersionMap = this.node.getService(AObjectVersionService.class);
             VersionObject.Object.Reference vObjectReference =
                 aObjectVersionMap.getValue(aObject.getObjectId(), aObject.getAObjectVersionMapParams()).getReference();
             vObjectId = vObjectReference.getObjectId();
@@ -184,7 +187,7 @@ public class WordCount implements ExtensibleObject.Extension<HashMap<String,Long
                 throw new BeehiveObjectStore.NotFoundException(e);
             }
 
-            BlockObject blockObjectHandler = (BlockObject) this.handler.getNode().getService(CelesteNode.OBJECT_PKG + ".BlockObjectHandler");
+            BlockObject blockObjectHandler = this.handler.getNode().getService(BlockObjectHandler.class);
 
             try {
                 MapFunction<BlockObject.Object.Reference,BObjectExtension.BObjectResult> applyToAll =

@@ -46,6 +46,7 @@ import sunlabs.titan.BeehiveObjectId;
 import sunlabs.titan.api.BeehiveObject;
 import sunlabs.titan.api.ObjectStore;
 import sunlabs.titan.exception.BeehiveException;
+import sunlabs.titan.node.services.PublishDaemon;
 import sunlabs.titan.node.services.WebDAVDaemon;
 import sunlabs.titan.node.services.PublishDaemon.UnpublishObject;
 import sunlabs.titan.node.services.api.Publish;
@@ -422,7 +423,7 @@ public final class BeehiveObjectStore implements ObjectStore {
             this.node.getLogger().fine("Object %s (%s) not found.", objectId, klasse.getName());
         }
 
-        Publish app = (Publish) this.node.getService("sunlabs.titan.node.services.PublishDaemon");
+        Publish app = this.node.getService(PublishDaemon.class);
         app.unpublish(objectId, UnpublishObject.Type.REQUIRED);
         throw new BeehiveObjectStore.NotFoundException("Object %s (%s) not found.", objectId, klasse.getName());
     }

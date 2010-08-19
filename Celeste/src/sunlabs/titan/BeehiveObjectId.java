@@ -24,7 +24,6 @@
 package sunlabs.titan;
 
 import java.io.IOException;
-import java.io.Serializable;
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.security.MessageDigest;
@@ -40,7 +39,7 @@ import sunlabs.asdf.util.TimeProfiler;
  * A {@code BeehiveObjectId} is how things (anything and everything) are named in
  * a Beehive system.
  */
-public class BeehiveObjectId implements Comparable<BeehiveObjectId>, Serializable {
+public class BeehiveObjectId implements TitanGuid {
     private static final long serialVersionUID = 1L;
     
     /**
@@ -79,17 +78,6 @@ public class BeehiveObjectId implements Comparable<BeehiveObjectId>, Serializabl
     }
 
     /**
-     * Be sure that this is as long {@code n_digits}.
-     */
-    private static String zeroPadding;
-    static {
-        zeroPadding = "";
-        for (int i = 0; i < BeehiveObjectId.n_digits; i++) {
-            zeroPadding += "0";
-        }
-    }
-
-    /**
      * Shorthand for a wild-card BeehiveObjectId.
      */
     public final static BeehiveObjectId ANY = null;
@@ -99,11 +87,6 @@ public class BeehiveObjectId implements Comparable<BeehiveObjectId>, Serializabl
      * The radix of the object identifier.
      */
     public final static int radix = 16;
-
-    /**
-     * The log<sub>2</sub> of the radix.
-     */
-    public final static int radixLog_2 = 4;
 
     public final static BeehiveObjectId ZERO = new BeehiveObjectId(new byte[BeehiveObjectId.n_digits / 2], "");
 
@@ -127,15 +110,6 @@ public class BeehiveObjectId implements Comparable<BeehiveObjectId>, Serializabl
     }
 
     private final static String hexArray = "0123456789ABCDEF";
-
-//    private static String makeString(byte[] b) {
-//        StringBuilder s = new StringBuilder();
-//        for (int i = 0; i < b.length; i++) {
-//            s.append(hexArray.charAt((b[i] >> 4) & 0xF));
-//            s.append(hexArray.charAt((b[i]     ) & 0xF));
-//        }
-//        return s.toString();
-//    }
 
     public static class IdComparator implements Comparator<BeehiveObjectId> {
         public IdComparator() {
@@ -451,7 +425,7 @@ public class BeehiveObjectId implements Comparable<BeehiveObjectId>, Serializabl
      *
      * @param other
      */
-    public int comparer(final BeehiveObjectId other) {
+    public int distance(final BeehiveObjectId other) {
 //        final byte[] otherBytes = other.getBytes();
 
 //        System.out.printf("comparer %s %s ", this.toString(), other.toString());

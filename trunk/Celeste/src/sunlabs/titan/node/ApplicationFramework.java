@@ -1271,7 +1271,7 @@ public final class ApplicationFramework implements XHTMLInspectable {
             }
             AppClass.AppClassObject.InfoList infoList = null;
 
-            AppClass appClassObjectType = (AppClass) this.node.getService("sunlabs.titan.node.services.object.AppClassObjectType");
+            AppClass appClassObjectType = this.node.getService(AppClassObjectType.class);
             try {
                 AppClass.AppClassObject object = appClassObjectType.retrieve(nameID);
                 infoList = object.getInfoList();

@@ -60,6 +60,7 @@ import sunlabs.titan.api.XHTMLInspectable;
 import sunlabs.titan.node.BeehiveMessage;
 import sunlabs.titan.node.BeehiveNode;
 import sunlabs.titan.node.BeehiveMessage.RemoteException;
+import sunlabs.titan.node.services.CensusDaemon;
 import sunlabs.titan.node.services.WebDAVDaemon;
 import sunlabs.titan.node.services.api.Census;
 import sunlabs.titan.node.util.DOLRLogger;
@@ -1875,7 +1876,7 @@ public class MutableObject {
 
         // Create |U| ObjectHistory instances and store them.
         //
-        Census census = (Census) handler.getNode().getService("sunlabs.titan.node.services.CensusDaemon");
+        Census census = handler.getNode().getService(CensusDaemon.class);
 
         int universeSize = initialObjectHistorySet.getUniverseSize();
 

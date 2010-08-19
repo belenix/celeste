@@ -42,7 +42,7 @@ public interface Titan {
      * @param payload the payload of this message.
      * @throws NoSuchNodeException if the receiver cannot route the message further and is not the specified destination object-id.
      */
-    public BeehiveMessage sendToNodeExactly(BeehiveObjectId nodeId, String objectClass, String method, Serializable payload) throws NoSuchNodeException;
+    public BeehiveMessage sendToNodeExactly(BeehiveObjectId nodeId, String klasse, String method, Serializable payload) throws NoSuchNodeException;
 
     /**
      * Send the given {@link Serializable} {@code data} to the {@link BeehiveObject}

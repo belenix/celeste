@@ -84,6 +84,7 @@ import sunlabs.titan.BeehiveObjectId;
 import sunlabs.titan.Copyright;
 import sunlabs.titan.Release;
 import sunlabs.titan.Titan;
+import sunlabs.titan.TitanNodeId;
 import sunlabs.titan.api.BeehiveObject;
 import sunlabs.titan.api.ObjectStore;
 import sunlabs.titan.api.Service;
@@ -91,11 +92,15 @@ import sunlabs.titan.api.management.NodeMBean;
 import sunlabs.titan.node.BeehiveMessage.RemoteException;
 import sunlabs.titan.node.object.AbstractObjectHandler;
 import sunlabs.titan.node.object.BeehiveObjectHandler;
+import sunlabs.titan.node.services.CensusDaemon;
 import sunlabs.titan.node.services.PublishDaemon;
+import sunlabs.titan.node.services.ReflectionService;
+import sunlabs.titan.node.services.RetrieveObjectService;
 import sunlabs.titan.node.services.RoutingDaemon;
 import sunlabs.titan.node.services.WebDAVDaemon;
 import sunlabs.titan.node.services.api.Census;
 import sunlabs.titan.node.services.api.Publish;
+import sunlabs.titan.node.services.object.AppClassObjectType;
 import sunlabs.titan.node.services.xml.TitanXML;
 import sunlabs.titan.node.services.xml.TitanXML.XMLNode;
 import sunlabs.titan.node.util.DOLRLogger;
@@ -938,7 +943,7 @@ public class BeehiveNode implements Titan, NodeMBean {
                 this.configuration.asInt(BeehiveNode.LogFileSize),  this.configuration.asInt(BeehiveNode.LogFileCount));
 
         try {
-            this.jmxObjectName = JMX.objectName("com.sun.sunlabs.titan", this.address.getObjectId().toString());
+            this.jmxObjectName = JMX.objectName("com.oracle.sunlabs.titan", this.address.getObjectId().toString());
             BeehiveNode.registrar.registerMBean(this.jmxObjectName, this, NodeMBean.class);
             BeehiveNode.registrar.registerMBean(JMX.objectName(this.jmxObjectName, "log"), this.log, DOLRLoggerMBean.class);
 
@@ -1011,13 +1016,13 @@ public class BeehiveNode implements Titan, NodeMBean {
             // Any other services will be loaded lazily as needed.
             // For initial bootstrapping, we expect to find these classes on
             // the local CLASSPATH.
-            this.getService(SERVICES_PACKAGENAME + ".RoutingDaemon");
-            this.getService("sunlabs.titan.node.services.object.AppClassObjectType");
-            this.getService(SERVICES_PACKAGENAME + ".PublishDaemon");
-            this.getService(SERVICES_PACKAGENAME + ".RetrieveObjectService");
-            this.getService(SERVICES_PACKAGENAME + ".ReflectionService");
-            this.getService(SERVICES_PACKAGENAME + ".CensusDaemon");
-            this.getService(SERVICES_PACKAGENAME + ".WebDAVDaemon");
+            this.getService(RoutingDaemon.class);
+            this.getService(AppClassObjectType.class);
+            this.getService(PublishDaemon.class);
+            this.getService(RetrieveObjectService.class);
+            this.getService(ReflectionService.class);
+            this.getService(CensusDaemon.class);
+            this.getService(WebDAVDaemon.class);
         } catch (MalformedObjectNameException e) {
             throw new RuntimeException(e);
         } catch (InstanceAlreadyExistsException e) {
@@ -1125,13 +1130,20 @@ public class BeehiveNode implements Titan, NodeMBean {
     public ObjectStore getObjectStore() {
         return this.store;
     }
-
+    
     /**
-     * Get the named Beehive node {@link Service}.
+     * Get (dynamically loading and instantiating, if necessary) an instance of the named class cast to the given {@link Service}.
+     *
+     * @param <C>
+     * @param klasse
+     * @param serviceName
+     * @return an instance of the named class cast to the given {@link Service}
+     * @throws ClassCastException if the loaded class is <em>not</em> an instance of {@code klasse}.
+     * @throws ClassNotFoundException if the class cannot be found.
      */
-    public Service getService(final String serviceName) {
-        return this.services.get(serviceName);
-    }
+    public <C> C getService(Class<? extends C> klasse) {
+        return klasse.cast(this.getService(klasse.getName()));        
+    }    
 
     /**
      * Get (dynamically loading and instantiating, if necessary) an instance of the named class cast to the given {@link Service}.
@@ -1143,8 +1155,8 @@ public class BeehiveNode implements Titan, NodeMBean {
      * @throws ClassCastException if the loaded class is <em>not</em> an instance of {@code klasse}.
      * @throws ClassNotFoundException if the class cannot be found.
      */
-    public <C> C getService(Class<? extends C> klasse, final String serviceName) throws ClassCastException, ClassNotFoundException {
-        return klasse.cast(this.services.get(serviceName));
+    public Service getService(final String serviceName) {
+        return this.services.get(serviceName);
     }
 
     /**
@@ -1745,14 +1757,14 @@ public class BeehiveNode implements Titan, NodeMBean {
             }
 
             if (gateway != null) {
-                RoutingDaemon routingDaemon = (RoutingDaemon) this.getService("sunlabs.titan.node.services.RoutingDaemon");
+                RoutingDaemon routingDaemon = this.getService(RoutingDaemon.class);
                 RoutingDaemon.JoinOperation.Response join = routingDaemon.join(gateway);
                 if (join == null) {
                     throw new RuntimeException(String.format("Cannot join with gateway: %s. Cannot start this node.", gateway.format()));
                 }
                 this.networkObjectId = join.getNetworkObjectId();
 
-                Census census = (Census) this.getService("sunlabs.titan.node.services.CensusDaemon");
+                Census census = this.getService(CensusDaemon.class);
 
                 Map<BeehiveObjectId,OrderedProperties> list = census.select(gateway, 0, null, null);
                 census.putAllLocal(list);

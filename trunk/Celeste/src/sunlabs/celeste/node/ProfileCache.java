@@ -36,6 +36,7 @@ import sunlabs.celeste.client.Profile_;
 import sunlabs.celeste.client.operation.ReadProfileOperation;
 import sunlabs.titan.BeehiveObjectId;
 import sunlabs.titan.api.Credential;
+import sunlabs.titan.node.BeehiveNode;
 
 /**
  * A {@code ProfileCache} maintains a cache of recently used {@code Profile_}
@@ -59,11 +60,11 @@ public class ProfileCache {
 
     private class CacheEntry {
         long time;
-        Credential profile;
+        Credential credential;
 
-        CacheEntry(long time, Credential profile) {
+        CacheEntry(long time, Credential credential) {
             this.time = time;
-            this.profile = profile;
+            this.credential = credential;
         }
     }
 
@@ -73,29 +74,33 @@ public class ProfileCache {
 
     private Hashtable<BeehiveObjectId,CacheEntry> profileCache;
 
+    public ProfileCache(CelesteAPI node) {
+        this(node.getInetSocketAddress(), null, ((int) ProfileCache.defaultCacheTimeout)/1000);
+    }
+
     /**
      * Create a new profile cache that communicates with Celeste via the given
      * proxy and whose entries time out after a default period (of one
      * minute).
      *
-     * @param celesteProxy  the proxy to be used for communicating with
+     * @param celesteNode  the proxy to be used for communicating with
      *                      Celeste
      */
-    public ProfileCache(CelesteAPI celesteProxy) {
-        this(celesteProxy, ((int) ProfileCache.defaultCacheTimeout)/1000);
+    public ProfileCache(BeehiveNode celesteNode) {
+        this(celesteNode, ((int) ProfileCache.defaultCacheTimeout)/1000);
     }
 
     /**
      * Create a new profile cache that communicates with Celeste via the given
      * proxy and whose entries time out after {@code timeout} seconds.
      *
-     * @param celesteProxy  the proxy to be used for communicating with
+     * @param celesteNode  the proxy to be used for communicating with
      *                      Celeste
      * @param timeout       the lifetime in seconds during which a cache entry
      *                      is valid
      */
-    public ProfileCache(CelesteAPI celesteProxy, int timeout) {
-        this(celesteProxy.getInetSocketAddress(), null, timeout);
+    public ProfileCache(BeehiveNode node, int timeout) {
+        this(node.getNodeAddress().getInternetworkAddress(), null, timeout);
     }
 
     /**
@@ -133,7 +138,7 @@ public class ProfileCache {
         if (e == null) {
             e = new CacheEntry(System.currentTimeMillis(), p);
         } else {
-            e.profile = p;
+            e.credential = p;
         }
         this.profileCache.put(guid, e);
     }
@@ -192,7 +197,7 @@ public class ProfileCache {
             CacheEntry entry = new CacheEntry(System.currentTimeMillis(), p);
             this.profileCache.put(profileId, entry);
 
-            return entry.profile;
+            return entry.credential;
         } catch (CelesteException.NotFoundException e) {
             return null;
         } catch (CelesteException.AccessControlException e) {
@@ -264,7 +269,7 @@ public class ProfileCache {
             entry = null;
         }
         if (entry != null)
-            return entry.profile;
+            return entry.credential;
 
         return null;
     }

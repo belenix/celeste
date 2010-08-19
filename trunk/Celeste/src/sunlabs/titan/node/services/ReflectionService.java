@@ -85,9 +85,8 @@ public final class ReflectionService extends BeehiveService implements Reflectio
         try {
             Reflection.ObjectInspect.Request request = message.getPayload(Reflection.ObjectInspect.Request.class, this.node);
 
-            Publish publish = (Publish) this.node.getService("sunlabs.titan.node.services.PublishDaemon");
+            Publish publish = this.node.getService(PublishDaemon.class);
             Set<PublishRecord> publishers = publish.getPublishers(message.subjectId);
-            System.out.printf("publishers %s%n", publishers);
 
             try {
                 InspectableObject.Handler.Object object = (InspectableObject.Handler.Object) this.node.getObjectStore().get(BeehiveObject.class, message.subjectId);

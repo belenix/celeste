@@ -262,7 +262,6 @@ public class BeehiveMessage implements XHTMLInspectable {
         else if (t == Type.RouteToNode.value) this.type = Type.RouteToNode;
         else if (t == Type.RouteToObject.value) this.type = Type.RouteToObject;
         
-//        this.type = (Type) ois.readObject();
         this.trace = ois.readBoolean();
         this.status = (DOLRStatus) ois.readObject();
         this.messageId = (BeehiveObjectId) ois.readObject();
@@ -297,7 +296,6 @@ public class BeehiveMessage implements XHTMLInspectable {
 
         oos.writeByte(this.version);
         oos.writeByte(this.type.value);
-//        oos.writeObject(this.type);
         oos.writeBoolean(this.trace);
         oos.writeObject(this.status);
         oos.writeObject(this.messageId);

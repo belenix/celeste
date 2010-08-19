@@ -415,7 +415,7 @@ public final class WebDAVDaemon extends BeehiveService implements WebDAVDaemonMB
                 	}
                 	return new HttpResponse(HTTP.Response.Status.BAD_REQUEST, new HttpContent.Text.Plain("Unknown service: " + name));
                 } else if (uri.getPath().startsWith("/census")) {
-                    Census census = (Census) this.node.getService("sunlabs.titan.node.services.CensusDaemon");
+                    Census census = this.node.getService(CensusDaemon.class);
                     Map<BeehiveObjectId,OrderedProperties> list = census.select(0);
 
                     StringBuilder string = new StringBuilder().append(list.size()).append("\n");
@@ -429,7 +429,7 @@ public final class WebDAVDaemon extends BeehiveService implements WebDAVDaemonMB
                 } else if (uri.getPath().startsWith("/config")) {
                     return new HttpResponse(HTTP.Response.Status.OK, new HttpContent.Text.Plain(this.node.getBeehiveProperties()));
                 } else if (uri.getPath().startsWith("/reflect")) {
-                    Reflection reflection = this.node.getService(Reflection.class, "sunlabs.titan.node.services.ReflectionService");
+                    Reflection reflection = this.node.getService(ReflectionService.class);
                     if (reflection != null) {
                     	XHTML.Document document = reflection.toDocument(uri, props);
 
@@ -472,11 +472,11 @@ public final class WebDAVDaemon extends BeehiveService implements WebDAVDaemonMB
                 } else if (uri.getPath().startsWith("/objectType")) {
                     String objectId = uri.getPath().substring("/objectType/".length());
 
-                    Reflection reflection = this.node.getService(Reflection.class, "sunlabs.titan.node.services.ReflectionService");
+                    Reflection reflection = this.node.getService(ReflectionService.class);
                     return new HttpResponse(HTTP.Response.Status.OK, new HttpContent.Text.Plain(reflection.getObjectType(new BeehiveObjectId(objectId))));
                 } else if (uri.getPath().startsWith("/inspect/")) {
                 	BeehiveObjectId objectId = new BeehiveObjectId(uri.getPath().substring("/inspect/".length()));
-                	Reflection reflection = this.node.getService(Reflection.class, "sunlabs.titan.node.services.ReflectionService");
+                	Reflection reflection = this.node.getService(ReflectionService.class);
                 	try {
                 		XHTML.EFlow eflow = reflection.inspectObject(objectId, uri, props);
                 		return new HttpResponse(HTTP.Response.Status.OK, new HttpContent.Text.HTML(this.makeDocument(objectId.toString(), new XHTML.Body(eflow), null, null)));      

@@ -123,6 +123,10 @@ public final class NodeAddress implements Serializable {
         return this.internetworkAddress.getPort();
     }
 
+    /**
+     * Get the {@link InetSocketAddress} of the server port of this {@code NodeAddress}. 
+     * @return the {@link InetSocketAddress} of the server port of this {@code NodeAddress}. 
+     */
     public InetSocketAddress getInternetworkAddress() {
         return this.internetworkAddress;
     }

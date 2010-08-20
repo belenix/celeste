@@ -18,7 +18,8 @@
  * 02110-1301 USA
  *
  * Please contact Oracle, 16 Network Circle, Menlo Park, CA 94025
- * or visit www.oracle.com if you need additional information or have any questions.
+ * or visit www.oracle.com if you need additionalinformation or
+ * have any questions.
  */
 package sunlabs.titan.node;
 
@@ -84,7 +85,6 @@ import sunlabs.titan.BeehiveObjectId;
 import sunlabs.titan.Copyright;
 import sunlabs.titan.Release;
 import sunlabs.titan.Titan;
-import sunlabs.titan.TitanNodeId;
 import sunlabs.titan.api.BeehiveObject;
 import sunlabs.titan.api.ObjectStore;
 import sunlabs.titan.api.Service;
@@ -1732,19 +1732,17 @@ public class BeehiveNode implements Titan, NodeMBean {
             // If the gateway is not specified, then this node is the first node in a system.
             if (!this.configuration.isUnset(BeehiveNode.GatewayURL)) {
                 while (true) {
+                    URL url = new URL(this.configuration.asString(BeehiveNode.GatewayURL) + "/gateway");
                     try {
-                        OrderedProperties gatewayOptions = new OrderedProperties(new URL(this.configuration.asString(BeehiveNode.GatewayURL) + "/gateway"));
+                        OrderedProperties gatewayOptions = new OrderedProperties(url);
                         gateway = new NodeAddress(gatewayOptions.getProperty(BeehiveNode.NodeAddress.getName()));
                         break;
                     } catch (MalformedURLException fatal) {
                         fatal.printStackTrace();
                         System.exit(1);
                     } catch (IOException e) {
-                        this.log.severe("%s", this.address.getHTTPInterface());
-                        this.log.severe("Gateway: %s: %s.  Will retry in %sms%n",
-                                this.configuration.asString(BeehiveNode.GatewayURL) + "/gateway",
-                                e.toString(),
-                                this.configuration.asLong(BeehiveNode.GatewayRetryDelayMillis));
+                        this.log.severe("%s: %s will retry in %sms%n",
+                                e.toString(), this.address.getHTTPInterface(), this.configuration.asLong(BeehiveNode.GatewayRetryDelayMillis));
                     }
                     try {
                         Thread.sleep(this.configuration.asLong(BeehiveNode.GatewayRetryDelayMillis));

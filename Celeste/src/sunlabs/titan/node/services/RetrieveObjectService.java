@@ -24,8 +24,6 @@
 package sunlabs.titan.node.services;
 
 import java.net.URI;
-import java.net.URISyntaxException;
-
 import java.util.Map;
 
 import javax.management.InstanceAlreadyExistsException;
@@ -35,7 +33,6 @@ import javax.management.NotCompliantMBeanException;
 
 import sunlabs.asdf.web.XML.XHTML;
 import sunlabs.asdf.web.http.HTTP;
-import sunlabs.asdf.web.http.HttpMessage;
 import sunlabs.titan.BeehiveObjectId;
 import sunlabs.titan.api.BeehiveObject;
 import sunlabs.titan.node.BeehiveMessage;
@@ -43,7 +40,6 @@ import sunlabs.titan.node.BeehiveNode;
 import sunlabs.titan.node.BeehiveObjectStore;
 import sunlabs.titan.node.BeehiveMessage.RemoteException;
 import sunlabs.titan.node.services.api.RetrieveObject;
-import sunlabs.titan.util.DOLRStatus;
 
 public final class RetrieveObjectService extends BeehiveService implements RetrieveObject, RetrieveObjectServiceMBean {
     private final static long serialVersionUID = 1L;

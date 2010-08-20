@@ -266,6 +266,7 @@ public final class WebDAVDaemon extends BeehiveService implements WebDAVDaemonMB
                 serverSocketChannel.configureBlocking(true);
                 serverSocketChannel.socket().bind(new InetSocketAddress(WebDAVDaemon.this.node.configuration.asInt(WebDAVDaemon.Port)));
                 serverSocketChannel.socket().setReuseAddress(true);
+
 //                ExecutorService executor = (ThreadPoolExecutor) Executors.newFixedThreadPool(WebDAVDaemon.this.clientMaximum,
 //                        new SimpleThreadFactory(WebDAVDaemon.this.node.getObjectId() + ":" + WebDAVDaemon.this.getName() + ".Server"));
 

@@ -369,7 +369,7 @@ public class Beehive {
 
                     System.out.printf("%s [%d ms] %s%n",
                             dateFormat.format(new Date()),
-                            System.currentTimeMillis() - node[i].getStartTime(),
+                            System.currentTimeMillis() - Long.parseLong(node[i].getProperty(BeehiveNode.StartTime.getName())),
                             node[i].getNodeAddress().format());
 
                     try {

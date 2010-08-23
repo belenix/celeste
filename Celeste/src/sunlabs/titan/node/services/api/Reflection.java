@@ -144,9 +144,4 @@ public interface Reflection extends Service {
      * @throws BeehiveObjectStore.NotFoundException
      */
     public BeehiveMessage getObjectType(final BeehiveMessage message) throws ClassCastException, ClassNotFoundException, BeehiveObjectStore.NotFoundException;
-
-    /**
-     * This produces a uniform {@link XHTML.Document} for all purposes.
-     */
-    public XHTML.Document toDocument(URI uri, Map<String,HTTP.Message> props);
 }

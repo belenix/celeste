@@ -294,8 +294,7 @@ public class DOLRLogger implements DOLRLoggerMBean {
      * is enabled for the WARNING message level.
      */
     public void warning(String format, Object... args) {
-    	this.logger.logp(Level.WARNING, this.getCallingClass(),
-    			this.getCallingMethod(), String.format(format, args));
+    	this.logger.logp(Level.WARNING, this.getCallingClass(), this.getCallingMethod(), String.format(format, args));
     }
 
     /**
@@ -316,15 +315,13 @@ public class DOLRLogger implements DOLRLoggerMBean {
      */
     public void log(Level level, String msg) {
         if (this.logger.isLoggable(level)) {
-            this.logger.logp(level, this.getCallingClass(),
-                this.getCallingMethod(), msg);
+            this.logger.logp(level, this.getCallingClass(), this.getCallingMethod(), msg);
         }
     }
 
     public void log(Level level, String format, Object... args) {
         if (this.logger.isLoggable(level)) {
-            this.logger.logp(level, this.getCallingClass(),
-                this.getCallingMethod(), String.format(format, args));
+            this.logger.logp(level, this.getCallingClass(), this.getCallingMethod(), String.format(format, args));
         }
     }
 

@@ -17,9 +17,10 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
  * 02110-1301 USA
  *
- * Please contact Oracle, 16 Network Circle, Menlo Park, CA 94025
- * or visit www.oracle.com if you need additionalinformation or
+ * Please contact Oracle Corporation, 500 Oracle Parkway, Redwood Shores, CA 94065
+ * or visit www.oracle.com if you need additional information or
  * have any questions.
+ * 
  */
 package sunlabs.titan.node;
 
@@ -84,7 +85,7 @@ import sunlabs.asdf.web.http.HTTP;
 import sunlabs.titan.BeehiveObjectId;
 import sunlabs.titan.Copyright;
 import sunlabs.titan.Release;
-import sunlabs.titan.Titan;
+import sunlabs.titan.TitanNode;
 import sunlabs.titan.api.BeehiveObject;
 import sunlabs.titan.api.ObjectStore;
 import sunlabs.titan.api.Service;
@@ -114,7 +115,7 @@ import sunlabs.titan.util.WeakMBeanRegistrar;
  * Each node listens for incoming connections from other nodes, processes and routes messages,
  * manages a local object store, and provides a framework for extending functionality. 
  */
-public class BeehiveNode implements Titan, NodeMBean {
+public class BeehiveNode implements TitanNode, NodeMBean {
     
     private static class PlainChannelHandler extends UnsecureChannelHandler implements ChannelHandler {
         private static class Factory implements ChannelHandler.Factory {
@@ -477,7 +478,9 @@ public class BeehiveNode implements Titan, NodeMBean {
     private class BeehiveServer2 extends Thread implements ConnectionServer, BeehiveServer2MBean {
 
         /**
-         * Per thread Socket handling.
+         * Per thread Socket handling, reads messages from the input
+         * socket and dispatches each to the local node for processing.
+         *
          */
         public class BeehiveService2 implements Runnable, BeehiveService2MBean {
             private Socket socket;
@@ -680,11 +683,6 @@ public class BeehiveNode implements Titan, NodeMBean {
         public long getJMXLargestPoolSize();
     }
 
-    /**
-     * BeehiveService reads messages from the input
-     * socket and dispatches each to the local node for processing.
-     */
-
     public interface BeehiveService2MBean extends ServerSocketMBean {
 
     }
@@ -809,9 +807,11 @@ public class BeehiveNode implements Titan, NodeMBean {
     public final static Attributes.Prototype ObjectStoreCapacity = new Attributes.Prototype(BeehiveNode.class, "ObjectStoreMaximum", "unlimited",
             "The maximum allowed size for the local object-store.");
 
-    public final static Attributes.Prototype DojoRoot = new Attributes.Prototype(WebDAVDaemon.class, "DojoRoot", "http://o.aolcdn.com/dojo/1.4.1");
+    public final static Attributes.Prototype DojoRoot = new Attributes.Prototype(WebDAVDaemon.class, "DojoRoot", "http://o.aolcdn.com/dojo/1.4.1", "The URL of the base location of a Dojo installation.");
     public final static Attributes.Prototype DojoJavascript = new Attributes.Prototype(WebDAVDaemon.class, "DojoJavascript", "dojo/dojo.xd.js");
     public final static Attributes.Prototype DojoTheme = new Attributes.Prototype(WebDAVDaemon.class, "DojoTheme", "tundra");
+    
+    public final static Attributes.Prototype StartTime = new Attributes.Prototype(BeehiveNode.class, "StartTime", 0, "The local start time of this node.");
     
     //
     // Arrange to use weak references for registrations with the MBean server.
@@ -884,10 +884,8 @@ public class BeehiveNode implements Titan, NodeMBean {
         this.configuration.add(BeehiveNode.DojoJavascript);
         this.configuration.add(BeehiveNode.DojoTheme);
 
-        Thread.currentThread().setName("main");
-
         String localFsRoot = this.configuration.asString(BeehiveNode.LocalFileSystemRoot);
-        // Create this node's "spool" directory before much of the rest of the node is brought up.
+        // Create this node's "spool" directory before the rest of the node is setup.
         File rootDirectory = new File(localFsRoot);
         if (!rootDirectory.exists()) {
             rootDirectory.mkdirs();
@@ -908,7 +906,8 @@ public class BeehiveNode implements Titan, NodeMBean {
         //
 
         String keyStoreFileName = null;
-        // If the keyStoreFileName has not been specified in the configuration, then we must construct one here.
+        // If the keyStoreFileName has not been specified in the configuration parameters,
+        // then we must construct one here and set it.
         if (this.configuration.isUnset(BeehiveNode.KeyStoreFileName)) {
             // Be careful what characters you use here to separate the components
             // of the file name.  For example, using a ':' in a file name causes
@@ -928,7 +927,6 @@ public class BeehiveNode implements Titan, NodeMBean {
         // Give the main Thread for this node a name and setup a ThreadGroup.
         // This is to distinguish this node from other nodes when they are
         // all running in one JVM.
-        Thread.currentThread().setName(this.getObjectId().toString() + ".main");
         this.threadGroup = new ThreadGroup(this.getObjectId().toString());
 
         this.tasks = new ScheduledThreadPoolExecutor(this.configuration.asInt(BeehiveNode.TaskPoolSize), new BeehiveNode.SimpleThreadFactory(this.getObjectId().toString()));
@@ -939,7 +937,7 @@ public class BeehiveNode implements Titan, NodeMBean {
         this.spoolDirectory = localFsRoot + File.separator + BeehiveNode.beehiveNodeBackingStorePrefix + this.getObjectId();
         new File(this.spoolDirectory).mkdirs();
 
-        this.log = new DOLRLogger("sunlabs.titan.node.BeehiveNode", this.getObjectId(), this.spoolDirectory,
+        this.log = new DOLRLogger(BeehiveNode.class.getName(), this.getObjectId(), this.spoolDirectory,
                 this.configuration.asInt(BeehiveNode.LogFileSize),  this.configuration.asInt(BeehiveNode.LogFileCount));
 
         try {
@@ -948,6 +946,7 @@ public class BeehiveNode implements Titan, NodeMBean {
             BeehiveNode.registrar.registerMBean(JMX.objectName(this.jmxObjectName, "log"), this.log, DOLRLoggerMBean.class);
 
             try {
+                // XXX Should dossier be part of RoutingDaemon?
                 this.dossier = new Dossier(this.spoolDirectory);
             } catch (BackedObjectMap.AccessException e) {
                 throw new RuntimeException(e);
@@ -1004,11 +1003,12 @@ public class BeehiveNode implements Titan, NodeMBean {
             }
 
             this.map = new NeighbourMap(this);
+            // XXX Should the object store be part of PublishDaemon?
             this.store = new BeehiveObjectStore(this, this.configuration.asString(BeehiveNode.ObjectStoreCapacity));
             this.objectPublishers = new Publishers(this, this.spoolDirectory);
 
             this.services = new ApplicationFramework(this,
-                    new DOLRLogger("sunlabs.titan.node.ApplicationFramework",
+                    new DOLRLogger(ApplicationFramework.class.getName(),
                             getObjectId(), getSpoolDirectory(),
                             this.configuration.asInt(BeehiveNode.LogFileSize), this.configuration.asInt(BeehiveNode.LogFileCount)));
 
@@ -1070,7 +1070,7 @@ public class BeehiveNode implements Titan, NodeMBean {
         return this.services;
     }
 
-    public String getBeehiveProperties() {
+    public String getProperties() {
         return this.configuration.toString();
     }
 
@@ -1131,6 +1131,10 @@ public class BeehiveNode implements Titan, NodeMBean {
         return this.store;
     }
     
+    public String getProperty(String propertyName) {
+        return this.configuration.get(new Attributes.Prototype(propertyName, null, null)).asString();
+    }
+    
     /**
      * Get (dynamically loading and instantiating, if necessary) an instance of the named class cast to the given {@link Service}.
      *
@@ -1165,10 +1169,6 @@ public class BeehiveNode implements Titan, NodeMBean {
      */
     public String getSpoolDirectory() {
         return this.spoolDirectory;
-    }
-
-    public long getStartTime() {
-        return this.startTime;
     }
 
     public ThreadGroup getThreadGroup() {
@@ -1239,58 +1239,71 @@ public class BeehiveNode implements Titan, NodeMBean {
      * @return - The answering {@link BeehiveMessage} in response.
      */
     public BeehiveMessage receive(BeehiveMessage request) {
-        BeehiveObjectId destinationNodeId = request.getDestinationNodeId();
+        try {
+            BeehiveObjectId destinationNodeId = request.getDestinationNodeId();
 
-        if (destinationNodeId == null) {
-            System.out.printf("destination node is null%n");
-        }
-        
-        if (destinationNodeId.equals(this.getObjectId())) {
-            // Any message other than route-to-node or route-to-object would indicate an ObjectId collision.
-            if (request.isTraced()) {
-                BeehiveNode.this.log.info("recv1(%s)", request.traceReport());
+            if (destinationNodeId == null) {
+                System.out.printf("destination node is null%n");
             }
-            return this.services.sendMessageToApp(request);
-        }
 
-        BeehiveMessage.Type type = request.getType();
-
-        if (type == BeehiveMessage.Type.PublishObject) {
-            return this.receivePublishObject(request);
-        }
-
-        if (type == BeehiveMessage.Type.UnpublishObject) {
-            return this.receiveUnpublishObject(request);
-        }
-
-        if (type == BeehiveMessage.Type.RouteToObject) {
-            return this.receiveRouteToObject(request);
-        }
-
-        // The message is a RouteToNode message.
-
-        if (request.isTraced()) {
-            BeehiveNode.this.log.info("recv: %s", request.traceReport());
-        }
-        if (this.map.getRoute(destinationNodeId) == null) {
-            // This node is the root of the destinationNodeId then we
-            // must check to see if the message was sent to a particular node exactly.
-            // If so, and we are NOT that node, return a reply indicating failure.
-            // Otherwise, accept the message.
-            if (request.isExactRouting() && !destinationNodeId.equals(this.getObjectId())) {
-                return request.composeReply(this.address, new BeehiveNode.NoSuchNodeException("%s", destinationNodeId.toString()));
+            if (destinationNodeId.equals(this.getObjectId())) {
+                // Any message other than route-to-node or route-to-object would indicate an ObjectId collision.
+                if (request.isTraced()) {
+                    BeehiveNode.this.log.info("recv1(%s)", request.traceReport());
+                }
+                return this.services.sendMessageToApp(request);
             }
-            BeehiveMessage result = this.services.sendMessageToApp(request);
+
+            BeehiveMessage.Type type = request.getType();
+
+            if (type == BeehiveMessage.Type.PublishObject) {
+                return this.receivePublishObject(request);
+            }
+
+            if (type == BeehiveMessage.Type.UnpublishObject) {
+                return this.receiveUnpublishObject(request);
+            }
+
+            if (type == BeehiveMessage.Type.RouteToObject) {
+                return this.receiveRouteToObject(request);
+            }
+
+            // The message is a RouteToNode message.
 
             if (request.isTraced()) {
-                BeehiveNode.this.log.info("reply(%s)", result.traceReport());
+                BeehiveNode.this.log.info("recv: %s", request.traceReport());
             }
+            if (this.map.getRoute(destinationNodeId) == null) {
+                // This node is the root of the destinationNodeId then we
+                // must check to see if the message was sent to a particular node exactly.
+                // If so, and we are NOT that node, return a reply indicating failure.
+                // Otherwise, accept the message.
+                if (request.isExactRouting() && !destinationNodeId.equals(this.getObjectId())) {
+                    return request.composeReply(this.address, new BeehiveNode.NoSuchNodeException("%s", destinationNodeId.toString()));
+                }
+                BeehiveMessage result = this.services.sendMessageToApp(request);
+
+                if (request.isTraced()) {
+                    BeehiveNode.this.log.info("reply(%s)", result.traceReport());
+                }
+                return result;
+            }
+
+            BeehiveMessage result = this.transmit(request);
+
             return result;
+        } catch (ClassCastException e) {
+            BeehiveNode.this.log.severe("Internal message payload ClassCastException.%n");
+            return request.composeReply(this.address, e);
+        } catch (ClassNotFoundException e) {
+            BeehiveNode.this.log.severe("Internal message payload ClassNotFoundException.%n");
+            return request.composeReply(this.address, e);
+        } catch (BeehiveMessage.RemoteException e) {
+            BeehiveNode.this.log.severe("Internal message payload contained unexpected BeehiveMessage.RemoteException%n");
+            return request.composeReply(this.address, e);
+        } finally {
+
         }
-
-        BeehiveMessage result = this.transmit(request);
-
-        return result;
     }
 
     /**
@@ -1493,53 +1506,57 @@ public class BeehiveNode implements Titan, NodeMBean {
     }
 
     /**
-     * Receive an {@link UnpublishObjectMessage}.
+     * Receive and process an {@link UnpublishObjectMessage}.
      * <p>
      * Delete any back-pointers to the object, and forward the message on to the next hop
      * along the routing path.  If this node terminates the routing path,
-     * delete any root reference and invoke the named application.
+     * invoke the {@link BeehiveObjectHandler#unpublishObject(BeehiveMessage)} method of the object.
      * </p>
      * <p>
      * Each {@code UnublishObjectMessage}, while multicast in nature, is not really
      * handled like multicast messages.  True multicast messages are received
      * by the associated application all along the routing path.
      * UnpublishObject messages cause the associated application to receive the
-     * message only at the end of the routing path (the root).
+     * message only at the root, or end, of the routing path.
      * </p>
      * @param request The received {@link UnpublishObjectMessage}
      */
-    private BeehiveMessage receiveUnpublishObject(BeehiveMessage request) {
+    private BeehiveMessage receiveUnpublishObject(BeehiveMessage request) throws ClassCastException, ClassNotFoundException, BeehiveMessage.RemoteException {
         if (request.isTraced()) {
             BeehiveNode.this.log.info("recv %s: objectId=%s", request.traceReport(), request.getObjectId());
         }
 
-        try {
+//        try {
             PublishDaemon.UnpublishObject.Request unpublishRequest = request.getPayload(PublishDaemon.UnpublishObject.Request.class, this);
             for (BeehiveObjectId objectId : unpublishRequest.getObjectIds()) {
-
                 // Remove the unpublished object from this node's publisher records.
                 this.getObjectPublishers().remove(objectId, request.getSource().getObjectId());
-
-                // Route the message on to the root, or (if this node is the root) hand it out to the
-                // handler specified in the incoming BeehiveMessage.
-                if (this.map.getRoute(request.getDestinationNodeId()) != null) {
-                    return this.transmit(request);
-                }
-
-                return this.services.sendMessageToApp(request);
             }
-        } catch (ClassCastException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-        } catch (ClassNotFoundException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-        } catch (RemoteException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-        }
-        // XXX problem here.
-        return null;
+            if (this.map.getRoute(request.getDestinationNodeId()) != null) {
+                // Route the message on to the root.
+                return this.transmit(request);
+            } else {
+                // This node is the root hand it out to the handler specified in the incoming BeehiveMessage.
+                return this.services.sendMessageToApp(request);                
+            }
+            
+//            for (BeehiveObjectId objectId : unpublishRequest.getObjectIds()) {
+//
+//                // Remove the unpublished object from this node's publisher records.
+//                this.getObjectPublishers().remove(objectId, request.getSource().getObjectId());
+//
+//                // Route the message on to the root, or (if this node is the root) hand it out to the
+//                // handler specified in the incoming BeehiveMessage.
+//                if (this.map.getRoute(request.getDestinationNodeId()) != null) {
+//                    return this.transmit(request);
+//                }
+//
+//                return this.services.sendMessageToApp(request);
+//            }
+//        } finally {
+//        }
+//        // XXX problem here.
+//        return null;
     }
 
     /**
@@ -1724,7 +1741,8 @@ public class BeehiveNode implements Titan, NodeMBean {
      */
     public Thread start() {
         this.startTime = System.currentTimeMillis();
-
+        this.configuration.set(StartTime, System.currentTimeMillis());
+        
         try {
             NodeAddress gateway = null;
 
@@ -2028,7 +2046,8 @@ public class BeehiveNode implements Titan, NodeMBean {
             BeehiveNode node = new BeehiveNode(p);
             Thread thread = node.start();
 
-            System.out.printf("%s [%d ms] %s%n", dateFormat.format(new Date()), System.currentTimeMillis() - node.getStartTime(), node.toString());
+            System.out.printf("%s [%d ms] %s%n", dateFormat.format(new Date()),
+                    System.currentTimeMillis() - Long.parseLong(node.getProperty(BeehiveNode.StartTime.getName())), node.toString());
             while (true) {
                 try {
                     thread.join();

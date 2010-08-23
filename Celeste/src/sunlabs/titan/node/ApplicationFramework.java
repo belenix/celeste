@@ -666,8 +666,7 @@ public final class ApplicationFramework implements XHTMLInspectable {
             throw new NullPointerException("node and log must not be null");
         }
 
-        new File(node.getSpoolDirectory() + File.separator +
-                "applications" + File.separator).mkdirs();
+        new File(node.getSpoolDirectory() + File.separator + "applications" + File.separator).mkdirs();
 
         this.node = node;
         this.log = log;
@@ -678,13 +677,11 @@ public final class ApplicationFramework implements XHTMLInspectable {
         // property's been set to name this instance.
         //
         String httpURL = this.node.getNodeAddress().getHTTPInterface().toString();
-        this.loadOnlyFromObjectStore =
-            httpURL.equals(ApplicationFramework.loadOnlyFromObjectStoreValue);
+        this.loadOnlyFromObjectStore = httpURL.equals(ApplicationFramework.loadOnlyFromObjectStoreValue);
         if (this.loadOnlyFromObjectStore)
             this.log.info("loadOnlyFromObjectStore set for %s", httpURL);
 
-        this.storeClassesInObjectStore = Boolean.parseBoolean(
-            ApplicationFramework.storeClassesInObjectStoreValue);
+        this.storeClassesInObjectStore = Boolean.parseBoolean(ApplicationFramework.storeClassesInObjectStoreValue);
     }
 
     //

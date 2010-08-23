@@ -41,6 +41,7 @@ import sunlabs.asdf.util.Attributes;
 import sunlabs.asdf.util.Time;
 import sunlabs.titan.Copyright;
 import sunlabs.titan.Release;
+import sunlabs.titan.node.BeehiveNode;
 import sunlabs.titan.node.BeehiveNode.ConfigurationException;
 import sunlabs.titan.util.OrderedProperties;
 
@@ -194,7 +195,7 @@ public class Supervisor {
 
                     System.out.printf("%s [%d ms] %s%n",
                             dateFormat.format(new Date()),
-                            System.currentTimeMillis() - node[i].getStartTime(),
+                            System.currentTimeMillis() - Long.parseLong(node[i].getProperty(BeehiveNode.StartTime.getName())),
                             node[i].getNodeAddress().format());
 
                     try {

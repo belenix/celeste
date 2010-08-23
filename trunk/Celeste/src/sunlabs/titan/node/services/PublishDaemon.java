@@ -521,6 +521,7 @@ public final class PublishDaemon extends BeehiveService implements Publish, Publ
     	}
     	
         BeehiveMessage message = new UnpublishObjectMessage(this.node.getNodeAddress(), objectId, PublishDaemon.name, "unpublishObject", request);
+        message.setTraced(true);
 
         return this.node.receive(message);
     }
@@ -532,6 +533,7 @@ public final class PublishDaemon extends BeehiveService implements Publish, Publ
         }
         
         BeehiveMessage message = new UnpublishObjectMessage(this.node.getNodeAddress(), object.getObjectId(), object.getObjectType(), "unpublishObject", request);
+        message.setTraced(true);
 
         return this.node.receive(message);
     }    

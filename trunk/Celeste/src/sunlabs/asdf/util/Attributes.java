@@ -267,7 +267,7 @@ public class Attributes extends TreeMap<String,Attributes.Attribute> {
         private Object defaultValue;
         protected String description;
 
-        private Prototype(String fullName, Object defaultValue, String description) {
+        public Prototype(String fullName, Object defaultValue, String description) {
             this.fullName = fullName;
             this.defaultValue = defaultValue;
             this.description = description;

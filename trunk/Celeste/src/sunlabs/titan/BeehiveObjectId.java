@@ -254,7 +254,12 @@ public class BeehiveObjectId implements TitanGuid {
     public BeehiveObjectId add(byte[] data) {
         return (data == null) ? this : this.add(ByteBuffer.wrap(data));
     }
-
+    
+    /**
+     * Create a new {@code BeehiveObjectId} by combining more data to this {@code BeehiveObjectId}.
+     *
+     * @param data The data to combine.
+     */
     public BeehiveObjectId add(ByteBuffer data) {
         if (data == null)
             return this;

@@ -62,7 +62,6 @@ public class FileSystemBackend /*extends WebDAV.AbstractBackend*/ implements Web
             if (path.compareTo("/") == 0)
                 path = "index.html";
             this.fullPath = this.documentRoot.append(path).toString();
-            try { System.out.printf("FileSystemResource %s -> %s (%s)%n", uri, this.fullPath, this.getContentType()); } catch (Exception e) { e.printStackTrace(); }
         }
 
         public InputStream asInputStream() throws HTTP.InternalServerErrorException, HTTP.GoneException, HTTP.MethodNotAllowedException,

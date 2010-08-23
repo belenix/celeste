@@ -426,15 +426,14 @@ public final class WebDAVDaemon extends BeehiveService implements WebDAVDaemonMB
 
                     return new HttpResponse(HTTP.Response.Status.OK, new HttpContent.Text.Plain(string.toString()));
                 } else if (uri.getPath().startsWith("/gateway")) {
-                    return new HttpResponse(HTTP.Response.Status.OK, new HttpContent.Text.Plain(this.node.getBeehiveProperties()));
+                    return new HttpResponse(HTTP.Response.Status.OK, new HttpContent.Text.Plain(this.node.getProperties()));
                 } else if (uri.getPath().startsWith("/config")) {
-                    return new HttpResponse(HTTP.Response.Status.OK, new HttpContent.Text.Plain(this.node.getBeehiveProperties()));
+                    return new HttpResponse(HTTP.Response.Status.OK, new HttpContent.Text.Plain(this.node.getProperties()));
                 } else if (uri.getPath().startsWith("/reflect")) {
                     Reflection reflection = this.node.getService(ReflectionService.class);
                     if (reflection != null) {
-                    	XHTML.Document document = reflection.toDocument(uri, props);
-
-                    	return new HttpResponse(HTTP.Response.Status.OK, new HttpContent.Text.HTML(document));
+                        return new HttpResponse(HTTP.Response.Status.OK,
+                                new HttpContent.Text.HTML(this.makeDocument("Reflection", new XHTML.Body(reflection.toXHTML(uri, props)), null, null))); 
                     }
                     return new HttpResponse(HTTP.Response.Status.BAD_REQUEST, new HttpContent.Text.Plain("Unknown service: " + name));
                 } else if (uri.getPath().startsWith("/route-table")) {

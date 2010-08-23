@@ -105,8 +105,7 @@ public interface ObjectStore extends XHTMLInspectable, Iterable<BeehiveObjectId>
      * @throws UnacceptableObjectException The {@link BeehiveObject} is unacceptable as it is presented due
      *         to some inconsistency or the object's {@link BeehiveObjectHandler} rejected it during publishing.
      */
-    public BeehiveObjectId create(BeehiveObject object)
-    throws InvalidObjectException, ObjectExistenceException, NoSpaceException, UnacceptableObjectException;
+    public BeehiveObjectId create(BeehiveObject object) throws InvalidObjectException, ObjectExistenceException, NoSpaceException, UnacceptableObjectException;
 
     /**
      * Given a {@link BeehiveObjectId} get the corresponding {@link BeehiveObject} from the local object store.
@@ -133,7 +132,8 @@ public interface ObjectStore extends XHTMLInspectable, Iterable<BeehiveObjectId>
      * @param objectId
      * @throws ClassCastException
      */
-    public <C extends BeehiveObject> C get(final Class<? extends C> klasse, final BeehiveObjectId objectId) throws ClassCastException, BeehiveObjectStore.NotFoundException;
+    public <C extends BeehiveObject> C get(final Class<? extends C> klasse, final BeehiveObjectId objectId) throws ClassCastException,
+        BeehiveObjectStore.NotFoundException;
 
     /**
      * Given a {@link BeehiveObjectId} get the corresponding {@link BeehiveObject} from the local object store.
@@ -156,8 +156,8 @@ public interface ObjectStore extends XHTMLInspectable, Iterable<BeehiveObjectId>
      * @throws ClassCastException if the stored object is not the specified class.
      * @throws BeehiveObjectStore.NotFoundException if the stored object is not found
      */
-    public <C extends BeehiveObject> C getAndLock(final Class<? extends C> klasse, final BeehiveObjectId objectId)
-    throws ClassCastException, BeehiveObjectStore.NotFoundException;
+    public <C extends BeehiveObject> C getAndLock(final Class<? extends C> klasse, final BeehiveObjectId objectId) throws ClassCastException,
+        BeehiveObjectStore.NotFoundException;
 
     /**
      * Given a {@link BeehiveObjectId} try to obtain a locked instance of the corresponding
@@ -171,8 +171,8 @@ public interface ObjectStore extends XHTMLInspectable, Iterable<BeehiveObjectId>
      * @throws ClassCastException if the stored object is not the specified class.
      * @throws BeehiveObjectStore.NotFoundException if the stored object is not found
      */
-    public <C extends BeehiveObject> C tryGetAndLock(final Class<? extends C> klasse, final BeehiveObjectId objectId)
-    throws ClassCastException, BeehiveObjectStore.NotFoundException;
+    public <C extends BeehiveObject> C tryGetAndLock(final Class<? extends C> klasse, final BeehiveObjectId objectId) throws ClassCastException,
+        BeehiveObjectStore.NotFoundException;
 
     /**
      * Store (either create or update as appropriate) the given {@link BeehiveObject} in the object store.
@@ -181,16 +181,15 @@ public interface ObjectStore extends XHTMLInspectable, Iterable<BeehiveObjectId>
      * As a side-effect, the {@link BeehiveObjectId} of the object is computed and set via {@link BeehiveObject#setObjectId(BeehiveObjectId)}.
      * </p>
      */
-    public BeehiveObjectId store(BeehiveObject object)
-    throws InvalidObjectException, NoSpaceException, UnacceptableObjectException;
+    public BeehiveObjectId store(BeehiveObject object) throws InvalidObjectException, NoSpaceException, UnacceptableObjectException;
 
     /**
      * Update an existing {@link BeehiveObject} in the object store.
      * The object <em>must</em> already exist.
      * The object <em>must</em> be locked by the current Thread (see {@link #lock(BeehiveObjectId)}).
      */
-    public BeehiveObjectId update(BeehiveObject object)
-    throws InvalidObjectException, ObjectExistenceException, NoSpaceException, UnacceptableObjectException, IOException;
+    public BeehiveObjectId update(BeehiveObject object) throws InvalidObjectException, ObjectExistenceException, NoSpaceException,
+        UnacceptableObjectException, IOException;
 
     /**
      * Remove a (locked) {@link BeehiveObject} from the local object store.
@@ -220,8 +219,6 @@ public interface ObjectStore extends XHTMLInspectable, Iterable<BeehiveObjectId>
      * @param objectId the {@link BeehiveObjectId} of the {@link BeehiveObject} to lock.
      */
     public void unlock(BeehiveObjectId objectId);
-
-    public void unlock(BeehiveObjectId objectId, boolean trace);
 
     /**
      * Unlock the given object and if the object is in the local store, emit

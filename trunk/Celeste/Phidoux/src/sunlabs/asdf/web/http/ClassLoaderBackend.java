@@ -54,7 +54,6 @@ public class ClassLoaderBackend implements WebDAV.Backend {
         public ClassLoaderResource(WebDAV.Backend backend, URI uri, Identity identity, String documentRoot, ClassLoader classLoader) {
             super(backend, uri, identity);
 
-            System.out.printf("ClassResourceResource %s%n", uri);
             this.documentRoot = new HttpUtil.PathName(documentRoot);
             String path = this.getURI().getPath();
             if (path.compareTo("/") == 0)
@@ -188,5 +187,4 @@ public class ClassLoaderBackend implements WebDAV.Backend {
         }
         
     }
-
 }

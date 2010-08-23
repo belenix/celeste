@@ -747,7 +747,7 @@ public final class BeehiveObjectStore implements ObjectStore {
             return this.unlockAndPublish(object);
         }
 
-        return this.unlockAndUnpublish(object, UnpublishObject.Type.REQUIRED, false);
+        return this.unlockAndUnpublish(object, UnpublishObject.Type.REQUIRED, true);
     }
 
     /**
@@ -815,11 +815,11 @@ public final class BeehiveObjectStore implements ObjectStore {
      */
     private BeehiveMessage unlockAndUnpublish(BeehiveObject object, UnpublishObject.Type type, boolean trace) {
     	try {
-    		Publish publisher = (Publish) this.node.getService("sunlabs.titan.node.services.PublishDaemon");
+    		Publish publisher = (Publish) this.node.getService(PublishDaemon.class.getName());
     		BeehiveMessage result = publisher.unpublish(object, type);
     		return result;
     	} finally {
-    		this.unlock(object.getObjectId(), false);    		
+    		this.unlock(object.getObjectId());
     	}
     }
 

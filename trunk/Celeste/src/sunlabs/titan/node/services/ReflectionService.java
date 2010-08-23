@@ -1,5 +1,5 @@
 /*
- * Copyright 2007-2009 Sun Microsystems, Inc. All Rights Reserved.
+ * Copyright 2007-2010 Oracle. All Rights Reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER
  *
  * This code is free software; you can redistribute it and/or modify
@@ -17,15 +17,13 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
  * 02110-1301 USA
  *
- * Please contact Sun Microsystems, Inc., 16 Network Circle, Menlo
- * Park, CA 94025 or visit www.sun.com if you need additional
- * information or have any questions.
+ * Please contact Oracle, 16 Network Circle, Menlo Park, CA 94025
+ * or visit www.oracle.com if you need additional information or
+ * have any questions.
  */
 package sunlabs.titan.node.services;
 
 import java.net.URI;
-import java.util.LinkedList;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.logging.Level;
@@ -36,10 +34,8 @@ import javax.management.MalformedObjectNameException;
 import javax.management.NotCompliantMBeanException;
 
 import sunlabs.asdf.web.XML.XHTML;
-import sunlabs.asdf.web.ajax.dojo.Dojo;
 import sunlabs.asdf.web.http.HTTP;
 import sunlabs.titan.BeehiveObjectId;
-import sunlabs.titan.Copyright;
 import sunlabs.titan.api.BeehiveObject;
 import sunlabs.titan.node.BeehiveMessage;
 import sunlabs.titan.node.BeehiveNode;
@@ -171,35 +167,6 @@ public final class ReflectionService extends BeehiveService implements Reflectio
             e.printStackTrace();
             return message.composeReply(this.node.getNodeAddress(), e);
         }
-    }
-
-    public XHTML.Document toDocument(URI uri, Map<String,HTTP.Message> props) {
-        List<XHTML.Link> styleLinks = new LinkedList<XHTML.Link>();
-
-        XHTML.Script scriptLink = new XHTML.Script("text/javascript").setSource("/js/DOLRScript.js");
-
-        Dojo dojo = new Dojo(this.node.configuration.asString(BeehiveNode.DojoRoot),
-                this.node.configuration.asString(BeehiveNode.DojoJavascript),
-                this.node.configuration.asString(BeehiveNode.DojoTheme)
-                );
-        dojo.setConfig("isDebug: false, parseOnLoad: true, baseUrl: './', useXDomain: true, modulePaths: {'sunlabs': '/dojo/1.3.1/sunlabs'}");
-        dojo.requires("dojo.parser", "sunlabs.StickyTooltip", "dijit.ProgressBar");
-
-        XHTML.Head head = new XHTML.Head();
-        dojo.dojoify(head);
-        head.add(styleLinks.toArray(new XHTML.Link[0]));
-        head.add(scriptLink, new XHTML.Title("reflection"));
-
-        XHTML.Div validate = new XHTML.Div(new XHTML.Anchor("validate").setHref(XHTML.SafeURL("http://validator.w3.org/check/referrer")).setClass("bracket"));
-
-        XHTML.Div copyright = new XHTML.Div(new XHTML.Div("release").setClass("release"),
-                new XHTML.Div(Copyright.miniNotice).setClass("copyright"));
-
-        XHTML.Body body = new XHTML.Body(this.toXHTML(uri, props));
-        body.add(copyright, validate);
-        body.setClass(dojo.getTheme()).addClass(name);
-
-        return new XHTML.Document(new XHTML.Html(head, body));
     }
 
     public XHTML.EFlow toXHTML(URI uri, Map<String,HTTP.Message> props) {

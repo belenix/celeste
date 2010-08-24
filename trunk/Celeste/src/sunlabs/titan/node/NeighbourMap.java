@@ -109,18 +109,18 @@ public final class NeighbourMap {
             int B_reputation;
 
             // Fetch the Dossier on these and compute and compare the reputations.
-            Dossier.Entry entryA = NeighbourMap.this.node.getDossier().getEntryAndLock(a);
+            Dossier.Entry entryA = NeighbourMap.this.getDossier().getEntryAndLock(a);
             try {
                 A_reputation = entryA.computeReputation(this.mapReputationRequirements);
             } finally {
-                NeighbourMap.this.node.getDossier().unlockEntry(entryA);
+                NeighbourMap.this.getDossier().unlockEntry(entryA);
             }
 
-            Dossier.Entry entryB = NeighbourMap.this.node.getDossier().getEntryAndLock(b);
+            Dossier.Entry entryB = NeighbourMap.this.getDossier().getEntryAndLock(b);
             try {
                 B_reputation = entryB.computeReputation(this.mapReputationRequirements);
             } finally {
-                NeighbourMap.this.node.getDossier().unlockEntry(entryB);
+                NeighbourMap.this.getDossier().unlockEntry(entryB);
             }
 
             if (A_reputation == B_reputation) {
@@ -175,6 +175,9 @@ public final class NeighbourMap {
     private Map<String,Integer> mapReputationRequirements;
     private final BeehiveNode node;
 
+    /** Dossier on every neighbour ever known by this {@code BeehiveNode}. */
+    private Dossier dossier;
+
 //    private ObjectName jmxObjectName;
 
     /**
@@ -187,7 +190,6 @@ public final class NeighbourMap {
             MBeanRegistrationException,
             MalformedObjectNameException {
         this.n_tables = BeehiveObjectId.n_digits;
-//        this.n_entries = BeehiveObjectId.radix;
 
         this.node = node;
 
@@ -195,6 +197,12 @@ public final class NeighbourMap {
         this.mapReputationRequirements.put(Reputation.LATENCY, new Integer(50));
         this.mapReputationRequirements.put(Reputation.PUBLISHER, new Integer(25));
         this.mapReputationRequirements.put(Reputation.ROUTING, new Integer(25));
+        
+        try {
+            this.dossier = new Dossier(node.getSpoolDirectory());
+        } catch (BackedObjectMap.AccessException e) {
+            throw new RuntimeException(e);
+        }
 
         //
         // Unfortunately, it's not possible to allocate arrays with non-raw
@@ -545,6 +553,10 @@ public final class NeighbourMap {
 
         return list;
     }
+    
+    public Dossier getDossier() {
+        return this.dossier;
+    }
 
     public AttributeList setAttributes(AttributeList attributes) {
         AttributeList result = new AttributeList();
@@ -643,17 +655,10 @@ public final class NeighbourMap {
                 null); // notifications
     }
 
-//    public int getNTables() {
-//        return this.n_tables;
-//    }
-
-//    public int getNEntries() {
-//        return this.n_entries;
-//    }
-
     /**
      * Given a {@link BeehiveObjectId} {@code root} as the central node, compare successive {@code BeehiveObjectId}
      * instances ordering them as which would be the next in routing succession to replace the central node.
+     * Note that this is determined from information in the local neighbor-map, not perfect global information.
      */
     public static class RouteSuccession implements Comparator<NodeAddress>, Serializable {
         private static final long serialVersionUID = 1L;

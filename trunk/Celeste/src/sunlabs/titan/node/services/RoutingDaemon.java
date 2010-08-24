@@ -61,7 +61,6 @@ import sunlabs.titan.node.NodeAddress;
 import sunlabs.titan.node.Publishers;
 import sunlabs.titan.node.Reputation;
 import sunlabs.titan.node.BeehiveMessage.RemoteException;
-import sunlabs.titan.util.DOLRStatus;
 
 /**
  * A Beehive Node routing table maintenance daemon.
@@ -411,7 +410,7 @@ public final class RoutingDaemon extends BeehiveService implements RoutingDaemon
                     }
 
                     this.lastRunTime = System.currentTimeMillis();
-                    for (Map.Entry<BeehiveObjectId,Dossier.Entry> mapEntry : RoutingDaemon.this.node.getDossier().entrySet()) {
+                    for (Map.Entry<BeehiveObjectId,Dossier.Entry> mapEntry : RoutingDaemon.this.node.getNeighbourMap().getDossier().entrySet()) {
                         // Since we don't lock the Dossier, the next statement may fail to produce the Entry because it's been deleted.
                         Dossier.Entry entry = mapEntry.getValue();
                         if (entry != null) {
@@ -433,16 +432,16 @@ public final class RoutingDaemon extends BeehiveService implements RoutingDaemon
                                                 }
                                                 // Get dossier entry: if it is too old, then delete it
                                                 long tooOld = System.currentTimeMillis() - RoutingDaemon.this.node.configuration.asLong(RoutingDaemon.DossierTimeToLive);
-                                                Dossier.Entry e = RoutingDaemon.this.node.getDossier().getEntryAndLock(address);
+                                                Dossier.Entry e = RoutingDaemon.this.node.getNeighbourMap().getDossier().getEntryAndLock(address);
                                                 try {
                                                     if (e.getTimestamp() < tooOld) {
                                                         if (RoutingDaemon.this.log.isLoggable(Level.FINEST)) {
                                                             RoutingDaemon.this.log.finest("Removing old Dossier %s", address.format());
                                                         }
-                                                        RoutingDaemon.this.node.getDossier().removeEntry(e);
+                                                        RoutingDaemon.this.node.getNeighbourMap().getDossier().removeEntry(e);
                                                     }
                                                 } finally {
-                                                    RoutingDaemon.this.node.getDossier().unlockEntry(e);
+                                                    RoutingDaemon.this.node.getNeighbourMap().getDossier().unlockEntry(e);
                                                 }
                                             }
                                         } catch (Exception reportAndIgnore) {
@@ -562,7 +561,7 @@ public final class RoutingDaemon extends BeehiveService implements RoutingDaemon
      * to drop into place.
      * </p>
      */
-    public BeehiveMessage join(BeehiveMessage message) {
+    public BeehiveMessage join(BeehiveMessage message) throws ClassNotFoundException, ClassCastException, BeehiveMessage.RemoteException {
         //this.log.entering(message.toString());
 
         BeehiveMessage reply;
@@ -572,25 +571,11 @@ public final class RoutingDaemon extends BeehiveService implements RoutingDaemon
             // object-id.  ONLY after the root has created a response: we only
             // augment the data in the response.
             reply = this.node.transmit(message);
-            try {
-                JoinOperation.Response response = reply.getPayload(JoinOperation.Response.class, this.node);
-                Set<NodeAddress> addresses = response.getMap();
-                addresses.addAll(this.node.getNeighbourMap().keySet());
-                response.setMap(addresses);
-                reply = this.node.replyTo(message, DOLRStatus.OK, response);
-            } catch (ClassNotFoundException e) {
-                this.log.severe("%s: when reading reply.");
-                e.printStackTrace();
-                reply = this.node.replyTo(message, DOLRStatus.INTERNAL_SERVER_ERROR);
-            } catch (ClassCastException e) {
-                this.log.severe("%s: when reading reply.");
-                e.printStackTrace();
-                reply = this.node.replyTo(message, DOLRStatus.INTERNAL_SERVER_ERROR);
-            } catch (RemoteException e) {
-                this.log.severe("%s: when reading reply.");
-                e.printStackTrace();
-                reply = this.node.replyTo(message, DOLRStatus.INTERNAL_SERVER_ERROR);
-            }
+            JoinOperation.Response response = reply.getPayload(JoinOperation.Response.class, this.node);
+            Set<NodeAddress> addresses = response.getMap();
+            addresses.addAll(this.node.getNeighbourMap().keySet());
+            response.setMap(addresses);
+            reply = this.node.replyTo(message, response);
         } else {
             // This clause is executed on the root node of the joining object-id.
             Map<BeehiveObjectId,Set<Publishers.PublishRecord>> objectRoots = new Hashtable<BeehiveObjectId,Set<Publishers.PublishRecord>>();
@@ -603,7 +588,7 @@ public final class RoutingDaemon extends BeehiveService implements RoutingDaemon
 
             JoinOperation.Response response = new JoinOperation.Response(this.node.getNetworkObjectId(), this.node.getNeighbourMap().keySet(), objectRoots);
 
-            reply = this.node.replyTo(message, DOLRStatus.OK, response);
+            reply = this.node.replyTo(message, response);
         }
 
         return reply;
@@ -695,44 +680,29 @@ public final class RoutingDaemon extends BeehiveService implements RoutingDaemon
      * Add the pinging node to our neighbour table.
      * </p>
      */
-    public BeehiveMessage ping(BeehiveMessage message) {
-//        this.log.entering(message);
-
+    public BeehiveMessage ping(BeehiveMessage message) throws ClassNotFoundException, ClassCastException, RemoteException {
         this.node.getNeighbourMap().add(message.getSource());
 
         BeehiveMessage reply;
-        try {
-            PingOperation.Request request = message.getPayload(PingOperation.Request.class, this.node);
+        PingOperation.Request request = message.getPayload(PingOperation.Request.class, this.node);
 
-            if (this.node.getNeighbourMap().isRoot(message.getDestinationNodeId())) {
-                //
-                // Respond with our NeighbourMap and our set of
-                // object backpointers.
-                //
-                Map<BeehiveObjectId,Set<Publishers.PublishRecord>> publishers = new HashMap<BeehiveObjectId,Set<Publishers.PublishRecord>>();
+        if (this.node.getNeighbourMap().isRoot(message.getDestinationNodeId())) {
+            //
+            // Respond with our NeighbourMap and our set of
+            // object backpointers.
+            //
+            Map<BeehiveObjectId,Set<Publishers.PublishRecord>> publishers = new HashMap<BeehiveObjectId,Set<Publishers.PublishRecord>>();
 
-                for (BeehiveObjectId objectId : this.node.getObjectPublishers().keySet()) {
-//                    Set<Publishers.PublishRecord> publisherSet = this.node.getObjectPublishers().getPublishers(objectId);
-                    HashSet<Publishers.PublishRecord> includedPublishers = new HashSet<Publishers.PublishRecord>();
-                    publishers.put(objectId, includedPublishers);
-                }
-                PingOperation.Response response = new PingOperation.Response(this.node.getNeighbourMap().keySet(), publishers);
-                reply = this.node.replyTo(message, DOLRStatus.OK, response);
-            } else {
-                reply = this.node.transmit(message);
+            for (BeehiveObjectId objectId : this.node.getObjectPublishers().keySet()) {
+                HashSet<Publishers.PublishRecord> includedPublishers = new HashSet<Publishers.PublishRecord>();
+                publishers.put(objectId, includedPublishers);
             }
-        } catch (ClassNotFoundException e) {
-            e.printStackTrace();
-            reply = message.composeReply(this.node.getNodeAddress(), e);
-        } catch (ClassCastException e) {
-            e.printStackTrace();
-            reply = message.composeReply(this.node.getNodeAddress(), e);
-        } catch (RemoteException e) {
-            e.printStackTrace();
-            reply = message.composeReply(this.node.getNodeAddress(), e);
+            PingOperation.Response response = new PingOperation.Response(this.node.getNeighbourMap().keySet(), publishers);
+            reply = this.node.replyTo(message, response);
+        } else {
+            reply = this.node.transmit(message);
         }
 
-//        this.log.exiting(reply);
         return reply;
     }
 
@@ -754,12 +724,12 @@ public final class RoutingDaemon extends BeehiveService implements RoutingDaemon
                 try {
                     PingOperation.Response response = reply.getPayload(PingOperation.Response.class, this.node);
 
-                    Dossier.Entry e = RoutingDaemon.this.node.getDossier().getEntryAndLock(target);
+                    Dossier.Entry e = RoutingDaemon.this.node.getNeighbourMap().getDossier().getEntryAndLock(target);
                     try {
                         e.setTimestamp().addSample(Dossier.LATENCY, latency).success(Dossier.AVAILABLE);
-                        RoutingDaemon.this.node.getDossier().put(e);
+                        RoutingDaemon.this.node.getNeighbourMap().getDossier().put(e);
                     } finally {
-                        RoutingDaemon.this.node.getDossier().unlockEntry(e);
+                        RoutingDaemon.this.node.getNeighbourMap().getDossier().unlockEntry(e);
                     }
 
                     for (BeehiveObjectId objectId : response.getPublishRecords().keySet()) {
@@ -775,7 +745,7 @@ public final class RoutingDaemon extends BeehiveService implements RoutingDaemon
             }
         }
 
-        RoutingDaemon.this.node.getDossier().failure(target, Dossier.AVAILABLE);
+        RoutingDaemon.this.node.getNeighbourMap().getDossier().failure(target, Dossier.AVAILABLE);
         return null;
     }
 

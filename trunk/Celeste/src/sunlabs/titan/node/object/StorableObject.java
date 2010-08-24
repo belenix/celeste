@@ -97,8 +97,11 @@ public final class StorableObject {
          * </p>
          * @param message
          * @return The reply BeehiveMessage containing the entire result of the operation.
+         * @throws BeehiveMessage.RemoteException 
+         * @throws ClassCastException 
+         * @throws ClassNotFoundException 
          */
-        public BeehiveMessage storeLocalObject(BeehiveMessage message);
+        public BeehiveMessage storeLocalObject(BeehiveMessage message) throws ClassNotFoundException, ClassCastException, BeehiveMessage.RemoteException;
     }
     
     /**

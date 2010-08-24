@@ -840,9 +840,6 @@ public class BeehiveNode implements TitanNode, NodeMBean {
     
     /** This Node's public/private key information. */
     private final NodeKey nodeKey;
-    
-    /** Dossier on every neighbour ever known by this {@code BeehiveNode}. */
-    private Dossier dossier;
 
     /** This Node's address(es) */
     private final NodeAddress address;
@@ -944,13 +941,6 @@ public class BeehiveNode implements TitanNode, NodeMBean {
             this.jmxObjectName = JMX.objectName("com.oracle.sunlabs.titan", this.address.getObjectId().toString());
             BeehiveNode.registrar.registerMBean(this.jmxObjectName, this, NodeMBean.class);
             BeehiveNode.registrar.registerMBean(JMX.objectName(this.jmxObjectName, "log"), this.log, DOLRLoggerMBean.class);
-
-            try {
-                // XXX Should dossier be part of RoutingDaemon?
-                this.dossier = new Dossier(this.spoolDirectory);
-            } catch (BackedObjectMap.AccessException e) {
-                throw new RuntimeException(e);
-            }
 
             this.connMgr = ConnectionManager.getInstance(this.configuration.asString(BeehiveNode.ConnectionType), this.getNodeAddress(), this.nodeKey);
             // Still some problems with the new async I/O mechanism and SSL.  Soaks up a lot of memory.
@@ -1073,11 +1063,7 @@ public class BeehiveNode implements TitanNode, NodeMBean {
     public String getProperties() {
         return this.configuration.toString();
     }
-
-    public Dossier getDossier() {
-        return this.dossier;
-    }
-
+    
     /**
      * Return the JMX name of this Node.
      */
@@ -1526,37 +1512,18 @@ public class BeehiveNode implements TitanNode, NodeMBean {
             BeehiveNode.this.log.info("recv %s: objectId=%s", request.traceReport(), request.getObjectId());
         }
 
-//        try {
-            PublishDaemon.UnpublishObject.Request unpublishRequest = request.getPayload(PublishDaemon.UnpublishObject.Request.class, this);
-            for (BeehiveObjectId objectId : unpublishRequest.getObjectIds()) {
-                // Remove the unpublished object from this node's publisher records.
-                this.getObjectPublishers().remove(objectId, request.getSource().getObjectId());
-            }
-            if (this.map.getRoute(request.getDestinationNodeId()) != null) {
-                // Route the message on to the root.
-                return this.transmit(request);
-            } else {
-                // This node is the root hand it out to the handler specified in the incoming BeehiveMessage.
-                return this.services.sendMessageToApp(request);                
-            }
-            
-//            for (BeehiveObjectId objectId : unpublishRequest.getObjectIds()) {
-//
-//                // Remove the unpublished object from this node's publisher records.
-//                this.getObjectPublishers().remove(objectId, request.getSource().getObjectId());
-//
-//                // Route the message on to the root, or (if this node is the root) hand it out to the
-//                // handler specified in the incoming BeehiveMessage.
-//                if (this.map.getRoute(request.getDestinationNodeId()) != null) {
-//                    return this.transmit(request);
-//                }
-//
-//                return this.services.sendMessageToApp(request);
-//            }
-//        } finally {
-//        }
-//        // XXX problem here.
-//        return null;
+        PublishDaemon.UnpublishObject.Request unpublishRequest = request.getPayload(PublishDaemon.UnpublishObject.Request.class, this);
+        for (BeehiveObjectId objectId : unpublishRequest.getObjectIds()) {
+            // Remove the unpublished object from this node's publisher records.
+            this.getObjectPublishers().remove(objectId, request.getSource().getObjectId());
+        }
+        if (this.map.getRoute(request.getDestinationNodeId()) != null) {
+            // Route the message on to the root.
+            return this.transmit(request);
+        } else {
+            // This node is the root hand it out to the handler specified in the incoming BeehiveMessage.
+            return this.services.sendMessageToApp(request);                
+        }
     }
 
     /**
@@ -1579,12 +1546,8 @@ public class BeehiveNode implements TitanNode, NodeMBean {
         return true;
     }
 
-    public BeehiveMessage replyTo(BeehiveMessage message, DOLRStatus replyStatus) {
-        return this.replyTo(message, replyStatus, null);
-    }
-
-    public BeehiveMessage replyTo(BeehiveMessage message, DOLRStatus replyStatus, Serializable serializable) {
-        BeehiveMessage reply = message.composeReply(this.getNodeAddress(), replyStatus, serializable);
+    public BeehiveMessage replyTo(BeehiveMessage message, Serializable serializable) {
+        BeehiveMessage reply = message.composeReply(this.getNodeAddress(), serializable);
         return reply;
     }
 
@@ -1769,6 +1732,7 @@ public class BeehiveNode implements TitanNode, NodeMBean {
                     }
                 }
             } else {
+                // If this node has no gateway, then it is the first node and gets to choose the network object-id.
                 this.networkObjectId = new BeehiveObjectId();
             }
 

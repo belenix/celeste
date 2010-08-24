@@ -156,18 +156,23 @@ public abstract class BeehiveService extends NotificationBroadcasterSupport impl
             }
             return result;
         } catch (IllegalArgumentException e) {
+            this.log.severe(e.toString());
             e.printStackTrace();
             return request.composeReply(this.node.getNodeAddress(), e);
         } catch (SecurityException e) {
+            this.log.severe(e.toString());
             e.printStackTrace();
             return request.composeReply(this.node.getNodeAddress(), e);
         } catch (IllegalAccessException e) {
+            this.log.severe(e.toString());
             e.printStackTrace();
             return request.composeReply(this.node.getNodeAddress(), e);
         } catch (InvocationTargetException e) {
+            this.log.severe(e.toString());
             e.printStackTrace();
-            return request.composeReply(this.node.getNodeAddress(), e);
+            return request.composeReply(this.node.getNodeAddress(), e.getCause());
         } catch (NoSuchMethodException e) {
+            this.log.severe(e.toString());
             e.printStackTrace();
             return request.composeReply(this.node.getNodeAddress(), e);
         }

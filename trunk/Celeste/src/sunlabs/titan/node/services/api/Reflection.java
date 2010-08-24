@@ -120,7 +120,7 @@ public interface Reflection extends Service {
         }
     }
     
-    public BeehiveMessage inspectObject(BeehiveMessage message) throws ClassCastException, ClassNotFoundException;
+    public BeehiveMessage inspectObject(BeehiveMessage message) throws ClassCastException, ClassNotFoundException, BeehiveMessage.RemoteException;
     
     public XHTML.EFlow inspectObject(BeehiveObjectId objectId, URI uri, Map<String,HTTP.Message> props) throws ClassCastException, ClassNotFoundException, BeehiveObjectStore.NotFoundException;
     
@@ -142,6 +142,7 @@ public interface Reflection extends Service {
      * @throws ClassCastException
      * @throws ClassNotFoundException
      * @throws BeehiveObjectStore.NotFoundException
+     * @throws BeehiveMessage.RemoteException 
      */
-    public BeehiveMessage getObjectType(final BeehiveMessage message) throws ClassCastException, ClassNotFoundException, BeehiveObjectStore.NotFoundException;
+    public BeehiveMessage getObjectType(final BeehiveMessage message) throws ClassCastException, ClassNotFoundException, BeehiveObjectStore.NotFoundException, BeehiveMessage.RemoteException;
 }

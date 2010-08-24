@@ -163,28 +163,16 @@ public final class PublishDaemon extends BeehiveService implements Publish, Publ
      * object was not found and the node transmits a remedial unpublish message to the rest
      * of the system to remove any spurious back-pointers for the object that point to this node.
      */
-    public BeehiveMessage unpublishObject(BeehiveMessage message) {
-        try {
-            PublishDaemon.UnpublishObject.Request request = message.getPayload(PublishDaemon.UnpublishObject.Request.class, this.getNode());
-            if (this.log.isLoggable(Level.FINEST)) {                
-                this.log.finest("%s", request.getObjectIds());
-            }
-
-            BeehiveMessage response = message.composeReply(this.node.getNodeAddress());
-            return response;
-        } catch (ClassCastException e) {
-            e.printStackTrace();
-            return message.composeReply(this.node.getNodeAddress(), e);
-        } catch (RemoteException e) {
-            e.printStackTrace();
-            return message.composeReply(this.node.getNodeAddress(), e);
-        } catch (ClassNotFoundException e) {
-            e.printStackTrace();
-            return message.composeReply(this.node.getNodeAddress(), e);
+    public BeehiveMessage unpublishObject(BeehiveMessage message) throws ClassCastException, ClassNotFoundException, BeehiveMessage.RemoteException {
+        PublishDaemon.UnpublishObject.Request request = message.getPayload(PublishDaemon.UnpublishObject.Request.class, this.getNode());
+        if (this.log.isLoggable(Level.FINEST)) {                
+            this.log.finest("%s", request.getObjectIds());
         }
+
+        BeehiveMessage response = message.composeReply(this.node.getNodeAddress());
+        return response;
     }
     
-
     private class ExpireBackpointerDaemon implements Runnable {
         /** The duration of time (in milliseconds) the last full publish of the object store consumed. */
         protected long elapsedMillis;

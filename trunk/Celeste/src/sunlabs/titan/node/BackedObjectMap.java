@@ -271,7 +271,7 @@ public class BackedObjectMap<K,V> implements Serializable {
         @Override
         public boolean removeAll(Collection<?> c) {
             for (Object obj: c) {
-                if (obj instanceof Map.Entry) {
+                if (obj instanceof Map.Entry<?,?>) {
                     @SuppressWarnings("unchecked")
                     Map.Entry<K,V> entry = (Map.Entry<K,V>) obj;
                     BackedObjectMap.this.remove(entry.getKey());
@@ -290,7 +290,7 @@ public class BackedObjectMap<K,V> implements Serializable {
             for (Object obj: c) {
                 if (obj instanceof Map.Entry) {
                     @SuppressWarnings("unchecked")
-                    Map.Entry<K,V> entry = (Map.Entry) obj;
+                    Map.Entry<K,V> entry = (Map.Entry<K, V>) obj;
                     if (!keySet.contains(entry.getKey())) {
                         BackedObjectMap.this.remove(entry.getKey());
                     }

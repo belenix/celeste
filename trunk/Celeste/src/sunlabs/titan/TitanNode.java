@@ -62,6 +62,4 @@ public interface TitanNode {
      * @param payload The data to transmit to the object.
      */
     public BeehiveMessage sendToObject(BeehiveObjectId objectId, String klasse, String method, Serializable payload);
-
-
 }

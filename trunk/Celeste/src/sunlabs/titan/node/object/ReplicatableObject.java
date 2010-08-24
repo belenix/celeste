@@ -37,8 +37,11 @@ public class ReplicatableObject {
 	     * @param message the received {@link BeehiveMessage} containing an instance
          *        of {@link ReplicatableObject.Replicate.Request} as the message payload.
 	     * @return The reply {@code BeehiveMessage}.
+	     * @throws BeehiveMessage.RemoteException 
+	     * @throws ClassCastException 
+	     * @throws ClassNotFoundException 
 	     */
-	    public BeehiveMessage replicateObject(BeehiveMessage message);
+	    public BeehiveMessage replicateObject(BeehiveMessage message) throws ClassNotFoundException, ClassCastException, BeehiveMessage.RemoteException;
 	    
 	    /**
 	     * Specifies the specific behaviours of instances of {@link BeehiveObject} that implement {@link ReplicatableObject.Handler.Object}.

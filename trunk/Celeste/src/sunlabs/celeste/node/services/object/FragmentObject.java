@@ -141,18 +141,10 @@ public final class FragmentObject extends AbstractObjectHandler implements FObje
         this.storeAttempts = count;
     }
 
-    public BeehiveMessage storeLocalObject(BeehiveMessage message) {
-        try {
-            FObjectType.FObject fObject = message.getPayload(FObjectType.FObject.class, this.node);
-            BeehiveMessage reply = StorableObject.storeLocalObject(this, fObject, message);
-            return reply;
-        } catch (ClassNotFoundException e) {
-            e.printStackTrace();
-            return message.composeReply(node.getNodeAddress(), e);
-        } catch (RemoteException e) {
-            e.printStackTrace();
-            return message.composeReply(node.getNodeAddress(), e);
-        }
+    public BeehiveMessage storeLocalObject(BeehiveMessage message) throws ClassCastException, BeehiveMessage.RemoteException, ClassNotFoundException {
+        FObjectType.FObject fObject = message.getPayload(FObjectType.FObject.class, this.node);
+        BeehiveMessage reply = StorableObject.storeLocalObject(this, fObject, message);
+        return reply;
     }
 
     public BeehiveMessage retrieveLocalObject(BeehiveMessage message) {
@@ -173,25 +165,17 @@ public final class FragmentObject extends AbstractObjectHandler implements FObje
         return object;
     }
 
-    public BeehiveMessage publishObject(BeehiveMessage message) {
-        try {
-            PublishDaemon.PublishObject.Request publishRequest = message.getPayload(PublishDaemon.PublishObject.Request.class, this.node);
+    public BeehiveMessage publishObject(BeehiveMessage message) throws ClassCastException, BeehiveMessage.RemoteException, ClassNotFoundException {
+        PublishDaemon.PublishObject.Request publishRequest = message.getPayload(PublishDaemon.PublishObject.Request.class, this.node);
 
-            //
-            // Handle deleted objects.
-            //
-            DeleteableObject.publishObjectHelper(this, publishRequest);
+        //
+        // Handle deleted objects.
+        //
+        DeleteableObject.publishObjectHelper(this, publishRequest);
 
-            AbstractObjectHandler.publishObjectBackup(this, publishRequest);
+        AbstractObjectHandler.publishObjectBackup(this, publishRequest);
 
-            return message.composeReply(this.node.getNodeAddress(), new PublishDaemon.PublishObject.Response());
-        } catch (ClassNotFoundException e) {
-            e.printStackTrace();
-            return message.composeReply(this.node.getNodeAddress(), e);
-        } catch (RemoteException e) {
-            e.printStackTrace();
-            return message.composeReply(this.node.getNodeAddress(), e);
-        }
+        return message.composeReply(this.node.getNodeAddress(), new PublishDaemon.PublishObject.Response());
     }
 
     public BeehiveMessage unpublishObject(BeehiveMessage message) {
@@ -217,17 +201,16 @@ public final class FragmentObject extends AbstractObjectHandler implements FObje
      * This method is invoked as the result of receiving a deleteLocalObject
      * {@link BeehiveMessage} or the receipt of a {@link PublishObjectMessage} containing valid
      * delete information.
+     * @throws BeehiveMessage.RemoteException 
+     * @throws ClassCastException 
      */
-    public BeehiveMessage deleteLocalObject(BeehiveMessage message) throws ClassNotFoundException {
+    public BeehiveMessage deleteLocalObject(BeehiveMessage message) throws ClassNotFoundException, ClassCastException, BeehiveMessage.RemoteException {
         if (this.deleteLocalObjectLocks.trylock(message.subjectId)) {
             if (this.log.isLoggable(Level.FINE)) {
                 this.log.fine("%s", message.subjectId);
             }
             try {
                 return DeleteableObject.deleteLocalObject(this, message.getPayload(DeleteableObject.Request.class, this.node), message);
-            } catch (RemoteException e) {
-                e.printStackTrace();
-                return message.composeReply(node.getNodeAddress(), e);
             } finally {
                 this.deleteLocalObjectLocks.unlock(message.subjectId);
             }

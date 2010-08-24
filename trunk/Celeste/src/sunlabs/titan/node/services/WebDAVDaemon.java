@@ -437,7 +437,7 @@ public final class WebDAVDaemon extends BeehiveService implements WebDAVDaemonMB
                     }
                     return new HttpResponse(HTTP.Response.Status.BAD_REQUEST, new HttpContent.Text.Plain("Unknown service: " + name));
                 } else if (uri.getPath().startsWith("/route-table")) {
-                    XML.Document document = this.getRouteTableAsXMLDocument(request);
+                    XML.Document document = this.makeXMLDocument(this.node.getNeighbourMap().toXML(), "/xsl/beehive-route-table.xsl");
                     // The intent here was to produce XML with an XML stylesheet for client-side translation to XHTML.
                     // That doesn't work out very well in current browsers.
                     // So until they get better, getRouteTableAsXML produces XML and then here we perform the translation producing a String containing the XML.
@@ -457,7 +457,7 @@ public final class WebDAVDaemon extends BeehiveService implements WebDAVDaemonMB
                     // That doesn't work out very well in current browsers.
                     // So until they get better, getRouteTableAsXML produces XML and then here we perform the translation producing a String containing the XHTML.
                     // However, force the content type of the response to be text/html and NOT application/xml.
-                    XML.Document document = this.getNodeAsXMLDocument(request);
+                    XML.Document document = this.makeXMLDocument(this.node.toXML(), "/xsl/node.xsl");
                     String query = request.getURI().getQuery();
                     if (query != null && query.equals("xml")) {
                         HTTP.Response response = new HttpResponse(HTTP.Response.Status.OK, new HttpContent.Text.XML(document));
@@ -465,7 +465,6 @@ public final class WebDAVDaemon extends BeehiveService implements WebDAVDaemonMB
                     }
                     
                     String xml = applyXSLT("/xsl/node.xsl", document);
-                    System.out.printf("%s%n", xml);
                     HttpContent.Text.XML content = new HttpContent.Text.XML(xml);
                     content.setContentType(new HttpHeader.ContentType(InternetMediaType.Text.HTML));
                     return new HttpResponse(HTTP.Response.Status.OK, content);
@@ -586,10 +585,6 @@ public final class WebDAVDaemon extends BeehiveService implements WebDAVDaemonMB
         }
     }
 
-
-
-
-
     /**
      * This produces a uniform {@link XHTML.Document} for all purposes.
      *
@@ -682,33 +677,14 @@ public final class WebDAVDaemon extends BeehiveService implements WebDAVDaemonMB
     public XHTML.EFlow toXHTML(URI uri, Map<String,HTTP.Message> props) {
         return new XHTML.Div("nothing here");
     }
-    
-
-    private Document getNodeAsXMLDocument(Request request) {
-        XML.Content xml = this.node.toXML();
-
-        XML.Node stylesheet = new XML.ProcessingInstruction("xml-stylesheet").addAttribute(new XML.Attr("type", InternetMediaType.Application.XSLT), new XML.Attr("href", "/xsl/node.xsl" ));
-
+        
+    public XML.Document makeXMLDocument(XML.Content xml, String...stylesheets) {
         XML.Document document = new XML.Document();
-        document.append(stylesheet);
-        document.append(xml);
-
-        System.out.printf("%s%n", XML.formatXMLDocument(document.toString()));
-        return document;
-    }
-    
-    private XML.Document getRouteTableAsXMLDocument(HTTP.Request request) throws FileNotFoundException {
-        NeighbourMap map = this.node.getNeighbourMap();
-
-        XML.Content xml = map.toXML();
-
-        // Browser-side XSLT process is in terrible shape.
-        // Do the processing here and one day, when the browsers catch up, remove this code and have the browser do the translation.
-        XML.Node stylesheet = new XML.ProcessingInstruction("xml-stylesheet")
-            .addAttribute(new XML.Attr("type", InternetMediaType.Application.XSLT), new XML.Attr("href", "/xsl/beehive-route-table.xsl" ));
-
-        XML.Document document = new XML.Document();
-        document.append(stylesheet);
+        for (String s : stylesheets) {
+            XML.Node stylesheet = new XML.ProcessingInstruction("xml-stylesheet")
+                .addAttribute(new XML.Attr("type", InternetMediaType.Application.XSLT), new XML.Attr("href", s));
+            document.append(stylesheet);
+        }
         document.append(xml);
 
         return document;

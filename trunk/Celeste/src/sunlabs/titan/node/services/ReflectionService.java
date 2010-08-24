@@ -77,39 +77,33 @@ public final class ReflectionService extends BeehiveService implements Reflectio
         }
     }
 
-    public BeehiveMessage inspectObject(BeehiveMessage message) throws ClassCastException, ClassNotFoundException {
+    public BeehiveMessage inspectObject(BeehiveMessage message) throws ClassCastException, ClassNotFoundException, BeehiveMessage.RemoteException {
+        Reflection.ObjectInspect.Request request = message.getPayload(Reflection.ObjectInspect.Request.class, this.node);
+
+        Publish publish = this.node.getService(PublishDaemon.class);
+        Set<PublishRecord> publishers = publish.getPublishers(message.subjectId);
+
         try {
-            Reflection.ObjectInspect.Request request = message.getPayload(Reflection.ObjectInspect.Request.class, this.node);
-
-            Publish publish = this.node.getService(PublishDaemon.class);
-            Set<PublishRecord> publishers = publish.getPublishers(message.subjectId);
-
-            try {
-                InspectableObject.Handler.Object object = (InspectableObject.Handler.Object) this.node.getObjectStore().get(BeehiveObject.class, message.subjectId);
-                if (this.log.isLoggable(Level.FINE)) {
-                    this.log.fine("%s %s", object.getObjectId(), object.getObjectType());
-                }
-
-                Reflection.ObjectInspect.Response response = new Reflection.ObjectInspect.Response(object.inspectAsXHTML(request.getUri(), request.getProps()), publishers);
-
-                if (this.log.isLoggable(Level.FINE)) {
-                    this.log.fine("OK");
-                }
-                return message.composeReply(this.node.getNodeAddress(), response);
-            } catch (BeehiveObjectStore.NotFoundException e) {
-                return message.composeReply(this.node.getNodeAddress(), e);
-            } catch (ClassCastException e) {
-                XHTML.Div div = new XHTML.Div(new XHTML.Para("The object does not implement inspection."));
-                Reflection.ObjectInspect.Response response = new Reflection.ObjectInspect.Response(div, publishers);
-                if (this.log.isLoggable(Level.FINE)){
-                    this.log.fine("OK");
-                }
-                return message.composeReply(this.node.getNodeAddress(), response);
+            InspectableObject.Handler.Object object = (InspectableObject.Handler.Object) this.node.getObjectStore().get(BeehiveObject.class, message.subjectId);
+            if (this.log.isLoggable(Level.FINE)) {
+                this.log.fine("%s %s", object.getObjectId(), object.getObjectType());
             }
-        } catch (RemoteException e) {
+
+            Reflection.ObjectInspect.Response response = new Reflection.ObjectInspect.Response(object.inspectAsXHTML(request.getUri(), request.getProps()), publishers);
+
+            if (this.log.isLoggable(Level.FINE)) {
+                this.log.fine("OK");
+            }
+            return message.composeReply(this.node.getNodeAddress(), response);
+        } catch (BeehiveObjectStore.NotFoundException e) {
             return message.composeReply(this.node.getNodeAddress(), e);
-        } finally {
-            
+        } catch (ClassCastException e) {
+            XHTML.Div div = new XHTML.Div(new XHTML.Para("The object does not implement inspection."));
+            Reflection.ObjectInspect.Response response = new Reflection.ObjectInspect.Response(div, publishers);
+            if (this.log.isLoggable(Level.FINE)){
+                this.log.fine("OK");
+            }
+            return message.composeReply(this.node.getNodeAddress(), response);
         }
     }
     
@@ -154,8 +148,7 @@ public final class ReflectionService extends BeehiveService implements Reflectio
         return reply.getPayload(ObjectType.Response.class, node);
     }
 
-    public BeehiveMessage getObjectType(BeehiveMessage message) throws ClassCastException, ClassNotFoundException, BeehiveObjectStore.NotFoundException {
-        try {
+    public BeehiveMessage getObjectType(BeehiveMessage message) throws ClassCastException, ClassNotFoundException, BeehiveObjectStore.NotFoundException, BeehiveMessage.RemoteException {
             Reflection.ObjectType.Request request = message.getPayload(Reflection.ObjectType.Request.class, node);
             BeehiveObjectId objectId = request.getObjectId();
             BeehiveObject object = this.node.getObjectStore().get(BeehiveObject.class, objectId);
@@ -163,10 +156,6 @@ public final class ReflectionService extends BeehiveService implements Reflectio
             Reflection.ObjectType.Response response = new Reflection.ObjectType.Response(object.getObjectType());
 
             return message.composeReply(this.node.getNodeAddress(), response);
-        } catch (RemoteException e) {
-            e.printStackTrace();
-            return message.composeReply(this.node.getNodeAddress(), e);
-        }
     }
 
     public XHTML.EFlow toXHTML(URI uri, Map<String,HTTP.Message> props) {

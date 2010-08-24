@@ -61,7 +61,6 @@ public final class RetrieveObjectService extends BeehiveService implements Retri
 //        // as transmitting an UnpublishObject message for this object to clean
 //        // up any misconceptions that this object is here.
 //        this.node.removeLocalObject(message.subjectId);
-//        return message.composeReply(this.node.getNodeAddress(), DOLRStatus.NOT_FOUND);
         } catch (BeehiveObjectStore.NotFoundException e) {
             return message.composeReply(this.node.getNodeAddress(), e);
 

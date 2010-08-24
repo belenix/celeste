@@ -769,72 +769,43 @@ public final class VersionObjectHandler extends AbstractObjectHandler implements
         return new VObject(anchorObjectId, replicationParams, createOperation, clientMetaData, signature);
     }
 
-    public BeehiveMessage publishObject(BeehiveMessage message) {
-        
-        try {
-        	PublishDaemon.PublishObject.Request publishRequest = message.getPayload(PublishDaemon.PublishObject.Request.class, this.node);
-            if (this.log.isLoggable(Level.FINE)) {
-                this.log.fine("VersionObject.publishObject(%s)%n", message);
-            }
-
-            //
-            // Handle deleted objects.
-            //
-            DeleteableObject.publishObjectHelper(this, publishRequest);
-            if (this.log.isLoggable(Level.FINE)) {
-                this.log.fine("VersionObject.publishObject(%s): step 1%n", message);
-            }
-
-            AbstractObjectHandler.publishObjectBackup(this, publishRequest);
-            if (this.log.isLoggable(Level.FINE)) {
-                this.log.fine("VersionObject.publishObject(%s): step 2%n", message);
-            }
-
-            // Dup the getObjectsToPublish set as it's backed by a Map and is not serializable.
-            return message.composeReply(this.node.getNodeAddress(), new PublishDaemon.PublishObject.Response(new HashSet<BeehiveObjectId>(publishRequest.getObjectsToPublish().keySet())));
-//            return message.composeReply(this.node.getNodeAddress(), new PublishDaemon.PublishObject.Response());
-        } catch (ClassNotFoundException e) {
-            e.printStackTrace();
-            return message.composeReply(this.node.getNodeAddress(), e);
-        } catch (RemoteException e) {
-            e.printStackTrace();
-            return message.composeReply(this.node.getNodeAddress(), e);
+    public BeehiveMessage publishObject(BeehiveMessage message) throws ClassCastException, BeehiveMessage.RemoteException, ClassNotFoundException {
+        PublishDaemon.PublishObject.Request publishRequest = message.getPayload(PublishDaemon.PublishObject.Request.class, this.node);
+        if (this.log.isLoggable(Level.FINE)) {
+            this.log.fine("VersionObject.publishObject(%s)%n", message);
         }
+
+        //
+        // Handle deleted objects.
+        //
+        DeleteableObject.publishObjectHelper(this, publishRequest);
+        if (this.log.isLoggable(Level.FINE)) {
+            this.log.fine("VersionObject.publishObject(%s): step 1%n", message);
+        }
+
+        AbstractObjectHandler.publishObjectBackup(this, publishRequest);
+        if (this.log.isLoggable(Level.FINE)) {
+            this.log.fine("VersionObject.publishObject(%s): step 2%n", message);
+        }
+
+        // Dup the getObjectsToPublish set as it's backed by a Map and is not serializable.
+        return message.composeReply(this.node.getNodeAddress(), new PublishDaemon.PublishObject.Response(new HashSet<BeehiveObjectId>(publishRequest.getObjectsToPublish().keySet())));
     }
 
-    public BeehiveMessage unpublishObject(BeehiveMessage message) {
-        try {
-            PublishDaemon.UnpublishObject.Request request = message.getPayload(PublishDaemon.UnpublishObject.Request.class, this.getNode());
-            if (this.log.isLoggable(Level.FINE)) {
-                this.log.fine("%s -> %s", request.getObjectIds(), message.getSource());
-            }
-            ReplicatableObject.unpublishObjectRootHelper(this, message);
-            
-            return message.composeReply(this.node.getNodeAddress());
-        } catch (ClassCastException e) {
-            e.printStackTrace();
-            return message.composeReply(this.node.getNodeAddress(), e);
-        } catch (RemoteException e) {
-            e.printStackTrace();
-            return message.composeReply(this.node.getNodeAddress(), e);
-        } catch (ClassNotFoundException e) {
-            e.printStackTrace();
-            return message.composeReply(this.node.getNodeAddress(), e);
+    public BeehiveMessage unpublishObject(BeehiveMessage message) throws ClassCastException, BeehiveMessage.RemoteException, ClassNotFoundException {
+        PublishDaemon.UnpublishObject.Request request = message.getPayload(PublishDaemon.UnpublishObject.Request.class, this.getNode());
+        if (this.log.isLoggable(Level.FINE)) {
+            this.log.fine("%s -> %s", request.getObjectIds(), message.getSource());
         }
+        ReplicatableObject.unpublishObjectRootHelper(this, message);
+
+        return message.composeReply(this.node.getNodeAddress());
     }
 
-    public BeehiveMessage storeLocalObject(BeehiveMessage message) {
-        try {
-            VersionObject.Object vObject = message.getPayload(VersionObject.Object.class, this.node);
-            BeehiveMessage reply = StorableObject.storeLocalObject(this, vObject, message);
-            return reply;
-        } catch (ClassNotFoundException e) {
-            e.printStackTrace();
-            return message.composeReply(node.getNodeAddress(), e);
-        } catch (RemoteException e) {
-            e.printStackTrace();
-            return message.composeReply(node.getNodeAddress(), e);
-        }
+    public BeehiveMessage storeLocalObject(BeehiveMessage message) throws ClassCastException, BeehiveMessage.RemoteException, ClassNotFoundException {
+        VersionObject.Object vObject = message.getPayload(VersionObject.Object.class, this.node);
+        BeehiveMessage reply = StorableObject.storeLocalObject(this, vObject, message);
+        return reply;
     }
 
     public VersionObject.Object storeObject(VersionObject.Object vObject)
@@ -920,16 +891,13 @@ public final class VersionObjectHandler extends AbstractObjectHandler implements
         return manifest;
     }
 
-    public BeehiveMessage deleteLocalObject(BeehiveMessage message) throws ClassNotFoundException {
+    public BeehiveMessage deleteLocalObject(BeehiveMessage message) throws ClassNotFoundException, ClassCastException, BeehiveMessage.RemoteException {
         if (this.deleteLocalObjectLocks.trylock(message.subjectId)) {
         	if (this.log.isLoggable(Level.FINE)) {
         		this.log.fine("%s", message.subjectId);
         	}
             try {
                 return DeleteableObject.deleteLocalObject(this, message.getPayload(DeleteableObject.Request.class, this.node), message);
-            } catch (RemoteException e) {
-                e.printStackTrace();
-                return message.composeReply(node.getNodeAddress(), e);
             } finally {
                 this.deleteLocalObjectLocks.unlock(message.subjectId);
             }

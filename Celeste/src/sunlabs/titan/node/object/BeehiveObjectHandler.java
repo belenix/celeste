@@ -30,6 +30,7 @@ import sunlabs.titan.api.Service;
 import sunlabs.titan.node.BeehiveMessage;
 import sunlabs.titan.node.PublishObjectMessage;
 import sunlabs.titan.node.UnpublishObjectMessage;
+import sunlabs.titan.node.BeehiveMessage.RemoteException;
 
 /**
  * Objects in the Beehive object pool have data (the state of the object) and
@@ -109,8 +110,11 @@ public interface BeehiveObjectHandler/*<T extends BeehiveObjectHandler.ObjectAPI
      * </p>
      * @param message
      * @return The reply {@link BeehiveMessage}
+     * @throws RemoteException 
+     * @throws ClassCastException 
+     * @throws ClassNotFoundException 
      */
-    public BeehiveMessage publishObject(BeehiveMessage message);
+    public BeehiveMessage publishObject(BeehiveMessage message) throws ClassNotFoundException, ClassCastException, RemoteException;
 
     /**
      * Receive and process a {@link UnpublishObjectMessage} for a
@@ -123,6 +127,9 @@ public interface BeehiveObjectHandler/*<T extends BeehiveObjectHandler.ObjectAPI
      *
      * @param message
      * @return The reply {@link BeehiveMessage}
+     * @throws BeehiveMessage.RemoteException 
+     * @throws ClassCastException 
+     * @throws ClassNotFoundException 
      */
-    public BeehiveMessage unpublishObject(BeehiveMessage message);
+    public BeehiveMessage unpublishObject(BeehiveMessage message) throws ClassNotFoundException, ClassCastException, BeehiveMessage.RemoteException;
 }

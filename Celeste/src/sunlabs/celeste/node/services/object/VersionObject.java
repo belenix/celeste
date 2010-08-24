@@ -72,7 +72,6 @@ public interface VersionObject extends
         ExtensibleObject.Handler<VersionObject.Object> {
 
     public class BadManifestException extends BeehiveException {
-
         private final static long serialVersionUID = 1L;
 
         public BadManifestException() {

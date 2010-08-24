@@ -42,7 +42,6 @@ import sunlabs.asdf.web.XML.XHTML;
 import sunlabs.asdf.web.http.HTTP;
 import sunlabs.celeste.FileIdentifier;
 import sunlabs.celeste.client.ReplicationParameters;
-import sunlabs.celeste.node.CelesteNode;
 import sunlabs.celeste.node.services.AObjectVersionService;
 import sunlabs.celeste.node.services.api.AObjectVersionMapAPI;
 import sunlabs.titan.BeehiveObjectId;
@@ -271,61 +270,38 @@ public final class AnchorObjectHandler extends AbstractObjectHandler implements 
         return new AObject.Version(generationId, serialNumber);
     }
 
-    public BeehiveMessage publishObject(BeehiveMessage message) {
+    public BeehiveMessage publishObject(BeehiveMessage message) throws ClassNotFoundException, ClassCastException, BeehiveMessage.RemoteException {
         if (message.isTraced()) {
             this.log.finest("recv: %s", message.traceReport());
         }
-        try {
-        	PublishDaemon.PublishObject.Request publishRequest = message.getPayload(PublishDaemon.PublishObject.Request.class, this.node);
+        PublishDaemon.PublishObject.Request publishRequest = message.getPayload(PublishDaemon.PublishObject.Request.class, this.node);
 
-            // Handle deleted objects.
-            DeleteableObject.publishObjectHelper(this, publishRequest);
+        // Handle deleted objects.
+        DeleteableObject.publishObjectHelper(this, publishRequest);
 
-            AbstractObjectHandler.publishObjectBackup(this, publishRequest);
+        AbstractObjectHandler.publishObjectBackup(this, publishRequest);
 
-            // Reply signifying success, the value of the Publish.Response() is inconsequential.
-            // See the storeObject() method below.
-            BeehiveMessage result = message.composeReply(this.node.getNodeAddress(), new PublishDaemon.PublishObject.Response(new HashSet<BeehiveObjectId>(publishRequest.getObjectsToPublish().keySet())));
-//            BeehiveMessage result = message.composeReply(this.node.getNodeAddress(), new PublishDaemon.PublishObject.Response());
+        // Reply signifying success, the value of the Publish.Response() is inconsequential.
+        // See the storeObject() method below.
+        BeehiveMessage result = message.composeReply(this.node.getNodeAddress(),
+                new PublishDaemon.PublishObject.Response(new HashSet<BeehiveObjectId>(publishRequest.getObjectsToPublish().keySet())));
 
-            if (message.isTraced()) {
-                this.log.finest("reply %s %s", result.getStatus(), result.traceReport());
-            }
-            result.setTraced(message.isTraced());
-
-            return result;
-        } catch (ClassNotFoundException e) {
-            e.printStackTrace();
-            return message.composeReply(this.node.getNodeAddress(), e);
-        } catch (ClassCastException e) {
-            e.printStackTrace();
-            return message.composeReply(this.node.getNodeAddress(), e);
-        } catch (RemoteException e) {
-            e.printStackTrace();
-            return message.composeReply(this.node.getNodeAddress(), e);
+        if (message.isTraced()) {
+            this.log.finest("reply %s %s", result.getStatus(), result.traceReport());
         }
+        result.setTraced(message.isTraced());
+
+        return result;
     }
 
-    public BeehiveMessage unpublishObject(BeehiveMessage message) {
-        try {
-            PublishDaemon.UnpublishObject.Request request = message.getPayload(PublishDaemon.UnpublishObject.Request.class, this.getNode());
-            if (this.log.isLoggable(Level.FINE)) {
-                this.log.fine("%s -> %s", request.getObjectIds(), message.getSource());
-            }
-            ReplicatableObject.unpublishObjectRootHelper(this, message);
-            
-            return message.composeReply(this.node.getNodeAddress());
-        } catch (ClassCastException e) {
-            e.printStackTrace();
-            return message.composeReply(this.node.getNodeAddress(), e);
-        } catch (RemoteException e) {
-            e.printStackTrace();
-            return message.composeReply(this.node.getNodeAddress(), e);
-        } catch (ClassNotFoundException e) {
-            e.printStackTrace();
-            return message.composeReply(this.node.getNodeAddress(), e);
+    public BeehiveMessage unpublishObject(BeehiveMessage message) throws ClassNotFoundException, ClassCastException, BeehiveMessage.RemoteException {
+        PublishDaemon.UnpublishObject.Request request = message.getPayload(PublishDaemon.UnpublishObject.Request.class, this.getNode());
+        if (this.log.isLoggable(Level.FINE)) {
+            this.log.fine("%s -> %s", request.getObjectIds(), message.getSource());
         }
-//        return message.composeReply(this.node.getNodeAddress(), DOLRStatus.INTERNAL_SERVER_ERROR);
+        ReplicatableObject.unpublishObjectRootHelper(this, message);
+
+        return message.composeReply(this.node.getNodeAddress());
     }   
 
     public AnchorObject.Object create(FileIdentifier fileIdentifier,
@@ -357,24 +333,13 @@ public final class AnchorObjectHandler extends AbstractObjectHandler implements 
         return RetrievableObject.retrieve(this, AObject.class, objectId);
     }
 
-    public BeehiveMessage storeLocalObject(BeehiveMessage message) {
+    public BeehiveMessage storeLocalObject(BeehiveMessage message) throws ClassNotFoundException, ClassCastException, BeehiveMessage.RemoteException {
         if (this.log.isLoggable(Level.FINER)) {
             this.log.finest("%s", message.traceReport());
         }
-        try {
-            AnchorObject.Object aObject = message.getPayload(AnchorObject.Object.class, this.node);
-            BeehiveMessage reply = StorableObject.storeLocalObject(this, aObject, message);
-            return reply;
-        } catch (ClassNotFoundException e) {
-            e.printStackTrace();
-            return message.composeReply(node.getNodeAddress(), DOLRStatus.BAD_REQUEST);
-        } catch (ClassCastException e) {
-            e.printStackTrace();
-            return message.composeReply(node.getNodeAddress(), DOLRStatus.BAD_REQUEST);
-        } catch (RemoteException e) {
-            e.printStackTrace();
-            return message.composeReply(node.getNodeAddress(), DOLRStatus.BAD_REQUEST);
-        }
+        AnchorObject.Object aObject = message.getPayload(AnchorObject.Object.class, this.node);
+        BeehiveMessage reply = StorableObject.storeLocalObject(this, aObject, message);
+        return reply;
     }
 
     public AnchorObject.Object storeObject(AnchorObject.Object aObject)
@@ -492,7 +457,7 @@ public final class AnchorObjectHandler extends AbstractObjectHandler implements 
         return publishObjectDeleteLocks;
     }
 
-    public BeehiveMessage replicateObject(BeehiveMessage message) {
+    public BeehiveMessage replicateObject(BeehiveMessage message) throws ClassNotFoundException, ClassCastException, BeehiveMessage.RemoteException {
         try {
             ReplicatableObject.Replicate.Request request = message.getPayload(ReplicatableObject.Replicate.Request.class, this.node);
             if (this.log.isLoggable(Level.FINE)) {
@@ -514,24 +479,16 @@ public final class AnchorObjectHandler extends AbstractObjectHandler implements 
             StorableObject.storeObject(this, aObject, 1, excludeNodes, null);
             
             return message.composeReply(this.node.getNodeAddress());
-        } catch (ClassNotFoundException e) {
-            e.printStackTrace();
         } catch (NotFoundException e) {
             e.printStackTrace();
             return message.composeReply(this.node.getNodeAddress(), e);
         } catch (DeletedObjectException e) {
             e.printStackTrace();
             return message.composeReply(this.node.getNodeAddress(), e);
-        } catch (ClassCastException e) {
-            e.printStackTrace();
-            return message.composeReply(this.node.getNodeAddress(), e);
         } catch (NoSpaceException e) {
             e.printStackTrace();
             return message.composeReply(this.node.getNodeAddress(), e);
         } catch (IOException e) {
-            e.printStackTrace();
-            return message.composeReply(this.node.getNodeAddress(), e);
-        } catch (RemoteException e) {
             e.printStackTrace();
             return message.composeReply(this.node.getNodeAddress(), e);
         } catch (UnacceptableObjectException e) {
@@ -542,7 +499,5 @@ public final class AnchorObjectHandler extends AbstractObjectHandler implements 
             e.printStackTrace();
             return message.composeReply(this.node.getNodeAddress(), e);
         }
-
-        return message.composeReply(this.node.getNodeAddress(), DOLRStatus.INTERNAL_SERVER_ERROR);
     }
 }

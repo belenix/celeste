@@ -41,6 +41,7 @@ import sunlabs.titan.node.BeehiveNode;
 import sunlabs.titan.node.BeehiveObjectStore;
 import sunlabs.titan.node.PublishObjectMessage;
 import sunlabs.titan.node.Publishers;
+import sunlabs.titan.node.BeehiveMessage.RemoteException;
 import sunlabs.titan.node.BeehiveObjectStore.DeleteTokenException;
 import sunlabs.titan.node.services.PublishDaemon;
 import sunlabs.titan.util.DOLRStatus;
@@ -127,8 +128,10 @@ public final class DeleteableObject {
          * delete information.
          * @param message
          * @return A reply {@link BeehiveMessage}
+         * @throws BeehiveMessage.RemoteException 
+         * @throws ClassCastException 
          */
-        public BeehiveMessage deleteLocalObject(BeehiveMessage message) throws ClassNotFoundException;
+        public BeehiveMessage deleteLocalObject(BeehiveMessage message) throws ClassNotFoundException, ClassCastException, BeehiveMessage.RemoteException;
 
         /**
          * Every {@link DeleteableObject.Handler#publishObject(BeehiveMessage)} implementation must have a per-object lock

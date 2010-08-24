@@ -1,5 +1,5 @@
 /*
- * Copyright 2007-2009 Sun Microsystems, Inc. All Rights Reserved.
+ * Copyright 2007-2010 Oracle. All Rights Reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER
  *
  * This code is free software; you can redistribute it and/or modify
@@ -17,9 +17,9 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
  * 02110-1301 USA
  *
- * Please contact Sun Microsystems, Inc., 16 Network Circle, Menlo
- * Park, CA 94025 or visit www.sun.com if you need additional
- * information or have any questions.
+ * Please contact Oracle Corporation, 500 Oracle Parkway, Redwood Shores, CA 94065
+ * or visit www.oracle.com if you need additional information or
+ * have any questions.
  */
 
 package sunlabs.celeste.node.services.object;
@@ -124,9 +124,7 @@ public final class BlockObjectHandler extends AbstractObjectHandler implements B
              */
             public Reference(String reference) {
                 String[] tokens = reference.split("/");
-                this.extent = new BufferableExtentImpl(
-                    Long.parseLong(tokens[0]),
-                    Integer.parseInt(tokens[1]));
+                this.extent = new BufferableExtentImpl(Long.parseLong(tokens[0]), Integer.parseInt(tokens[1]));
                 this.objectId = new BeehiveObjectId(tokens[2]);
             }
 
@@ -148,8 +146,7 @@ public final class BlockObjectHandler extends AbstractObjectHandler implements B
                     return true;
                 if (other instanceof BObject.Reference) {
                     BObject.Reference otherReference = (BObject.Reference) other;
-                    if (this.extent.getStartOffset() ==
-                            otherReference.extent.getStartOffset()) {
+                    if (this.extent.getStartOffset() == otherReference.extent.getStartOffset()) {
                         return true;
                     }
                 }
@@ -353,60 +350,32 @@ public final class BlockObjectHandler extends AbstractObjectHandler implements B
 
     }
 
-    public BeehiveMessage storeLocalObject(BeehiveMessage message) {
-        try {
-            BlockObject.Object bObject = message.getPayload(BlockObject.Object.class, this.node);
-            BeehiveMessage reply = StorableObject.storeLocalObject(this, bObject, message);
-            return reply;
-        } catch (ClassNotFoundException e) {
-            e.printStackTrace();
-            return message.composeReply(node.getNodeAddress(), e);
-        } catch (RemoteException e) {
-            e.printStackTrace();
-            return message.composeReply(node.getNodeAddress(), e);
-        }
+    public BeehiveMessage storeLocalObject(BeehiveMessage message) throws ClassCastException, BeehiveMessage.RemoteException, ClassNotFoundException {
+        BlockObject.Object bObject = message.getPayload(BlockObject.Object.class, this.node);
+        BeehiveMessage reply = StorableObject.storeLocalObject(this, bObject, message);
+        return reply;
     }
 
-    public BeehiveMessage publishObject(BeehiveMessage message) {
-        try {
-        	PublishDaemon.PublishObject.Request publishRequest = message.getPayload(PublishDaemon.PublishObject.Request.class, this.node);
+    public BeehiveMessage publishObject(BeehiveMessage message) throws ClassNotFoundException, ClassCastException, RemoteException {
+        PublishDaemon.PublishObject.Request publishRequest = message.getPayload(PublishDaemon.PublishObject.Request.class, this.node);
 
-            //
-            // Handle deleted objects.
-            //
-            DeleteableObject.publishObjectHelper(this, publishRequest);
-            AbstractObjectHandler.publishObjectBackup(this, publishRequest);
+        //
+        // Handle deleted objects.
+        //
+        DeleteableObject.publishObjectHelper(this, publishRequest);
+        AbstractObjectHandler.publishObjectBackup(this, publishRequest);
 
-            return message.composeReply(this.node.getNodeAddress(), new PublishDaemon.PublishObject.Response(new HashSet<BeehiveObjectId>(publishRequest.getObjectsToPublish().keySet())));
-//            return message.composeReply(this.node.getNodeAddress(), new PublishDaemon.PublishObject.Response());
-        } catch (ClassNotFoundException e) {
-            e.printStackTrace();
-            return message.composeReply(this.node.getNodeAddress(), e);
-        } catch (RemoteException e) {
-            e.printStackTrace();
-            return message.composeReply(this.node.getNodeAddress(), e);
-        }
+        return message.composeReply(this.node.getNodeAddress(), new PublishDaemon.PublishObject.Response(new HashSet<BeehiveObjectId>(publishRequest.getObjectsToPublish().keySet())));
     }
 
-    public BeehiveMessage unpublishObject(BeehiveMessage message) {
-        try {
-            PublishDaemon.UnpublishObject.Request request = message.getPayload(PublishDaemon.UnpublishObject.Request.class, this.getNode());
-            if (this.log.isLoggable(Level.FINE)) {
-                this.log.fine("%s -> %s", request.getObjectIds(), message.getSource());
-            }
-            ReplicatableObject.unpublishObjectRootHelper(this, message);
-
-            return message.composeReply(this.node.getNodeAddress());
-        } catch (ClassCastException e) {
-            e.printStackTrace();
-            return message.composeReply(this.node.getNodeAddress(), e);
-        } catch (RemoteException e) {
-            e.printStackTrace();
-            return message.composeReply(this.node.getNodeAddress(), e);
-        } catch (ClassNotFoundException e) {
-            e.printStackTrace();
-            return message.composeReply(this.node.getNodeAddress(), e);
+    public BeehiveMessage unpublishObject(BeehiveMessage message) throws ClassCastException, RemoteException, ClassNotFoundException {
+        PublishDaemon.UnpublishObject.Request request = message.getPayload(PublishDaemon.UnpublishObject.Request.class, this.getNode());
+        if (this.log.isLoggable(Level.FINE)) {
+            this.log.fine("%s -> %s", request.getObjectIds(), message.getSource());
         }
+        ReplicatableObject.unpublishObjectRootHelper(this, message);
+
+        return message.composeReply(this.node.getNodeAddress());
     }
 
     public XHTML.EFlow toXHTML(URI uri, Map<String,HTTP.Message> props) {
@@ -617,7 +586,7 @@ public final class BlockObjectHandler extends AbstractObjectHandler implements B
             }
         }
     }
-    public BeehiveMessage replicateObject(BeehiveMessage message) {
+    public BeehiveMessage replicateObject(BeehiveMessage message) throws ClassNotFoundException, ClassCastException, BeehiveMessage.RemoteException {
         try {
             ReplicatableObject.Replicate.Request request = message.getPayload(ReplicatableObject.Replicate.Request.class, this.node);
             if (this.log.isLoggable(Level.FINE)) {
@@ -639,24 +608,16 @@ public final class BlockObjectHandler extends AbstractObjectHandler implements B
             StorableObject.storeObject(this, aObject, 1, excludeNodes, null);
             
             return message.composeReply(this.node.getNodeAddress());
-        } catch (ClassNotFoundException e) {
-            e.printStackTrace();
         } catch (NotFoundException e) {
             e.printStackTrace();
             return message.composeReply(this.node.getNodeAddress(), e);
         } catch (DeletedObjectException e) {
             e.printStackTrace();
             return message.composeReply(this.node.getNodeAddress(), e);
-        } catch (ClassCastException e) {
-            e.printStackTrace();
-            return message.composeReply(this.node.getNodeAddress(), e);
         } catch (NoSpaceException e) {
             e.printStackTrace();
             return message.composeReply(this.node.getNodeAddress(), e);
         } catch (IOException e) {
-            e.printStackTrace();
-            return message.composeReply(this.node.getNodeAddress(), e);
-        } catch (RemoteException e) {
             e.printStackTrace();
             return message.composeReply(this.node.getNodeAddress(), e);
         } catch (UnacceptableObjectException e) {
@@ -666,8 +627,6 @@ public final class BlockObjectHandler extends AbstractObjectHandler implements B
             e.printStackTrace();
             return message.composeReply(this.node.getNodeAddress(), e);
         }
-
-        return message.composeReply(this.node.getNodeAddress(), DOLRStatus.INTERNAL_SERVER_ERROR);
     }
 
     public BlockObject.Object retrieve(BeehiveObjectId objectId)
@@ -676,7 +635,7 @@ public final class BlockObjectHandler extends AbstractObjectHandler implements B
         return RetrievableObject.retrieve(this, BlockObject.Object .class, objectId);
     }
 
-    public BeehiveMessage deleteLocalObject(BeehiveMessage message) throws ClassNotFoundException {
+    public BeehiveMessage deleteLocalObject(BeehiveMessage message) throws ClassNotFoundException, BeehiveMessage.RemoteException {
         // If the object is locked here, then we are already in the process of deleting it, so just return.
         if (this.deleteLocalObjectLocks.trylock(message.subjectId)) {
             try {
@@ -684,9 +643,6 @@ public final class BlockObjectHandler extends AbstractObjectHandler implements B
             		this.log.fine("%s", message.subjectId);
             	}
                 return DeleteableObject.deleteLocalObject(this, message.getPayload(DeleteableObject.Request.class, this.node), message);
-            } catch (RemoteException e) {
-                e.printStackTrace();
-                return message.composeReply(node.getNodeAddress(), e);
             } finally {
                 this.deleteLocalObjectLocks.unlock(message.subjectId);
             }

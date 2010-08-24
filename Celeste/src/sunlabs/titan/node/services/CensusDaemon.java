@@ -310,70 +310,54 @@ public final class CensusDaemon extends BeehiveService implements Census, Census
      * </p>
      * @param message
      */
-    public BeehiveMessage report(BeehiveMessage message) {
+    public BeehiveMessage report(BeehiveMessage message) throws ClassCastException, ClassNotFoundException, BeehiveMessage.RemoteException {
         if (message.isTraced()) {
             this.log.info(message.traceReport());
         }
-        try {
-            Report.Request request = message.getPayload(Report.Request.class, this.node);
 
-            OrderedProperties properties = request.getProperties();
-            properties.setProperty(Census.Timestamp, System.currentTimeMillis());
-            if (properties.contains(Census.TimeToLive)) {
-                return message.composeReply(this.node.getNodeAddress(), DOLRStatus.EXPECTATION_FAILED);
-            }
+        Report.Request request = message.getPayload(Report.Request.class, this.node);
 
-            if (this.log.isLoggable(Level.FINEST)) {
-                this.log.finest("from %s", message.getSource().getObjectId());
-            }
-
-            this.catalogue.put(message.getSource().getObjectId(), properties);
-
-//            // Update the Dossier...
-//            Dossier.Entry dossier = CensusDaemon.this.node.getDossier().getEntryAndLock(message.getSource());
-//            try {
-//            	CensusDaemon.this.node.getDossier().put(dossier);
-//            } finally {
-//            	if (!dossier.getNodeAddress().equals(message.getSource())) {
-//            		System.err.printf("Unlocking %s vs %s%n", message.getSource(), dossier.getNodeAddress());
-//            	}
-//            	CensusDaemon.this.node.getDossier().unlockEntry(dossier);
-//            }
-
-            // XXX Catalogue is not synchronized here, but we also don't want to lock it for a long time...
-            Report.Response response = new Report.Response(CensusDaemon.this.node.getNodeAddress(), this.catalogue);
-            BeehiveMessage result = message.composeReply(this.node.getNodeAddress(), response);
-
-            return result;
-        } catch (ClassNotFoundException e) {
-            e.printStackTrace();
-        } catch (RemoteException e) {
-        	e.printStackTrace();
-        	throw new RuntimeException(e);
+        OrderedProperties properties = request.getProperties();
+        properties.setProperty(Census.Timestamp, System.currentTimeMillis());
+        if (properties.contains(Census.TimeToLive)) {
+            return message.composeReply(this.node.getNodeAddress(), DOLRStatus.EXPECTATION_FAILED);
         }
-        return null;
+
+        if (this.log.isLoggable(Level.FINEST)) {
+            this.log.finest("from %s", message.getSource().getObjectId());
+        }
+
+        this.catalogue.put(message.getSource().getObjectId(), properties);
+
+        //            // Update the Dossier...
+        //            Dossier.Entry dossier = CensusDaemon.this.node.getDossier().getEntryAndLock(message.getSource());
+        //            try {
+        //            	CensusDaemon.this.node.getDossier().put(dossier);
+        //            } finally {
+        //            	if (!dossier.getNodeAddress().equals(message.getSource())) {
+        //            		System.err.printf("Unlocking %s vs %s%n", message.getSource(), dossier.getNodeAddress());
+        //            	}
+        //            	CensusDaemon.this.node.getDossier().unlockEntry(dossier);
+        //            }
+
+        // XXX Catalogue is not synchronized here, but we also don't want to lock it for a long time...
+        Report.Response response = new Report.Response(CensusDaemon.this.node.getNodeAddress(), this.catalogue);
+        BeehiveMessage result = message.composeReply(this.node.getNodeAddress(), response);
+
+        return result;
     }
 
     /**
      * Respond to a {@link CensusDaemon.Select.Request} operation.
      *
      */
-    public BeehiveMessage select(BeehiveMessage message) {
-        try {
-            Select.Request request = message.getPayload(Select.Request.class, this.node);
-            Map<BeehiveObjectId,OrderedProperties> list = this.selectFromCatalogue(request.getCount(), request.getExcluded(), request.getMatch());
+    public BeehiveMessage select(BeehiveMessage message) throws ClassNotFoundException, ClassCastException, BeehiveMessage.RemoteException {
+        Select.Request request = message.getPayload(Select.Request.class, this.node);
+        Map<BeehiveObjectId,OrderedProperties> list = this.selectFromCatalogue(request.getCount(), request.getExcluded(), request.getMatch());
 
-            Select.Response response = new Select.Response(list);
-            BeehiveMessage result = message.composeReply(this.node.getNodeAddress(), response);
-            return result;
-        } catch (ClassNotFoundException e) {
-            e.printStackTrace();
-            return message.composeReply(this.node.getNodeAddress(), e);
-        } catch (ClassCastException e) {
-            return message.composeReply(this.node.getNodeAddress(), e);
-        } catch (RemoteException e) {
-            return message.composeReply(this.node.getNodeAddress(), e);
-        }
+        Select.Response response = new Select.Response(list);
+        BeehiveMessage result = message.composeReply(this.node.getNodeAddress(), response);
+        return result;
     }
 
 

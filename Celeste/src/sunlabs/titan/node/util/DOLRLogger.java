@@ -17,14 +17,16 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
  * 02110-1301 USA
  *
- * Please contact Oracle, 16 Network Circle, MenloPark, CA 94025
- * or visit www.oracle.com if you need additional information or have any questions.
+ * Please contact Oracle Corporation, 500 Oracle Parkway, Redwood Shores, CA 94065
+ * or visit www.oracle.com if you need additional information or
+ * have any questions.
  */
 package sunlabs.titan.node.util;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.logging.ConsoleHandler;
 import java.util.logging.FileHandler;

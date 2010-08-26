@@ -1,6 +1,6 @@
 <?xml version="1.0" ?>
 <!--
-Copyright 2007-2009 Sun Microsystems, Inc. All Rights Reserved.
+Copyright 2007-2010 Oracle. All Rights Reserved.
 DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER
 
 This code is free software; you can redistribute it and/or modify
@@ -22,8 +22,8 @@ Please contact Sun Microsystems, Inc., 16 Network Circle, Menlo
 Park, CA 94025 or visit www.sun.com if you need additional
 information or have any questions.
 -->
-<project name="Celeste" default="jars" basedir="." >
-        <description>Build the Celeste project</description>
+<project name="Titan" default="jars" basedir="." >
+        <description>Build the Titan system</description>
 
     <!-- Load up user properties first;  these can be used
          to override any of the properties below  -->
@@ -42,7 +42,7 @@ information or have any questions.
     <property name="build.classes.dir" location="${build.dir}/classes" />
 
     <property name="javadoc.dir" location="${basedir}/web/javadoc" />
-    <property name="dist.dir" location="${basedir}/dist" />
+    <!-- <property name="dist.dir" location="${basedir}/dist" /> -->
 
     <property name="build.test.dir"         location="${build.dir}/test" />
     <property name="build.test.classes.dir" location="${build.test.dir}/classes" />
@@ -91,7 +91,7 @@ information or have any questions.
         <!-- Create the initial time stamps, we use DSTAMP -->
         <tstamp/>
         <mkdir dir="${build.dir}"/>
-        <mkdir dir="${dist.dir}"/>
+        <!-- mkdir dir="${dist.dir}"/ -->
         <!-- Read the contents of copyright-mini.html into a property,
              for javadoc commands -->
         <loadfile property="copyright.mini" srcFile="${doc.dir}/copyright-mini.html" />
@@ -100,7 +100,7 @@ information or have any questions.
     <!-- =================================
           target: jars
          ================================= -->
-    <target name="jars" depends="titan.jar, celeste, sortgen, wordcount, Phidoux.jar"
+    <target name="jars" depends="titan.jar"
         description="==> builds all jar files"/>
 
     <!-- =================================
@@ -112,7 +112,7 @@ information or have any questions.
     <!-- =================================
           target: compile
          ================================= -->
-    <target name="compile" depends="init, Phidoux.jar, titan.jar" description="==> compile all sources">
+    <target name="compile" depends="init" description="==> compile all sources">
         <mkdir dir="${build.classes.dir}"/>
         <depend srcdir="${src.dir}"
                 destdir="${build.classes.dir}"
@@ -124,14 +124,11 @@ information or have any questions.
                debug="${build.debug}"
                debuglevel="${build.debug.level}"
                source="1.6"
-               deprecation="${build.deprecation}">
+               deprecation="${build.deprecation}"
+        	   classpath="${lib.dir}/${Phidoux.jar}">
             <include name="sunlabs/**/*.java" />
             <include name="sunlabsx/**/*.java" />
             <compilerarg value="-Xlint:unchecked"/>
-            <classpath>
-                <pathelement location="${dist.dir}/${Phidoux.jar}" />
-                <pathelement location="${dist.dir}/titan.jar" />
-            </classpath>
         </javac>
     </target>
 
@@ -139,12 +136,11 @@ information or have any questions.
     <!-- =================================
           target: titan
          ================================= -->
-	<!--
-    <target name="titan" depends="compile,scmversion" description="==> build Titan">
-        <mkdir dir="${dist.dir}" />
-        <jar destfile="${dist.dir}/titan.jar" filesonly="true" 
+    <target name="titan.jar" depends="compile,scmversion" description="==> build Titan">
+        <mkdir dir="${lib.dir}" />
+        <jar destfile="${lib.dir}/titan.jar" filesonly="true" 
              >
-            <fileset dir="${build.classes.dir}" includes="sunlabs/titan/** sunlabs/asdf/io/** sunlabs/asdf/jmx/** sunlabs/asdf/util/**  sunlabs/asdf/functional/**" />
+            <fileset dir="${build.classes.dir}" includes="sunlabs/titan/** sunlabs/asdf/**" />
             <fileset dir="" includes="web/**" />
             <manifest>
                 <attribute name="Main-Class" value="sunlabs.titan.node.Beehive" />
@@ -160,147 +156,20 @@ information or have any questions.
             </manifest>
         </jar>
     </target>
-    -->
-
-
-    <!-- =================================
-          target: celeste
-         ================================= -->
-    <target name="celeste" depends="compile,scmversion"
-            description="==> build Celeste Application">
-        <mkdir dir="${dist.dir}" />
-        <jar destfile="${dist.dir}/celeste.jar" filesonly="true">
-            <fileset dir="${build.classes.dir}" includes="sunlabs/celeste/**" />
-            <fileset dir=""                     includes="web/**" />
-            <manifest>
-                <attribute name="Main-Class"             value="sunlabs.celeste.node.Celeste" />
-                <attribute name="Class-Path"             value="titan.jar ${Phidoux.jar}" />
-                <attribute name="Built-By"               value="${user.name}.${DSTAMP}" />
-                <attribute name="Sealed"                 value="true" />
-                <attribute name="Specification-Title"    value="Sun Labs Celeste" />
-                <attribute name="Specification-Version"  value="${manifest.celeste.spec.version}" />
-                <attribute name="Specification-Vendor"   value="${manifest.vendor}" />
-                <attribute name="Implementation-Title"   value="sunlabs.celeste" />
-                <attribute name="Implementation-Version" value="${scm_version}" />
-                <attribute name="Implementation-Vendor"  value="${manifest.vendor}" />
-            </manifest>
-        </jar>
-    </target>
-
-    <target name="sortgen" depends="compile,scmversion" description="==> build sortable data generator">
-        <mkdir dir="${dist.dir}" />
-        <jar destfile="${dist.dir}/sortgen.jar" filesonly="true" >
-             <fileset dir="${build.classes.dir}" includes="sunlabs/celeste/client/application/SortGen.class" />
-            <manifest>
-                <attribute name="Main-Class"             value="sunlabs.celeste.client.application.SortGen" />
-                <attribute name="Built-By"               value="${user.name}.${DSTAMP}" />
-                <attribute name="Sealed"                 value="true" />
-                <attribute name="Specification-Title"    value="Sun Labs Celeste" />
-                <attribute name="Specification-Version"  value="${manifest.celeste.spec.version}" />
-                <attribute name="Specification-Vendor"   value="${manifest.vendor}" />
-                <attribute name="Implementation-Title"   value="sunlabs.celeste" />
-                <attribute name="Implementation-Version" value="${scm_version}" />
-                <attribute name="Implementation-Vendor"  value="${manifest.vendor}" />
-            </manifest>
-         </jar>
-    </target>
-
-    <target name="wordcount" depends="compile,scmversion"
-            description="==> build the wordcount extension">
-        <mkdir dir="${dist.dir}" />
-        <jar destfile="${dist.dir}/wordcount.jar" filesonly="true" >
-            <fileset dir="${build.classes.dir}" includes="sunlabs/celeste/extension/WordCount*.class" />
-            <manifest>
-                <attribute name="Main-Class"             value="sunlabs.celeste.extension.WordCount" />
-                <attribute name="Built-By"               value="${user.name}.${DSTAMP}" />
-                <attribute name="Sealed"                 value="true" />
-                <attribute name="Specification-Title"    value="Sun Labs Celeste" />
-                <attribute name="Specification-Version"  value="${manifest.celeste.spec.version}" />
-                <attribute name="Specification-Vendor"   value="${manifest.vendor}" />
-                <attribute name="Implementation-Title"   value="sunlabs.celeste" />
-                <attribute name="Implementation-Version" value="${scm_version}" />
-                <attribute name="Implementation-Vendor"  value="${manifest.vendor}" />
-            </manifest>
-         </jar>
-    </target>
 
 
     <!-- =================================
          target: Phidoux.jar
          ================================= -->
+	<!--
     <target name="Phidoux.jar"
             description="==> get the Phidoux.jar file">
-        <mkdir dir="${dist.dir}" />
-    	<copy file="Phidoux/Phidoux.jar" toDir="${dist.dir}" />
+        <mkdir dir="${lib.dir}" />
+    	<copy file="Phidoux/Phidoux.jar" toDir="${lib.dir}" />
     </target>
-	
-    <!-- =================================
-         target: titan.jar
-         ================================= -->
-    <target name="titan.jar"
-            description="==> get the titan.jar file">
-        <mkdir dir="${dist.dir}" />
-        <copy file="Titan/lib/titan.jar" toDir="${dist.dir}" />
-    </target>
+    -->
 
-
-    <!-- =================================
-          target: test-compile
-         ================================= -->
-    <target name="test-compile" depends="init"
-            description="==> build test files">
-        <mkdir dir="${build.test.classes.dir}" />
-        <depend srcdir="${test.unit.dir}"
-                destdir="${build.test.classes.dir}"
-                cache="${build.test.depend.dir}"
-                closure="true" />
-        <javac srcdir="${test.unit.dir}"
-               destdir="${build.test.classes.dir}"
-               includeAntRuntime="no"
-               debug="${build.debug}"
-               debuglevel="${build.debug.level}"
-               deprecation="${build.deprecation}"
-               source="1.6" >
-            <classpath>
-                <pathelement location="${build.classes.dir}" />
-                <pathelement location="${junit.jar}" />
-            </classpath>
-            <include name="**/*.java" />
-            <compilerarg value="-Xlint:unchecked"/>
-        </javac>
-    </target>
-
-    <!-- =================================
-          target: test
-         ================================= -->
-    <target name="test" depends="compile, test-compile"
-            description="==> run junit tests">
-        <mkdir dir="${build.test.dir}" />
-        <delete dir="${build.test.output.dir}" />
-        <mkdir dir="${build.test.output.dir}" />
-        <junit fork="true"
-               printsummary="on"
-               showoutput="${test.showoutput}"
-               tempdir="${build.test.dir}"
-               failureproperty="tests.failed">
-            <classpath>
-                <pathelement location="${build.test.classes.dir}" />
-                <pathelement location="${build.classes.dir}" />
-                <pathelement location="${junit.jar}" />
-            </classpath>
-            <jvmarg value="-enableassertions"/>
-            <formatter type="plain" />
-            <batchtest todir="${build.test.output.dir}" >
-                <fileset dir="${test.unit.dir}" >
-                    <include name="${test.include}" />
-                </fileset>
-            </batchtest>
-        </junit>
-        <fail if="tests.failed" message="Some tests failed"/>
-    </target>
-
-
-    <!-- =================================
+	<!-- =================================
           target: checkdocuptodate
 
          Determine whether or not the javadoc tree is up to date.  The check
@@ -433,35 +302,6 @@ information or have any questions.
         <echo message="To view analysis, open the GUI program ${findbugs.home}/bin/findbugs and choose File->Load Analysis.  Select ${build.dir}/celeste-fb.xml." />
     </target>
     -->
-
-    <!-- =================================
-          target: dist
-         ================================= -->
-    <target name="dist" depends="binary-dist"
-            description="==> build tar file for distribution">
-    </target>
-
-    <!-- =================================
-          target: binary-dist
-         ================================= -->
-    <target name="binary-dist" depends="jars, doc"
-            description="==> build tar file for a binary distribution">
-        <tar destfile="${dist.dir}/${DSTAMP}-binary.tgz"
-             defaultexcludes="yes"
-             compression="gzip" >
-            <tarfileset dir="." filemode="755" includes="bin/** administration/**" />
-            <tarfileset dir="." filemode="644" includes="QUICKSTART languages/** dist/*.jar" excludes="languages/bash/** languages/python/*py" />
-            <tarfileset dir="." filemode="755" includes="languages/bash/** languages/python/*py" />
-            <tarfileset dir="." filemode="600"
-                includes="etc/jmxremote.password.template \
-                        etc/celeste.cf etc/celeste-httpd.cf \
-                        etc/logging.properties admin/multi-installer admin/multi-celeste" />
-            <tarfileset dir="svc" filemode="555"
-                includes="celeste-exec-start"
-                fullpath="dist/celeste-exec-start" />
-            <tarfileset dir="svc" filemode="444" includes="sunlabs-celeste.xml" fullpath="var/svc/manifest/sunlabs-celeste.xml" />
-        </tar>
-    </target>
 
     <!-- =================================
           target: clean

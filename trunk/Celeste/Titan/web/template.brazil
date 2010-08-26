@@ -1,0 +1,14 @@
+<html>
+<head>
+</head>
+<body>
+<set name=beehive.param value=foo />
+<p>Properties <get name=beehive.param> </p>
+<request_props />
+<table border>
+<foreach name=i glob=* sort />
+  <tr><td><get name="i.name" /></td><td><get name="i.value" /></td></tr>
+</foreach>
+</table>
+</body>
+<html>

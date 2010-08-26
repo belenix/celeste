@@ -21,15 +21,15 @@
 # Park, CA 94025 or visit www.sun.com if you need additional
 # information or have any questions.
 
-BEEHIVEHOME=${BEEHIVEHOME:="unset"}
-if [[ ${BEEHIVEHOME} == "unset" ]]; then
-    if [[ -x ./bin/beehive && -e ./dist/titan.jar ]]; then
-	echo "NOTICE: The current directory looks like a Beehive runtime installation."
-	echo "        Using the current directory instead of /opt/beehive"
-	echo "        Explicitly set the environment variable BEEHIVEHOME to override this."
-	BEEHIVEHOME=`pwd`
+TITANHOME=${TITANHOME:="unset"}
+if [[ ${TITANHOME} == "unset" ]]; then
+    if [[ -x ./bin/titan && -e ./lib/titan.jar ]]; then
+	echo "NOTICE: The current directory looks like a Titan runtime installation."
+	echo "        Using the current directory instead of /opt/titan"
+	echo "        Explicitly set the environment variable TITANHOME to override this."
+	TITANHOME=`pwd`
     else
-	BEEHIVEHOME="/opt/beehive"
+	TITANHOME="/opt/beehive"
     fi
 fi
 
@@ -68,9 +68,9 @@ getpids() {
 # Set the value of the "config_key" shell variable used to determine which
 # configuration to use.
 #
-BEEHIVECONFIG_URL=${BEEHIVECONFIG_URL:="unset"}
-if [[ ${BEEHIVECONFIG_URL} == "unset" ]]; then
-	config_key=${BEEHIVECONFIG:=`hostname`}
+TITANCONFIG_URL=${TITANCONFIG_URL:="unset"}
+if [[ ${TITANCONFIG_URL} == "unset" ]]; then
+	config_key=${TITANCONFIG:=`hostname`}
 fi
 
 #
@@ -82,18 +82,18 @@ spool_root="/tmp/beehive"
 n_nodes="6"
 use_processes=""
 gateway=""
-logging_config_file="${BEEHIVEHOME}/etc/logging.properties"
+logging_config_file="${TITANHOME}/etc/logging.properties"
 logfile="/tmp/beehive-$config_key.log"
 beehive_port=""
 http_port=""
 node_address=""
 connection_type=""
 enable_jmx="false"
-jmx_password_file="${BEEHIVEHOME}/etc/jmxremote.password.template"
+jmx_password_file="${TITANHOME}/etc/jmxremote.password.template"
 jmx_port="16000"
 #server_option="-server"
 #heap_options="-Xmx128m -Xms128m -XX:+UseParallelGC"
-java_options="-ea -server -Xmx128m -Xms128m -XX:+UseParallelGC"
+java_options="-ea -server -Xmx24m -Xms24m -XX:+UseParallelGC"
 additional_options=""
 
 
@@ -103,7 +103,7 @@ JAVA=${JAVA:=/usr/bin/java}
 # configuration file below.
 
 # Suck in the configuration file.
-. ${BEEHIVEHOME}/etc/beehive.cf
+. ${TITANHOME}/etc/beehive.cf
 
 #
 # DOJO Configuration
@@ -190,12 +190,12 @@ beehive_arguments=" \
     ${additional_options}"
 
 start() {
-    if [[ ${BEEHIVECONFIG_URL} == "unset" ]]; then
-        echo ${JAVA} ${JAVA_ARGUMENTS} -jar ${BEEHIVEHOME}/dist/titan.jar ${beehive_arguments} '>' ${logfile} '2>&1'
-        ${JAVA} ${JAVA_ARGUMENTS} -jar ${BEEHIVEHOME}/dist/titan.jar ${beehive_arguments} > ${logfile} 2>&1 &
+    if [[ ${TITANCONFIG_URL} == "unset" ]]; then
+        echo ${JAVA} ${JAVA_ARGUMENTS} -jar ${TITANHOME}/dist/titan.jar ${beehive_arguments} '>' ${logfile} '2>&1'
+        ${JAVA} ${JAVA_ARGUMENTS} -jar ${TITANHOME}/dist/titan.jar ${beehive_arguments} > ${logfile} 2>&1 &
     else
-        echo ${JAVA} ${JAVA_ARGUMENTS} -jar ${BEEHIVEHOME}/dist/titan.jar ${BEEHIVECONFIG_URL} '>' ${logfile} '2>&1'
-        ${JAVA} ${JAVA_ARGUMENTS} -jar ${BEEHIVEHOME}/dist/titan.jar ${BEEHIVECONFIG_URL} > ${logfile} 2>&1 &
+        echo ${JAVA} ${JAVA_ARGUMENTS} -jar ${TITANHOME}/dist/titan.jar ${TITANCONFIG_URL} '>' ${logfile} '2>&1'
+        ${JAVA} ${JAVA_ARGUMENTS} -jar ${TITANHOME}/dist/titan.jar ${TITANCONFIG_URL} > ${logfile} 2>&1 &
     fi
 }
 

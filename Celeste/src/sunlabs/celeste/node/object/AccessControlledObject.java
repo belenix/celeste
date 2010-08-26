@@ -21,12 +21,14 @@
  * Park, CA 94025 or visit www.sun.com if you need additional
  * information or have any questions.
  */
-package sunlabs.titan.node.object;
+package sunlabs.celeste.node.object;
 
 // XXX Eliminate this.  Beehive must define it's own access control from while applications (like Celeste) derive.
 import sunlabs.celeste.node.CelesteACL;
 import sunlabs.titan.BeehiveObjectId;
 import sunlabs.titan.api.BeehiveObject;
+import sunlabs.titan.node.object.BeehiveObjectHandler;
+import sunlabs.titan.node.object.BeehiveObjectHandler.ObjectAPI;
 
 /**
  * {@link BeehiveObject} and {@link BeehiveObjectHander} classes implementing the interfaces specified

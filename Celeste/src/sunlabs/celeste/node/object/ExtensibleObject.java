@@ -22,7 +22,7 @@
  * information or have any questions.
  */
 
-package sunlabs.titan.node.object;
+package sunlabs.celeste.node.object;
 
 import java.lang.reflect.InvocationTargetException;
 
@@ -42,6 +42,8 @@ import sunlabs.celeste.client.operation.ExtensibleOperation;
 import sunlabs.titan.BeehiveObjectId;
 import sunlabs.titan.node.BeehiveMessage;
 import sunlabs.titan.node.BeehiveMessage.RemoteException;
+import sunlabs.titan.node.object.BeehiveObjectHandler;
+import sunlabs.titan.node.object.BeehiveObjectHandler.ObjectAPI;
 import sunlabs.titan.util.DOLRStatus;
 
 /**
@@ -122,18 +124,6 @@ public class ExtensibleObject {
             super(urls, JarClassLoader.class.getClassLoader());
         }
 
-//        /**
-//         * Load the {@link Class} named by {@link #getMainClassName()}
-//         *
-//         * @return the resulting {@code Class}.
-//         * @throws IOException
-//         * @throws ClassNotFoundException
-//         */
-//        public Class<?> loadMainClass() throws IOException, ClassNotFoundException {
-//            String name = this.getMainClassName();
-//            return this.loadClass(name, true);
-//        }
-
         /**
          * Return the String value of the {@code Main-Class} attribute of the Jar file
          * specified in {@code url[0]} of the constructor.
@@ -143,7 +133,6 @@ public class ExtensibleObject {
             URL primaryURL = this.getURLs()[0];
             try {
                 URL u = new URL("jar", "", new URL(primaryURL.toString() + "!/").toURI().toURL().toString());
-//                System.out.printf("JarClassLoader.getMainClassName: %s (%s)%n", u.toString(), primaryURL.toURI().toURL());
 
                 this.jarConnection = (JarURLConnection) u.openConnection();
                 this.jarConnection.setRequestProperty("Connection", "close");

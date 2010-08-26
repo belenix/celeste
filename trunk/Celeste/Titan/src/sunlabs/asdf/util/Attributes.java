@@ -356,7 +356,7 @@ public class Attributes extends TreeMap<String,Attributes.Attribute> {
         if (this.containsKey(prototype.fullName)) {
             return String.valueOf(this.get(prototype.fullName).value);
         }
-        throw new IllegalArgumentException(String.format("Attribute \"%s\" not set", prototype.fullName));
+        throw new IllegalArgumentException(String.format("Attribute not set: \"%s=<value>\"", prototype.fullName));
     }
 
     public Integer asInt(Attributes.Prototype prototype) {

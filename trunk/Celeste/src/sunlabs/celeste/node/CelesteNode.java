@@ -17,8 +17,8 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
  * 02110-1301 USA
  *
- * Please contact Oracle, 16 Network Circle, Menlo Park, CA 94025
- * or visit www.oracle.com if you need additionalinformation or
+ * Please contact Oracle Corporation, 500 Oracle Parkway, Redwood Shores, CA 94065
+ * or visit www.oracle.com if you need additional information or
  * have any questions.
  */
 

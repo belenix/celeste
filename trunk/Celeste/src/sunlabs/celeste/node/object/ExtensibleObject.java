@@ -1,5 +1,5 @@
 /*
- * Copyright 2007-2009 Sun Microsystems, Inc. All Rights Reserved.
+ * Copyright 2007-2010 Oracle. All Rights Reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER
  *
  * This code is free software; you can redistribute it and/or modify
@@ -17,40 +17,37 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
  * 02110-1301 USA
  *
- * Please contact Sun Microsystems, Inc., 16 Network Circle, Menlo
- * Park, CA 94025 or visit www.sun.com if you need additional
- * information or have any questions.
+ * Please contact Oracle Corporation, 500 Oracle Parkway, Redwood Shores, CA 94065
+ * or visit www.oracle.com if you need additional information or
+ * have any questions.
  */
 
 package sunlabs.celeste.node.object;
 
-import java.lang.reflect.InvocationTargetException;
-
 import java.io.IOException;
 import java.io.Serializable;
-
+import java.lang.reflect.InvocationTargetException;
 import java.net.JarURLConnection;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLClassLoader;
-
 import java.util.concurrent.Callable;
 import java.util.jar.Attributes;
 import java.util.zip.ZipException;
 
 import sunlabs.celeste.client.operation.ExtensibleOperation;
 import sunlabs.titan.BeehiveObjectId;
+import sunlabs.titan.api.BeehiveObject;
 import sunlabs.titan.node.BeehiveMessage;
 import sunlabs.titan.node.BeehiveMessage.RemoteException;
 import sunlabs.titan.node.object.BeehiveObjectHandler;
-import sunlabs.titan.node.object.BeehiveObjectHandler.ObjectAPI;
 import sunlabs.titan.util.DOLRStatus;
 
 /**
  * {@link BeehiveObjectHandler}s that implement {@link ExtensibleObject.Handler} interface are able to execute
  * "extensions" -- client supplied Java code which is executed by an object handler.
  *
- * @author Glenn Scott - Sun Microsystems Laboratories
+ * @author Glenn Scott - Oracle Sun Labs
  */
 public class ExtensibleObject {
     public interface Handler <T extends ExtensibleObject.Handler.Object> extends BeehiveObjectHandler {

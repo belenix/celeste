@@ -1,5 +1,5 @@
 /*
- * Copyright 2007-2009 Sun Microsystems, Inc. All Rights Reserved.
+ * Copyright 2007-2010 Oracle. All Rights Reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER
  *
  * This code is free software; you can redistribute it and/or modify
@@ -17,9 +17,9 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
  * 02110-1301 USA
  *
- * Please contact Sun Microsystems, Inc., 16 Network Circle, Menlo
- * Park, CA 94025 or visit www.sun.com if you need additional
- * information or have any questions.
+ * Please contact Oracle Corporation, 500 Oracle Parkway, Redwood Shores, CA 94065
+ * or visit www.oracle.com if you need additional information or
+ * have any questions.
  */
 package sunlabs.titan.node.services;
 
@@ -57,11 +57,10 @@ import sunlabs.asdf.web.http.HttpMessage;
 import sunlabs.titan.BeehiveObjectId;
 import sunlabs.titan.Release;
 import sunlabs.titan.node.BeehiveMessage;
+import sunlabs.titan.node.BeehiveMessage.RemoteException;
 import sunlabs.titan.node.BeehiveNode;
 import sunlabs.titan.node.NodeAddress;
-import sunlabs.titan.node.BeehiveMessage.RemoteException;
 import sunlabs.titan.node.services.api.Census;
-import sunlabs.titan.util.DOLRStatus;
 import sunlabs.titan.util.OrderedProperties;
 
 /**
@@ -88,29 +87,29 @@ public final class CensusDaemon extends BeehiveService implements Census, Census
 
     transient private ReportDaemon daemon;
 
-    private static class BulkReport {
-        private static class Request implements Serializable {
-            private final static long serialVersionUID = 1L;
-
-            private Map<BeehiveObjectId,OrderedProperties> census;
-
-            public Request(Map<BeehiveObjectId,OrderedProperties> census) {
-                this.census = census;
-            }
-
-            public Map<BeehiveObjectId,OrderedProperties> getCensus() {
-                return this.census;
-            }
-        }
-
-        private static class Response implements Serializable {
-            private final static long serialVersionUID = 1L;
-
-            public Response() {
-
-            }
-        }
-    }
+//    private static class BulkReport {
+//        private static class Request implements Serializable {
+//            private final static long serialVersionUID = 1L;
+//
+//            private Map<BeehiveObjectId,OrderedProperties> census;
+//
+//            public Request(Map<BeehiveObjectId,OrderedProperties> census) {
+//                this.census = census;
+//            }
+//
+//            public Map<BeehiveObjectId,OrderedProperties> getCensus() {
+//                return this.census;
+//            }
+//        }
+//
+//        private static class Response implements Serializable {
+//            private final static long serialVersionUID = 1L;
+//
+//            public Response() {
+//
+//            }
+//        }
+//    }
 
     /**
      * A single Census report.
@@ -310,7 +309,8 @@ public final class CensusDaemon extends BeehiveService implements Census, Census
      * </p>
      * @param message
      */
-    public BeehiveMessage report(BeehiveMessage message) throws ClassCastException, ClassNotFoundException, BeehiveMessage.RemoteException {
+    
+    public Report.Response report(BeehiveMessage message) throws ClassCastException, ClassNotFoundException, BeehiveMessage.RemoteException {
         if (message.isTraced()) {
             this.log.info(message.traceReport());
         }
@@ -320,7 +320,7 @@ public final class CensusDaemon extends BeehiveService implements Census, Census
         OrderedProperties properties = request.getProperties();
         properties.setProperty(Census.Timestamp, System.currentTimeMillis());
         if (properties.contains(Census.TimeToLive)) {
-            return message.composeReply(this.node.getNodeAddress(), DOLRStatus.EXPECTATION_FAILED);
+            throw new IllegalArgumentException(String.format("Report.Request failed to include the property %s%n", Census.TimeToLive));
         }
 
         if (this.log.isLoggable(Level.FINEST)) {
@@ -332,34 +332,30 @@ public final class CensusDaemon extends BeehiveService implements Census, Census
         //            // Update the Dossier...
         //            Dossier.Entry dossier = CensusDaemon.this.node.getDossier().getEntryAndLock(message.getSource());
         //            try {
-        //            	CensusDaemon.this.node.getDossier().put(dossier);
+        //              CensusDaemon.this.node.getDossier().put(dossier);
         //            } finally {
-        //            	if (!dossier.getNodeAddress().equals(message.getSource())) {
-        //            		System.err.printf("Unlocking %s vs %s%n", message.getSource(), dossier.getNodeAddress());
-        //            	}
-        //            	CensusDaemon.this.node.getDossier().unlockEntry(dossier);
+        //              if (!dossier.getNodeAddress().equals(message.getSource())) {
+        //                  System.err.printf("Unlocking %s vs %s%n", message.getSource(), dossier.getNodeAddress());
+        //              }
+        //              CensusDaemon.this.node.getDossier().unlockEntry(dossier);
         //            }
 
         // XXX Catalogue is not synchronized here, but we also don't want to lock it for a long time...
         Report.Response response = new Report.Response(CensusDaemon.this.node.getNodeAddress(), this.catalogue);
-        BeehiveMessage result = message.composeReply(this.node.getNodeAddress(), response);
-
-        return result;
+        return response;
     }
 
     /**
      * Respond to a {@link CensusDaemon.Select.Request} operation.
      *
      */
-    public BeehiveMessage select(BeehiveMessage message) throws ClassNotFoundException, ClassCastException, BeehiveMessage.RemoteException {
+    public Select.Response select(BeehiveMessage message) throws ClassNotFoundException, ClassCastException, BeehiveMessage.RemoteException {
         Select.Request request = message.getPayload(Select.Request.class, this.node);
         Map<BeehiveObjectId,OrderedProperties> list = this.selectFromCatalogue(request.getCount(), request.getExcluded(), request.getMatch());
 
         Select.Response response = new Select.Response(list);
-        BeehiveMessage result = message.composeReply(this.node.getNodeAddress(), response);
-        return result;
+        return response;
     }
-
 
     public interface ReportDaemonMBean extends ThreadMBean {
         public long getRefreshRate();

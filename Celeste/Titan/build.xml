@@ -143,7 +143,7 @@
             <fileset dir="${build.classes.dir}" includes="sunlabs/titan/** sunlabs/asdf/**" />
             <fileset dir="" includes="web/**" />
             <manifest>
-                <attribute name="Main-Class" value="sunlabs.titan.node.Beehive" />
+                <attribute name="Main-Class" value="sunlabs.titan.node.BeehiveNode" />
                 <attribute name="Class-Path" value="${Phidoux.jar}" />
                 <attribute name="Built-By" value="${user.name}.${DSTAMP}" />
                 <attribute name="Sealed" value="true" />

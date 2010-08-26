@@ -1,9 +1,11 @@
-This is Celeste (and Beehive), a distributed, master-less, peer-to-peer,
+This is Celeste (and Titan), a distributed, master-less, peer-to-peer,
 byzantine and fault-tolerant mutable data store.
 
 Use ant 1.7, or newer, to build the system.
 
 % (cd Phidoux ; ant clean all)
+% cp Phidoux/Phidoux.jar Titan/lib
+% (cd Titan ; ant )
 % ant clean all
 
 See http://hub.opensolaris.org/bin/view/Project+celeste/WebHome

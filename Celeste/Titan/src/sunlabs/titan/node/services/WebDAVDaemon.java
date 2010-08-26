@@ -1,5 +1,5 @@
 /*
- * Copyright 2007-2009 Sun Microsystems, Inc. All Rights Reserved.
+ * Copyright 2007-2010 Oracle. All Rights Reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER
  *
  * This code is free software; you can redistribute it and/or modify
@@ -17,9 +17,9 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
  * 02110-1301 USA
  *
- * Please contact Sun Microsystems, Inc., 16 Network Circle, Menlo
- * Park, CA 94025 or visit www.sun.com if you need additional
- * information or have any questions.
+ * Please contact Oracle Corporation, 500 Oracle Parkway, Redwood Shores, CA 94065
+ * or visit www.oracle.com if you need additional information or
+ * have any questions.
  */
 package sunlabs.titan.node.services;
 
@@ -73,7 +73,6 @@ import sunlabs.asdf.util.Time;
 import sunlabs.asdf.web.XML.XHTML;
 import sunlabs.asdf.web.XML.XML;
 import sunlabs.asdf.web.XML.Xxhtml;
-import sunlabs.asdf.web.XML.XML.Document;
 import sunlabs.asdf.web.ajax.dojo.Dojo;
 import sunlabs.asdf.web.http.ClassLoaderBackend;
 import sunlabs.asdf.web.http.FileSystemBackend;
@@ -88,7 +87,6 @@ import sunlabs.asdf.web.http.InternetMediaType;
 import sunlabs.asdf.web.http.WebDAV;
 import sunlabs.asdf.web.http.WebDAVNameSpace;
 import sunlabs.asdf.web.http.WebDAVServerMain;
-import sunlabs.asdf.web.http.HTTP.Request;
 import sunlabs.asdf.web.http.HTTP.Request.Method;
 import sunlabs.asdf.web.http.HttpUtil.PathName1;
 import sunlabs.titan.BeehiveObjectId;
@@ -97,7 +95,6 @@ import sunlabs.titan.Release;
 import sunlabs.titan.api.BeehiveObject;
 import sunlabs.titan.node.BeehiveNode;
 import sunlabs.titan.node.BeehiveObjectStore;
-import sunlabs.titan.node.NeighbourMap;
 import sunlabs.titan.node.NodeAddress;
 import sunlabs.titan.node.services.api.Census;
 import sunlabs.titan.node.services.api.Reflection;
@@ -312,7 +309,7 @@ public final class WebDAVDaemon extends BeehiveService implements WebDAVDaemonMB
 
 
     /**
-     * Produce an {@link XHTML.Anchor} element that links to a HTML document that
+     * Produce an {@link XHTML.Anchor} element that links to a XHTML document that
      * inspects the {@link BeehiveObject} identified by the given {@link BeehiveObjectId}.
      * 
      * See {@link WebDAVDaemon} for the dispatch of the HTTP request the link induces.

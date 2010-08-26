@@ -20,7 +20,6 @@
  * Please contact Oracle Corporation, 500 Oracle Parkway, Redwood Shores, CA 94065
  * or visit www.oracle.com if you need additional information or
  * have any questions.
- * 
  */
 package sunlabs.titan.node;
 
@@ -890,6 +889,9 @@ public class BeehiveNode implements TitanNode, NodeMBean {
 
 //        String localInterfaceAddress = this.configuration.asString(BeehiveNode.LocalNetworkAddress);
 
+        if (this.configuration.isUnset(BeehiveNode.InterNetworkAddress)) {
+            throw new IllegalArgumentException(String.format("Attribute not set: \"%s=<value>\"", BeehiveNode.InterNetworkAddress.getName()));            
+        }
         String internetworkAddress = this.configuration.asString(BeehiveNode.InterNetworkAddress);
 
         int localBeehivePort = this.configuration.asInt(BeehiveNode.Port);
@@ -1111,7 +1113,7 @@ public class BeehiveNode implements TitanNode, NodeMBean {
     }
 
     /**
-     * Get this Beehive Node's {@link ObjectStore}.
+     * Get this Node's {@link ObjectStore}.
      */
     public ObjectStore getObjectStore() {
         return this.store;

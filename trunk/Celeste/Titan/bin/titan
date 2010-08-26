@@ -29,12 +29,12 @@ if [[ ${TITANHOME} == "unset" ]]; then
 	echo "        Explicitly set the environment variable TITANHOME to override this."
 	TITANHOME=`pwd`
     else
-	TITANHOME="/opt/beehive"
+	TITANHOME="/opt/titan"
     fi
 fi
 
 #
-# Report the process ids of JVMs that are running Beehive nodes.
+# Report the process ids of JVMs that are running Titan nodes.
 #
 getpids() {
     case $(uname -s) in
@@ -75,10 +75,10 @@ fi
 
 #
 # Establish defaults for variables documented as being settable in
-# etc/beehive.cf.  Note that default values are documented there, so a change
+# etc/titan.cf.  Note that default values are documented there, so a change
 # here must have a corresponding documentation change there.
 #
-spool_root="/tmp/beehive"
+spool_root="/tmp/titan"
 n_nodes="6"
 use_processes=""
 gateway=""
@@ -103,7 +103,7 @@ JAVA=${JAVA:=/usr/bin/java}
 # configuration file below.
 
 # Suck in the configuration file.
-. ${TITANHOME}/etc/beehive.cf
+. ${TITANHOME}/etc/titan.cf
 
 #
 # DOJO Configuration
@@ -176,7 +176,7 @@ local_address_option=${node_address:+--local-address ${node_address}}
 use_processes_option=${use_processes:+--use-processes}
 connection_type_option=${connection_type:+--beehive-connection-type ${connection_type}}
 
-beehive_arguments=" \
+titan_arguments=" \
     ${n_nodes_option} \
     ${spool_root_option} \
     ${gateway_option} \
@@ -191,17 +191,17 @@ beehive_arguments=" \
 
 start() {
     if [[ ${TITANCONFIG_URL} == "unset" ]]; then
-        echo ${JAVA} ${JAVA_ARGUMENTS} -jar ${TITANHOME}/dist/titan.jar ${beehive_arguments} '>' ${logfile} '2>&1'
-        ${JAVA} ${JAVA_ARGUMENTS} -jar ${TITANHOME}/dist/titan.jar ${beehive_arguments} > ${logfile} 2>&1 &
+        echo ${JAVA} ${JAVA_ARGUMENTS} -jar ${TITANHOME}/lib/titan.jar ${titan_arguments} '>' ${logfile} '2>&1'
+        ${JAVA} ${JAVA_ARGUMENTS} -jar ${TITANHOME}/lib/titan.jar ${titan_arguments} > ${logfile} 2>&1 &
     else
-        echo ${JAVA} ${JAVA_ARGUMENTS} -jar ${TITANHOME}/dist/titan.jar ${TITANCONFIG_URL} '>' ${logfile} '2>&1'
-        ${JAVA} ${JAVA_ARGUMENTS} -jar ${TITANHOME}/dist/titan.jar ${TITANCONFIG_URL} > ${logfile} 2>&1 &
+        echo ${JAVA} ${JAVA_ARGUMENTS} -jar ${TITANHOME}/lib/titan.jar ${TITANCONFIG_URL} '>' ${logfile} '2>&1'
+        ${JAVA} ${JAVA_ARGUMENTS} -jar ${TITANHOME}/lib/titan.jar ${TITANCONFIG_URL} > ${logfile} 2>&1 &
     fi
 }
 
 stop() {
     pidlist=$(getpids)
-    echo Stopping Beehive: ${pidlist}
+    echo Stopping Titan: ${pidlist}
     if [[ -n "$pidlist" ]]; then
         kill -9 $(getpids)
     fi
@@ -242,14 +242,14 @@ bgclobber() {
 
 config() {
 	echo Java Parameters ${JAVA_ARGUMENTS}
-	echo Beehive Parameters ${beehive_arguments}
-	echo Beehive Log File ${logfile}
+	echo Titan Parameters ${titan_arguments}
+	echo Titan Log File ${logfile}
 }
 
 status() {
     pidlist=$(getpids)
     if [[ -z "$pidlist" ]]; then
-        echo "Beehive not running"
+        echo "Titan not running"
     else
         #
         # XXX:  Really ought to discriminate on whether ps is BSD-style
@@ -297,7 +297,7 @@ for command in $*; do
 			status
 			;;
 		*|help|-help|--help)
-			echo "beehive clean"
+			echo "titan clean"
 			echo "        clobber"
 			echo "        start"
 			echo "        stop"

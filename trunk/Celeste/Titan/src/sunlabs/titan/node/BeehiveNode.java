@@ -1549,8 +1549,7 @@ public class BeehiveNode implements TitanNode, NodeMBean {
     }
 
     public BeehiveMessage replyTo(BeehiveMessage message, Serializable serializable) {
-        BeehiveMessage reply = message.composeReply(this.getNodeAddress(), serializable);
-        return reply;
+        return message.composeReply(this.getNodeAddress(), serializable);
     }
 
     public XHTML.EFlow resourcesToXHTML() {

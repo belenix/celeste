@@ -24,6 +24,7 @@
 package sunlabs.titan.node.services;
 
 import java.io.File;
+import java.io.Serializable;
 import java.lang.management.ManagementFactory;
 import java.lang.reflect.InvocationTargetException;
 import java.net.URI;
@@ -150,11 +151,11 @@ public abstract class BeehiveService extends NotificationBroadcasterSupport impl
 
     public BeehiveMessage invokeMethod(String methodName, BeehiveMessage request) {
         try {
-            BeehiveMessage result = (BeehiveMessage) this.getClass().getMethod(methodName, BeehiveMessage.class).invoke(this, request);
-            if (result == null) {
-                return request.composeReply(this.node.getNodeAddress(), DOLRStatus.INTERNAL_SERVER_ERROR, methodName);
+            Object object = this.getClass().getMethod(methodName, BeehiveMessage.class).invoke(this, request);
+            if (object instanceof BeehiveMessage) {
+                return (BeehiveMessage) object;
             }
-            return result;
+            return request.composeReply(this.node.getNodeAddress(), (Serializable) object);
         } catch (IllegalArgumentException e) {
             this.log.severe(e.toString());
             e.printStackTrace();
@@ -172,7 +173,6 @@ public abstract class BeehiveService extends NotificationBroadcasterSupport impl
             e.printStackTrace();
             return request.composeReply(this.node.getNodeAddress(), e.getCause());
         } catch (NoSuchMethodException e) {
-            this.log.severe(e.toString());
             e.printStackTrace();
             return request.composeReply(this.node.getNodeAddress(), e);
         }

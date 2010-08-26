@@ -567,13 +567,13 @@ public final class WebDAVDaemon extends BeehiveService implements WebDAVDaemonMB
 
             XHTML.Document result = makeDocument(this.node.getObjectId().toString(), new XHTML.Body(this.node.toXHTML(uri, props)), null, null);
 
-            try {
-                OutputStream out = new FileOutputStream("WebDAVDaemon.out");
-                out.write(result.toString().getBytes());
-                out.close();
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
+//            try {
+//                OutputStream out = new FileOutputStream("WebDAVDaemon.out");
+//                out.write(result.toString().getBytes());
+//                out.close();
+//            } catch (Exception e) {
+//                e.printStackTrace();
+//            }
 
             return new HttpResponse(HTTP.Response.Status.OK, new HttpContent.Text.HTML(result));
         } catch (Exception e) {

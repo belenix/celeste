@@ -35,12 +35,13 @@ import java.net.UnknownHostException;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 
 import sunlabs.asdf.util.Time;
 import sunlabs.titan.Copyright;
-import sunlabs.titan.node.BeehiveNode;
 import sunlabs.titan.node.BeehiveNode.ConfigurationException;
 import sunlabs.titan.node.services.WebDAVDaemon;
 import sunlabs.titan.util.OrderedProperties;
@@ -82,13 +83,9 @@ import sunlabs.titan.util.OrderedProperties;
  *
  * <table class='Beehive-options'>
  * <tr><td>--delay-time &lt;seconds&gt;</td><td>The number of seconds to delay when starting multiple nodes on this host.</td><td></td></tr>
- * <tr><td>--localfs-root &lt;pathname&gt;</td><td>The pathname of the top-level directory to contain the node(s) runtime data.</td><td></td></tr>
  * <tr><td>--local-address &lt;ip-addr&gt;</td><td>The NodeAddress for this node (ip-addr:dolr-port:node-id).</td><td> (nodeAddress)</td></tr>
  * <tr><td>--dolr-server-port &lt;number&gt;</td><td>The TCP port number to use for the DOLR server of this Node.</td><td> (dolrServerPort)</td></tr>
  * <tr><td>--dolr-client-port &lt;number&gt;</td><td>The TCP port number to use for the DOLR client of this Node.</td><td> (dolrClientPort)</td></tr>
- * <tr><td>--gateway &lt;node-addr&gt;|-|URL</td><td>The gateway node to use to connect to the DOLR</td><td>  (gatewayArgument)</td></tr>
- * <tr><td>--gateway-retry &lt;seconds&gt;</td><td>The number of seconds to delay before retrying to join the specified gateway.</td><td></td></tr>
- * <tr><td>--localfs-root &lt;directory&gt;</td><td>The local file-system directory to use to store all persistent state and other data.</td><td> (spoolDirectoryRoot)</td></tr>
  * <tr><td>--n-nodes &lt;number&gt;</td><td>The number of nodes to start.</td><td>(n_nodes)</td></tr>
  * <tr><td>--dossier</td><td>Enable fast-startup using cached data on neighbours.</td><td>(false)</td></tr>
  * </table>
@@ -153,7 +150,7 @@ public class Beehive {
 
         String gatewayArgument = null;
 
-        // This way to construct the spool directory is very UNIX-centric.
+        // This way to construct the default spool directory is very UNIX-centric.
         properties.setProperty(BeehiveNode.LocalFileSystemRoot.getName(), File.listRoots()[0] + "tmp" + File.separator + "celeste" + File.separator);
 
         properties.setProperty(BeehiveNode.Port.getName(), 12000);
@@ -167,7 +164,7 @@ public class Beehive {
         if (javaFile == null)
             javaFile = "/usr/bin/java";
 
-        String jarFile = "dist/beehive.jar";
+        String jarFile = "lib/titan.jar";
 
         String keyStoreNames[] = null;
 
@@ -201,6 +198,9 @@ public class Beehive {
 
         RuntimeMXBean mxbean = ManagementFactory.getRuntimeMXBean();
 
+        Set<String> jvmArgs = new HashSet<String>();
+        jvmArgs.add("-server");
+        
         StringBuilder jvmArguments = new StringBuilder(" -server");
         for (String a : mxbean.getInputArguments()) {
             jvmArguments.append(" ").append(a);
@@ -242,16 +242,16 @@ public class Beehive {
                         System.err.printf("--n-nodes %d: you must specify at least 1 node", n_nodes);
                         throw new IllegalArgumentException();
                     }
-                } else if (args[i].equals("--gateway")) {
-                    gatewayArgument = args[++i];
-                    properties.setProperty(BeehiveNode.GatewayURL.getName(), gatewayArgument);
-                } else if (args[i].equals("--gateway-retry")) {
-                    String value = args[++i];
-                    if (Integer.parseInt(value) < 10) {
-                        System.err.printf("--gateway-retry %s: retry time cannot be less than 10 seconds.", value);
-                        throw new IllegalArgumentException();
-                    }
-                    properties.setProperty(BeehiveNode.GatewayRetryDelayMillis.getName(), value);
+//                } else if (args[i].equals("--gateway")) {
+//                    gatewayArgument = args[++i];
+//                    properties.setProperty(BeehiveNode.GatewayURL.getName(), gatewayArgument);
+//                } else if (args[i].equals("--gateway-retry")) {
+//                    String value = args[++i];
+//                    if (Integer.parseInt(value) < 10) {
+//                        System.err.printf("--gateway-retry %s: retry time cannot be less than 10 seconds.", value);
+//                        throw new IllegalArgumentException();
+//                    }
+//                    properties.setProperty(BeehiveNode.GatewayRetryDelayMillis.getName(), value);
                 } else if (args[i].equals("--local-address") || args[i].equals("--node-address")) {
                     String value = args[++i];
 //                    properties.setProperty(BeehiveNode.LocalNetworkAddress.getName(), value);
@@ -262,14 +262,12 @@ public class Beehive {
                     properties.setProperty(BeehiveNode.InterNetworkAddress.getName(), value[1]);
                 } else if (args[i].equals("--internetwork-address")) {
                     properties.setProperty(BeehiveNode.InterNetworkAddress.getName(), args[++i]);
-                } else if (args[i].equals("--beehive-port") || args[i].equals("--mos-port")) {
+                } else if (args[i].equals("--beehive-port") || args[i].equals("--titan-port")) {
                     String[] tokens = args[++i].split(",");
                     String port = tokens[0];
                     if (tokens.length > 1)
                         beehivePortIncrement = Integer.parseInt(tokens[1]);
                     properties.setProperty(BeehiveNode.Port.getName(), port);
-                } else if (args[i].equals("--beehive-connection-type")) {
-                    properties.setProperty(BeehiveNode.ConnectionType.getName(), args[++i]);
                 } else if (args[i].equals("--http-port")) {
                     String[] tokens = args[++i].split(",");
                     String port = tokens[0];
@@ -292,8 +290,6 @@ public class Beehive {
                     javaFile = args[++i];
                 } else if (args[i].equals("--keystore") ) {
                     keyStoreNames = args[++i].split(",");
-                } else if (args[i].equals("--object-store-capacity") ) {
-                    properties.setProperty(BeehiveNode.ObjectStoreCapacity.getName(), args[++i]);
                 } else if (args[i].equals("--version")) {
                     System.out.println(release);
                     System.out.println(Copyright.miniNotice);
@@ -301,24 +297,32 @@ public class Beehive {
                     System.out.println("Usage: defaults are in parenthesis.");
                     System.out.printf(" [--delay-time <integer>] (%d)%n", interprocessStartupDelayTimeSeconds);
                     System.out.printf(" [--n-nodes <integer>] (%d)%n", n_nodes);
-                    System.out.printf(" [--threads] (do not use threads)%n");
-                    System.out.printf(" [--gateway <URL>] (%s)%n", String.valueOf(gatewayArgument));
-                    System.out.printf(" [--gateway-retry <seconds>] (%s)%n", properties.getPropertyAsInt(BeehiveNode.GatewayRetryDelayMillis.getName()));
+                    System.out.printf(" [--threads] (use threads instead of spawning a JVM for each node)%n");
+//                    System.out.printf(" [--gateway <URL>] (%s)%n", String.valueOf(gatewayArgument));
+//                    System.out.printf(" [--gateway-retry <seconds>] (%s)%n", properties.getPropertyAsInt(BeehiveNode.GatewayRetryDelayMillis.getName()));
                     System.out.printf(" [--http-port <integer>[,<integer>]] (%d,%d)%n", properties.getPropertyAsInt(WebDAVDaemon.Port.getName()), webdavPortIncrement);
                     System.out.printf(" [--jar <file name>] (%s)%n", String.valueOf(jarFile));
                     System.out.printf(" [--java <file name>] (%s)%n", javaFile);
                     System.out.printf(" [--jmx-port <integer>[,<integer>]] (%d,%d)%n] (%d)%n", jmxPort, jmxPortIncrement);
-                    System.out.printf(" [--beehive-port <integer>[,<integer>]] (%d,%d)%n", properties.getPropertyAsInt(BeehiveNode.Port.getName()), beehivePortIncrement);
+                    System.out.printf(" [--titan-port <integer>[,<integer>]] (%d,%d)%n", properties.getPropertyAsInt(BeehiveNode.Port.getName()), beehivePortIncrement);
                     System.out.printf(" [--internetwork-address <ip-addr>] (%s)%n", properties.getProperty(BeehiveNode.InterNetworkAddress.getName()));
-                    System.out.printf(" [--object-store-capacity <number>|\"unlimited\"] (%s)%n", properties.getProperty(BeehiveNode.ObjectStoreCapacity.getName()));
                     System.out.printf(" [--localfs-root <directory name>] (%s)%n", properties.getProperty(BeehiveNode.LocalFileSystemRoot.getName()));
+                    System.out.printf(" [--V<option>]%n");
+                    System.out.printf(" [--D<option>]%n");
                     System.exit(0);
                 } else {
                     System.out.println("Ignoring unknown option: " + args[i]);
                 }
             } else if (args[i].startsWith("-D")) {
                 String[] tokens = args[i].substring(2).split("=");
-                properties.setProperty(tokens[0], tokens[1]);
+                if (tokens.length == 1) {
+                    System.out.printf("property: %s%n", args[i]);
+                } else {
+                    properties.setProperty(tokens[0], tokens[1]);
+                }
+            } else if (args[i].startsWith("-V")) {
+                String v = args[i].substring(2);
+                jvmArgs.add(v);
             } else {
                 // Read this command line argument as a URL to fetch configuration properties.
                 // These properties are overridden by options subsequent on the command line.
@@ -407,7 +411,14 @@ public class Beehive {
             System.exit(1);
         }
         
-
+        System.out.printf("jvmArguments %s%n", jvmArguments);
+        System.out.printf("jvmArgs %s%n", jvmArgs);
+        jvmArguments = new StringBuilder();
+        for (String a : jvmArgs) {
+            jvmArguments.append(" ").append(a);
+        }
+        System.out.printf("new per node jvmArgs '%s'%n", jvmArguments);
+        
         // Use separate processes for each Node instance.
         Executor executors = Executors.newCachedThreadPool();
 
@@ -440,9 +451,9 @@ public class Beehive {
             } finally {
                 if (fout != null) try { fout.close(); } catch (IOException e) { /**/ }
             }
-            String configurationURL = " file://" + configurationFileName;
+            String configurationURL = "file://" + configurationFileName;
 
-            String command = javaFile + " -Dtitan-node" + jvmArguments.toString() + jmxPortProperty + applicationSpecification + configurationURL;
+            String command = javaFile + " -Dtitan-node" + jvmArguments.toString() + jmxPortProperty + applicationSpecification + " " + configurationURL;
             System.out.println(command);
 
             try {

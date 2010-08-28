@@ -1,5 +1,5 @@
 #!/bin/bash -
-# Copyright 2010 Oracle, Inc. All Rights Reserved.
+# Copyright 2007-2009 Sun Microsystems, Inc. All Rights Reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER
 # 
 # This code is free software; you can redistribute it and/or modify
@@ -57,8 +57,7 @@ getpids() {
         # at working on other systems.
         #
         *)
-            pidlist=$(/bin/ps axww | grep Dtitan-node | grep -v grep | \
-                awk '{print $1}')
+            pidlist=$(/bin/ps axww | grep Dtitan-node | grep -v grep |  awk '{print $1}')
             echo $pidlist
             ;;
     esac
@@ -74,26 +73,29 @@ if [[ ${TITANCONFIG_URL} == "unset" ]]; then
 fi
 
 #
-# Establish defaults for variables documented as being settable in
-# etc/titan.cf.  Note that default values are documented there, so a change
+# Establish defaults for variables documented as being settable in etc/titan.cf.
+# Note that default values are documented there, so a change
 # here must have a corresponding documentation change there.
 #
+#celeste_root="${TITANHOME}"
+export TITANHOME=${TITANHOME}
+
 spool_root="/tmp/titan"
 n_nodes="6"
 use_processes=""
+threads=""
 gateway=""
 logging_config_file="${TITANHOME}/etc/logging.properties"
-logfile="/tmp/beehive-$config_key.log"
+titan_log="/tmp/titan-$config_key.log"
 beehive_port=""
+celeste_client_port=""
 http_port=""
 node_address=""
 connection_type=""
 enable_jmx="false"
 jmx_password_file="${TITANHOME}/etc/jmxremote.password.template"
 jmx_port="16000"
-#server_option="-server"
-#heap_options="-Xmx128m -Xms128m -XX:+UseParallelGC"
-java_options="-ea -server -Xmx24m -Xms24m -XX:+UseParallelGC"
+server_option="-server"
 additional_options=""
 
 
@@ -144,58 +146,13 @@ else
     server_property=""
 fi
 
-LOGGINGOPTS="-Djava.util.logging.config.file=${logging_config_file}"
-
-java_option=${java_options:+${java_options}}
-#
-# LOGGINGOPTS comes early so that the "status" command can find the
-# command line pattern it's looking for (which has to occur in the
-# first 80 bytes of command line arguments).
-#
-JAVA_ARGUMENTS="\
-    ${server_option} \
-    ${LOGGINGOPTS} \
-    ${heap_options} \
-    ${JMXOPTS} \
-    ${server_property} \
-    ${java_option}"
-
-JAVA_ARGUMENTS="\
-    -server \
-    ${java_option} \
-    ${LOGGINGOPTS} \
-    ${JMXOPTS} \
-    ${server_property}"
-
-spool_root_option=${spool_root:+--localfs-root ${spool_root}}
-gateway_option=${gateway:+--gateway http://${gateway}}
-n_nodes_option="${n_nodes:+--n-nodes ${n_nodes}}"
-beehive_port_option=${beehive_port:+--beehive-port ${beehive_port}}
-http_port_option=${http_port:+--http-port ${http_port}}
-local_address_option=${node_address:+--local-address ${node_address}}
-use_processes_option=${use_processes:+--use-processes}
-connection_type_option=${connection_type:+--beehive-connection-type ${connection_type}}
-
-titan_arguments=" \
-    ${n_nodes_option} \
-    ${spool_root_option} \
-    ${gateway_option} \
-    ${beehive_port_option} \
-    ${http_port_option} \
-    ${jmx_port_option} \
-    ${local_address_option} \
-    ${socket_cache_option} \
-    ${use_processes_option} \
-    ${connection_type_option} \
-    ${additional_options}"
-
 start() {
     if [[ ${TITANCONFIG_URL} == "unset" ]]; then
-        echo ${JAVA} ${JAVA_ARGUMENTS} -jar ${TITANHOME}/lib/titan.jar ${titan_arguments} '>' ${logfile} '2>&1'
-        ${JAVA} ${JAVA_ARGUMENTS} -jar ${TITANHOME}/lib/titan.jar ${titan_arguments} > ${logfile} 2>&1 &
+        echo ${JAVA} ${JAVA_ARGUMENTS} -jar ${TITANHOME}/lib/titan.jar ${titan_arguments} '>' ${titan_log} '2>&1'
+        ${JAVA} ${JAVA_ARGUMENTS} -jar ${TITANHOME}/lib/titan.jar ${titan_arguments} > ${titan_log} 2>&1 &
     else
-        echo ${JAVA} ${JAVA_ARGUMENTS} -jar ${TITANHOME}/lib/titan.jar ${TITANCONFIG_URL} '>' ${logfile} '2>&1'
-        ${JAVA} ${JAVA_ARGUMENTS} -jar ${TITANHOME}/lib/titan.jar ${TITANCONFIG_URL} > ${logfile} 2>&1 &
+        echo ${JAVA} ${JAVA_ARGUMENTS} -jar ${TITANHOME}/lib/titan.jar ${TITANCONFIG_URL} '>' ${titan_log} '2>&1'
+        ${JAVA} ${JAVA_ARGUMENTS} -jar ${TITANHOME}/lib/titan.jar ${TITANCONFIG_URL} > ${titan_log} 2>&1 &
     fi
 }
 
@@ -243,7 +200,7 @@ bgclobber() {
 config() {
 	echo Java Parameters ${JAVA_ARGUMENTS}
 	echo Titan Parameters ${titan_arguments}
-	echo Titan Log File ${logfile}
+	echo Titan Log File ${titan_log}
 }
 
 status() {

@@ -25,7 +25,7 @@ package sunlabs.titan;
 
 public class Copyright {
     public final static String miniNotice = "Copyright 2004-2010 Oracle.\n"
-    + "This code is free software; you can redistribute it and/or modify\n"
-    + "it under the terms of the GNU General Public License version 2\n"
-    + "only, as published by the Free Software Foundation.";
+    + "This code is free software; you can redistribute it and/or modify it under the\n"
+    + "it under the terms of the GNU General Public License version 2 only as published\n"
+    + "by the Free Software Foundation.";
 }

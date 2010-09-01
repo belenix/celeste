@@ -41,7 +41,8 @@ import java.util.TreeSet;
 
 import sunlabs.asdf.web.XML.XHTML;
 import sunlabs.asdf.web.http.HTTP;
-import sunlabs.titan.BeehiveObjectId;
+import sunlabs.titan.TitanGuidImpl;
+import sunlabs.titan.api.TitanGuid;
 import sunlabs.titan.api.XHTMLInspectable;
 
 /**
@@ -287,9 +288,9 @@ public class OrderedProperties extends java.util.Properties implements XHTMLInsp
         return (v == null) ? defaultValue : Long.parseLong(v);
     }
 
-    public BeehiveObjectId getPropertyAsObjectId(String name, BeehiveObjectId defaultValue) {
+    public TitanGuid getPropertyAsObjectId(String name, TitanGuid defaultValue) {
         String v = this.getProperty(name);
-        return (v == null) ? defaultValue : new BeehiveObjectId(v);
+        return (v == null) ? defaultValue : new TitanGuidImpl(v);
     }
     
     public XHTML.EFlow toXHTML(URI uri, Map<String,HTTP.Message> props) {

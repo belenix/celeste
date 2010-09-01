@@ -36,14 +36,17 @@ import java.util.concurrent.FutureTask;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 
-import sunlabs.titan.BeehiveObjectId;
 import sunlabs.titan.api.BeehiveObject;
 import sunlabs.titan.api.ObjectStore;
+import sunlabs.titan.api.TitanGuid;
+import sunlabs.titan.api.TitanNode;
+import sunlabs.titan.api.TitanNodeId;
 import sunlabs.titan.node.BeehiveMessage;
+import sunlabs.titan.node.BeehiveMessage.RemoteException;
 import sunlabs.titan.node.BeehiveNode;
 import sunlabs.titan.node.BeehiveObjectPool;
 import sunlabs.titan.node.BeehiveObjectStore;
-import sunlabs.titan.node.BeehiveMessage.RemoteException;
+import sunlabs.titan.node.services.CensusDaemon;
 import sunlabs.titan.node.services.PublishDaemon;
 import sunlabs.titan.node.services.api.Census;
 import sunlabs.titan.util.DOLRStatus;
@@ -117,7 +120,7 @@ public final class StorableObject {
      * @throws RemoteException encapsulating an Exception thrown by the storing node. 
      */
     public static BeehiveMessage storeLocalObject(StorableObject.Handler<? extends StorableObject.Handler.Object> handler, StorableObject.Handler.Object object, BeehiveMessage message) throws RemoteException {
-        BeehiveNode node = handler.getNode();
+        TitanNode node = handler.getNode();
 
         // Ensure that that the object's METADATA_TYPE is set in its metadata.
         object.setProperty(ObjectStore.METADATA_TYPE, handler.getName());
@@ -158,7 +161,7 @@ public final class StorableObject {
      * Each copy is stored on a different node.
      *
      * If a node is selected to store the object and that node already has an object with the same
-     * {@link BeehiveObjectId}, the node replaces the copy with the new copy and signals that the object already existed.
+     * {@link TitanGuid}, the node replaces the copy with the new copy and signals that the object already existed.
      * <p>
      * If the property
      * {@link sunlabs.titan.api.ObjectStore#METADATA_REPLICATION_STORE ObjectStore.METADATA_REPLICATION_STORE}
@@ -176,7 +179,7 @@ public final class StorableObject {
         // For now parallel stores is turned off by passing null as the executor to storeObject().
         // It can generate a large number of Threads during big writes with no benefit because the publish operation is ultimately sequential due to its locking.
         //ExecutorService executor = Executors.newFixedThreadPool(nReplicas);
-        return StorableObject.storeObject(handler, object, nReplicas, new HashSet<BeehiveObjectId>(), null);
+        return StorableObject.storeObject(handler, object, nReplicas, new HashSet<TitanNodeId>(), null);
     }
 
     /**
@@ -189,7 +192,7 @@ public final class StorableObject {
      * </p>
      * <p>
      * If a node is selected to store the object and that node already has an object with the same
-     * {@link BeehiveObjectId}, the node replaces the copy with the new copy and signals that the object already existed.
+     * {@link TitanGuid}, the node replaces the copy with the new copy and signals that the object already existed.
      * </p>
      * <p>
      * If the value of {@code nReplicas} is larger than the number of nodes in the system, this method
@@ -207,19 +210,19 @@ public final class StorableObject {
     public static StorableObject.Handler.Object storeObject(StorableObject.Handler<? extends StorableObject.Handler.Object> handler,
             StorableObject.Handler.Object object,
             int nReplicas,
-            Set<BeehiveObjectId> exclude,
+            Set<TitanNodeId> exclude,
             ExecutorService executorService)
     throws IOException, BeehiveObjectStore.NoSpaceException, BeehiveObjectStore.UnacceptableObjectException, BeehiveObjectPool.Exception {
         object.setProperty(ObjectStore.METADATA_TYPE, handler.getName());
         object.setProperty(ObjectStore.METADATA_DATAHASH, object.getDataId());
 
-        Census census = (Census) handler.getNode().getService("sunlabs.titan.node.services.CensusDaemon");
+        Census census = (Census) handler.getNode().getService(CensusDaemon.class);
 
-        Set<BeehiveObjectId> excludedNodes = new HashSet<BeehiveObjectId>(exclude);
+        Set<TitanNodeId> excludedNodes = new HashSet<TitanNodeId>(exclude);
 
         for (int successfulStores = 0; successfulStores < nReplicas; /**/) {
             // Get enough nodes from Census to store the object.
-            Map<BeehiveObjectId, OrderedProperties> nodes = census.select(nReplicas - successfulStores, excludedNodes, null);
+            Map<TitanNodeId,OrderedProperties> nodes = census.select(nReplicas - successfulStores, excludedNodes, null);
             if (nodes.size() == 0) {
                 throw new BeehiveObjectStore.NoSpaceException("No node found to store object %s", object.getObjectId());
             }
@@ -229,7 +232,7 @@ public final class StorableObject {
 
             LinkedList<FutureTask<BeehiveMessage>> tasks = new LinkedList<FutureTask<BeehiveMessage>>();
             CountDownLatch latch = new CountDownLatch(nodes.size());
-            for (BeehiveObjectId destination : nodes.keySet()) {
+            for (TitanNodeId destination : nodes.keySet()) {
                 excludedNodes.add(destination);
                 FutureTask<BeehiveMessage> task = new StoreTask(handler, object, destination, latch);
                 tasks.add(task);
@@ -268,7 +271,7 @@ public final class StorableObject {
                     if (true) {
                         try {
                             PublishDaemon.PublishObject.Response response = publishResult.getPayload(PublishDaemon.PublishObject.Response.class, handler.getNode());
-                            for (BeehiveObjectId objectId : response.getObjectIds()) { // should only be one object-id.
+                            for (TitanGuid objectId : response.getObjectIds()) { // should only be one object-id.
                                 object.setObjectId(objectId);
                             }
                             successfulStores++;
@@ -287,7 +290,7 @@ public final class StorableObject {
                             throw new RuntimeException(e);
                         }
                     } else {
-                        BeehiveObjectId objectId = null;
+                        TitanGuid objectId = null;
                         if (publishResult.getStatus().isSuccessful()) {
                             objectId = publishResult.subjectId;
                             object.setObjectId(objectId);
@@ -317,9 +320,9 @@ public final class StorableObject {
      */
     public static class StoreTask extends FutureTask<BeehiveMessage> {
         private BeehiveObject object;
-        private BeehiveObjectId destination;
+        private TitanGuid destination;
 
-        public StoreTask(StorableObject.Handler<? extends StorableObject.Handler.Object>  handler, BeehiveObject object, BeehiveObjectId destination, CountDownLatch latch) {
+        public StoreTask(StorableObject.Handler<? extends StorableObject.Handler.Object>  handler, BeehiveObject object, TitanNodeId destination, CountDownLatch latch) {
             super(new StorableObject.StoreTask.Store(handler, object, destination, latch));
             this.object = object;
             this.destination = destination;
@@ -335,11 +338,11 @@ public final class StorableObject {
          */
         private static class Store implements Callable<BeehiveMessage> {
             private  StorableObject.Handler<? extends StorableObject.Handler.Object>  handler;
-            private BeehiveObjectId destination;
+            private TitanNodeId destination;
             private BeehiveObject object;
             private CountDownLatch latch;
 
-            public Store(StorableObject.Handler<? extends StorableObject.Handler.Object> handler, BeehiveObject object, BeehiveObjectId destination, CountDownLatch latch) {
+            public Store(StorableObject.Handler<? extends StorableObject.Handler.Object> handler, BeehiveObject object, TitanNodeId destination, CountDownLatch latch) {
                 this.latch = latch;
                 this.handler = handler;
                 this.destination = destination;

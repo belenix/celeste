@@ -35,12 +35,13 @@ import javax.management.NotCompliantMBeanException;
 
 import sunlabs.asdf.web.XML.XHTML;
 import sunlabs.asdf.web.http.HTTP;
-import sunlabs.titan.BeehiveObjectId;
+import sunlabs.titan.TitanGuidImpl;
 import sunlabs.titan.api.BeehiveObject;
+import sunlabs.titan.api.TitanGuid;
 import sunlabs.titan.node.BeehiveMessage;
+import sunlabs.titan.node.BeehiveMessage.RemoteException;
 import sunlabs.titan.node.BeehiveNode;
 import sunlabs.titan.node.BeehiveObjectStore;
-import sunlabs.titan.node.BeehiveMessage.RemoteException;
 import sunlabs.titan.node.Publishers.PublishRecord;
 import sunlabs.titan.node.object.InspectableObject;
 import sunlabs.titan.node.services.api.Publish;
@@ -64,7 +65,7 @@ public final class ReflectionService extends BeehiveService implements Reflectio
         }
     }
 
-    public BeehiveObject retrieveObject(final BeehiveObjectId objectId) throws RemoteException {
+    public BeehiveObject retrieveObject(final TitanGuid objectId) throws RemoteException {
         BeehiveMessage reply = ReflectionService.this.node.sendToObject(objectId, ReflectionService.name, "retrieveObject", objectId);
         if (!reply.getStatus().isSuccessful())
             return null;
@@ -107,7 +108,7 @@ public final class ReflectionService extends BeehiveService implements Reflectio
         }
     }
     
-    public XHTML.EFlow inspectObject(BeehiveObjectId objectId, URI uri, Map<String,HTTP.Message> props) throws ClassCastException, ClassNotFoundException, BeehiveObjectStore.NotFoundException {
+    public XHTML.EFlow inspectObject(TitanGuid objectId, URI uri, Map<String,HTTP.Message> props) throws ClassCastException, ClassNotFoundException, BeehiveObjectStore.NotFoundException {
     	Reflection.ObjectInspect.Request request = new Reflection.ObjectInspect.Request(objectId, uri, props);
 
     	if (this.log.isLoggable(Level.FINE)) {
@@ -138,8 +139,8 @@ public final class ReflectionService extends BeehiveService implements Reflectio
     	}
     }
 
-    public String getObjectType(BeehiveObjectId objectId) throws ClassCastException, ClassNotFoundException, RemoteException {
-        return this.getObjectType(new ReflectionService.ObjectType.Request(new BeehiveObjectId(objectId))).getObjectType();
+    public String getObjectType(TitanGuid objectId) throws ClassCastException, ClassNotFoundException, RemoteException {
+        return this.getObjectType(new ReflectionService.ObjectType.Request(new TitanGuidImpl(objectId))).getObjectType();
     }
 
     private ObjectType.Response getObjectType(ObjectType.Request request) throws ClassCastException, ClassNotFoundException, RemoteException {
@@ -150,7 +151,7 @@ public final class ReflectionService extends BeehiveService implements Reflectio
 
     public BeehiveMessage getObjectType(BeehiveMessage message) throws ClassCastException, ClassNotFoundException, BeehiveObjectStore.NotFoundException, BeehiveMessage.RemoteException {
             Reflection.ObjectType.Request request = message.getPayload(Reflection.ObjectType.Request.class, node);
-            BeehiveObjectId objectId = request.getObjectId();
+            TitanGuid objectId = request.getObjectId();
             BeehiveObject object = this.node.getObjectStore().get(BeehiveObject.class, objectId);
 
             Reflection.ObjectType.Response response = new Reflection.ObjectType.Response(object.getObjectType());

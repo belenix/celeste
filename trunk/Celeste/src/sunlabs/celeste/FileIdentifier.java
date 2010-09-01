@@ -26,8 +26,9 @@ package sunlabs.celeste;
 import java.io.Serializable;
 
 import sunlabs.celeste.node.services.object.AnchorObject;
-import sunlabs.titan.BeehiveObjectId;
+import sunlabs.titan.TitanGuidImpl;
 import sunlabs.titan.api.Credential;
+import sunlabs.titan.api.TitanGuid;
 
 /**
  * A Celeste File Identifier.
@@ -46,8 +47,8 @@ import sunlabs.titan.api.Credential;
 public class FileIdentifier implements Serializable {
     private static final long serialVersionUID = 1L;
 
-    private BeehiveObjectId nameSpaceId;
-    private BeehiveObjectId fileId;
+    private TitanGuid nameSpaceId;
+    private TitanGuid fileId;
 
     /**
      * Constructs a new {@code FileIdentifier} from the given {@code nameSpaceId} and {@code fileId}.
@@ -59,7 +60,7 @@ public class FileIdentifier implements Serializable {
      *
      * @throws IllegalArgumentException  if any of {@code nameSpaceId} and {@code fileId} are {@code null}
      */
-    public FileIdentifier(BeehiveObjectId nameSpaceId, BeehiveObjectId fileId) {
+    public FileIdentifier(TitanGuid nameSpaceId, TitanGuid fileId) {
         this.nameSpaceId = nameSpaceId;
         this.fileId = fileId;
     }
@@ -67,14 +68,14 @@ public class FileIdentifier implements Serializable {
     /**
      * Return the {@link BeehiveObjectId} of this FileIdentifier's name-space.
      */
-    public BeehiveObjectId getNameSpaceId() {
+    public TitanGuid getNameSpaceId() {
         return nameSpaceId;
     }
 
     /**
      * Return the {@link BeehiveObjectId} of this FileIdentifier's file-id.
      */
-    public BeehiveObjectId getFileId() {
+    public TitanGuid getFileId() {
         return fileId;
     }
 
@@ -82,8 +83,8 @@ public class FileIdentifier implements Serializable {
      * Return the {@link BeehiveObjectId} of the {@link AnchorObject.Object} representing the
      * file named by the combination of the {@code nameSpaceId} and {@code fileId}.
      */
-    public BeehiveObjectId getObjectId() {
-        return new BeehiveObjectId((this.nameSpaceId.toString() + this.fileId.toString()).getBytes());
+    public TitanGuid getObjectId() {
+        return new TitanGuidImpl((this.nameSpaceId.toString() + this.fileId.toString()).getBytes());
     }
 
     @Override

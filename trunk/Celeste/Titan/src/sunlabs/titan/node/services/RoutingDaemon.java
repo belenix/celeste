@@ -53,14 +53,15 @@ import sunlabs.asdf.web.XML.XHTML;
 import sunlabs.asdf.web.XML.Xxhtml;
 import sunlabs.asdf.web.http.HTTP;
 import sunlabs.asdf.web.http.HttpMessage;
-import sunlabs.titan.BeehiveObjectId;
+import sunlabs.titan.TitanGuidImpl;
+import sunlabs.titan.api.TitanGuid;
 import sunlabs.titan.node.BeehiveMessage;
+import sunlabs.titan.node.BeehiveMessage.RemoteException;
 import sunlabs.titan.node.BeehiveNode;
 import sunlabs.titan.node.Dossier;
 import sunlabs.titan.node.NodeAddress;
 import sunlabs.titan.node.Publishers;
 import sunlabs.titan.node.Reputation;
-import sunlabs.titan.node.BeehiveMessage.RemoteException;
 
 /**
  * A Beehive Node routing table maintenance daemon.
@@ -93,7 +94,7 @@ public final class RoutingDaemon extends BeehiveService implements RoutingDaemon
         private final ObjectName jmxObjectName;
 
         Introduction() throws MalformedObjectNameException, NotCompliantMBeanException, InstanceAlreadyExistsException, MBeanRegistrationException {
-            super(RoutingDaemon.this.node.getThreadGroup(), RoutingDaemon.this.node.getObjectId() + " " + RoutingDaemon.name + ".Introduction");
+            super(RoutingDaemon.this.node.getThreadGroup(), RoutingDaemon.this.node.getNodeId() + " " + RoutingDaemon.name + ".Introduction");
             this.setPriority(Thread.NORM_PRIORITY);
             this.currentIntroductionRate = this.getIntroductionRate();
             this.wakeUpTime = 0;
@@ -111,7 +112,7 @@ public final class RoutingDaemon extends BeehiveService implements RoutingDaemon
         }
 
         public long getIntroductionRate() {
-            return RoutingDaemon.this.node.configuration.asLong(RoutingDaemon.IntroductionRateMillis);
+            return RoutingDaemon.this.node.getConfiguration().asLong(RoutingDaemon.IntroductionRateMillis);
         }
 
         public String getLastRunDuration() {
@@ -191,7 +192,7 @@ public final class RoutingDaemon extends BeehiveService implements RoutingDaemon
                         }
                     }
 
-                    long introductionRate = RoutingDaemon.this.node.configuration.asLong(RoutingDaemon.IntroductionRateMillis);
+                    long introductionRate = RoutingDaemon.this.node.getConfiguration().asLong(RoutingDaemon.IntroductionRateMillis);
 
                     if (this.currentIntroductionRate < introductionRate) {
                         this.currentIntroductionRate *= 2;
@@ -213,7 +214,7 @@ public final class RoutingDaemon extends BeehiveService implements RoutingDaemon
                     RoutingDaemon.this.setStatus(String.format("Wakeup %1$td/%1$tm/%1$ty %1$tH:%1$tM:%1$tS", new Date(this.wakeUpTime)));
 
                     RoutingDaemon.this.log.fine(String.format("Desired introductionRate=%sms currentIntroductionRate=%dms elasped time=%dms, sleepTime=%dms",
-                            RoutingDaemon.this.node.configuration.asLong(RoutingDaemon.IntroductionRateMillis),
+                            RoutingDaemon.this.node.getConfiguration().asLong(RoutingDaemon.IntroductionRateMillis),
                             this.currentIntroductionRate, this.lastRunDuration, sleepTime));
 
                     if (sleepTime < 0) {
@@ -244,7 +245,7 @@ public final class RoutingDaemon extends BeehiveService implements RoutingDaemon
         }
 
         public void setIntroductionRate(long refreshRate) {
-            RoutingDaemon.this.node.configuration.set(RoutingDaemon.IntroductionRateMillis, refreshRate);
+            RoutingDaemon.this.node.getConfiguration().set(RoutingDaemon.IntroductionRateMillis, refreshRate);
         }
 
         public void wakeup() {
@@ -271,7 +272,7 @@ public final class RoutingDaemon extends BeehiveService implements RoutingDaemon
          *
          * The Join operation response contains:
          * <ul>
-         * <li>The {@link BeehiveObjectId} of the Beehive network.</li>
+         * <li>The {@link TitanGuid} of the Beehive network.</li>
          * <li>A {@link Set} containing this node's routing table.</li>
          * <li>A {@link Map} of this node's object publishers.</li>
          * </ul>
@@ -279,11 +280,11 @@ public final class RoutingDaemon extends BeehiveService implements RoutingDaemon
         public static class Response implements Serializable {
             private final static long serialVersionUID = 1L;
 
-            private BeehiveObjectId networkObjectId;
+            private TitanGuid networkObjectId;
             private Set<NodeAddress> routingTable;
-            private Map<BeehiveObjectId,Set<Publishers.PublishRecord>> publishRecords;
+            private Map<TitanGuid,Set<Publishers.PublishRecord>> publishRecords;
 
-            public Response(BeehiveObjectId networkObjectId, Set<NodeAddress> map, Map<BeehiveObjectId,Set<Publishers.PublishRecord>> roots) {
+            public Response(TitanGuid networkObjectId, Set<NodeAddress> map, Map<TitanGuid,Set<Publishers.PublishRecord>> roots) {
                 this.networkObjectId = networkObjectId;
                 this.routingTable = map;
                 this.publishRecords = roots;
@@ -293,15 +294,15 @@ public final class RoutingDaemon extends BeehiveService implements RoutingDaemon
                 return this.routingTable;
             }
 
-            public BeehiveObjectId getNetworkObjectId() {
+            public TitanGuid getNetworkObjectId() {
                 return this.networkObjectId;
             }
 
             /**
-             * Return the encapsulated Map of {@link BeehiveObjectId}s to {@link Set}s
+             * Return the encapsulated Map of {@link TitanGuid}s to {@link Set}s
              * of {@link sunlabs.titan.node.Publishers.PublishRecord} instances.
              */
-            public Map<BeehiveObjectId,Set<Publishers.PublishRecord>> getPublishRecords() {
+            public Map<TitanGuid,Set<Publishers.PublishRecord>> getPublishRecords() {
                 return this.publishRecords;
             }
 
@@ -341,9 +342,9 @@ public final class RoutingDaemon extends BeehiveService implements RoutingDaemon
             private final static long serialVersionUID = 1L;
 
             private Set<NodeAddress> neighbourSet;
-            private Map<BeehiveObjectId,Set<Publishers.PublishRecord>> publishers;
+            private Map<TitanGuid,Set<Publishers.PublishRecord>> publishers;
 
-            public Response(Set<NodeAddress> neighbourMap, Map<BeehiveObjectId,Set<Publishers.PublishRecord>> publisherMap) {
+            public Response(Set<NodeAddress> neighbourMap, Map<TitanGuid,Set<Publishers.PublishRecord>> publisherMap) {
                 this.neighbourSet = neighbourMap;
                 this.publishers = publisherMap;
             }
@@ -359,7 +360,7 @@ public final class RoutingDaemon extends BeehiveService implements RoutingDaemon
              * Get the {@code Map<BeehiveObjectId,Map<BeehiveObjectId,Publishers.Publisher>>}
              * instances from this response.
              */
-            public Map<BeehiveObjectId,Set<Publishers.PublishRecord>> getPublishRecords() {
+            public Map<TitanGuid,Set<Publishers.PublishRecord>> getPublishRecords() {
                 return this.publishers;
             }
         }
@@ -372,7 +373,7 @@ public final class RoutingDaemon extends BeehiveService implements RoutingDaemon
 
         protected Reunion()
         throws MalformedObjectNameException, NotCompliantMBeanException, InstanceAlreadyExistsException, MBeanRegistrationException {
-            super(RoutingDaemon.this.node.getThreadGroup(), RoutingDaemon.this.node.getObjectId() + ":" + RoutingDaemon.this.getName() + ".ReunionDaemon");
+            super(RoutingDaemon.this.node.getThreadGroup(), RoutingDaemon.this.node.getNodeId() + ":" + RoutingDaemon.this.getName() + ".ReunionDaemon");
             this.setPriority(Thread.NORM_PRIORITY);
             if (RoutingDaemon.this.jmxObjectNameRoot != null) {
                 this.jmxObjectName = JMX.objectName(RoutingDaemon.this.jmxObjectNameRoot, "ReunionDaemon");
@@ -395,7 +396,7 @@ public final class RoutingDaemon extends BeehiveService implements RoutingDaemon
         }
 
         public long getReunionRate() {
-            return RoutingDaemon.this.node.configuration.asLong(RoutingDaemon.ReunionRateMillis);
+            return RoutingDaemon.this.node.getConfiguration().asLong(RoutingDaemon.ReunionRateMillis);
         }
 
         @Override
@@ -410,7 +411,7 @@ public final class RoutingDaemon extends BeehiveService implements RoutingDaemon
                     }
 
                     this.lastRunTime = System.currentTimeMillis();
-                    for (Map.Entry<BeehiveObjectId,Dossier.Entry> mapEntry : RoutingDaemon.this.node.getNeighbourMap().getDossier().entrySet()) {
+                    for (Map.Entry<TitanGuid,Dossier.Entry> mapEntry : RoutingDaemon.this.node.getNeighbourMap().getDossier().entrySet()) {
                         // Since we don't lock the Dossier, the next statement may fail to produce the Entry because it's been deleted.
                         Dossier.Entry entry = mapEntry.getValue();
                         if (entry != null) {
@@ -422,7 +423,7 @@ public final class RoutingDaemon extends BeehiveService implements RoutingDaemon
 
                                 //  Reunite only with nodes that we're not already connected to.
                                 if (!RoutingDaemon.this.node.getNeighbourMap().keySet().contains(address)) {
-                                    if (!address.getObjectId().equals(RoutingDaemon.this.node.getObjectId())) {
+                                    if (!address.getObjectId().equals(RoutingDaemon.this.node.getNodeId())) {
                                         try {
                                             if (RoutingDaemon.this.ping(address, new PingOperation.Request(new byte[0])) != null) {
                                                 /**/
@@ -431,7 +432,7 @@ public final class RoutingDaemon extends BeehiveService implements RoutingDaemon
                                                     RoutingDaemon.this.log.fine("fail %s", address.format());
                                                 }
                                                 // Get dossier entry: if it is too old, then delete it
-                                                long tooOld = System.currentTimeMillis() - RoutingDaemon.this.node.configuration.asLong(RoutingDaemon.DossierTimeToLive);
+                                                long tooOld = System.currentTimeMillis() - RoutingDaemon.this.node.getConfiguration().asLong(RoutingDaemon.DossierTimeToLive);
                                                 Dossier.Entry e = RoutingDaemon.this.node.getNeighbourMap().getDossier().getEntryAndLock(address);
                                                 try {
                                                     if (e.getTimestamp() < tooOld) {
@@ -484,7 +485,7 @@ public final class RoutingDaemon extends BeehiveService implements RoutingDaemon
         }
 
         public void setReunionRate(long milliSeconds) {
-           RoutingDaemon.this.node.configuration.set(RoutingDaemon.ReunionRateMillis, milliSeconds);
+           RoutingDaemon.this.node.getConfiguration().set(RoutingDaemon.ReunionRateMillis, milliSeconds);
         }
 
         public void wakeup() {
@@ -541,9 +542,9 @@ public final class RoutingDaemon extends BeehiveService implements RoutingDaemon
         mapReputationRequirements.put(Dossier.ROUTING, new Integer(25));
 
         if (this.log.isLoggable(Level.CONFIG)) {
-            this.log.config("%s", this.node.configuration.get(RoutingDaemon.IntroductionRateMillis));
-            this.log.config("%s", this.node.configuration.get(RoutingDaemon.ReunionRateMillis));
-            this.log.config("%s", this.node.configuration.get(RoutingDaemon.DossierTimeToLive));
+            this.log.config("%s", this.node.getConfiguration().get(RoutingDaemon.IntroductionRateMillis));
+            this.log.config("%s", this.node.getConfiguration().get(RoutingDaemon.ReunionRateMillis));
+            this.log.config("%s", this.node.getConfiguration().get(RoutingDaemon.DossierTimeToLive));
         }
     }
 
@@ -578,9 +579,9 @@ public final class RoutingDaemon extends BeehiveService implements RoutingDaemon
             reply = this.node.replyTo(message, response);
         } else {
             // This clause is executed on the root node of the joining object-id.
-            Map<BeehiveObjectId,Set<Publishers.PublishRecord>> objectRoots = new Hashtable<BeehiveObjectId,Set<Publishers.PublishRecord>>();
+            Map<TitanGuid,Set<Publishers.PublishRecord>> objectRoots = new Hashtable<TitanGuid,Set<Publishers.PublishRecord>>();
 
-            for (BeehiveObjectId objectId : this.node.getObjectPublishers().keySet()) {
+            for (TitanGuid objectId : this.node.getObjectPublishers().keySet()) {
                 if (this.node.getNeighbourMap().isRoot(objectId)) {
                     objectRoots.put(objectId, this.node.getObjectPublishers().getPublishers(objectId));
                 }
@@ -608,8 +609,8 @@ public final class RoutingDaemon extends BeehiveService implements RoutingDaemon
         // has an opportunity to annotate the response from the root.
         BeehiveMessage message = new BeehiveMessage(BeehiveMessage.Type.RouteToNode,
                 this.node.getNodeAddress(),
-                this.node.getObjectId(),
-                BeehiveObjectId.ANY,
+                this.node.getNodeId(),
+                TitanGuidImpl.ANY,
                 RoutingDaemon.name,
                 "join",
                 BeehiveMessage.Transmission.MULTICAST,
@@ -631,9 +632,9 @@ public final class RoutingDaemon extends BeehiveService implements RoutingDaemon
         try {
             JoinOperation.Response response = reply.getPayload(JoinOperation.Response.class, this.node);
 
-            Map<BeehiveObjectId,Set<Publishers.PublishRecord>> publishRecords = response.getPublishRecords();
+            Map<TitanGuid,Set<Publishers.PublishRecord>> publishRecords = response.getPublishRecords();
             this.log.finest("%d publish records", publishRecords.size());
-            for (BeehiveObjectId objectId : publishRecords.keySet()) {
+            for (TitanGuid objectId : publishRecords.keySet()) {
                 Set<Publishers.PublishRecord> publishers = publishRecords.get(objectId);
                 this.log.finest("Adding publish record %s", publishers);
                 this.node.getObjectPublishers().update(objectId, publishers);
@@ -691,9 +692,9 @@ public final class RoutingDaemon extends BeehiveService implements RoutingDaemon
             // Respond with our NeighbourMap and our set of
             // object backpointers.
             //
-            Map<BeehiveObjectId,Set<Publishers.PublishRecord>> publishers = new HashMap<BeehiveObjectId,Set<Publishers.PublishRecord>>();
+            Map<TitanGuid,Set<Publishers.PublishRecord>> publishers = new HashMap<TitanGuid,Set<Publishers.PublishRecord>>();
 
-            for (BeehiveObjectId objectId : this.node.getObjectPublishers().keySet()) {
+            for (TitanGuid objectId : this.node.getObjectPublishers().keySet()) {
                 HashSet<Publishers.PublishRecord> includedPublishers = new HashSet<Publishers.PublishRecord>();
                 publishers.put(objectId, includedPublishers);
             }
@@ -732,7 +733,7 @@ public final class RoutingDaemon extends BeehiveService implements RoutingDaemon
                         RoutingDaemon.this.node.getNeighbourMap().getDossier().unlockEntry(e);
                     }
 
-                    for (BeehiveObjectId objectId : response.getPublishRecords().keySet()) {
+                    for (TitanGuid objectId : response.getPublishRecords().keySet()) {
                         Set<Publishers.PublishRecord> publisherSet = response.getPublishRecords().get(objectId);
                         this.node.getObjectPublishers().update(objectId, publisherSet);
                     }
@@ -823,7 +824,7 @@ public final class RoutingDaemon extends BeehiveService implements RoutingDaemon
                 new XHTML.Table.Body(
                         new XHTML.Table.Row(new XHTML.Table.Data(""), new XHTML.Table.Data(controlButton)),
                         new XHTML.Table.Row(new XHTML.Table.Data("Logging Level"), new XHTML.Table.Data(Xxhtml.selectJavaUtilLoggingLevel("LoggerLevel", this.log.getEffectiveLevel()))),
-                        new XHTML.Table.Row(new XHTML.Table.Data("Refresh Rate"), new XHTML.Table.Data(Xxhtml.inputUnboundedInteger("refreshRate", this.node.configuration.asLong(RoutingDaemon.IntroductionRateMillis)))),
+                        new XHTML.Table.Row(new XHTML.Table.Data("Refresh Rate"), new XHTML.Table.Data(Xxhtml.inputUnboundedInteger("refreshRate", this.node.getConfiguration().asLong(RoutingDaemon.IntroductionRateMillis)))),
                         new XHTML.Table.Row(new XHTML.Table.Data(""), new XHTML.Table.Data(set)),
                         new XHTML.Table.Row(new XHTML.Table.Data(""), new XHTML.Table.Data(go))
                 )).setClass("controls"));
@@ -843,7 +844,7 @@ public final class RoutingDaemon extends BeehiveService implements RoutingDaemon
                 new XHTML.Table.Body(new XHTML.Table.Row(new XHTML.Table.Data(new XHTML.Preformatted(logdata).setClass("logfile")))));
 
         XHTML.Div body = new XHTML.Div(
-                new XHTML.Heading.H1(RoutingDaemon.name + " " + this.node.getObjectId()),
+                new XHTML.Heading.H1(RoutingDaemon.name + " " + this.node.getNodeId()),
                 new XHTML.Div(this.node.getNeighbourMap().toXHTML(uri, props)).setClass("section"),
                 new XHTML.Div(configuration).setClass("section"),
                 new XHTML.Div(logfile).setClass("section"));

@@ -1,5 +1,5 @@
 /*
- * Copyright 2007-2009 Sun Microsystems, Inc. All Rights Reserved.
+ * Copyright 2007-2010 Oracle. All Rights Reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER
  *
  * This code is free software; you can redistribute it and/or modify
@@ -17,11 +17,10 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
  * 02110-1301 USA
  *
- * Please contact Sun Microsystems, Inc., 16 Network Circle, Menlo
- * Park, CA 94025 or visit www.sun.com if you need additional
- * information or have any questions.
+ * Please contact Oracle Corporation, 500 Oracle Parkway, Redwood Shores, CA 94065
+ * or visit www.oracle.com if you need additional information or
+ * have any questions.
  */
-
 package sunlabs.celeste.client.filesystem.simple;
 
 import static java.lang.Math.min;
@@ -90,10 +89,11 @@ import sunlabs.celeste.client.operation.WriteFileOperation;
 import sunlabs.celeste.node.CelesteACL;
 import sunlabs.celeste.node.ProfileCache;
 import sunlabs.celeste.node.services.api.AObjectVersionMapAPI;
-import sunlabs.celeste.util.CelesteEncoderDecoder;
 import sunlabs.celeste.util.ACL.Disposition;
-import sunlabs.titan.BeehiveObjectId;
+import sunlabs.celeste.util.CelesteEncoderDecoder;
+import sunlabs.titan.TitanGuidImpl;
 import sunlabs.titan.api.Credential;
+import sunlabs.titan.api.TitanGuid;
 import sunlabs.titan.util.Extent;
 import sunlabs.titan.util.ExtentBuffer;
 import sunlabs.titan.util.ExtentBufferStreamer;
@@ -303,8 +303,8 @@ public class FileImpl {
         // making access control decisions when operations are invoked on the
         // file.
         //
-        public final BeehiveObjectId    ownerId;
-        public final BeehiveObjectId    groupId;
+        public final TitanGuid    ownerId;
+        public final TitanGuid    groupId;
         public final CelesteACL         acl;
 
         public VersionMetadata(long modifiedTime, long metadataChangedTime,
@@ -313,7 +313,7 @@ public class FileImpl {
                 String contentType,
                 int blockSize, long deletionTimeToLive,
                 byte[] encryptedDeleteToken,
-                BeehiveObjectId ownerId, BeehiveObjectId groupId,
+                TitanGuid ownerId, TitanGuid groupId,
                 CelesteACL acl) {
             this.modifiedTime = modifiedTime;
             this.metadataChangedTime = metadataChangedTime;
@@ -420,8 +420,7 @@ public class FileImpl {
                 }
 
                 OrderedProperties metadata = msg.getMetadata();
-                BeehiveObjectId versionId = new BeehiveObjectId(
-                    metadata.getProperty(CelesteAPI.VOBJECTID_NAME));
+                TitanGuid versionId = new TitanGuidImpl(metadata.getProperty(CelesteAPI.VOBJECTID_NAME));
 
                 //
                 // See what Celeste told us about the state of the file.  If
@@ -638,16 +637,16 @@ public class FileImpl {
     // version is no longer current, Celeste's response will include the
     // now-current version information.)
     //
-    private BeehiveObjectId latestVersionId;
+    private TitanGuid latestVersionId;
 
     //
     // A map holding the version-specific metadata for each version we know
     // about.  In this implementation, once an entry is added to the map, it
     // is never replaced or removed.
     //
-    private final Map<BeehiveObjectId, VersionMetadata> versionToMetadata =
+    private final Map<TitanGuid, VersionMetadata> versionToMetadata =
         Collections.synchronizedMap(
-            new HashMap<BeehiveObjectId, VersionMetadata>());
+            new HashMap<TitanGuid, VersionMetadata>());
 
     //
     // The repository of cached data for this file.
@@ -828,7 +827,7 @@ public class FileImpl {
     //
     // XXX: groupid should perhaps be treated as an attribute.
     //
-    public void create(Properties attributes, OrderedProperties clientProperties, Credential invokerCredential, char[] invokerPassword, BeehiveObjectId groupId)
+    public void create(Properties attributes, OrderedProperties clientProperties, Credential invokerCredential, char[] invokerPassword, TitanGuid groupId)
         throws
             FileException.BadVersion,
             FileException.CapacityExceeded,
@@ -867,8 +866,8 @@ public class FileImpl {
         //      we switch over completely and make no compatibility
         //      provisions.)
         //
-        String dtoken = (new BeehiveObjectId()).toString();
-        BeehiveObjectId dthash = new BeehiveObjectId(dtoken).getObjectId();
+        String dtoken = (new TitanGuidImpl()).toString();
+        TitanGuid dthash = new TitanGuidImpl(dtoken).getGuid();
         byte[] tentativeEncryptedDeleteToken = null;
         try {
             tentativeEncryptedDeleteToken = invokerCredential.encrypt(dtoken.getBytes());
@@ -895,7 +894,7 @@ public class FileImpl {
         //      but there's as yet no way to single out a distinguished group
         //      from zero or more group attestations held in the profile.
         //
-        BeehiveObjectId ownerId = invokerCredential.getObjectId();
+        TitanGuid ownerId = invokerCredential.getObjectId();
 
         //
         // Build up tentative state that will be committed only after a
@@ -1059,8 +1058,7 @@ public class FileImpl {
             // We now have a base file version id (the one that was just
             // allocated for us).
             //
-            this.latestVersionId = new BeehiveObjectId(
-                metadata.getProperty(CelesteAPI.VOBJECTID_NAME));
+            this.latestVersionId = new TitanGuidImpl(metadata.getProperty(CelesteAPI.VOBJECTID_NAME));
 
             OrderedProperties retrievedProps =
                 setOrCheckCommonMetadata(fileMetaData, metadata);
@@ -1102,7 +1100,7 @@ public class FileImpl {
      *
      * @return  the unique file identifier
      */
-    public BeehiveObjectId getUniqueFileId() {
+    public TitanGuid getUniqueFileId() {
         return this.fileIdentifier.getFileId();
     }
 
@@ -1112,7 +1110,7 @@ public class FileImpl {
      *
      * @return  the file's name space Id
      */
-    public BeehiveObjectId getNameSpaceId() {
+    public TitanGuid getNameSpaceId() {
         return this.fileIdentifier.getNameSpaceId();
     }
 
@@ -1393,7 +1391,7 @@ public class FileImpl {
      * @throws FileException.NotFound
      * @throws FileException.Runtime
      */
-    public BeehiveObjectId getLatestVersionId() throws
+    public TitanGuid getLatestVersionId() throws
             FileException.BadVersion,
             FileException.CelesteFailed,
             FileException.CelesteInaccessible,
@@ -1443,7 +1441,7 @@ public class FileImpl {
      * @throws FileException.NotFound
      * @throws FileException.Runtime
      */
-    public BeehiveObjectId getLatestVersionId(boolean refetch) throws
+    public TitanGuid getLatestVersionId(boolean refetch) throws
             FileException.BadVersion,
             FileException.CelesteFailed,
             FileException.CelesteInaccessible,
@@ -1550,7 +1548,7 @@ public class FileImpl {
      * @throws FileException.NotFound
      * @throws FileException.Runtime
      */
-    public BeehiveObjectId getOwnerId() throws
+    public TitanGuid getOwnerId() throws
             FileException.BadVersion,
             FileException.CelesteFailed,
             FileException.CelesteInaccessible,
@@ -1589,7 +1587,7 @@ public class FileImpl {
      * @throws FileException.NotFound
      * @throws FileException.Runtime
      */
-    public BeehiveObjectId getOwnerId(boolean refetch) throws
+    public TitanGuid getOwnerId(boolean refetch) throws
             FileException.BadVersion,
             FileException.CelesteFailed,
             FileException.CelesteInaccessible,
@@ -1625,7 +1623,7 @@ public class FileImpl {
      * @throws FileException.NotFound
      * @throws FileException.Runtime
      */
-    public BeehiveObjectId getGroupId() throws
+    public TitanGuid getGroupId() throws
             FileException.BadVersion,
             FileException.CelesteFailed,
             FileException.CelesteInaccessible,
@@ -1664,7 +1662,7 @@ public class FileImpl {
      * @throws FileException.NotFound
      * @throws FileException.Runtime
      */
-    public BeehiveObjectId getGroupId(boolean refetch) throws
+    public TitanGuid getGroupId(boolean refetch) throws
             FileException.BadVersion,
             FileException.CelesteFailed,
             FileException.CelesteInaccessible,
@@ -2071,7 +2069,7 @@ public class FileImpl {
      * <p>
      *
      * Return this file's serial number if it was set at
-     * {@link #create(OrderedProperties, OrderedProperties, Credential, char[], BeehiveObjectId) create()}
+     * {@link #create(OrderedProperties, OrderedProperties, Credential, char[], TitanGuid) create()}
      * time or {@code 0} if not.
      *
      * </p><p>
@@ -2654,7 +2652,7 @@ public class FileImpl {
     // XXX: Need to decide and document whether a successful write updates
     //      source's position.  (It almost certainly should.)
     //
-    public void write(ExtentBuffer source, Credential invokerCredential, char[] invokerPassword, BeehiveObjectId predicatedVersion)
+    public void write(ExtentBuffer source, Credential invokerCredential, char[] invokerPassword, TitanGuid predicatedVersion)
         throws
             FileException.BadVersion,
             FileException.CapacityExceeded,
@@ -2695,8 +2693,8 @@ public class FileImpl {
         // id coincides with Celeste's.  This code is vulnerable to livelock,
         // but retryCount limits the vulnerability.
         //
-        BeehiveObjectId profileId = invokerCredential.getObjectId();
-        BeehiveObjectId latestVersionId = (predicatedVersion != null) ?
+        TitanGuid profileId = invokerCredential.getObjectId();
+        TitanGuid latestVersionId = (predicatedVersion != null) ?
             predicatedVersion : this.latestVersionId;
         int retryCount = 0;
         for (;;) {
@@ -2742,12 +2740,10 @@ public class FileImpl {
             props.setProperty(CLIENT_METADATA_NAME, encoding);
 
             ClientMetaData woc = new ClientMetaData(props.toByteBuffer());
-            WriteFileOperation wcc = new WriteFileOperation(
-                this.getFileIdentifier(), profileId,
-                latestVersionId, woc, fileStartOffset, writeLen);
+            WriteFileOperation wcc = new WriteFileOperation(this.getFileIdentifier(), profileId, latestVersionId, woc, fileStartOffset, writeLen);
 
             timer.stamp("pre_try_write");
-            BeehiveObjectId newLatestVersionId = tryWriteVersion(
+            TitanGuid newLatestVersionId = tryWriteVersion(
                 latestVersionId, source, props, wcc,
                 invokerCredential, invokerPassword);
             //System.out.printf(" tryWrite:\tprev:\t%s%n\t\tnew:\t%s%n",
@@ -2853,7 +2849,7 @@ public class FileImpl {
         //    this.getFileLength(true));
     }
 
-    private BeehiveObjectId tryWriteVersion(BeehiveObjectId versionId, ExtentBuffer source, OrderedProperties props,
+    private TitanGuid tryWriteVersion(TitanGuid versionId, ExtentBuffer source, OrderedProperties props,
             WriteFileOperation op, Credential invokerCredential,
             char[] invokerPassword)
         throws
@@ -2877,13 +2873,12 @@ public class FileImpl {
             "FileImpl.tryWriteVersion");
         TimeProfiler timer = new TimeProfiler("FileImpl.tryWriteVersion");
 
-        BeehiveObjectId latestVersionId = null;
+        TitanGuid latestVersionId = null;
         try {
             timer.stamp("pre_sign");
             ByteBuffer data = source.getByteBuffer();
-            BeehiveObjectId dataId = new BeehiveObjectId(data);
-            Credential.Signature signature =
-                invokerCredential.sign(invokerPassword, op.getId(), dataId);
+            TitanGuid dataId = new TitanGuidImpl(data);
+            Credential.Signature signature = invokerCredential.sign(invokerPassword, op.getId(), dataId);
             timer.stamp("post_sign");
             OrderedProperties metadata = null;
             CelesteAPI proxy = null;
@@ -2994,7 +2989,7 @@ public class FileImpl {
             invokerCredential, invokerPassword, null);
     }
 
-    public void truncate(long offset, Credential invokerCredential, char[] invokerPassword, BeehiveObjectId predicatedVersion)
+    public void truncate(long offset, Credential invokerCredential, char[] invokerPassword, TitanGuid predicatedVersion)
         throws
             FileException.BadVersion,
             FileException.CapacityExceeded,
@@ -3034,7 +3029,7 @@ public class FileImpl {
     //
     private void doTruncate(long offset, boolean markDeleted,
             OrderedProperties clientProperties, Credential invokerCredential,
-            char[] invokerPassword, BeehiveObjectId predicatedVersion)
+            char[] invokerPassword, TitanGuid predicatedVersion)
         throws
             FileException.BadVersion,
             FileException.CapacityExceeded,
@@ -3058,8 +3053,8 @@ public class FileImpl {
         // version id coincides with Celeste's.  This code is vulnerable to
         // livelock, but retryCount limits the vulnerability.
         //
-        BeehiveObjectId profileId = invokerCredential.getObjectId();
-        BeehiveObjectId latestVersionId = (predicatedVersion != null) ?
+        TitanGuid profileId = invokerCredential.getObjectId();
+        TitanGuid latestVersionId = (predicatedVersion != null) ?
             predicatedVersion : this.latestVersionId;
         int retryCount = 0;
         for (;;) {
@@ -3169,7 +3164,7 @@ public class FileImpl {
     //      could expect a common superclass of the various modification
     //      operations.)
     //
-    private BeehiveObjectId tryTruncateVersion(BeehiveObjectId versionId,
+    private TitanGuid tryTruncateVersion(TitanGuid versionId,
             OrderedProperties props, SetFileLengthOperation operation,
             Credential invokerCredential, char[] invokerPassword)
         throws
@@ -3185,10 +3180,9 @@ public class FileImpl {
             FileException.Runtime,
             FileException.ValidationFailed {
 
-        BeehiveObjectId latestVersionId = null;
+        TitanGuid latestVersionId = null;
         try {
-            Credential.Signature sig =
-                invokerCredential.sign(invokerPassword, operation.getId());
+            Credential.Signature sig = invokerCredential.sign(invokerPassword, operation.getId());
             OrderedProperties metadata = null;
             CelesteAPI proxy = null;
             try {
@@ -3250,7 +3244,7 @@ public class FileImpl {
     // A successful invocation updates the file's metadata change time
     // attribute as well as whatever attributes are explicitly supplied.
     //
-    private void setFileAttributes(OrderedProperties requestedAttrs, Credential invokerCredential, char[] invokerPassword, BeehiveObjectId predicatedVersion)
+    private void setFileAttributes(OrderedProperties requestedAttrs, Credential invokerCredential, char[] invokerPassword, TitanGuid predicatedVersion)
         throws
             FileException.BadVersion,
             FileException.CapacityExceeded,
@@ -3274,8 +3268,8 @@ public class FileImpl {
         // version id coincides with Celeste's.  This code is vulnerable to
         // livelock, but retryCount limits the vulnerability.
         //
-        BeehiveObjectId profileId = invokerCredential.getObjectId();
-        BeehiveObjectId latestVersionId = (predicatedVersion != null) ?
+        TitanGuid profileId = invokerCredential.getObjectId();
+        TitanGuid latestVersionId = (predicatedVersion != null) ?
             predicatedVersion : this.latestVersionId;
         int retryCount = 0;
         for (;; ) {
@@ -3391,7 +3385,7 @@ public class FileImpl {
         return this.doRunExtension(false, null, invokerCredential, invokerPassword, null, jarFileURLs, args);
     }
 
-    public Serializable runExtension(Credential invokerCredential, char[] invokerPassword, BeehiveObjectId predicatedVersion,
+    public Serializable runExtension(Credential invokerCredential, char[] invokerPassword, TitanGuid predicatedVersion,
             URL[] jarFileURLs, String[] args)
         throws
             FileException.BadVersion,
@@ -3410,7 +3404,7 @@ public class FileImpl {
     }
 
     private Serializable doRunExtension(boolean markDeleted, OrderedProperties clientProperties, Credential invokerCredential,
-            char[] invokerPassword, BeehiveObjectId predicatedVersion,
+            char[] invokerPassword, TitanGuid predicatedVersion,
             URL[] jarFileURLs, String[] args)
         throws
             FileException.BadVersion,
@@ -3433,7 +3427,7 @@ public class FileImpl {
         // version id coincides with Celeste's.  This code is vulnerable to
         // livelock, but retryCount limits the vulnerability.
         //
-        BeehiveObjectId latestVersionId = (predicatedVersion != null) ? predicatedVersion : this.latestVersionId;
+        TitanGuid latestVersionId = (predicatedVersion != null) ? predicatedVersion : this.latestVersionId;
         //
         // This truncate will be predicated on the version named by
         // latestVersionId.  Get the version's metadata and verify that the
@@ -3449,7 +3443,7 @@ public class FileImpl {
         return tryRunExtension(latestVersionId, operation, invokerCredential, invokerPassword);
     }
 
-    private Serializable tryRunExtension(BeehiveObjectId versionId, ExtensibleOperation operation, Credential invokerCredential, char[] invokerPassword)
+    private Serializable tryRunExtension(TitanGuid versionId, ExtensibleOperation operation, Credential invokerCredential, char[] invokerPassword)
         throws
             FileException.BadVersion,
             FileException.CapacityExceeded,
@@ -3530,15 +3524,15 @@ public class FileImpl {
         } catch (Credential.Exception e) {
             throw new FileException.CredentialProblem(e);
         }
-        BeehiveObjectId dtoken = new BeehiveObjectId(new String(raw_token));
+        TitanGuid dtoken = new TitanGuidImpl(new String(raw_token));
 
         //
         // XXX: See the comment in create() about how to generate the delete
         //      token id.
         //
-        BeehiveObjectId calculated_dthash =
-            new BeehiveObjectId(dtoken.toString().getBytes());
-        calculated_dthash = dtoken.getObjectId();
+        TitanGuid calculated_dthash =
+            new TitanGuidImpl(dtoken.toString().getBytes());
+        calculated_dthash = dtoken.getGuid();
 
         //
         // XXX: Ideally, this code would be arranged to have Celeste perform
@@ -3558,9 +3552,7 @@ public class FileImpl {
         //      required.)
         //
         try {
-            InspectFileOperation operation = new InspectFileOperation(
-                    this.getFileIdentifier(),
-                    invokerCredential.getObjectId());
+            InspectFileOperation operation = new InspectFileOperation(this.getFileIdentifier(), invokerCredential.getObjectId());
 
             OrderedProperties metadata = null;
             CelesteAPI proxy = null;
@@ -3579,7 +3571,7 @@ public class FileImpl {
                 this.proxyCacheAddAndEvictOld(this.socketAddr, proxy);
             }
 
-            BeehiveObjectId deleteTokenId = metadata.getPropertyAsObjectId(
+            TitanGuid deleteTokenId = metadata.getPropertyAsObjectId(
                 CelesteAPI.DELETETOKENID_NAME, null);
             if (!deleteTokenId.equals(calculated_dthash)) {
                 // delete token mismatch
@@ -3694,7 +3686,7 @@ public class FileImpl {
      * @param newOwner          the credential identifying the new owner
      */
     public void setOwner(Credential invokerCredential, char[] invokerPassword,
-            BeehiveObjectId predicatedVersion, Credential newOwner)
+            TitanGuid predicatedVersion, Credential newOwner)
         throws
             FileException.BadVersion,
             FileException.CapacityExceeded,
@@ -3710,7 +3702,7 @@ public class FileImpl {
             FileException.Runtime,
             FileException.ValidationFailed {
 
-        final BeehiveObjectId newOwnerId = newOwner.getObjectId();
+        final TitanGuid newOwnerId = newOwner.getObjectId();
         final int retryLimit = (predicatedVersion == null) ? 5 : 1;
         ensureMetadata();
 
@@ -3719,7 +3711,7 @@ public class FileImpl {
         // latest file version coincides with Celeste's.  This code is
         // vulnerable to livelock, but retryCount limits the vulnerability.
         //
-        BeehiveObjectId latestVersion = (predicatedVersion != null) ?
+        TitanGuid latestVersion = (predicatedVersion != null) ?
             predicatedVersion : this.latestVersionId;
         int retryCount = 0;
         for (;;) {
@@ -3779,7 +3771,7 @@ public class FileImpl {
                 versionMetadata.groupId
             );
 
-            BeehiveObjectId newLatestVersion =
+            TitanGuid newLatestVersion =
                 trySetOwner(props, op, invokerCredential, invokerPassword);
             latestVersion = newLatestVersion;
 
@@ -3802,7 +3794,7 @@ public class FileImpl {
         }
     }
 
-    private BeehiveObjectId trySetOwner(OrderedProperties props,
+    private TitanGuid trySetOwner(OrderedProperties props,
             SetOwnerAndGroupOperation op, Credential invokerCredential, char[] invokerPassword)
         throws
             FileException.BadVersion,
@@ -3817,7 +3809,7 @@ public class FileImpl {
             FileException.Runtime,
             FileException.ValidationFailed {
 
-        BeehiveObjectId latestVersionId = null;
+        TitanGuid latestVersionId = null;
         try {
             Credential.Signature signature =
                 invokerCredential.sign(invokerPassword, op.getId());
@@ -3883,7 +3875,7 @@ public class FileImpl {
      *                          if any version will do
      * @param acl               the file's new access control list
      */
-    public void setACL(Credential invokerCredential, char[] invokerPassword, BeehiveObjectId predicatedVersion, CelesteACL acl)
+    public void setACL(Credential invokerCredential, char[] invokerPassword, TitanGuid predicatedVersion, CelesteACL acl)
         throws
             FileException.BadVersion,
             FileException.CapacityExceeded,
@@ -3907,7 +3899,7 @@ public class FileImpl {
         // latest file version coincides with Celeste's.  This code is
         // vulnerable to livelock, but retryCount limits the vulnerability.
         //
-        BeehiveObjectId latestVersion = (predicatedVersion != null) ?
+        TitanGuid latestVersion = (predicatedVersion != null) ?
             predicatedVersion : this.latestVersionId;
         int retryCount = 0;
         for (;;) {
@@ -3951,7 +3943,7 @@ public class FileImpl {
                 acl
             );
 
-            BeehiveObjectId newLatestVersion =
+            TitanGuid newLatestVersion =
                 trySetACL(props, op, invokerCredential, invokerPassword);
             latestVersion = newLatestVersion;
 
@@ -3974,7 +3966,7 @@ public class FileImpl {
         }
     }
 
-    private BeehiveObjectId trySetACL(OrderedProperties props, SetACLOperation op, Credential invokerCredential, char[] invokerPassword)
+    private TitanGuid trySetACL(OrderedProperties props, SetACLOperation op, Credential invokerCredential, char[] invokerPassword)
         throws
             FileException.BadVersion,
             FileException.CapacityExceeded,
@@ -3988,7 +3980,7 @@ public class FileImpl {
             FileException.Runtime,
             FileException.ValidationFailed {
 
-        BeehiveObjectId latestVersionId = null;
+        TitanGuid latestVersionId = null;
         try {
             Credential.Signature signature =
                 invokerCredential.sign(invokerPassword, op.getId());
@@ -4056,7 +4048,7 @@ public class FileImpl {
      * @param contentType       the file's new content type attribute value
      */
     public void setContentType(Credential invokerCredential,
-            char[] invokerPassword, BeehiveObjectId predicatedVersion,
+            char[] invokerPassword, TitanGuid predicatedVersion,
             String contentType)
         throws
             FileException.BadVersion,
@@ -4090,7 +4082,7 @@ public class FileImpl {
      * @param deletionTimeToLive    the file's new deletion time to live
      *                              attribute value
      */
-    public void setDeletionTimeToLive(Credential invokerCredential, char[] invokerPassword, BeehiveObjectId predicatedVersion, long deletionTimeToLive)
+    public void setDeletionTimeToLive(Credential invokerCredential, char[] invokerPassword, TitanGuid predicatedVersion, long deletionTimeToLive)
         throws
             FileException.BadVersion,
             FileException.CapacityExceeded,
@@ -4322,12 +4314,9 @@ public class FileImpl {
 
         ensureMetadata();
 
-        InspectLockOperation op = new InspectLockOperation(
-            this.getFileIdentifier(),
-            invokerCredential.getObjectId());
+        InspectLockOperation op = new InspectLockOperation(this.getFileIdentifier(), invokerCredential.getObjectId());
         try {
-            Credential.Signature signature =
-                invokerCredential.sign(invokerPassword, op.getId());
+            Credential.Signature signature = invokerCredential.sign(invokerPassword, op.getId());
             CelesteAPI proxy = null;
             try {
                 proxy = this.proxyCacheGetAndRemove(this.socketAddr);
@@ -4690,7 +4679,7 @@ public class FileImpl {
     // that version.  If the given version is null, update the current version
     // to the latest version as fetched from Celeste.
     //
-    private VersionMetadata refreshMetadata(BeehiveObjectId vObjectId) throws
+    private VersionMetadata refreshMetadata(TitanGuid vObjectId) throws
             FileException.BadVersion,
             FileException.CelesteFailed,
             FileException.CelesteInaccessible,
@@ -4699,9 +4688,7 @@ public class FileImpl {
             FileException.Runtime,
             FileException.ValidationFailed{
 
-        InspectFileOperation operation = new InspectFileOperation(
-            this.getFileIdentifier(),
-            BeehiveObjectId.ZERO);
+        InspectFileOperation operation = new InspectFileOperation(this.getFileIdentifier(), TitanGuidImpl.ZERO);
         ResponseMessage msg = null;
         CelesteAPI proxy = null;
         try {
@@ -4725,8 +4712,7 @@ public class FileImpl {
 
         boolean updateLatestVguid = (vObjectId == null);
         if (updateLatestVguid) {
-            vObjectId = new BeehiveObjectId(
-                metadata.getProperty(CelesteAPI.VOBJECTID_NAME));
+            vObjectId = new TitanGuidImpl(metadata.getProperty(CelesteAPI.VOBJECTID_NAME));
             //
             // If we've already seen this version, it suffices to return the
             // information that's already been obtained for it.
@@ -4771,14 +4757,13 @@ public class FileImpl {
     // We've obtained new metadata in a reply message.  Unpack and process it,
     // returning the file version to which it applies.
     //
-    private BeehiveObjectId processReplyMetadata(OrderedProperties metadata)
+    private TitanGuid processReplyMetadata(OrderedProperties metadata)
         throws
             FileException.BadVersion,
             FileException.IOException,
             FileException.ValidationFailed {
 
-        BeehiveObjectId versionId = new BeehiveObjectId(
-            metadata.getProperty(CelesteAPI.VOBJECTID_NAME));
+        TitanGuid versionId = new TitanGuidImpl(metadata.getProperty(CelesteAPI.VOBJECTID_NAME));
         synchronized (this) {
             if (!versionId.equals(this.latestVersionId)) {
                 //
@@ -4899,7 +4884,7 @@ public class FileImpl {
     //      the CelesteOperation argument) just so that Celeste can hand it
     //      back in msgMetadata.
     //
-    private VersionMetadata extractVersionMetadata(BeehiveObjectId version,
+    private VersionMetadata extractVersionMetadata(TitanGuid version,
             OrderedProperties props, OrderedProperties msgMetadata) {
         //
         // If we already have the metadata, we're done (since it's immutable
@@ -4925,12 +4910,10 @@ public class FileImpl {
             CelesteEncoderDecoder.fromHexString(encryptedDeleteTokenString);
         String ownerString =
             msgMetadata.getProperty(CelesteAPI.VOBJECT_OWNER_NAME);
-        BeehiveObjectId owner = (ownerString == null) ? null :
-            new BeehiveObjectId(ownerString);
+        TitanGuid owner = (ownerString == null) ? null : new TitanGuidImpl(ownerString);
         String groupString =
             msgMetadata.getProperty(CelesteAPI.VOBJECT_GROUP_NAME);
-        BeehiveObjectId group = (groupString == null) ? null :
-            new BeehiveObjectId(groupString);
+        TitanGuid group = (groupString == null) ? null : new TitanGuidImpl(groupString);
         //
         // XXX: It would be nice to be able to use aclFromAttrs() to obtain
         //      the ACL, except it comes from the message's Celeste-level
@@ -5043,8 +5026,8 @@ public class FileImpl {
             FileException.NotFound,
             FileException.Runtime,
             FileException.ValidationFailed {
-        BeehiveObjectId ownerId = file.getOwnerId(false);
-        BeehiveObjectId groupId = file.getGroupId(false);
+        TitanGuid ownerId = file.getOwnerId(false);
+        TitanGuid groupId = file.getGroupId(false);
 
         try {
             String owner = "none";
@@ -5091,7 +5074,7 @@ public class FileImpl {
         try {
             if (p == null) {
                 p = new Profile_(name, passwd.toCharArray());
-                NewCredentialOperation operation = new NewCredentialOperation(p.getObjectId(), BeehiveObjectId.ZERO, coder);
+                NewCredentialOperation operation = new NewCredentialOperation(p.getObjectId(), TitanGuidImpl.ZERO, coder);
                 Credential.Signature signature = p.sign(passwd.toCharArray(), operation.getId());
                 node.newCredential(operation, signature, p);
             }
@@ -5199,7 +5182,7 @@ public class FileImpl {
             // Cons up an identifier for a new file and then create a handle
             // for that (as yet nonexistent) file.
             //
-            BeehiveObjectId fid = new BeehiveObjectId();
+            TitanGuid fid = new TitanGuidImpl();
             FileIdentifier fileId = new FileIdentifier(p.getObjectId(), fid);
             FileImpl file = new FileImpl(nodeAddr, fileId);
 
@@ -5227,8 +5210,7 @@ public class FileImpl {
             attrs.setProperty(CONTENT_TYPE_NAME, "text/plain");
             attrs.setProperty(REPLICATION_PARAMETERS_NAME, replicationParams);
             attrs.setProperty(TIME_TO_LIVE_NAME, "600");
-            file.create(attrs, myProps, p, pPassword.toCharArray(),
-                BeehiveObjectId.ZERO);
+            file.create(attrs, myProps, p, pPassword.toCharArray(), TitanGuidImpl.ZERO);
 
             datePrintf(
                 "file created, user attributes:%n%s%nclientProperties: %s%n",
@@ -5259,8 +5241,7 @@ public class FileImpl {
             //
             try {
                 FileImpl file2 = new FileImpl(nodeAddr, fileId);
-                file2.create(attrs, null, p, pPassword.toCharArray(),
-                    BeehiveObjectId.ZERO);
+                file2.create(attrs, null, p, pPassword.toCharArray(), TitanGuidImpl.ZERO);
                 datePrintf("FAILED: created same file twice.%n");
             } catch (FileException.Exists e1) {
                 datePrintf(
@@ -5425,8 +5406,7 @@ public class FileImpl {
             //
             try {
                 file = new FileImpl(nodeAddr, fileId);
-                file.create(attrs, null, p, pPassword.toCharArray(),
-                    BeehiveObjectId.ZERO);
+                file.create(attrs, null, p, pPassword.toCharArray(), TitanGuidImpl.ZERO);
             } catch (FileException.Deleted e) {
                 datePrintf(
                     "PASS: attempted create after expunge threw expected exception%n");
@@ -5443,18 +5423,16 @@ public class FileImpl {
             // with the new owner's credentials to verify that the lock is
             // effective.
             //
-            BeehiveObjectId fid3 = new BeehiveObjectId();
-            FileIdentifier fileId3 = new FileIdentifier(
-                p.getObjectId(), fid3);
+            TitanGuid fid3 = new TitanGuidImpl();
+            FileIdentifier fileId3 = new FileIdentifier(p.getObjectId(), fid3);
             FileImpl file3 = new FileImpl(nodeAddr, fileId3);
-            file3.create(attrs, null, p, pPassword.toCharArray(),
-                BeehiveObjectId.ZERO);
+            file3.create(attrs, null, p, pPassword.toCharArray(), TitanGuidImpl.ZERO);
             datePrintf("file3 created, attributes:%n%s%n%n",
                 dumpOwnerAndGroup(pcache, file3));
             //
             // Get the lock.
             //
-            String lockToken = new BeehiveObjectId().toString();
+            String lockToken = new TitanGuidImpl().toString();
             try {
                 file3.acquireModificationLock(p, pPassword.toCharArray(),
                     lockToken, null);

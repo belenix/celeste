@@ -44,23 +44,22 @@ import sunlabs.asdf.web.XML.XHTML;
 import sunlabs.asdf.web.http.InternetMediaType;
 import sunlabs.celeste.CelesteException;
 import sunlabs.celeste.FileIdentifier;
-import sunlabs.celeste.CelesteException.AlreadyExistsException;
 import sunlabs.celeste.api.CelesteAPI;
 import sunlabs.celeste.client.CelesteProxy;
+import sunlabs.celeste.client.CelesteProxy.Cache;
 import sunlabs.celeste.client.Profile_;
 import sunlabs.celeste.client.ReplicationParameters;
-import sunlabs.celeste.client.CelesteProxy.Cache;
 import sunlabs.celeste.client.filesystem.simple.DirectoryImpl;
-import sunlabs.celeste.client.filesystem.simple.FileImpl;
 import sunlabs.celeste.client.filesystem.simple.DirectoryImpl.Dirent;
+import sunlabs.celeste.client.filesystem.simple.FileImpl;
 import sunlabs.celeste.client.operation.NewCredentialOperation;
 import sunlabs.celeste.client.operation.NewNameSpaceOperation;
 import sunlabs.celeste.node.CelesteACL;
 import sunlabs.celeste.node.ProfileCache;
 import sunlabs.celeste.util.CelesteEncoderDecoder;
-import sunlabs.titan.BeehiveObjectId;
+import sunlabs.titan.TitanGuidImpl;
 import sunlabs.titan.api.Credential;
-import sunlabs.titan.api.Credential.Exception;
+import sunlabs.titan.api.TitanGuid;
 import sunlabs.titan.util.ExponentialBackoff;
 import sunlabs.titan.util.ExtentBuffer;
 import sunlabs.titan.util.OrderedProperties;
@@ -194,7 +193,7 @@ public class CelesteFileSystem implements HierarchicalFileSystem {
 
         public Credential createCredential() throws Credential.Exception, CelesteException.RuntimeException {
             Credential credential = new Profile_(this.credentialName, this.credentialPassword.toCharArray());
-            NewCredentialOperation operation = new NewCredentialOperation(credential.getObjectId(), BeehiveObjectId.ZERO, "Credential.Replication.Store=2");
+            NewCredentialOperation operation = new NewCredentialOperation(credential.getObjectId(), TitanGuidImpl.ZERO, "Credential.Replication.Store=2");
             Credential.Signature signature = credential.sign(this.credentialPassword.toCharArray(), operation.getId());
 
             CelesteAPI proxy = null;
@@ -225,7 +224,7 @@ public class CelesteFileSystem implements HierarchicalFileSystem {
                 CelesteAPI proxy = proxyCache.getAndRemove(celeste);
                 try {
                     Profile_ fileSystemCredential = new Profile_(nameSpaceName, nameSpacePassword.toCharArray());
-                    NewNameSpaceOperation operation = new NewNameSpaceOperation(fileSystemCredential.getObjectId(), BeehiveObjectId.ZERO, replicationParams);
+                    NewNameSpaceOperation operation = new NewNameSpaceOperation(fileSystemCredential.getObjectId(), TitanGuidImpl.ZERO, replicationParams);
                     Credential.Signature signature = fileSystemCredential.sign(nameSpacePassword.toCharArray(), operation.getId());
                     proxy.newNameSpace(operation, signature, fileSystemCredential);
                 } finally {
@@ -264,7 +263,7 @@ public class CelesteFileSystem implements HierarchicalFileSystem {
     // The address of the Celeste confederation to which this file system
     // instance belongs.
     //
-    private final BeehiveObjectId networkId;
+    private final TitanGuid networkId;
 
     //
     // An unlocked profile used to authenticate all operations that make their
@@ -777,12 +776,12 @@ public class CelesteFileSystem implements HierarchicalFileSystem {
     }
 
     /**
-     * Returns the {@code BeehiveObjectId} of the name space associated with
+     * Returns the {@code TitanGuid} of the name space associated with
      * this file system.
      *
      * @return this file system's name space's object id
      */
-    public BeehiveObjectId getNameSpaceId() {
+    public TitanGuid getNameSpaceId() {
         return this.nameSpaceProfile.getObjectId();
     }
 
@@ -2782,7 +2781,7 @@ public class CelesteFileSystem implements HierarchicalFileSystem {
             // XXX: If the create fails, ought to recycle the serial #.
             //
 
-            BeehiveObjectId thisGroupId = BeehiveObjectId.ZERO;
+            TitanGuid thisGroupId = TitanGuidImpl.ZERO;
 
             final long newSerialNumber = this.getUnusedSerialNumber();
 
@@ -3102,7 +3101,7 @@ public class CelesteFileSystem implements HierarchicalFileSystem {
             // be placed is now empty.
             //
 
-            DirectoryImpl leafDir = makeDirectoryImpl(this.invokerProfile.getObjectId(), new BeehiveObjectId());
+            DirectoryImpl leafDir = makeDirectoryImpl(this.invokerProfile.getObjectId(), new TitanGuidImpl());
 
             //
             // Discard attributes that can't be set at creation time by client
@@ -3492,7 +3491,7 @@ public class CelesteFileSystem implements HierarchicalFileSystem {
     // Convenience method that factors out parameters to the DirectoryImpl
     // constructor that are constant for this file system instantiation.
     //
-    private DirectoryImpl makeDirectoryImpl(BeehiveObjectId nameSpaceId, BeehiveObjectId uniqueFileId) {
+    private DirectoryImpl makeDirectoryImpl(TitanGuid nameSpaceId, TitanGuid uniqueFileId) {
         //
         // Use the DirectoryImpl constructor that takes a FileImpl argument,
         // so that we can grab and cache that FileImpl.
@@ -3515,8 +3514,7 @@ public class CelesteFileSystem implements HierarchicalFileSystem {
     // they're done with it.
     //
     private FileImpl getFreshFileImpl() {
-        FileIdentifier fid = new FileIdentifier(
-            this.nameSpaceProfile.getObjectId(), new BeehiveObjectId());
+        FileIdentifier fid = new FileIdentifier(this.nameSpaceProfile.getObjectId(), new TitanGuidImpl());
         return this.getAndRemove(fid);
     }
 
@@ -3592,8 +3590,7 @@ public class CelesteFileSystem implements HierarchicalFileSystem {
         // XXX: Note that a DOS attack is possible, since the name of the
         //      superblock is predictable given that of the profile.
         //
-        private final static BeehiveObjectId superblockId = new BeehiveObjectId(
-            Superblock.class.getName().getBytes());
+        private final static TitanGuid superblockId = new TitanGuidImpl(Superblock.class.getName().getBytes());
 
         //
         // The file system whose superblock this instance is.
@@ -4336,7 +4333,7 @@ public class CelesteFileSystem implements HierarchicalFileSystem {
                 // tentative handle.
                 //
                 Credential invokerProfile = this.superblock.fileSystem.invokerProfile;
-                BeehiveObjectId groupId = BeehiveObjectId.ZERO;
+                TitanGuid groupId = TitanGuidImpl.ZERO;
                 // thisGroupId = this.superblock.fileSystem.groupProfile;
                 OrderedProperties attrs = new OrderedProperties();
                 attrs.setProperty(CONTENT_TYPE_NAME, InternetMediaType.Text.Plain.toString());
@@ -4411,7 +4408,7 @@ public class CelesteFileSystem implements HierarchicalFileSystem {
             synchronized (this) {
                 try {
                     for (;;) {
-                        BeehiveObjectId currentVersion =
+                        TitanGuid currentVersion =
                             this.serialNumberFile.getLatestVersionId(false);
                         long serialNumber = this.readUnusedSerialNumber();
                         try {
@@ -4480,7 +4477,7 @@ public class CelesteFileSystem implements HierarchicalFileSystem {
         //      nasty...
         //
         private void writeUnusedSerialNumber(long value,
-                BeehiveObjectId version)
+                TitanGuid version)
             throws
                 FileException.BadVersion,
                 FileException.CapacityExceeded,

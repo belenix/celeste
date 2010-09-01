@@ -1,5 +1,5 @@
 /*
- * Copyright 2007-2009 Sun Microsystems, Inc. All Rights Reserved.
+ * Copyright 2007-2010 Oracle. All Rights Reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER
  *
  * This code is free software; you can redistribute it and/or modify
@@ -17,9 +17,9 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
  * 02110-1301 USA
  *
- * Please contact Sun Microsystems, Inc., 16 Network Circle, Menlo
- * Park, CA 94025 or visit www.sun.com if you need additional
- * information or have any questions.
+ * Please contact Oracle Corporation, 500 Oracle Parkway, Redwood Shores, CA 94065
+ * or visit www.oracle.com if you need additional information or
+ * have any questions.
  */
 package sunlabs.titan.node.services;
 
@@ -34,8 +34,9 @@ import javax.management.NotCompliantMBeanException;
 
 import sunlabs.asdf.web.XML.XHTML;
 import sunlabs.asdf.web.http.HTTP;
-import sunlabs.titan.BeehiveObjectId;
+import sunlabs.titan.TitanGuidImpl;
 import sunlabs.titan.api.BeehiveObject;
+import sunlabs.titan.api.TitanGuid;
 import sunlabs.titan.node.AbstractBeehiveObject;
 import sunlabs.titan.node.BeehiveMessage;
 import sunlabs.titan.node.BeehiveNode;
@@ -53,13 +54,13 @@ public class IntegerObjectType extends AbstractObjectHandler implements MutableO
     public static class IntegerObject extends AbstractBeehiveObject implements MutableObject.Handler.ObjectAPI {
         private static final long serialVersionUID = 1L;
 
-        public IntegerObject(BeehiveObjectId deleteTokenId, long timeToLive) {
+        public IntegerObject(TitanGuid deleteTokenId, long timeToLive) {
             super(IntegerObjectType.class, deleteTokenId, timeToLive);
         }
 
         @Override
-        public BeehiveObjectId getDataId() {
-            return new BeehiveObjectId("1".getBytes());
+        public TitanGuid getDataId() {
+            return new TitanGuidImpl("1".getBytes());
         }
     }
 
@@ -67,7 +68,7 @@ public class IntegerObjectType extends AbstractObjectHandler implements MutableO
      * Each object is really an object history.
      * Creating a new MutableObject means we construct and store 3f+2t+1 copies of the same new object.
      */
-    public IntegerObjectType.IntegerObject create(BeehiveObjectId objectId) {
+    public IntegerObjectType.IntegerObject create(TitanGuid objectId) {
         return null;
     }
 
@@ -96,12 +97,12 @@ public class IntegerObjectType extends AbstractObjectHandler implements MutableO
         return null;
     }
 
-    public ByteBuffer setValue(BeehiveObjectId objectId, ByteBuffer predicatedValue, ByteBuffer value) {
+    public ByteBuffer setValue(TitanGuid objectId, ByteBuffer predicatedValue, ByteBuffer value) {
         // Should this already be created?
         return null;
     }
 
-    public ByteBuffer getValue(BeehiveObjectId objectId) {
+    public ByteBuffer getValue(TitanGuid objectId) {
         return null;
     }
 

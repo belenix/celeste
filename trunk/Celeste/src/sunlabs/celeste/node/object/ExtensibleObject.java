@@ -21,7 +21,6 @@
  * or visit www.oracle.com if you need additional information or
  * have any questions.
  */
-
 package sunlabs.celeste.node.object;
 
 import java.io.IOException;
@@ -36,7 +35,7 @@ import java.util.jar.Attributes;
 import java.util.zip.ZipException;
 
 import sunlabs.celeste.client.operation.ExtensibleOperation;
-import sunlabs.titan.BeehiveObjectId;
+import sunlabs.titan.api.TitanGuid;
 import sunlabs.titan.api.BeehiveObject;
 import sunlabs.titan.node.BeehiveMessage;
 import sunlabs.titan.node.BeehiveMessage.RemoteException;
@@ -75,22 +74,22 @@ public class ExtensibleObject {
          *
          * @param <C> The Java Class, specified by the parameter {@code resultClass}, of the returned result.
          * @param resultClass the {@link Class} of the returned value.
-         * @param objectId the {@link BeehiveObjectId} of the target object.
+         * @param objectId the {@link TitanGuid} of the target object.
          * @param operation the {@link ExtensibleObject.Operation} to perform.
          *
          * @throws ClassCastException
          * @throws ClassNotFoundException
          * @throws RemoteException 
-         * @see ExtensibleObject#extension(Handler, Class, BeehiveObjectId, ExtensibleObject.Operation.Request)
+         * @see ExtensibleObject#extension(Handler, Class, TitanGuid, ExtensibleObject.Operation.Request)
          */
-        public <C> C extension(Class<? extends C> resultClass, BeehiveObjectId objectId, ExtensibleObject.Operation.Request operation) throws ClassCastException, ClassNotFoundException, RemoteException;
+        public <C> C extension(Class<? extends C> resultClass, TitanGuid objectId, ExtensibleObject.Operation.Request operation) throws ClassCastException, ClassNotFoundException, RemoteException;
     }
 
     /**
      * Classes implementing this interface are invokable via the extension mechanism and produce a result of the specified generic type.
      * <p>
      * Classes implementing this interface must implement a constructor with the signature:
-     * <code>public <i>className</i>(ExtensibleOperation operation, BeehiveObjectId objectId, ExtensibleObject.Handler<? extends ExtensibleObject.Handler.Object> handler)</code>
+     * <code>public <i>className</i>(ExtensibleOperation operation, TitanGuid objectId, ExtensibleObject.Handler<? extends ExtensibleObject.Handler.Object> handler)</code>
      * </p>
      */
     public interface Extension<R> extends Serializable, Callable<R> {
@@ -192,7 +191,7 @@ public class ExtensibleObject {
          * implements the {@link ExtensibleObject.Handler} interface.
          * 
          * Each {@code BeehiveObjectHandler} implementing the {@code ExtensibleObject.Handler}
-         * interface must implement the method {@link ExtensibleObject.Handler#extension(Class, BeehiveObjectId, Request)}
+         * interface must implement the method {@link ExtensibleObject.Handler#extension(Class, TitanGuid, Request)}
          * which takes a {@code Request} as a parameter.
          */
         public static class Request implements Serializable {
@@ -288,7 +287,7 @@ public class ExtensibleObject {
         try {
             ExtensibleObject.Operation.Request request = message.getPayload(ExtensibleObject.Operation.Request.class, handler.getNode());
             ExtensibleOperation operation = request.operation;
-            BeehiveObjectId objectId = message.getObjectId();
+            TitanGuid objectId = message.getObjectId();
 
             JarClassLoader classLoader =  request.getClassLoader();
             Callable<Serializable> extension = classLoader.construct(request.getClassToUse(), operation, objectId, handler);
@@ -303,12 +302,12 @@ public class ExtensibleObject {
     /**
      * Helper method for the top-half of an {@link ExtensibleObject.Handler} to invoke an extension on an {@link ExtensibleObject.Handler.Object}.
      * <p>
-     * Transmit the given {@link ExtensibleObject.Operation.Request} to the destination {@link BeehiveObject} identified by the {@link BeehiveObjectId}.
+     * Transmit the given {@link ExtensibleObject.Operation.Request} to the destination {@link BeehiveObject} identified by the {@link TitanGuid}.
      * </p>
      * @param <C>
      * @param handler The originating object handler invoking this extension.
      * @param resultClass The Java class of the result.
-     * @param objectId The {@link BeehiveObjectId} of the destination {@link BeehiveObject} 
+     * @param objectId The {@link TitanGuid} of the destination {@link BeehiveObject} 
      * @param request The request to perform.
      * @return
      * @throws ClassCastException
@@ -317,7 +316,7 @@ public class ExtensibleObject {
      */
     public static <C> C extension(ExtensibleObject.Handler<? extends ExtensibleObject.Handler.Object> handler,
             Class<? extends C> resultClass,
-            BeehiveObjectId objectId,
+            TitanGuid objectId,
             ExtensibleObject.Operation.Request request)
     throws ClassCastException, ClassNotFoundException, RemoteException {
         BeehiveMessage reply = handler.getNode().sendToObject(objectId, handler.getName(), "extensibleOperation", request);

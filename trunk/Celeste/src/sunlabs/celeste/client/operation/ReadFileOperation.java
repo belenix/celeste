@@ -32,7 +32,8 @@ import sunlabs.celeste.CelesteException;
 import sunlabs.celeste.FileIdentifier;
 import sunlabs.celeste.node.CelesteACL;
 import sunlabs.celeste.node.services.CelesteClientDaemon;
-import sunlabs.titan.BeehiveObjectId;
+import sunlabs.titan.api.Credential;
+import sunlabs.titan.api.TitanGuid;
 
 /**
  * Read a Celeste file.
@@ -52,7 +53,7 @@ public class ReadFileOperation extends AbstractCelesteOperation {
      * they can supply an {@code operationName} matching their class.
      *
      * @param fileIdentifier The {@link FileIdentifier} of the file.
-     * @param clientId      the {@link BeehiveObjectId} of the {@link Credential} authorising the operation
+     * @param clientId      the {@link TitanGuid} of the {@link Credential} authorising the operation
      * @param vObjectId     the object-id of the version of the
      *                      file this operation is to read, or {@code null} if
      *                      it is to read the latest version
@@ -61,7 +62,7 @@ public class ReadFileOperation extends AbstractCelesteOperation {
      * @param length        the length of the span to be read (or {@code -1L}
      *                      to read to the end of file)
      */
-    protected ReadFileOperation(String operationName, FileIdentifier fileIdentifier, BeehiveObjectId clientId, BeehiveObjectId vObjectId, long offset, int length) {
+    protected ReadFileOperation(String operationName, FileIdentifier fileIdentifier, TitanGuid clientId, TitanGuid vObjectId, long offset, int length) {
         super(operationName, fileIdentifier, clientId, vObjectId);
         this.offset = offset;
         this.length = length;
@@ -72,7 +73,7 @@ public class ReadFileOperation extends AbstractCelesteOperation {
      * of a Celeste file.
      *
      * @param fileIdentifier The {@link FileIdentifier} of the file.
-     * @param clientId      the {@link BeehiveObjectId} of the {@link Credential} authorising the operation
+     * @param clientId      the {@link TitanGuid} of the {@link Credential} authorising the operation
      * @param vObjectId     the object-id of the version of the
      *                      file this operation is to read, or {@code null} if
      *                      it is to read the latest version
@@ -81,7 +82,7 @@ public class ReadFileOperation extends AbstractCelesteOperation {
      * @param length        the length of the span to be read (or {@code -1L}
      *                      to read to the end of file)
      */
-    public ReadFileOperation(FileIdentifier fileIdentifier, BeehiveObjectId clientId, BeehiveObjectId vObjectId, long offset, int length) {
+    public ReadFileOperation(FileIdentifier fileIdentifier, TitanGuid clientId, TitanGuid vObjectId, long offset, int length) {
         this(ReadFileOperation.name, fileIdentifier, clientId, vObjectId, offset, length);
     }
 
@@ -91,19 +92,19 @@ public class ReadFileOperation extends AbstractCelesteOperation {
      * of a Celeste file.
      *
      * @param fileIdentifier The {@link FileIdentifier} of the file.
-     * @param clientId      the {@link BeehiveObjectId} of the {@link Credential} authorising the operation
+     * @param clientId      the {@link TitanGuid} of the {@link Credential} authorising the operation
      * @param offset        the starting offset within the file of the span to
      *                      be read.
      * @param length        the length of the span to be read (or {@code -1L}
      *                      to read to the end of file).
      */
-    public ReadFileOperation(FileIdentifier fileIdentifier, BeehiveObjectId clientId, long offset, int length) {
+    public ReadFileOperation(FileIdentifier fileIdentifier, TitanGuid clientId, long offset, int length) {
         this(fileIdentifier, clientId, null, offset, length);
     }
     
     @Override
-    public BeehiveObjectId getId() {
-        BeehiveObjectId id = super.getId();
+    public TitanGuid getId() {
+        TitanGuid id = super.getId();
         return id;
     }
 

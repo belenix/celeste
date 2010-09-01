@@ -1,5 +1,5 @@
 /*
- * Copyright 2007-2009 Sun Microsystems, Inc. All Rights Reserved.
+ * Copyright 2007-2010 Oracle. All Rights Reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER
  *
  * This code is free software; you can redistribute it and/or modify
@@ -17,11 +17,10 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
  * 02110-1301 USA
  *
- * Please contact Sun Microsystems, Inc., 16 Network Circle, Menlo
- * Park, CA 94025 or visit www.sun.com if you need additional
- * information or have any questions.
+ * Please contact Oracle Corporation, 500 Oracle Parkway, Redwood Shores, CA 94065
+ * or visit www.oracle.com if you need additional information or
+ * have any questions.
  */
-
 package sunlabs.celeste.node.services.object;
 
 import java.io.IOException;
@@ -38,16 +37,17 @@ import sunlabs.asdf.util.ObjectLock;
 import sunlabs.asdf.web.XML.XHTML;
 import sunlabs.asdf.web.http.HTTP;
 import sunlabs.celeste.client.ReplicationParameters;
-import sunlabs.titan.BeehiveObjectId;
+import sunlabs.titan.TitanGuidImpl;
 import sunlabs.titan.api.BeehiveObject;
 import sunlabs.titan.api.ObjectStore;
+import sunlabs.titan.api.TitanGuid;
 import sunlabs.titan.node.AbstractBeehiveObject;
 import sunlabs.titan.node.BeehiveMessage;
+import sunlabs.titan.node.BeehiveMessage.RemoteException;
 import sunlabs.titan.node.BeehiveNode;
 import sunlabs.titan.node.BeehiveObjectPool;
 import sunlabs.titan.node.BeehiveObjectStore;
 import sunlabs.titan.node.PublishObjectMessage;
-import sunlabs.titan.node.BeehiveMessage.RemoteException;
 import sunlabs.titan.node.object.AbstractObjectHandler;
 import sunlabs.titan.node.object.DeleteableObject;
 import sunlabs.titan.node.object.RetrievableObject;
@@ -73,7 +73,7 @@ public final class FragmentObject extends AbstractObjectHandler implements FObje
 
         private byte[] data;
 
-        public FObject(BeehiveObjectId deleteTokenId, long timeToLive, BeehiveObject.Metadata metaData, byte[] data, ReplicationParameters replicationParams) {
+        public FObject(TitanGuid deleteTokenId, long timeToLive, BeehiveObject.Metadata metaData, byte[] data, ReplicationParameters replicationParams) {
             super(FragmentObject.class, deleteTokenId, timeToLive);
             this.data = data;
 
@@ -92,8 +92,8 @@ public final class FragmentObject extends AbstractObjectHandler implements FObje
         }
 
         @Override
-        public BeehiveObjectId getDataId() {
-            return new BeehiveObjectId(this.data);
+        public TitanGuid getDataId() {
+            return new TitanGuidImpl(this.data);
         }
 
         public int getReplicationMinimum() {
@@ -104,7 +104,7 @@ public final class FragmentObject extends AbstractObjectHandler implements FObje
             return this.replicationCache;
         }
 
-        public void delete(BeehiveObjectId profferedDeleteToken, long timeToLive) throws BeehiveObjectStore.DeleteTokenException {
+        public void delete(TitanGuid profferedDeleteToken, long timeToLive) throws BeehiveObjectStore.DeleteTokenException {
             this.data = new byte[0];
 
             DeleteableObject.ObjectDeleteHelper(this, profferedDeleteToken, timeToLive);
@@ -116,11 +116,11 @@ public final class FragmentObject extends AbstractObjectHandler implements FObje
     }
 
     // This is a per-object lock signaling that an object is undergoing the delete process.
-    private ObjectLock<BeehiveObjectId> publishObjectDeleteLocks;
+    private ObjectLock<TitanGuid> publishObjectDeleteLocks;
 
     // This is a lock signaling that the deleteLocalObject() method is already
     // deleting the specified object.
-    private ObjectLock<BeehiveObjectId> deleteLocalObjectLocks;
+    private ObjectLock<TitanGuid> deleteLocalObjectLocks;
 
     private int storeAttempts;
 
@@ -129,8 +129,8 @@ public final class FragmentObject extends AbstractObjectHandler implements FObje
         super(node, FragmentObject.name, "FObject Application");
         this.storeAttempts = FragmentObject.defaultStoreAttempts;
 
-        this.publishObjectDeleteLocks = new ObjectLock<BeehiveObjectId>();
-        this.deleteLocalObjectLocks = new ObjectLock<BeehiveObjectId>();
+        this.publishObjectDeleteLocks = new ObjectLock<TitanGuid>();
+        this.deleteLocalObjectLocks = new ObjectLock<TitanGuid>();
     }
 
     public int getStoreAttempts() {
@@ -159,7 +159,7 @@ public final class FragmentObject extends AbstractObjectHandler implements FObje
      * @throws RemoteException 
      * @throws ClassCastException 
      */
-    public FragmentObject.FObject retrieve(BeehiveObjectId objectId)
+    public FragmentObject.FObject retrieve(TitanGuid objectId)
     throws BeehiveObjectStore.NotFoundException, BeehiveObjectStore.DeletedObjectException, ClassCastException {
         FragmentObject.FObject object = RetrievableObject.retrieve(this, FragmentObject.FObject.class, objectId);
         return object;
@@ -182,7 +182,7 @@ public final class FragmentObject extends AbstractObjectHandler implements FObje
         return message.composeReply(this.node.getNodeAddress());
     }
 
-    public FObjectType.FObject create(BeehiveObjectId deleteTokenId, long timeToLive, ReplicationParameters replicationParams, BeehiveObject.Metadata metaData, byte[] data) {
+    public FObjectType.FObject create(TitanGuid deleteTokenId, long timeToLive, ReplicationParameters replicationParams, BeehiveObject.Metadata metaData, byte[] data) {
         return new FObject(deleteTokenId, timeToLive, metaData, data, replicationParams);
     }
 
@@ -193,7 +193,7 @@ public final class FragmentObject extends AbstractObjectHandler implements FObje
         return (FObjectType.FObject) object;
     }
 
-    public ObjectLock<BeehiveObjectId> getPublishObjectDeleteLocks() {
+    public ObjectLock<TitanGuid> getPublishObjectDeleteLocks() {
         return publishObjectDeleteLocks;
     }
 
@@ -219,7 +219,7 @@ public final class FragmentObject extends AbstractObjectHandler implements FObje
         return message.composeReply(this.node.getNodeAddress(), DOLRStatus.TEMPORARY_REDIRECT);
     }
 
-    public DOLRStatus deleteObject(BeehiveObjectId objectId, BeehiveObjectId profferedDeletionToken, long timeToLive)
+    public DOLRStatus deleteObject(TitanGuid objectId, TitanGuid profferedDeletionToken, long timeToLive)
     throws BeehiveObjectStore.NoSpaceException, IOException {
         DeleteableObject.Request request = new DeleteableObject.Request(objectId, profferedDeletionToken, timeToLive);
         BeehiveMessage reply = this.node.sendToObject(objectId, this.getName(), "deleteLocalObject", request);
@@ -234,7 +234,7 @@ public final class FragmentObject extends AbstractObjectHandler implements FObje
      * @return The anti-object of the given DOLRObject.
      * @throws IOException
      */
-    public BeehiveObject createAntiObject(DeleteableObject.Handler.Object object , BeehiveObjectId profferedDeleteToken, long timeToLive)
+    public BeehiveObject createAntiObject(DeleteableObject.Handler.Object object , TitanGuid profferedDeleteToken, long timeToLive)
     throws IOException, BeehiveObjectStore.NoSpaceException, BeehiveObjectStore.DeleteTokenException {
         FObjectType.FObject fObject = FObjectType.FObject.class.cast(object);
 

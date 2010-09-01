@@ -54,12 +54,15 @@ import sunlabs.asdf.web.XML.XML;
 import sunlabs.asdf.web.XML.Xxhtml;
 import sunlabs.asdf.web.http.HTTP;
 import sunlabs.asdf.web.http.HttpMessage;
-import sunlabs.titan.BeehiveObjectId;
+import sunlabs.titan.TitanGuidImpl;
 import sunlabs.titan.Release;
+import sunlabs.titan.api.TitanGuid;
+import sunlabs.titan.api.TitanNodeId;
 import sunlabs.titan.node.BeehiveMessage;
 import sunlabs.titan.node.BeehiveMessage.RemoteException;
 import sunlabs.titan.node.BeehiveNode;
 import sunlabs.titan.node.NodeAddress;
+import sunlabs.titan.node.TitanNodeIdImpl;
 import sunlabs.titan.node.services.api.Census;
 import sunlabs.titan.util.OrderedProperties;
 
@@ -81,7 +84,7 @@ public final class CensusDaemon extends BeehiveService implements Census, Census
     public final static Attributes.Prototype ReportRateMillis = new Attributes.Prototype(CensusDaemon.class,
             "ReportRateMillis",
             Time.minutesInMilliseconds(10),
-            "The number of milliseconds between each Census report from this node.");
+            "The number of milliseconds between each Census report transmitted by this node.");
 
     private static String release = Release.ThisRevision();
 
@@ -147,9 +150,9 @@ public final class CensusDaemon extends BeehiveService implements Census, Census
     		private final static long serialVersionUID = 1L;
 
     		private NodeAddress address;
-    		private Map<BeehiveObjectId,OrderedProperties> census;
+    		private Map<TitanNodeId,OrderedProperties> census;
 
-    		public Response(NodeAddress address, Map<BeehiveObjectId,OrderedProperties> census) {
+    		public Response(NodeAddress address, Map<TitanNodeId,OrderedProperties> census) {
     			this.address = address;
                 this.census = census;
             }
@@ -158,7 +161,7 @@ public final class CensusDaemon extends BeehiveService implements Census, Census
                 return this.address;
             }
 
-            public Map<BeehiveObjectId,OrderedProperties> getCensus() {
+            public Map<TitanNodeId,OrderedProperties> getCensus() {
                 return this.census;
         }
     }
@@ -176,14 +179,14 @@ public final class CensusDaemon extends BeehiveService implements Census, Census
             private final static long serialVersionUID = 1L;
 
             private int count;
-            private Set<BeehiveObjectId> exclude;
+            private Set<TitanNodeId> exclude;
             private OrderedProperties match;
 
             /**
              *
              * @see Census#select(int, Set, OrderedProperties)
              */
-            public Request(int count, Set<BeehiveObjectId> exclude, OrderedProperties match) {
+            public Request(int count, Set<TitanNodeId> exclude, OrderedProperties match) {
                 this.count = count;
                 this.exclude = exclude;
                 this.match = match;
@@ -197,9 +200,9 @@ public final class CensusDaemon extends BeehiveService implements Census, Census
             }
 
             /**
-             * Get the {@link Set} of {@link BeehiveObjectId}s to exclude from the result of this select query.
+             * Get the {@link Set} of {@link TitanGuid}s to exclude from the result of this select query.
              */
-            public Set<BeehiveObjectId> getExcluded() {
+            public Set<TitanNodeId> getExcluded() {
                 return this.exclude;
             }
 
@@ -214,28 +217,28 @@ public final class CensusDaemon extends BeehiveService implements Census, Census
         private static class Response implements Serializable {
             private final static long serialVersionUID = 1L;
 
-            private Map<BeehiveObjectId,OrderedProperties> censusData;
+            private Map<TitanNodeId,OrderedProperties> censusData;
 
-            public Response(Map<BeehiveObjectId,OrderedProperties> censusData) {
+            public Response(Map<TitanNodeId,OrderedProperties> censusData) {
                 this.censusData = censusData;
             }
 
-            public Map<BeehiveObjectId,OrderedProperties> getCensusData() {
+            public Map<TitanNodeId,OrderedProperties> getCensusData() {
                 return this.censusData;
             }
-            }
         }
+    }
 
     // This ought to just be the Dossier file.  But the Dossier may have information that is not up-to-date.
-    private SortedMap<BeehiveObjectId,OrderedProperties> catalogue;
+    private SortedMap<TitanNodeId,OrderedProperties> catalogue;
 
     /**
      * For each census report in the given {@link Map}, if it does not already exist add it to the current census.
      * Otherwise, if there is already a report in the current census so not replace it.
      */
-    public void putAllLocal(Map<BeehiveObjectId,OrderedProperties> census) {
+    public void putAllLocal(Map<TitanNodeId,OrderedProperties> census) {
         synchronized (this.catalogue) {
-            for (BeehiveObjectId nodeId : census.keySet()) {
+            for (TitanNodeId nodeId : census.keySet()) {
                 if (!this.catalogue.containsKey(nodeId)) {
                     this.catalogue.put(nodeId, census.get(nodeId));
                 }
@@ -244,26 +247,26 @@ public final class CensusDaemon extends BeehiveService implements Census, Census
     }
 
     /**
-     * Randomly select {@code count} nodes, excluding those specified by {@link BeehiveObjectId}
+     * Randomly select {@code count} nodes, excluding those specified by {@link TitanGuid}
      * in the {@link Set} {@code exclude}, that match properties specified in the {@link OrderedProperties} instance.
      *
      * @param count the number of nodes to select. A count of zero means to return the entire set of nodes.
      * @param exclude the {@code Set} of nodes to exclude from the result, or {@code null}.
      * @param match the {@code OrderedProperties} to match (unimplemented).
      */
-    private Map<BeehiveObjectId,OrderedProperties> selectFromCatalogue(int count, Set<BeehiveObjectId> exclude, OrderedProperties match) {
-        Map<BeehiveObjectId,OrderedProperties> result = new HashMap<BeehiveObjectId,OrderedProperties>();
+    private Map<TitanNodeId,OrderedProperties> selectFromCatalogue(int count, Set<TitanNodeId> exclude, OrderedProperties match) {
+        Map<TitanNodeId,OrderedProperties> result = new HashMap<TitanNodeId,OrderedProperties>();
         if (count == 0) {
             synchronized (this.catalogue) {
                 result.putAll(this.catalogue);
             }
         } else {
             synchronized (this.catalogue) {
-                List<BeehiveObjectId> nodes = new LinkedList<BeehiveObjectId>(this.catalogue.keySet());
+                List<TitanNodeId> nodes = new LinkedList<TitanNodeId>(this.catalogue.keySet());
                 Collections.shuffle(nodes, new Random(System.currentTimeMillis()));
 
                 if (exclude != null) {
-                    for (BeehiveObjectId id : nodes) {
+                    for (TitanNodeId id : nodes) {
                         if (!exclude.contains(id)) {
                             result.put(id, this.catalogue.get(id));
                             if (result.size() == count) {
@@ -272,7 +275,7 @@ public final class CensusDaemon extends BeehiveService implements Census, Census
                         }
                     }
                 } else {
-                    for (BeehiveObjectId id : nodes) {
+                    for (TitanNodeId id : nodes) {
                         result.put(id, this.catalogue.get(id));
                         if (result.size() == count) {
                             break;
@@ -294,7 +297,7 @@ public final class CensusDaemon extends BeehiveService implements Census, Census
             this.log.config("%s",node.configuration.get(CensusDaemon.ReportRateMillis));
         }
 
-        this.catalogue = Collections.synchronizedSortedMap(new TreeMap<BeehiveObjectId,OrderedProperties>());
+        this.catalogue = Collections.synchronizedSortedMap(new TreeMap<TitanNodeId,OrderedProperties>());
     }
 
     /**
@@ -351,7 +354,7 @@ public final class CensusDaemon extends BeehiveService implements Census, Census
      */
     public Select.Response select(BeehiveMessage message) throws ClassNotFoundException, ClassCastException, BeehiveMessage.RemoteException {
         Select.Request request = message.getPayload(Select.Request.class, this.node);
-        Map<BeehiveObjectId,OrderedProperties> list = this.selectFromCatalogue(request.getCount(), request.getExcluded(), request.getMatch());
+        Map<TitanNodeId,OrderedProperties> list = this.selectFromCatalogue(request.getCount(), request.getExcluded(), request.getMatch());
 
         Select.Response response = new Select.Response(list);
         return response;
@@ -377,7 +380,7 @@ public final class CensusDaemon extends BeehiveService implements Census, Census
 
         protected ReportDaemon()
         throws MalformedObjectNameException, MBeanRegistrationException, NotCompliantMBeanException, InstanceAlreadyExistsException {
-            super(CensusDaemon.this.node.getThreadGroup(), CensusDaemon.this.node.getObjectId() + ":" + CensusDaemon.this.getName() + ".daemon");
+            super(CensusDaemon.this.node.getThreadGroup(), CensusDaemon.this.node.getNodeId() + ":" + CensusDaemon.this.getName() + ".daemon");
             this.setPriority(Thread.MIN_PRIORITY);
 
             this.myProperties = new OrderedProperties();
@@ -424,9 +427,9 @@ public final class CensusDaemon extends BeehiveService implements Census, Census
                     }
 
                     // Expire/Clean up the local Census data.
-                    SortedMap<BeehiveObjectId,OrderedProperties> newCatalogue = new TreeMap<BeehiveObjectId,OrderedProperties>();;
+                    SortedMap<TitanNodeId,OrderedProperties> newCatalogue = new TreeMap<TitanNodeId,OrderedProperties>();;
                     synchronized (CensusDaemon.this.catalogue) {
-                        for (BeehiveObjectId nodeId : CensusDaemon.this.catalogue.keySet()) {
+                        for (TitanNodeId nodeId : CensusDaemon.this.catalogue.keySet()) {
                             OrderedProperties report = CensusDaemon.this.catalogue.get(nodeId);
                             long lastUpdateTime = report.getPropertyAsLong(Census.Timestamp, 0);
                             long timeToLive = report.getPropertyAsLong(Census.TimeToLive, 0);
@@ -459,11 +462,11 @@ public final class CensusDaemon extends BeehiveService implements Census, Census
         }
 
         public long getRefreshRate() {
-            return CensusDaemon.this.node.configuration.asLong(CensusDaemon.ReportRateMillis);
+            return CensusDaemon.this.node.getConfiguration().asLong(CensusDaemon.ReportRateMillis);
         }
 
         public void setRefreshRate(long refreshPeriodMillis) {
-            CensusDaemon.this.node.configuration.set(CensusDaemon.ReportRateMillis, refreshPeriodMillis);
+            CensusDaemon.this.node.getConfiguration().set(CensusDaemon.ReportRateMillis, refreshPeriodMillis);
         }
     }
 
@@ -506,11 +509,11 @@ public final class CensusDaemon extends BeehiveService implements Census, Census
 //        }
     }
 
-    public Map<BeehiveObjectId,OrderedProperties> select(int count) throws ClassCastException {
-        return this.select(count, new HashSet<BeehiveObjectId>(), null);
+    public Map<TitanNodeId,OrderedProperties> select(int count) throws ClassCastException {
+        return this.select(count, new HashSet<TitanNodeId>(), null);
     }
 
-    public Map<BeehiveObjectId,OrderedProperties> select(int count, Set<BeehiveObjectId> exclude, OrderedProperties match) throws ClassCastException {
+    public Map<TitanNodeId,OrderedProperties> select(int count, Set<TitanNodeId> exclude, OrderedProperties match) throws ClassCastException {
         TimeProfiler timeProfiler = new TimeProfiler("CensusDaemon.select");
         try {
             Select.Request request = new Select.Request(count, exclude, match);
@@ -532,13 +535,13 @@ public final class CensusDaemon extends BeehiveService implements Census, Census
         }
     }
 
-    public Map<BeehiveObjectId,OrderedProperties> select(NodeAddress gateway, int count, Set<BeehiveObjectId> exclude, OrderedProperties match) {
+    public Map<TitanNodeId,OrderedProperties> select(NodeAddress gateway, int count, Set<TitanNodeId> exclude, OrderedProperties match) {
         Select.Request request = new Select.Request(count, exclude, match);
 
         BeehiveMessage message = new BeehiveMessage(BeehiveMessage.Type.RouteToNode,
                 this.node.getNodeAddress(),
                 Census.CensusKeeper,
-                BeehiveObjectId.ANY,
+                TitanGuidImpl.ANY,
                 CensusDaemon.name,
                 "select",
                 BeehiveMessage.Transmission.UNICAST,
@@ -571,7 +574,7 @@ public final class CensusDaemon extends BeehiveService implements Census, Census
     public XHTML.EFlow toXHTML(URI uri, Map<String,HTTP.Message> props) {
 
         try {
-            String defaultNodeAddress = new NodeAddress(new BeehiveObjectId("1111111111111111111111111111111111111111111111111111111111111111"), "127.0.0.1", 12001, 12002).format();
+            String defaultNodeAddress = new NodeAddress(new TitanNodeIdImpl("1111111111111111111111111111111111111111111111111111111111111111"), "127.0.0.1", 12001, 12002).format();
 
 
             String action = HttpMessage.asString(props.get("action"), null);
@@ -592,9 +595,9 @@ public final class CensusDaemon extends BeehiveService implements Census, Census
                 } else if (action.equals("select")) {
                     // This is just for manual testing.
                     int n = HttpMessage.asInteger(props.get("N"), 6);
-                    Map<BeehiveObjectId,OrderedProperties> list =  this.select(n, new HashSet<BeehiveObjectId>(), null);
+                    Map<TitanNodeId,OrderedProperties> list =  this.select(n, new HashSet<TitanNodeId>(), null);
                     XHTML.Table.Body tbody = new XHTML.Table.Body();
-                    for (BeehiveObjectId nodeId : list.keySet()) {
+                    for (TitanGuid nodeId : list.keySet()) {
                         tbody.add(new XHTML.Table.Row(new XHTML.Table.Data(nodeId)));
                     }
                     XHTML.Table table = new XHTML.Table(tbody);
@@ -646,7 +649,7 @@ public final class CensusDaemon extends BeehiveService implements Census, Census
             .add(new XHTML.Table.Body(
                     new XHTML.Table.Row(new XHTML.Table.Data(""), new XHTML.Table.Data(controlButton, XHTML.CharacterEntity.nbsp, go, XHTML.CharacterEntity.nbsp, resetButton)),
                     new XHTML.Table.Row(new XHTML.Table.Data("Logging Level"), new XHTML.Table.Data(Xxhtml.selectJavaUtilLoggingLevel("LoggerLevel", this.log.getEffectiveLevel()), XHTML.CharacterEntity.nbsp, this.log.getName())),
-                    new XHTML.Table.Row(new XHTML.Table.Data("Refresh Rate (ms)"), new XHTML.Table.Data(this.node.configuration.asLong(CensusDaemon.ReportRateMillis))),
+                    new XHTML.Table.Row(new XHTML.Table.Data("Refresh Rate (ms)"), new XHTML.Table.Data(this.node.getConfiguration().asLong(CensusDaemon.ReportRateMillis))),
                     new XHTML.Table.Row(new XHTML.Table.Data("Set Configuration"), new XHTML.Table.Data(setButton)),
                     new XHTML.Table.Row(new XHTML.Table.Data("Add"), new XHTML.Table.Data(addButton), new XHTML.Table.Data(addressField))
             )));
@@ -655,7 +658,7 @@ public final class CensusDaemon extends BeehiveService implements Census, Census
                     new XHTML.Table.Row(new XHTML.Table.Heading("Node"),
                             new XHTML.Table.Heading("Properties")));
 
-            for (BeehiveObjectId nodeId : this.catalogue.keySet()) {
+            for (TitanGuid nodeId : this.catalogue.keySet()) {
                 OrderedProperties data = this.catalogue.get(nodeId);
                 String controlURL = null;
                 try {

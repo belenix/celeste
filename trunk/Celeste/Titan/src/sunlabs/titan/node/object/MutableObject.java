@@ -1,5 +1,5 @@
 /*
- * Copyright 2007-2009 Sun Microsystems, Inc. All Rights Reserved.
+ * Copyright 2007-2010 Oracle. All Rights Reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER
  *
  * This code is free software; you can redistribute it and/or modify
@@ -17,9 +17,9 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
  * 02110-1301 USA
  *
- * Please contact Sun Microsystems, Inc., 16 Network Circle, Menlo
- * Park, CA 94025 or visit www.sun.com if you need additional
- * information or have any questions.
+ * Please contact Oracle Corporation, 500 Oracle Parkway, Redwood Shores, CA 94065
+ * or visit www.oracle.com if you need additional information or
+ * have any questions.
  */
 package sunlabs.titan.node.object;
 
@@ -52,14 +52,17 @@ import java.util.logging.Level;
 
 import sunlabs.asdf.functional.AbstractMapFunction;
 import sunlabs.asdf.web.XML.XHTML;
-import sunlabs.asdf.web.XML.XML;
 import sunlabs.asdf.web.XML.XHTML.EFlow;
+import sunlabs.asdf.web.XML.XML;
 import sunlabs.asdf.web.http.HTTP;
-import sunlabs.titan.BeehiveObjectId;
+import sunlabs.titan.TitanGuidImpl;
+import sunlabs.titan.api.TitanGuid;
+import sunlabs.titan.api.TitanNodeId;
 import sunlabs.titan.api.XHTMLInspectable;
 import sunlabs.titan.node.BeehiveMessage;
-import sunlabs.titan.node.BeehiveNode;
 import sunlabs.titan.node.BeehiveMessage.RemoteException;
+import sunlabs.titan.node.BeehiveNode;
+import sunlabs.titan.node.object.MutableObject.ObjectHistory;
 import sunlabs.titan.node.services.CensusDaemon;
 import sunlabs.titan.node.services.WebDAVDaemon;
 import sunlabs.titan.node.services.api.Census;
@@ -106,7 +109,7 @@ public class MutableObject {
          * A deleted value hangs around in the system for the number of seconds specified in the timeToLive parameters.
          * XXX Fix this comment. 
          */
-        private BeehiveObjectId deleteToken;
+        private TitanGuid deleteToken;
         private long deletedSecondsToLive;
         
         public Value() {
@@ -114,7 +117,7 @@ public class MutableObject {
             this.deletedSecondsToLive = 0;
         }
         
-        public BeehiveObjectId getDeleteToken() {
+        public TitanGuid getDeleteToken() {
             return this.deleteToken;
         }
         
@@ -122,7 +125,7 @@ public class MutableObject {
             return this.deletedSecondsToLive;
         }
         
-        public Value setDeleteToken(BeehiveObjectId deleteToken, long deletedSecondsToLive) {
+        public Value setDeleteToken(TitanGuid deleteToken, long deletedSecondsToLive) {
             this.deleteToken = deleteToken;
             this.deletedSecondsToLive = deletedSecondsToLive;
             return this;
@@ -322,13 +325,13 @@ public class MutableObject {
      * An object-id of a Mutable Object.
      *
      */
-    public static class ObjectId extends BeehiveObjectId {
+    public static class ObjectId extends TitanGuidImpl {
         private static final long serialVersionUID = 1L;
 
         /**
-         * Construct a {@link MutableObject.ObjectId} from an existing {@link BeehiveObjectId}
+         * Construct a {@link MutableObject.ObjectId} from an existing {@link TitanGuid}
          */
-        public ObjectId(BeehiveObjectId objectId) {
+        public ObjectId(TitanGuid objectId) {
             super(objectId);
         }
     }
@@ -380,7 +383,7 @@ public class MutableObject {
      * A time-stamp represents the change of the value of an object at a
      * particular time. A series of time-stamps is an object-history. A
      * time-stamp contains the object-id of the client node changing the value
-     * and the {@link BeehiveObjectId} of the object-history-set that this timp-stamp is a
+     * and the {@link TitanGuidImpl} of the object-history-set that this timp-stamp is a
      * member of. A time-stamp contains the housekeeping values used for
      * maintenance of the time-stamp in a multi-server protocol.
      * </p>
@@ -401,17 +404,17 @@ public class MutableObject {
 
         private final boolean isBarrier;
 
-        private final BeehiveObjectId clientId;
+        private final TitanGuid clientId;
 
         private final int operation;
 
-        private final BeehiveObjectId objectHistorySetVerifier;
+        private final TitanGuid objectHistorySetVerifier;
 
         private final MutableObject.Value value;
 
-        private final BeehiveObjectId generation;
+        private final TitanGuid generation;
 
-        private final SortedSet<BeehiveObjectId> replicas;
+        private final SortedSet<TitanGuid> replicas;
 
         /**
          * Construct a TimeStamp representing the initial state.
@@ -422,7 +425,7 @@ public class MutableObject {
             this.clientId = null;
             this.operation = 0;
             this.objectHistorySetVerifier = null;
-            this.replicas = new TreeSet<BeehiveObjectId>();
+            this.replicas = new TreeSet<TitanGuid>();
             this.generation = null;
             this.value = null;
         }
@@ -437,7 +440,7 @@ public class MutableObject {
          * @param clientId
          * @param objectHistorySet
          */
-        public TimeStamp(long time, BeehiveObjectId clientId, ObjectHistorySet objectHistorySet) {
+        public TimeStamp(long time, TitanGuid clientId, ObjectHistorySet objectHistorySet) {
             this(time, true, 0, clientId, objectHistorySet.getObjectId(), objectHistorySet.getReplicaSet(), null);
         }
 
@@ -448,12 +451,12 @@ public class MutableObject {
          * This {@code TimeStamp} is not a barrier and cannot be used as a barrier.  It contains only a value.
          * </p>
          */
-        public TimeStamp(long time, int operation, BeehiveObjectId clientId, ObjectHistorySet objectHistorySet, MutableObject.Value value) {
+        public TimeStamp(long time, int operation, TitanGuid clientId, ObjectHistorySet objectHistorySet, MutableObject.Value value) {
             this(time, false, operation, clientId, objectHistorySet.getObjectId(), objectHistorySet.getReplicaSet(), value);
         }
 
-        protected TimeStamp(long time, boolean barrierFlag, int operation, BeehiveObjectId clientId, BeehiveObjectId ohsId,
-                SortedSet<BeehiveObjectId> serverSet, MutableObject.Value value) {
+        protected TimeStamp(long time, boolean barrierFlag, int operation, TitanGuid clientId, TitanGuid ohsId,
+                SortedSet<TitanGuid> serverSet, MutableObject.Value value) {
             this.time = time;
             this.isBarrier = barrierFlag;
             this.clientId = clientId;
@@ -493,17 +496,17 @@ public class MutableObject {
         }
 
         /**
-         * Return the {@link BeehiveObjectId} of the client establishing this @code TimeStamp}.
+         * Return the {@link TitanGuid} of the client establishing this @code TimeStamp}.
          */
-        public BeehiveObjectId getClientId() {
+        public TitanGuid getClientId() {
             return this.clientId;
         }
 
-        public void setServerSet(Set<BeehiveObjectId> servers) {
+        public void setServerSet(Set<TitanGuid> servers) {
             this.replicas.addAll(servers);
         }
 
-        public SortedSet<BeehiveObjectId> getServerSet() {
+        public SortedSet<TitanGuid> getServerSet() {
             return this.replicas;
         }
 
@@ -576,18 +579,18 @@ public class MutableObject {
         }
 
         /**
-         * Get the {@link BeehiveObjectId} of this {@code TimeStamp}.
+         * Get the {@link TitanGuid} of this {@code TimeStamp}.
          *
          */
-        public BeehiveObjectId getObjectId() {
-            BeehiveObjectId result = BeehiveObjectId.ZERO;
+        public TitanGuid getObjectId() {
+            TitanGuid result = TitanGuidImpl.ZERO;
             result = result.add(this.clientId);
             result = result.add(this.generation);
             result = result.add(this.objectHistorySetVerifier);
             result = result.add(this.time);
             result = result.add(this.operation);
             result = result.add(this.isBarrier ? 1 : 0);
-            for (BeehiveObjectId replica : this.replicas) {
+            for (TitanGuid replica : this.replicas) {
                 result = result.add(replica);
             }
             if (this.value != null)
@@ -600,7 +603,7 @@ public class MutableObject {
             StringBuilder servers = new StringBuilder();
             boolean insertLeadingComma = false;
             if (this.replicas != null) {
-                for (BeehiveObjectId s : this.replicas) {
+                for (TitanGuid s : this.replicas) {
                     servers.append((insertLeadingComma ? "," : "")).append(s == null ? "null" : String.format("%4.4s...", s));
                     insertLeadingComma = true;
                 }
@@ -636,7 +639,7 @@ public class MutableObject {
 
         public XHTML.EFlow toXHTML(URI uri, Map<String,HTTP.Message> props) {
             XHTML.Table.Body replicaSetBody = new XHTML.Table.Body();
-            for (BeehiveObjectId replica : this.replicas) {
+            for (TitanGuid replica : this.replicas) {
                 replicaSetBody.add(new XHTML.Table.Row(new XHTML.Table.Data(WebDAVDaemon.inspectObjectXHTML(replica))));
             }
             XHTML.Table serverTable = new XHTML.Table(replicaSetBody);
@@ -679,7 +682,7 @@ public class MutableObject {
      *
      * XXX The implementation of the authenticator is incomplete.
      *
-     * Currently this just computes a {@link BeehiveObjectId} from the
+     * Currently this just computes a {@link TitanGuid} from the
      * object history (as a String), but doesn't include any verification that
      * this node produced it.
      *
@@ -732,13 +735,13 @@ public class MutableObject {
             }
         }
 
-        private final BeehiveObjectId objectId;
+        private final TitanGuid objectId;
 
-        private final BeehiveObjectId replicaId;
+        private final TitanGuid replicaId;
 
         private final List<MutableObject.TimeStamp> history = new LinkedList<TimeStamp>();
 
-        private final BeehiveObjectId authenticator;
+        private final TitanGuid authenticator;
 
         private TimeStamp latestTimeStamp;
         
@@ -751,7 +754,7 @@ public class MutableObject {
             this.latestTimeStamp = null;
         }
 
-        public ObjectHistory(BeehiveObjectId objectId, BeehiveObjectId server) {
+        public ObjectHistory(TitanGuid objectId, TitanGuid server) {
             this.objectId = objectId;
             this.replicaId = server;
             this.authenticator = null;
@@ -816,7 +819,7 @@ public class MutableObject {
             return this.latestTimeStamp;
         }
 
-        public BeehiveObjectId getReplicaId() {
+        public TitanGuid getReplicaId() {
             return this.replicaId;
         }
 
@@ -836,7 +839,7 @@ public class MutableObject {
          * @param value
          * @throws ObjectHistory.OutOfDateException
          */
-        public ObjectHistory setValue(DOLRLogger logger, BeehiveObjectId clientId, ObjectHistorySet ohs, MutableObject.Value value)
+        public ObjectHistory setValue(DOLRLogger logger, TitanGuid clientId, ObjectHistorySet ohs, MutableObject.Value value)
         throws ObjectHistory.OutOfDateException {
             //
             // Ensure that this ObjectHistory instance is in the given ObjectHistorySet.
@@ -867,16 +870,16 @@ public class MutableObject {
                     this.add(ohs.getLatestCandidate());
                 } else {
                     TimeStamp timeStamp = this.getLatestTimeStamp();
-                    for (BeehiveObjectId serverId : ohs.getReplicaSet()) {
+                    for (TitanGuid serverId : ohs.getReplicaSet()) {
                         if (!timeStamp.getServerSet().contains(serverId)) {
                             if (logger.isLoggable(Level.INFO)) {
                                 logger.info("My ObjectHistory does not contain the same ServerSet");
                                 logger.info("Old server set");
-                                for (BeehiveObjectId i : timeStamp.getServerSet()) {
+                                for (TitanGuid i : timeStamp.getServerSet()) {
                                     logger.info(i.toString());
                                 }
                                 logger.info("New server set");
-                                for (BeehiveObjectId i : ohs.getReplicaSet()) {
+                                for (TitanGuid i : ohs.getReplicaSet()) {
                                     logger.info(i.toString());
                                 }
                             }
@@ -951,7 +954,7 @@ public class MutableObject {
         }
 
         /**
-         * Get the {@link BeehiveObjectId} of this {@code ObjectHistory}.
+         * Get the {@link TitanGuid} of this {@code ObjectHistory}.
          *
          * <p>
          * Each {@code ObjectHistory} instance will have a unique {@code BeehiveObjectId}
@@ -959,8 +962,8 @@ public class MutableObject {
          * history and the {@code replicaId}.
          * </p>
          */
-        public BeehiveObjectId getObjectId() {
-            BeehiveObjectId result = this.objectId;
+        public TitanGuid getObjectId() {
+            TitanGuid result = this.objectId;
             for (TimeStamp timeStamp : this) {
                 result = result.add(timeStamp.getObjectId());
             }
@@ -983,7 +986,7 @@ public class MutableObject {
         private static final long serialVersionUID = 1L;
 
         /**
-         * The {@link BeehiveObjectId} this {@code ObjectHistorySet} represents.
+         * The {@link TitanGuid} this {@code ObjectHistorySet} represents.
          */
         private MutableObject.ObjectId objectId;
 
@@ -997,7 +1000,7 @@ public class MutableObject {
         // N.B.  This map must be sorted, to ensure that the hash computed in
         // getObjectId() has a deterministic value.
         //
-        private final SortedMap<BeehiveObjectId, MutableObject.ObjectHistory> histories;
+        private final SortedMap<TitanGuid, MutableObject.ObjectHistory> histories;
 
         /**
          * The State of an {@link ObjectHistorySet} is one of:
@@ -1052,7 +1055,7 @@ public class MutableObject {
         private boolean readOnly = false;
 
         public ObjectHistorySet(MutableObject.ObjectId objectId, MutableObject.Parameters params) {
-            this.histories = new TreeMap<BeehiveObjectId, MutableObject.ObjectHistory>();
+            this.histories = new TreeMap<TitanGuid, MutableObject.ObjectHistory>();
             this.objectId = objectId;
             this.params = params;
 
@@ -1086,20 +1089,20 @@ public class MutableObject {
         }
 
         /**
-         * Get the {@link BeehiveObjectId} of this {@code ObjectHistorySet}.
+         * Get the {@link TitanGuid} of this {@code ObjectHistorySet}.
          * <p>
          * The BeehiveObjectId of this @code ObjectHistorySet} is computed as a hash over the entire {@code ObjectHistorySet}.
          * This is not the same as the {@code BeehiveObjectId} of the MutableObject that this {@code ObjectHistorySet} represents.
          * See {@link #getMutableObjectIdObjectId()}
          * </p>
          */
-        public synchronized BeehiveObjectId getObjectId() {
+        public synchronized TitanGuid getObjectId() {
             // It is of the utmost importance that the order in which these are computed is consistent.
             // Otherwise the computed hash will be different, even if the components are identical.
-            BeehiveObjectId result = new BeehiveObjectId(this.objectId);
+            TitanGuid result = new TitanGuidImpl(this.objectId);
             result = result.add(this.params.format().getBytes());
 
-            for (BeehiveObjectId replica : this.histories.keySet()) {
+            for (TitanGuid replica : this.histories.keySet()) {
                 result = result.add(replica);
                 result = result.add(this.histories.get(replica).getObjectId());
                 //result = result.add(this.histories.get(replica).toByteArray());
@@ -1118,7 +1121,7 @@ public class MutableObject {
                     .append("V=").append(this.latestValue).append("\n")
                     .append("C=").append(this.latestCandidate).append("\n");
 
-            for (BeehiveObjectId _server : this.histories.keySet()) {
+            for (TitanGuid _server : this.histories.keySet()) {
                 MutableObject.ObjectHistory objectHistory =  this.histories.get(_server);
                 s.append(String.format("%s\n", objectHistory.toString()));
             }
@@ -1137,9 +1140,9 @@ public class MutableObject {
         /**
          * Return the {@link MutableObject.ObjectHistory} instance of the given
          * {@code replicaId} from this {@code ObjectHistorySet}.
-         * @param replicaId The {@link BeehiveObjectId} of the {@link ObjectHistory} replica.
+         * @param replicaId The {@link TitanGuid} of the {@link ObjectHistory} replica.
          */
-        public synchronized MutableObject.ObjectHistory get(BeehiveObjectId replicaId) {
+        public synchronized MutableObject.ObjectHistory get(TitanGuid replicaId) {
             return this.histories.get(replicaId);
         }
 
@@ -1188,7 +1191,7 @@ public class MutableObject {
                 // XXX This loop does too much.
                 // This should take the longest history and iterate through
                 // that, rather than go through each server as well.
-                for (BeehiveObjectId _server : this.histories.keySet()) {
+                for (TitanGuid _server : this.histories.keySet()) {
                     for (TimeStamp version : this.histories.get(_server)) {
                         if (this.order(version) >= this.repairableSize()) {
                             if (version.isBarrier() == true) {
@@ -1282,10 +1285,10 @@ public class MutableObject {
         }
 
         /**
-         * Return a {@link SortedSet} consisting of the {@link BeehiveObjectId}s of the replicas in this Object History Set.
+         * Return a {@link SortedSet} consisting of the {@link TitanGuid}s of the replicas in this Object History Set.
          */
-        public synchronized SortedSet<BeehiveObjectId> getReplicaSet() {
-            SortedSet<BeehiveObjectId> result = new TreeSet<BeehiveObjectId>(this.histories.keySet());
+        public synchronized SortedSet<TitanGuid> getReplicaSet() {
+            SortedSet<TitanGuid> result = new TreeSet<TitanGuid>(this.histories.keySet());
             return result;
         }
 
@@ -1314,7 +1317,7 @@ public class MutableObject {
          * Return an Iterator over all the keys to the histories in this
          * ObjectHistorySet.
          */
-        public synchronized Iterator<BeehiveObjectId> iterator() {
+        public synchronized Iterator<TitanGuid> iterator() {
             return this.histories.keySet().iterator();
         }
 
@@ -1329,7 +1332,7 @@ public class MutableObject {
         public synchronized int order(TimeStamp timeStamp) {
             int order = 0;
             if (timeStamp != null) {
-                for (BeehiveObjectId replicaId : this.histories.keySet()) {
+                for (TitanGuid replicaId : this.histories.keySet()) {
                     for (TimeStamp t : this.histories.get(replicaId)) {
                         if (t.compareTo(timeStamp) == 0) {
                             order++;
@@ -1371,7 +1374,7 @@ public class MutableObject {
             private static final long serialVersionUID = 1L;
 
             private MutableObject.ObjectHistorySet objectHistorySet;
-            public BeehiveObjectId objectHistoryId; // XXX debugging.  I get a bad object history on the receiver side because sometimes this node is the recevier and it modifies this objectHistorySet.
+            public TitanGuid objectHistoryId; // XXX debugging.  I get a bad object history on the receiver side because sometimes this node is the recevier and it modifies this objectHistorySet.
             private MutableObject.Value value;
 
             public Request(MutableObject.ObjectHistorySet objectHistorySet, MutableObject.Value value) {
@@ -1417,11 +1420,11 @@ public class MutableObject {
 
     public static class SetObjectHistoryTask implements Callable<MutableObject.ObjectHistory> {
         private MutableObject.Handler<?> handler;
-        protected BeehiveObjectId replicaId;
+        protected TitanGuid replicaId;
         private MutableObject.SetOperation.Request request;
         private CountDownLatch countDown;
 
-        public SetObjectHistoryTask(CountDownLatch countDown, MutableObject.Handler<?> handler, BeehiveObjectId replicaId, MutableObject.SetOperation.Request request) {
+        public SetObjectHistoryTask(CountDownLatch countDown, MutableObject.Handler<?> handler, TitanGuid replicaId, MutableObject.SetOperation.Request request) {
             this.countDown = countDown;
             this.handler = handler;
             this.replicaId = replicaId;
@@ -1489,7 +1492,7 @@ public class MutableObject {
         // Set the CountDownLatch to the total number of replicas to update.
         // As each replica is updated, the Thread performing the update will decrement the latch.
         CountDownLatch countDown = new CountDownLatch(objectHistorySet.histories.keySet().size());
-        for (BeehiveObjectId replicaId : objectHistorySet.histories.keySet()) {
+        for (TitanGuid replicaId : objectHistorySet.histories.keySet()) {
             MutableObject.SetObjectHistoryTask setter = new MutableObject.SetObjectHistoryTask(countDown, handler, replicaId, request);
             FutureTask<MutableObject.ObjectHistory> task = new FutureTask<MutableObject.ObjectHistory>(setter);
             taskTracker.put(task, setter);
@@ -1548,11 +1551,11 @@ public class MutableObject {
             private static final long serialVersionUID = 1L;
 
             private MutableObject.ObjectId mutableObjectId;
-            private BeehiveObjectId replicaId;
-            private BeehiveObjectId deleteTokenId;
+            private TitanGuid replicaId;
+            private TitanGuid deleteTokenId;
             private long timeToLive;
 
-            public Request(MutableObject.ObjectId objectId, BeehiveObjectId replicaId, BeehiveObjectId deleteTokenId, long timeToLive) {
+            public Request(MutableObject.ObjectId objectId, TitanGuid replicaId, TitanGuid deleteTokenId, long timeToLive) {
                 this.mutableObjectId = objectId;
                 this.replicaId = replicaId;
                 this.deleteTokenId = deleteTokenId;
@@ -1563,11 +1566,11 @@ public class MutableObject {
                 return this.mutableObjectId;
             }
 
-            public BeehiveObjectId getReplicaId() {
+            public TitanGuid getReplicaId() {
                 return this.replicaId;
             }
 
-            public BeehiveObjectId getDeleteTokenId() {
+            public TitanGuid getDeleteTokenId() {
                 return this.deleteTokenId;
             }
             
@@ -1602,13 +1605,13 @@ public class MutableObject {
         public static class Request implements Serializable {
             private final static long serialVersionUID = 1L;
 
-            private BeehiveObjectId replicaId;
+            private TitanGuid replicaId;
 
-            public Request(BeehiveObjectId replicaId) {
+            public Request(TitanGuid replicaId) {
                 this.replicaId = replicaId;
             }
 
-            public BeehiveObjectId getReplicaId() {
+            public TitanGuid getReplicaId() {
                 return this.replicaId;
             }
         }
@@ -1640,7 +1643,7 @@ public class MutableObject {
      */
     protected static class GetObjectHistoryTask implements Callable<MutableObject.ObjectHistory> {
         private MutableObject.Handler<?> handler;
-        private BeehiveObjectId replicaId;
+        private TitanGuid replicaId;
         private CountDownLatch countDown;
         private MutableObject.ObjectHistorySet objectHistorySet;
 
@@ -1652,9 +1655,9 @@ public class MutableObject {
          *
          * @param countDown the {@link CountDownLatch} to be count-down upon a COMPLETE ObjectHistorySet, or the last replica is added to the ObjectHistorySet.
          * @param handler the {@link BeehiveObjectHandler} instance for the MutableObject.
-         * @param replicaId {@link BeehiveObjectId} of the replica to retrieve.
+         * @param replicaId {@link TitanGuid} of the replica to retrieve.
          */
-        public GetObjectHistoryTask(CountDownLatch countDown, MutableObject.Handler<?> handler, BeehiveObjectId replicaId, MutableObject.ObjectHistorySet result) {
+        public GetObjectHistoryTask(CountDownLatch countDown, MutableObject.Handler<?> handler, TitanGuid replicaId, MutableObject.ObjectHistorySet result) {
             this.countDown = countDown;
             this.handler = handler;
             this.replicaId = replicaId;
@@ -1717,12 +1720,12 @@ public class MutableObject {
 
     protected static class CreateObjectHistoryTask implements Callable<MutableObject.ObjectHistory> {
         private MutableObject.Handler<?> handler;
-        private BeehiveObjectId replicaId;
+        private TitanGuid replicaId;
         private MutableObject.ObjectId objectId;
-        private BeehiveObjectId destinationNodeId;
+        private TitanNodeId destinationNodeId;
         private CountDownLatch countDown;
         private int replicaIndex;
-        private BeehiveObjectId deleteTokenId;
+        private TitanGuid deleteTokenId;
         private ObjectHistory[] histories;
         private long timeToLive;
 
@@ -1772,11 +1775,11 @@ public class MutableObject {
          */
         public CreateObjectHistoryTask(MutableObject.Handler<?> handler,
                 CountDownLatch countDown,
-                BeehiveObjectId destinationNodeId,
+                TitanNodeId destinationNodeId,
                 MutableObject.ObjectId objectId,
-                BeehiveObjectId replicaId,
+                TitanGuid replicaId,
                 int replicaIndex,
-                BeehiveObjectId deleteTokenId,
+                TitanGuid deleteTokenId,
                 ObjectHistory[] histories,
                 long timeToLive) {
             this.countDown = countDown;
@@ -1863,7 +1866,7 @@ public class MutableObject {
     private static MutableObject.ObjectHistorySet createObjectHistorySet(MutableObject.Handler<?> handler,
             MutableObject.Parameters params,
             MutableObject.ObjectId objectId,
-            BeehiveObjectId deleteTokenId,
+            TitanGuid deleteTokenId,
             long timeToLive)
     throws MutableObject.ObjectHistory.ValidationException, MutableObject.InsufficientResourcesException, MutableObject.ProtocolException {
 
@@ -1880,7 +1883,7 @@ public class MutableObject {
 
         int universeSize = initialObjectHistorySet.getUniverseSize();
 
-        HashSet<BeehiveObjectId> usedNodes = new HashSet<BeehiveObjectId>();
+        HashSet<TitanNodeId> usedNodes = new HashSet<TitanNodeId>();
 
         ObjectHistory[] histories = new ObjectHistory[universeSize];
 
@@ -1890,7 +1893,7 @@ public class MutableObject {
         }
 
         while (true) {
-            LinkedList<BeehiveObjectId> nodeIds = new LinkedList<BeehiveObjectId>(census.select(initialObjectHistorySet.getUniverseSize(), usedNodes, null).keySet());
+            LinkedList<TitanNodeId> nodeIds = new LinkedList<TitanNodeId>(census.select(initialObjectHistorySet.getUniverseSize(), usedNodes, null).keySet());
 
             if (handler.getLogger().isLoggable(Level.FINEST)) {
                 handler.getLogger().finest("Creating on %d nodes", nodeIds.size());
@@ -1907,11 +1910,11 @@ public class MutableObject {
                     handler.getLogger().finest("replica[%d] %s", i, histories[i]);
                 }
                 if (histories[i] == null) {
-                    BeehiveObjectId replicaId = objectId.add(i);
+                    TitanGuid replicaId = objectId.add(i);
                     if (nodeIds.size() == 0)
                     	throw new MutableObject.InsufficientResourcesException();
                     // XXX Note that nodeIds may not contain histories.length elements and this will throw an exception.
-                    BeehiveObjectId nodeId = nodeIds.remove();
+                    TitanNodeId nodeId = nodeIds.remove();
 
                     usedNodes.add(nodeId);
                     MutableObject.CreateObjectHistoryTask t = new MutableObject.CreateObjectHistoryTask(handler, countDown, nodeId, objectId, replicaId, i, deleteTokenId, histories, timeToLive);
@@ -2007,7 +2010,7 @@ public class MutableObject {
             new HashMap<FutureTask<MutableObject.ObjectHistory>, MutableObject.GetObjectHistoryTask>();
 
         for (int r = 0; r < result.getUniverseSize() && result.getState() != ObjectHistorySet.State.COMPLETE; r++) {
-            BeehiveObjectId replicaId = objectId.add(r);
+            TitanGuid replicaId = objectId.add(r);
             MutableObject.GetObjectHistoryTask getter = new MutableObject.GetObjectHistoryTask(countDown, handler, replicaId, result);
             FutureTask<MutableObject.ObjectHistory> task = new FutureTask<MutableObject.ObjectHistory>(getter);
             taskTracker.put(task, getter);
@@ -2042,7 +2045,7 @@ public class MutableObject {
     }
 
 
-    public static class MappableGetObjectHistory extends AbstractMapFunction<BeehiveObjectId,MutableObject.ObjectHistory> {
+    public static class MappableGetObjectHistory extends AbstractMapFunction<TitanGuid,MutableObject.ObjectHistory> {
         private CountDownLatch countDown;
         private MutableObject.Handler<?> handler;
         private MutableObject.ObjectHistorySet objectHistorySet;
@@ -2057,18 +2060,18 @@ public class MutableObject {
         /**
          *
          */
-        public class Function extends AbstractMapFunction<BeehiveObjectId,MutableObject.ObjectHistory>.Function {
+        public class Function extends AbstractMapFunction<TitanGuid,MutableObject.ObjectHistory>.Function {
             private MutableObject.Handler<?> handler;
             private MutableObject.ObjectHistorySet objectHistorySet;
 
-            public Function(MutableObject.Handler<?> handler, MutableObject.ObjectHistorySet objectHistorySet, BeehiveObjectId item, CountDownLatch countDown) {
+            public Function(MutableObject.Handler<?> handler, MutableObject.ObjectHistorySet objectHistorySet, TitanGuid item, CountDownLatch countDown) {
                 super(item, countDown);
                 this.handler = handler;
                 this.objectHistorySet = objectHistorySet;
             }
 
             @Override
-            public MutableObject.ObjectHistory function(BeehiveObjectId item) throws ObjectHistory.ValidationException/*, Exception*/ {
+            public MutableObject.ObjectHistory function(TitanGuid item) throws ObjectHistory.ValidationException/*, Exception*/ {
                 try {
                     BeehiveMessage reply = this.handler.getNode().sendToObject(item, this.handler.getName(), "getObjectHistory", new MutableObject.GetOperation.Request(item));
 
@@ -2111,7 +2114,7 @@ public class MutableObject {
         }
 
         @Override
-        public AbstractMapFunction<BeehiveObjectId,MutableObject.ObjectHistory>.Function newFunction(BeehiveObjectId item) {
+        public AbstractMapFunction<TitanGuid,MutableObject.ObjectHistory>.Function newFunction(TitanGuid item) {
             return this.new Function(this.handler, this.objectHistorySet, item, this.countDown);
         }
 
@@ -2121,7 +2124,7 @@ public class MutableObject {
      * Create the specified MutableObject
      *
      * @param handler the {@link AbstractObjectHandler} handler that is creating this mutable-object.
-     * @param objectId the {@link BeehiveObjectId} of this mutable-object.
+     * @param objectId the {@link TitanGuid} of this mutable-object.
      * @param params the parameters controlling the internal management of the variable.
      *
      * @throws MutableObject.InsufficientResourcesException if there are
@@ -2129,7 +2132,7 @@ public class MutableObject {
      * @throws MutableObject.ExistenceException if the mutable-object already exists.
      * @throws MutableObject.ProtocolException
      */
-    public static MutableObject.Value createValue(MutableObject.Handler<?> handler, MutableObject.ObjectId objectId, BeehiveObjectId deleteTokenId, MutableObject.Parameters params, long timeToLive)
+    public static MutableObject.Value createValue(MutableObject.Handler<?> handler, MutableObject.ObjectId objectId, TitanGuid deleteTokenId, MutableObject.Parameters params, long timeToLive)
     throws MutableObject.InsufficientResourcesException, MutableObject.ExistenceException, MutableObject.ProtocolException {
         //
         // Create the initial set of object replicas.
@@ -2183,7 +2186,7 @@ public class MutableObject {
      * @throws MutableObject.PredicatedValueException 
      * @throws MutableObject.DeletedException 
      */
-    public static void deleteValue(MutableObject.Handler<?> handler, MutableObject.ObjectId objectId, BeehiveObjectId deleteToken, MutableObject.Parameters params, long secondsToLive)
+    public static void deleteValue(MutableObject.Handler<?> handler, MutableObject.ObjectId objectId, TitanGuid deleteToken, MutableObject.Parameters params, long secondsToLive)
     throws MutableObject.InsufficientResourcesException, MutableObject.NotFoundException, MutableObject.ProtocolException, MutableObject.PredicatedValueException,
     MutableObject.ObjectHistory.ValidationException, MutableObject.DeletedException {
         // Mark the object history as deleted (no more updates permitted).
@@ -2363,8 +2366,8 @@ public class MutableObject {
         ObjectHistory h = new ObjectHistory();
         o.writeObject(h);
 
-        MutableObject.ObjectId objectId = (MutableObject.ObjectId) new BeehiveObjectId();
-        BeehiveObjectId clientId = new BeehiveObjectId();
+        MutableObject.ObjectId objectId = (MutableObject.ObjectId) new TitanGuidImpl();
+        TitanGuid clientId = new TitanGuidImpl();
 
         // Be careful in using a single ObjectHistory and ObjectHistorySet
         // instances because some of these operations will change the
@@ -2380,7 +2383,7 @@ public class MutableObject {
 
         // Initialise the object-history-sets
         for (int i = 0; i < node.length; i++) {
-            node[i] = new ObjectHistory(objectId, new BeehiveObjectId());
+            node[i] = new ObjectHistory(objectId, new TitanGuidImpl());
             node[i].add(new TimeStamp());
         }
 

@@ -40,9 +40,10 @@ import javax.crypto.spec.PBEParameterSpec;
 
 import sunlabs.asdf.web.XML.XHTML;
 import sunlabs.asdf.web.http.HTTP;
-import sunlabs.titan.BeehiveObjectId;
+import sunlabs.titan.TitanGuidImpl;
 import sunlabs.titan.api.BeehiveObject;
 import sunlabs.titan.api.Credential;
+import sunlabs.titan.api.TitanGuid;
 import sunlabs.titan.node.AbstractBeehiveObject;
 import sunlabs.titan.node.services.object.CredentialObjectHandler;
 
@@ -92,14 +93,14 @@ public class Profile_ extends AbstractBeehiveObject implements Credential {
     private final static int KEY_SIZE = 1024;
     private final static byte[] salt = "celesteb".getBytes();
     private final static PBEParameterSpec paramSpec = new PBEParameterSpec(salt, 20);
-    private static final BeehiveObjectId credentialBase = new BeehiveObjectId("credential".getBytes());
+    private static final TitanGuid credentialBase = new TitanGuidImpl("credential".getBytes());
 
     private final String name;
     private final byte[] encryptedPrivateKey;
     private final PublicKey publicKey;
     private final boolean limited;
-    private transient BeehiveObjectId cachedId;
-    private BeehiveObjectId dataId;
+    private transient TitanGuid cachedId;
+    private TitanGuid dataId;
 
     /**
      * Create a new Profile_ based on a newly generated key pair, with the
@@ -116,7 +117,7 @@ public class Profile_ extends AbstractBeehiveObject implements Credential {
         // here will never be used (and thus there's no need to record its
         // value).
         //
-        super(CredentialObjectHandler.class, new BeehiveObjectId(), BeehiveObject.INFINITE_TIME_TO_LIVE);
+        super(CredentialObjectHandler.class, new TitanGuidImpl(), BeehiveObject.INFINITE_TIME_TO_LIVE);
         this.name = name;
         this.limited = false;
 
@@ -145,7 +146,7 @@ public class Profile_ extends AbstractBeehiveObject implements Credential {
         // here will never be used (and thus there's no need to record its
         // value).
         //
-        super(CredentialObjectHandler.class, new BeehiveObjectId(), BeehiveObject.INFINITE_TIME_TO_LIVE);
+        super(CredentialObjectHandler.class, new TitanGuidImpl(), BeehiveObject.INFINITE_TIME_TO_LIVE);
         this.name = name;
         this.limited = true;
         this.publicKey = publicKey;
@@ -178,9 +179,9 @@ public class Profile_ extends AbstractBeehiveObject implements Credential {
      * Create an object id based on the name.
      */
     @Override
-    public BeehiveObjectId getObjectId() {
+    public TitanGuid getObjectId() {
         if (cachedId == null) {
-            cachedId = new BeehiveObjectId(this.getName().getBytes());
+            cachedId = new TitanGuidImpl(this.getName().getBytes());
         }
         return cachedId;
     }
@@ -232,14 +233,14 @@ public class Profile_ extends AbstractBeehiveObject implements Credential {
     //
 
     @Override
-    public BeehiveObjectId getDataId() {
+    public TitanGuid getDataId() {
         if (this.dataId == null) {
             //
             // Hash together everything that distinguishes this profile from any
             // other object stored in Beehive.  (Since the cachedId field is
             // derived from the name field, it's not included.)
             //
-            BeehiveObjectId id = new BeehiveObjectId(this.name.getBytes());
+            TitanGuid id = new TitanGuidImpl(this.name.getBytes());
             id = id.add(this.encryptedPrivateKey);
             this.dataId = id.add(this.publicKey.getEncoded());
         }
@@ -247,7 +248,7 @@ public class Profile_ extends AbstractBeehiveObject implements Credential {
     }
 
     /**
-     * Sign the collection of {@link BeehiveObjectId} instances using this
+     * Sign the collection of {@link TitanGuid} instances using this
      * profile's private key.
      *
      * @param password the password needed access the encrypted private key
@@ -258,7 +259,7 @@ public class Profile_ extends AbstractBeehiveObject implements Credential {
      * @throws Credential.Exception encapsulating a {@link GeneralSecurityException}
      * instance thrown by the underlying {@link java.security.Signature} system.
      */
-    public Credential.Signature sign(char[] password, BeehiveObjectId... ids) throws Credential.Exception {
+    public Credential.Signature sign(char[] password, TitanGuid... ids) throws Credential.Exception {
 
         try {
             String algorithm = Profile_.DIGITAL_SIGNATURE_ALGORITHM;
@@ -266,7 +267,7 @@ public class Profile_ extends AbstractBeehiveObject implements Credential {
                 java.security.Signature.getInstance(algorithm);
 
             sign.initSign(this.getPrivateKey(password));
-            for (BeehiveObjectId id : ids) {
+            for (TitanGuid id : ids) {
                 if (id != null)
                     sign.update(id.getBytes());
             }
@@ -291,15 +292,14 @@ public class Profile_ extends AbstractBeehiveObject implements Credential {
      *
      * @throws Credential.Exception
      */
-    public boolean verify(Credential.Signature signature,
-        BeehiveObjectId... ids)
+    public boolean verify(Credential.Signature signature,  TitanGuid... ids)
         throws Credential.Exception {
 
         try {
             java.security.Signature verifier =
                 java.security.Signature.getInstance(signature.getAlgorithm());
             verifier.initVerify(this.publicKey);
-            for (BeehiveObjectId id : ids) {
+            for (TitanGuid id : ids) {
                 if (id != null)
                     verifier.update(id.getBytes());
             }

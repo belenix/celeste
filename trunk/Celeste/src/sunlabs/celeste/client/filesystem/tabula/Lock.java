@@ -26,7 +26,7 @@ package sunlabs.celeste.client.filesystem.tabula;
 
 import java.io.Serializable;
 
-import sunlabs.titan.BeehiveObjectId;
+import sunlabs.titan.api.TitanGuid;
 
 /**
  * Information characterizing a lock applied to the occupant of a position in a
@@ -69,7 +69,7 @@ public class Lock implements Serializable {
     /**
      * The object id of the entity holding the lock
      */
-    public final BeehiveObjectId locker;
+    public final TitanGuid locker;
 
     /**
      * This lock's depth
@@ -81,7 +81,7 @@ public class Lock implements Serializable {
      */
     public final String token;
 
-    public Lock(BeehiveObjectId locker, Depth depth, String token) {
+    public Lock(TitanGuid locker, Depth depth, String token) {
         if (locker == null || token == null)
             throw new IllegalArgumentException(
             "locker and token arguments both must be non-null");

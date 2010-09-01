@@ -39,18 +39,22 @@ import sunlabs.celeste.node.CelesteNode;
 import sunlabs.celeste.node.erasurecode.ErasureCode;
 import sunlabs.celeste.node.erasurecode.ErasureCodeIdentity;
 import sunlabs.celeste.node.services.object.FObjectType;
-import sunlabs.titan.BeehiveObjectId;
+import sunlabs.titan.TitanGuidImpl;
 import sunlabs.titan.api.BeehiveObject;
 import sunlabs.titan.api.ObjectStore;
 import sunlabs.titan.api.Service;
+import sunlabs.titan.api.TitanGuid;
+import sunlabs.titan.api.TitanNode;
+import sunlabs.titan.api.TitanNodeId;
 import sunlabs.titan.api.XHTMLInspectable;
 import sunlabs.titan.node.BeehiveMessage;
+import sunlabs.titan.node.BeehiveMessage.RemoteException;
 import sunlabs.titan.node.BeehiveNode;
 import sunlabs.titan.node.BeehiveObjectPool;
 import sunlabs.titan.node.BeehiveObjectStore;
-import sunlabs.titan.node.BeehiveMessage.RemoteException;
 import sunlabs.titan.node.BeehiveObjectStore.InvalidObjectException;
 import sunlabs.titan.node.BeehiveObjectStore.UnacceptableObjectException;
+import sunlabs.titan.node.TitanNodeIdImpl;
 import sunlabs.titan.node.object.BeehiveObjectHandler;
 import sunlabs.titan.node.services.WebDAVDaemon;
 import sunlabs.titan.util.DOLRStatus;
@@ -76,7 +80,7 @@ public final class StorableFragmentedObject {
          * Store a given {@link BeehiveObject} on the specified destination.
          * The {@link BeehiveObject} is to be replicated via the replication algorithm named by erasureCodeName.
          * The destination may be explicitly specified in which case the node with the "closest" object-id will be selected,
-         * or it may be {@link BeehiveObjectId#ANY} in which case a random node will be selected.
+         * or it may be {@link TitanGuid#ANY} in which case a random node will be selected.
          * </p>
          * @param destination
          * @param erasureCodeName
@@ -86,7 +90,7 @@ public final class StorableFragmentedObject {
          * @throws BeehiveNode.NoSuchNodeException
          * @throws ErasureCode.UnsupportedAlgorithmException
          */
-        public FragmentMap store(BeehiveObjectId destination, ErasureCode erasureCodeName, T object)
+        public FragmentMap store(TitanGuid destination, ErasureCode erasureCodeName, T object)
         throws BeehiveObjectStore.NoSpaceException, BeehiveNode.NoSuchNodeException, ErasureCode.UnsupportedAlgorithmException;
 
         /**
@@ -98,7 +102,7 @@ public final class StorableFragmentedObject {
          * This method is equivalent to:
          * </p>
          * <pre>
-         * StorableFragmentedObject.Handler.store(BeehiveObjectId.ANY, erasureCodeName, object);
+         * StorableFragmentedObject.Handler.store(TitanGuid.ANY, erasureCodeName, object);
          * </pre>
          * @param erasureCodeName
          * @param object
@@ -158,11 +162,11 @@ public final class StorableFragmentedObject {
         private final static String comma = ",";
         private final static String colon = ":";
 
-        private BeehiveObjectId objectId;
+        private TitanGuid objectId;
         private ErasureCode erasureCoder;
-        private BeehiveObjectId[] fragmentId;
+        private TitanGuid[] fragmentId;
 
-        public FragmentMap(BeehiveObjectId objectId, ErasureCode erasureCoder, BeehiveObjectId[] fragmentIds) {
+        public FragmentMap(TitanGuid objectId, ErasureCode erasureCoder, TitanGuid[] fragmentIds) {
             this.objectId = objectId;
             if (erasureCoder != null) {
                 this.erasureCoder = erasureCoder;
@@ -173,7 +177,7 @@ public final class StorableFragmentedObject {
         /**
          * Get the Reference to the stored object this fragment map represents.
          */
-        public BeehiveObjectId getObjectId() {
+        public TitanGuid getObjectId() {
             return this.objectId;
         }
 
@@ -181,7 +185,7 @@ public final class StorableFragmentedObject {
          * Get the array of References to the stored objects that make up the set
          * of fragments of the stored object this fragment map represents.
          */
-        public BeehiveObjectId[] getFragments() {
+        public TitanGuid[] getFragments() {
             return this.fragmentId;
         }
 
@@ -283,14 +287,14 @@ public final class StorableFragmentedObject {
      */
     public static FragmentMap storeObjectRemotely(
             BeehiveObjectHandler objectType,
-            BeehiveObjectId destination,
+            TitanNodeId destination,
             ErasureCode erasureCode,
             StorableFragmentedObject.Handler.Object object,
             int maxAttempts)
     throws BeehiveObjectStore.NoSpaceException, BeehiveNode.NoSuchNodeException, ErasureCode.UnsupportedAlgorithmException {
         object.setProperty(StorableFragmentedObject.Handler.ERASURECODER, erasureCode).setProperty(ObjectStore.METADATA_TYPE, objectType.getName());
 
-        if (destination == BeehiveObjectId.ANY) {
+        if (destination == TitanGuidImpl.ANY) {
             return StorableFragmentedObject.storeObjectRemotely(objectType, erasureCode, object, maxAttempts);
         }
 
@@ -321,7 +325,7 @@ public final class StorableFragmentedObject {
         object.setProperty(StorableFragmentedObject.Handler.ERASURECODER, erasureCode).setProperty(ObjectStore.METADATA_TYPE, objectType.getName());
 
         for (int attempt = 0; attempt < maxAttempts; attempt++) {
-            BeehiveMessage reply = objectType.getNode().sendToNode(new BeehiveObjectId(), objectType.getName(), "storeLocalObject", object);
+            BeehiveMessage reply = objectType.getNode().sendToNode(new TitanNodeIdImpl(), objectType.getName(), "storeLocalObject", object);
             if (reply.getStatus().isSuccessful()) {
                 object.setObjectId(reply.subjectId);
                 try {
@@ -354,7 +358,7 @@ public final class StorableFragmentedObject {
      */
     public static BeehiveMessage storeObjectLocally(StorableFragmentedObject.Handler<StorableFragmentedObject.Handler.Object> objectType, BeehiveObject object, BeehiveMessage message)
     throws BeehiveObjectStore.NoSpaceException, BeehiveObjectStore.DeleteTokenException {
-        BeehiveNode node = objectType.getNode();
+        TitanNode node = objectType.getNode();
 
         if (message.isTraced()) {
             objectType.getLogger().info("recv(%5.5s...)",
@@ -403,7 +407,7 @@ public final class StorableFragmentedObject {
         }
 
 
-        BeehiveObjectId objectId = object.getObjectId();
+        TitanGuid objectId = object.getObjectId();
 
         Service a = node.getService(CelesteNode.OBJECT_PKG + ".FObjectType");
         if (a instanceof BeehiveObjectHandler && a instanceof FObjectType) {
@@ -420,7 +424,7 @@ public final class StorableFragmentedObject {
                 oos.close();
 
                 ErasureCode erasureCoder = ErasureCode.getEncoder(erasureCodeName, bos.toByteArray());
-                BeehiveObjectId[] fObjectId = new BeehiveObjectId[erasureCoder.getFragmentCount()];
+                TitanGuid[] fObjectId = new TitanGuid[erasureCoder.getFragmentCount()];
 
                 for (int i = 0; i < fObjectId.length; i++) {
                     byte[] fragment = erasureCoder.getFragment(i);

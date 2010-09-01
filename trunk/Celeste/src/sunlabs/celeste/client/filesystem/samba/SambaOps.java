@@ -26,11 +26,8 @@ package sunlabs.celeste.client.filesystem.samba;
 
 import java.io.EOFException;
 import java.io.IOException;
-
 import java.net.InetSocketAddress;
-
 import java.nio.ByteBuffer;
-
 import java.util.BitSet;
 import java.util.Date;
 import java.util.HashMap;
@@ -39,7 +36,6 @@ import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
 import sunlabs.asdf.util.Time;
-
 import sunlabs.celeste.api.CelesteAPI;
 import sunlabs.celeste.client.CelesteProxy;
 import sunlabs.celeste.client.Profile_;
@@ -50,7 +46,7 @@ import sunlabs.celeste.client.filesystem.simple.DirectoryImpl.Dirent;
 import sunlabs.celeste.client.filesystem.tabula.PathName;
 import sunlabs.celeste.client.operation.NewCredentialOperation;
 import sunlabs.celeste.node.ProfileCache;
-import sunlabs.titan.BeehiveObjectId;
+import sunlabs.titan.TitanGuidImpl;
 import sunlabs.titan.api.Credential;
 import sunlabs.titan.util.OrderedProperties;
 
@@ -1787,8 +1783,7 @@ public class SambaOps {
             if (p == null) {
                 Profile_ profile = new Profile_(
                     profileName, "samba".toCharArray());
-                NewCredentialOperation operation = new NewCredentialOperation(
-                    profile.getObjectId(), BeehiveObjectId.ZERO, erasureCoder);
+                NewCredentialOperation operation = new NewCredentialOperation(profile.getObjectId(), TitanGuidImpl.ZERO, erasureCoder);
                 Credential.Signature signature = profile.sign(
                     "samba".toCharArray(), operation.getId());
 

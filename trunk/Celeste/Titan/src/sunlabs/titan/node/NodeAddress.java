@@ -24,13 +24,12 @@
 package sunlabs.titan.node;
 
 import java.io.Serializable;
-
 import java.net.InetSocketAddress;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.UnknownHostException;
 
-import sunlabs.titan.BeehiveObjectId;
+import sunlabs.titan.api.TitanNodeId;
 
 /**
  * Every Beehive node has three addresses, each for a different purpose.
@@ -54,7 +53,7 @@ public final class NodeAddress implements Serializable {
     private static final long serialVersionUID = 1L;
 
     /** The object-id of this node */
-    private BeehiveObjectId nodeId;
+    private TitanNodeId nodeId;
 
     /** The local address and port number of the node's Beehive server. */
 //    private InetSocketAddress localAddress;
@@ -83,7 +82,7 @@ public final class NodeAddress implements Serializable {
      * @throws NumberFormatException
      * @throws UnknownHostException
      */
-    public NodeAddress(BeehiveObjectId nodeId, String internetworkAddress, int port, int httpPort) throws NumberFormatException, UnknownHostException {
+    public NodeAddress(TitanNodeId nodeId, String internetworkAddress, int port, int httpPort) throws NumberFormatException, UnknownHostException {
         this();
         this.nodeId = nodeId;
         this.internetworkAddress = new InetSocketAddress(internetworkAddress, port);
@@ -105,7 +104,7 @@ public final class NodeAddress implements Serializable {
     public NodeAddress(String s) throws NumberFormatException, UnknownHostException {
         this();
         String[] field = s.split(":", 4);
-        this.nodeId = new BeehiveObjectId(field[0]);
+        this.nodeId = new TitanNodeIdImpl(field[0]);
 //        this.localAddress = new InetSocketAddress(field[3], Integer.parseInt(field[1]));
         this.internetworkAddress = new InetSocketAddress(field[3], Integer.parseInt(field[1]));
         try {
@@ -115,7 +114,7 @@ public final class NodeAddress implements Serializable {
         }
     }
 
-    public BeehiveObjectId getObjectId() {
+    public TitanNodeId getObjectId() {
         return this.nodeId;
     }
 

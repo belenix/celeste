@@ -26,7 +26,6 @@ package sunlabs.titan.node.util;
 import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.logging.ConsoleHandler;
 import java.util.logging.FileHandler;
@@ -34,7 +33,7 @@ import java.util.logging.Handler;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import sunlabs.titan.BeehiveObjectId;
+import sunlabs.titan.api.TitanGuid;
 
 /**
  * A DOLRLogger object is a wrapper for a {@link java.util.logging.Logger Logger}.
@@ -93,7 +92,7 @@ public class DOLRLogger implements DOLRLoggerMBean {
      * @param defaultLogFileSize maximum number of bytes to write to a log file
      * @param defaultNumberOfLogFiles maximum number of log files to cycle through
      */
-    public DOLRLogger(String name, BeehiveObjectId nodeId, String logDirectory, int defaultLogFileSize, int defaultNumberOfLogFiles) {
+    public DOLRLogger(String name, TitanGuid nodeId, String logDirectory, int defaultLogFileSize, int defaultNumberOfLogFiles) {
         super();
         this.fileName = name + "log";
         this.directory = logDirectory;

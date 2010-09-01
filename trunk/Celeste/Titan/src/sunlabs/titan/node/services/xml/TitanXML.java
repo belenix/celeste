@@ -24,7 +24,8 @@ package sunlabs.titan.node.services.xml;
 
 import sunlabs.asdf.web.XML.XML;
 import sunlabs.asdf.web.XML.XML.NameSpace;
-import sunlabs.titan.BeehiveObjectId;
+import sunlabs.titan.TitanGuidImpl;
+import sunlabs.titan.api.TitanGuid;
 
 /**
  * 
@@ -59,7 +60,7 @@ public class TitanXML implements XML.ElementFactory  {
         return this.nameSpacePrefix;
     }
     
-    public XMLRoutingTable newXMLRoutingTable(BeehiveObjectId objectId, int version, int depth) {
+    public XMLRoutingTable newXMLRoutingTable(TitanGuid objectId, int version, int depth) {
         XMLRoutingTable result = new XMLRoutingTable(objectId, version, depth);
         
         result.setNameSpace(this.getNameSpace());        
@@ -80,13 +81,13 @@ public class TitanXML implements XML.ElementFactory  {
         return result;
     }
     
-    public XMLNode newXMLNode(BeehiveObjectId objectId, String string) {
+    public XMLNode newXMLNode(TitanGuid objectId, String string) {
         XMLNode result = new XMLNode(objectId, string);
         result.setNameSpace(this.getNameSpace());    
         return result;
     }
 
-    public XMLObject newXMLObject(BeehiveObjectId objectId, String objectType, boolean deleted, long size, String remainingTimeToLive, String nStore, String lowWater, String highWater) {
+    public XMLObject newXMLObject(TitanGuid objectId, String objectType, boolean deleted, long size, String remainingTimeToLive, String nStore, String lowWater, String highWater) {
         XMLObject result = new XMLObject(objectId, objectType, deleted, size, remainingTimeToLive, nStore, lowWater, highWater);
         result.setNameSpace(this.getNameSpace());
         return result;
@@ -104,7 +105,7 @@ public class TitanXML implements XML.ElementFactory  {
         return result;
     }
     
-    public XMLRouteNode newXMLRouteNode(BeehiveObjectId objectId, String ipAddress, int port, int httpPort) {
+    public XMLRouteNode newXMLRouteNode(TitanGuid objectId, String ipAddress, int port, int httpPort) {
         XMLRouteNode result = new XMLRouteNode(objectId, ipAddress, port, httpPort);
         result.setNameSpace(this.getNameSpace());    
         return result;
@@ -115,7 +116,7 @@ public class TitanXML implements XML.ElementFactory  {
         public static final String name = "node";
         public interface SubElement extends XML.Content {}
 
-        public XMLNode(BeehiveObjectId objectId, String string) {
+        public XMLNode(TitanGuid objectId, String string) {
             super(XMLNode.name, XML.Node.EndTagDisposition.REQUIRED);
             this.addAttribute(
                     new XML.Attr("xmlns:xsi", "http://www.w3.org/2001/XMLSchema-instance"),
@@ -134,7 +135,7 @@ public class TitanXML implements XML.ElementFactory  {
         public static final String name = "object";
         public interface SubElement extends XML.Content {}
         
-        public XMLObject(BeehiveObjectId objectId, String objectType, boolean deleted, long size, String remainingTimeToLive, String lowWater, String nStore, String highWater) {
+        public XMLObject(TitanGuid objectId, String objectType, boolean deleted, long size, String remainingTimeToLive, String lowWater, String nStore, String highWater) {
             super(XMLObject.name, XML.Node.EndTagDisposition.REQUIRED);
             this.addAttribute(
                     //new XML.Attr("xmlns:xsi", "http://www.w3.org/2001/XMLSchema-instance"),
@@ -180,9 +181,9 @@ public class TitanXML implements XML.ElementFactory  {
 
         public static final String name = "routing-table";
 
-        private BeehiveObjectId objectId;
+        private TitanGuid objectId;
 
-        public XMLRoutingTable(BeehiveObjectId objectId, int version, int depth) {
+        public XMLRoutingTable(TitanGuid objectId, int version, int depth) {
             super(XMLRoutingTable.name, XML.Node.EndTagDisposition.REQUIRED);
             this.objectId = objectId;
 
@@ -263,7 +264,7 @@ public class TitanXML implements XML.ElementFactory  {
         private static final long serialVersionUID = 1L;
         public static final String name = "route-node";
         
-        public XMLRouteNode(BeehiveObjectId objectId, String ipAddress, int port, int httpPort) {
+        public XMLRouteNode(TitanGuid objectId, String ipAddress, int port, int httpPort) {
             super(XMLRouteNode.name, XML.Node.EndTagDisposition.REQUIRED);
 
             this.addAttribute(
@@ -277,10 +278,10 @@ public class TitanXML implements XML.ElementFactory  {
     public static void main(String[] args) {
         TitanXML xml = new TitanXML();
 
-        XMLRoutingTable table = xml.newXMLRoutingTable(new BeehiveObjectId(), 0, 4);
+        XMLRoutingTable table = xml.newXMLRoutingTable(new TitanGuidImpl(), 0, 4);
         table.bindNameSpace();
         XMLRoute route = xml.newXMLRoute(0, 0);
-        route.add(xml.newXMLRouteNode(new BeehiveObjectId(), "127.0.0.1", 12000, 12001));
+        route.add(xml.newXMLRouteNode(new TitanGuidImpl(), "127.0.0.1", 12000, 12001));
         table.add(route);
         System.out.printf("%s%n", XML.formatXMLDocument(table.toString()));
     }

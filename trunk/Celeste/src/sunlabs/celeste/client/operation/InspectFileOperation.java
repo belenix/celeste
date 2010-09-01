@@ -32,7 +32,8 @@ import sunlabs.celeste.CelesteException;
 import sunlabs.celeste.FileIdentifier;
 import sunlabs.celeste.node.CelesteACL;
 import sunlabs.celeste.node.services.CelesteClientDaemon;
-import sunlabs.titan.BeehiveObjectId;
+import sunlabs.titan.api.Credential;
+import sunlabs.titan.api.TitanGuid;
 
 public class InspectFileOperation extends AbstractCelesteOperation {
     private static final long serialVersionUID = 1L;
@@ -43,9 +44,9 @@ public class InspectFileOperation extends AbstractCelesteOperation {
      * Obtain the metadata for a Celeste file.
      * 
      * @param fileIdentifier the {@link FileIdentifier} of the file.
-     * @param authorisationId the {@link BeehiveObjectId} of the {@link Credential} authorising this operation
+     * @param authorisationId the {@link TitanGuid} of the {@link Credential} authorising this operation
      */
-    public InspectFileOperation(FileIdentifier fileIdentifier, BeehiveObjectId authorisationId, BeehiveObjectId vObjectId) {
+    public InspectFileOperation(FileIdentifier fileIdentifier, TitanGuid authorisationId, TitanGuid vObjectId) {
         super(InspectFileOperation.name, fileIdentifier, authorisationId, vObjectId);
     }
 
@@ -53,15 +54,15 @@ public class InspectFileOperation extends AbstractCelesteOperation {
      * Obtain the metadata for a Celeste file.
      * 
      * @param fileIdentifier the {@link FileIdentifier} of the file.
-     * @param authorisationId the {@link BeehiveObjectId} of the {@link Credential} authorising this operation
+     * @param authorisationId the {@link TitanGuid} of the {@link Credential} authorising this operation
      */
-    public InspectFileOperation(FileIdentifier fileIdentifier, BeehiveObjectId authorisationId) {
+    public InspectFileOperation(FileIdentifier fileIdentifier, TitanGuid authorisationId) {
         this(fileIdentifier, authorisationId, null);
     }
 
     @Override
-    public BeehiveObjectId getId() {
-        BeehiveObjectId id = super.getId();
+    public TitanGuid getId() {
+        TitanGuid id = super.getId();
         return id;
     }
 

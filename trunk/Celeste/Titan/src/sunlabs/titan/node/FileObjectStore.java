@@ -38,15 +38,16 @@ import java.util.Iterator;
 
 import sunlabs.asdf.util.Time;
 import sunlabs.asdf.util.Units;
-import sunlabs.titan.BeehiveObjectId;
+import sunlabs.titan.TitanGuidImpl;
 import sunlabs.titan.api.BeehiveObject;
+import sunlabs.titan.api.TitanGuid;
 
 /**
  * This class implements the Beehive object store for a single node, storing objects in files.
  * 
  * Object sizes are limited to Integer.MAX_VALUE;
   */
-public final class FileObjectStore<K,V> implements Iterable<BeehiveObjectId> {
+public final class FileObjectStore<K,V> implements Iterable<TitanGuid> {
     private final static long CAPACITY_UNLIMITED = -1;
 
     private final File objectStoreDirectory;
@@ -90,7 +91,7 @@ public final class FileObjectStore<K,V> implements Iterable<BeehiveObjectId> {
     public long computeCurrentSpoolSize() {
         long size = 0;
 
-        for (BeehiveObjectId objectId : this) {
+        for (TitanGuid objectId : this) {
             size += this.sizeOf(objectId);
         }
         return size;
@@ -123,12 +124,12 @@ public final class FileObjectStore<K,V> implements Iterable<BeehiveObjectId> {
     	return this.capacityLimit - this.currentSpoolSize;
     }
 
-    public boolean contains(BeehiveObjectId objectId) {
+    public boolean contains(TitanGuid objectId) {
         return new File(this.objectStoreDirectory, objectId.toString()).exists();
     }
 
     /**
-     * Return an existing {@link BeehiveObject} instance for the specified {@link BeehiveObjectId}.
+     * Return an existing {@link BeehiveObject} instance for the specified {@link TitanGuid}.
      * <p>
      * Return {@code null} if the specified object does not exist.
      * </p>
@@ -161,7 +162,7 @@ public final class FileObjectStore<K,V> implements Iterable<BeehiveObjectId> {
 //        }
 //    }
     
-    public BeehiveObject get(BeehiveObjectId objectId)
+    public BeehiveObject get(TitanGuid objectId)
     throws IOException, ClassCastException, ClassNotFoundException, FileNotFoundException {
         FileInputStream fin = null;
         File objectFile = new File(this.objectStoreDirectory, objectId.toString());
@@ -185,8 +186,8 @@ public final class FileObjectStore<K,V> implements Iterable<BeehiveObjectId> {
     /**
      * Commit the specified {@link BeehiveObject} to the backing-store.
      */
-    public void put(BeehiveObjectId key, BeehiveObject object) throws BeehiveObjectStore.NoSpaceException, IOException {
-        BeehiveObjectId objectId = object.getObjectId();
+    public void put(TitanGuid key, BeehiveObject object) throws BeehiveObjectStore.NoSpaceException, IOException {
+        TitanGuid objectId = object.getObjectId();
 
         long originalObjectLength = this.sizeOf(objectId);
         long objectLength = 0;
@@ -229,7 +230,7 @@ public final class FileObjectStore<K,V> implements Iterable<BeehiveObjectId> {
      * @param objectId
      * @return TRUE if the object existed, FALSE if not.
      */
-    public boolean remove(BeehiveObjectId objectId) {
+    public boolean remove(TitanGuid objectId) {
         File localFile = new File(this.objectStoreDirectory, objectId.toString());
         if (localFile.exists()) {
             this.currentSpoolSize -= localFile.length();
@@ -242,7 +243,7 @@ public final class FileObjectStore<K,V> implements Iterable<BeehiveObjectId> {
     /**
      * Return the number of bytes consumed storing the named object.
      */
-    public long sizeOf(BeehiveObjectId objectId) {
+    public long sizeOf(TitanGuid objectId) {
         File localFile = new File(this.objectStoreDirectory, objectId.toString());
         if (localFile.exists()) {
             return localFile.length();
@@ -253,29 +254,29 @@ public final class FileObjectStore<K,V> implements Iterable<BeehiveObjectId> {
     private static class StoredObjectFilter implements FilenameFilter {
         // XXX Only include file names that are really objects.
         public boolean accept(File dir, String name) {
-            return BeehiveObjectId.IsValid(name);
+            return TitanGuidImpl.IsValid(name);
         }
     }
 
-    private final static class StaticDataIterator implements Iterator<BeehiveObjectId> {
+    private final static class StaticDataIterator implements Iterator<TitanGuid> {
         private final String[] list;
         private int index;
-        private BeehiveObjectId nextObjectId;
+        private TitanGuid nextObjectId;
 
         public StaticDataIterator(FileObjectStore factory) {
             super();
             this.list = factory.objectStoreDirectory.list(new FileObjectStore.StoredObjectFilter());
             if (this.list != null) {
-                this.nextObjectId = this.list.length > 0 ? new BeehiveObjectId(this.list[0]) : null;
+                this.nextObjectId = this.list.length > 0 ? new TitanGuidImpl(this.list[0]) : null;
                 this.index = 1;
             } else {
                 this.nextObjectId = null;
             }
         }
 
-        public BeehiveObjectId next() {
-            BeehiveObjectId id = this.nextObjectId;
-            this.nextObjectId = (this.index >= this.list.length) ? null : new BeehiveObjectId(this.list[this.index++]);
+        public TitanGuid next() {
+            TitanGuid id = this.nextObjectId;
+            this.nextObjectId = (this.index >= this.list.length) ? null : new TitanGuidImpl(this.list[this.index++]);
             return id;
         }
 
@@ -291,7 +292,7 @@ public final class FileObjectStore<K,V> implements Iterable<BeehiveObjectId> {
     /**
      * Return an Iterator over all the objects maintained.
      */
-    public Iterator<BeehiveObjectId> iterator() {
+    public Iterator<TitanGuid> iterator() {
         return new StaticDataIterator(FileObjectStore.this);
     }
 }

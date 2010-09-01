@@ -21,8 +21,9 @@
  * or visit www.oracle.com if you need additional information or
  * have any questions.
  */
-package sunlabs.titan;
+package sunlabs.titan.api;
 
-public interface TitanObjectId extends TitanGuid {
+
+public interface TitanNodeId extends TitanGuid {
 
 }

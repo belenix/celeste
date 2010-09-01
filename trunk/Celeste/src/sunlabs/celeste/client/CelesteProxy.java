@@ -54,11 +54,11 @@ import sunlabs.celeste.client.operation.SetFileLengthOperation;
 import sunlabs.celeste.client.operation.SetOwnerAndGroupOperation;
 import sunlabs.celeste.client.operation.UnlockFileOperation;
 import sunlabs.celeste.client.operation.WriteFileOperation;
-import sunlabs.celeste.node.CelesteNode;
 import sunlabs.celeste.util.CelesteIO;
-import sunlabs.titan.BeehiveObjectId;
+import sunlabs.titan.TitanGuidImpl;
 import sunlabs.titan.api.BeehiveObject;
 import sunlabs.titan.api.Credential;
+import sunlabs.titan.api.TitanGuid;
 import sunlabs.titan.util.LRUCache;
 import sunlabs.titan.util.OrderedProperties;
 
@@ -183,7 +183,7 @@ public class CelesteProxy implements CelesteAPI {
     private final InetSocketAddress address;
     private final ObjectOutputStream objectOutputStream;
     private final ObjectInputStream objectInputStream;
-    private BeehiveObjectId networkObjectId;
+    private TitanGuid networkObjectId;
 
     /**
      * Create a Celeste Client node.
@@ -211,7 +211,7 @@ public class CelesteProxy implements CelesteAPI {
         InputStream in = this.newSocket.getInputStream();
         byte[] bytes = CelesteIO.readLineAsByteArray(in);
         String line = new String(bytes).trim();
-        this.networkObjectId = new BeehiveObjectId(line);
+        this.networkObjectId = new TitanGuidImpl(line);
 
         BufferedOutputStream bos = new BufferedOutputStream(this.newSocket.getOutputStream());
         CelesteIO.writeLine(bos, CelesteAPI.CLIENT_PROTOCOL_OBJECT);
@@ -240,7 +240,7 @@ public class CelesteProxy implements CelesteAPI {
         }
     }
 
-    public BeehiveObjectId getNetworkObjectId() {
+    public TitanGuid getNetworkObjectId() {
         return this.networkObjectId;
     }
 

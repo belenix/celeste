@@ -38,8 +38,8 @@ import sunlabs.celeste.client.ClientMetaData;
 import sunlabs.celeste.client.filesystem.simple.FileProperties;
 import sunlabs.celeste.node.CelesteACL;
 import sunlabs.celeste.node.services.CelesteClientDaemon;
-import sunlabs.titan.BeehiveObjectId;
 import sunlabs.titan.api.Credential;
+import sunlabs.titan.api.TitanGuid;
 
 public class WriteFileOperation extends UpdateOperation {
     private static final long serialVersionUID = 1L;
@@ -55,7 +55,7 @@ public class WriteFileOperation extends UpdateOperation {
      *
      * @param operationName         a name identifying this kind of operation
      * @param fileIdentifier        the {@link FileIdentifier} of the Celeste file to write.
-     * @param agentId               the {@link BeehiveObjectId} of the {@link Credential} authorising the operation
+     * @param agentId               the {@link TitanGuid} of the {@link Credential} authorising the operation
      * @param predicatedVObjectId   the object-id of the  of the version of
      *                              the file this operation is predicated upon
      * @param clientMetaData        client-supplied metadata to be attached to
@@ -67,8 +67,8 @@ public class WriteFileOperation extends UpdateOperation {
     protected WriteFileOperation(
             String operationName,
             FileIdentifier fileIdentifier,
-            BeehiveObjectId agentId,
-            BeehiveObjectId predicatedVObjectId,
+            TitanGuid agentId,
+            TitanGuid predicatedVObjectId,
             ClientMetaData clientMetaData,
             long fileOffset, int length) {
         super(operationName, fileIdentifier, agentId, predicatedVObjectId, clientMetaData);
@@ -94,8 +94,8 @@ public class WriteFileOperation extends UpdateOperation {
      */
     public WriteFileOperation(
             FileIdentifier fileIdentifier,
-            BeehiveObjectId clientId,
-            BeehiveObjectId predicatedVObjectId,
+            TitanGuid clientId,
+            TitanGuid predicatedVObjectId,
             ClientMetaData clientMetaData,
             long fileOffset, int length) {
         this(WriteFileOperation.name, fileIdentifier, clientId, predicatedVObjectId, clientMetaData, fileOffset, length);
@@ -110,8 +110,8 @@ public class WriteFileOperation extends UpdateOperation {
     }
 
     @Override
-    public BeehiveObjectId getId() {
-        BeehiveObjectId id = super.getId()
+    public TitanGuid getId() {
+        TitanGuid id = super.getId()
         .add(Long.toString(this.fileOffset).getBytes())
         .add(Integer.toString(this.length).getBytes())
         ;

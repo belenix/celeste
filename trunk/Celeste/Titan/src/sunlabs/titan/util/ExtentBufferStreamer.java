@@ -33,7 +33,7 @@ import java.nio.ByteBuffer;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 
-import sunlabs.titan.BeehiveObjectId;
+import sunlabs.titan.TitanGuidImpl;
 
 /**
  * Given various combinations of {@link BufferableExtent} or an offset and a

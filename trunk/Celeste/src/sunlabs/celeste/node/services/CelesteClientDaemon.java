@@ -61,8 +61,8 @@ import sunlabs.asdf.util.TimeProfiler;
 import sunlabs.asdf.web.XML.XHTML;
 import sunlabs.asdf.web.http.HTTP;
 import sunlabs.celeste.CelesteException;
-import sunlabs.celeste.ResponseMessage;
 import sunlabs.celeste.CelesteException.AccessControlException;
+import sunlabs.celeste.ResponseMessage;
 import sunlabs.celeste.api.CelesteAPI;
 import sunlabs.celeste.client.ClientMetaData;
 import sunlabs.celeste.client.Profile_;
@@ -99,10 +99,11 @@ import sunlabs.celeste.node.services.object.VersionObject;
 import sunlabs.celeste.node.services.object.VersionObjectHandler;
 import sunlabs.celeste.util.ACL;
 import sunlabs.celeste.util.CelesteIO;
-import sunlabs.titan.BeehiveObjectId;
+import sunlabs.titan.TitanGuidImpl;
 import sunlabs.titan.api.BeehiveObject;
 import sunlabs.titan.api.Credential;
 import sunlabs.titan.api.ObjectStore;
+import sunlabs.titan.api.TitanGuid;
 import sunlabs.titan.node.AbstractBeehiveObject;
 import sunlabs.titan.node.BeehiveNode;
 import sunlabs.titan.node.BeehiveObjectPool;
@@ -111,6 +112,7 @@ import sunlabs.titan.node.BeehiveObjectStore.UnacceptableObjectException;
 import sunlabs.titan.node.object.MutableObject;
 import sunlabs.titan.node.services.BeehiveService;
 import sunlabs.titan.node.services.object.CredentialObject;
+import sunlabs.titan.node.services.object.CredentialObjectHandler;
 import sunlabs.titan.util.BufferableExtent;
 import sunlabs.titan.util.BufferableExtentImpl;
 import sunlabs.titan.util.DOLRStatus;
@@ -199,7 +201,7 @@ public class CelesteClientDaemon extends BeehiveService {
             public ClientServer(SocketChannel socket) {
                 super(ClientListener.this.getThreadGroup(), socket.toString());
                 this.socket = socket;
-                this.setName(String.format("%s-%s", CelesteClientDaemon.this.node.getObjectId().toString(), socket.toString()));
+                this.setName(String.format("%s-%s", CelesteClientDaemon.this.node.getNodeId().toString(), socket.toString()));
             }
 
             @Override
@@ -258,15 +260,15 @@ public class CelesteClientDaemon extends BeehiveService {
         @Override
         public void run() {
             try {
-                this.executor = (ThreadPoolExecutor) Executors.newFixedThreadPool(CelesteClientDaemon.this.node.configuration.asInt(CelesteClientDaemon.MaximumClients),
-                        new SimpleThreadFactory(CelesteClientDaemon.this.node.getObjectId() + ":"));
+                this.executor = (ThreadPoolExecutor) Executors.newFixedThreadPool(CelesteClientDaemon.this.node.getConfiguration().asInt(CelesteClientDaemon.MaximumClients),
+                        new SimpleThreadFactory(CelesteClientDaemon.this.node.getNodeId() + ":"));
                 //this.executor.prestartAllCoreThreads();
                 try {
                     ServerSocketChannel serverSocketChannel = ServerSocketChannel.open();
 
                     serverSocketChannel.configureBlocking(true);
-                    serverSocketChannel.socket().bind(new InetSocketAddress(CelesteClientDaemon.this.node.configuration.asInt(CelesteClientDaemon.Port)),
-                            CelesteClientDaemon.this.node.configuration.asInt(CelesteClientDaemon.ClientBacklog));
+                    serverSocketChannel.socket().bind(new InetSocketAddress(CelesteClientDaemon.this.node.getConfiguration().asInt(CelesteClientDaemon.Port)),
+                            CelesteClientDaemon.this.node.getConfiguration().asInt(CelesteClientDaemon.ClientBacklog));
                     serverSocketChannel.socket().setReuseAddress(true);
 
                     while (!interrupted()) {
@@ -751,7 +753,7 @@ public class CelesteClientDaemon extends BeehiveService {
         // Prevent client applications from passing in zero fileNameId fields.
         // Doing such a thing would intrude upon the credential name space.
         // Use newCredential to create credentials.
-        if (operation.getFileIdentifier().getFileId().equals(BeehiveObjectId.ZERO)) {
+        if (operation.getFileIdentifier().getFileId().equals(TitanGuidImpl.ZERO)) {
             throw new CelesteException.IllegalParameterException("File Identifier cannot be zero");
         }
 
@@ -813,7 +815,7 @@ public class CelesteClientDaemon extends BeehiveService {
             }
             timingProfiler.stamp("AObject");
 
-            AnchorObject.Object.Version nextVersion = anchorObjectHandler.makeVersion(new BeehiveObjectId(), 0);
+            AnchorObject.Object.Version nextVersion = anchorObjectHandler.makeVersion(new TitanGuidImpl(), 0);
 
             // Construct a provisional VObject
             VersionObject.Object vObject = versionObjectHandler.create(
@@ -971,8 +973,8 @@ public class CelesteClientDaemon extends BeehiveService {
 
             // Resolve what version object we need to be working with here.
             // If the version object objectId is not specified, then we use the latest one.
-            BeehiveObjectId vObjectId = operation.getVObjectId();
-            if (vObjectId == null || vObjectId.equals(BeehiveObjectId.ZERO)) {
+            TitanGuid vObjectId = operation.getVObjectId();
+            if (vObjectId == null || vObjectId.equals(TitanGuidImpl.ZERO)) {
                 AObjectVersionMapAPI lineariser = this.node.getService(AObjectVersionService.class);
                 AObjectVersionMapAPI.Value currentValue = lineariser.getValue(aObject.getObjectId(), aObject.getAObjectVersionMapParams());
                 lock = currentValue.getLock();
@@ -1114,7 +1116,7 @@ public class CelesteClientDaemon extends BeehiveService {
         // Because Credentials always have a fileId component equal to ZERO,
         // ensure that they cannot be written directly by other applications.
         //
-        if (operation.getFileIdentifier().getFileId().equals(BeehiveObjectId.ZERO)) {
+        if (operation.getFileIdentifier().getFileId().equals(TitanGuidImpl.ZERO)) {
             throw new CelesteException.IllegalParameterException("File Identifier cannot be zero");
         }
         Credential clientCredential = this.getProfile(operation.getClientId());
@@ -1153,7 +1155,7 @@ public class CelesteClientDaemon extends BeehiveService {
                 if (this.log.isLoggable(Level.FINEST)) {
                     this.log.finest("Performing data signature check");
                 }
-                BeehiveObjectId dataId = new BeehiveObjectId(buffer);
+                TitanGuid dataId = new TitanGuidImpl(buffer);
                 this.checkOperationSignature(signature, operation, dataId);
             } else {
                 if (this.log.isLoggable(Level.FINEST)) {
@@ -1207,7 +1209,7 @@ public class CelesteClientDaemon extends BeehiveService {
             // Set up the metadata properties for the yet-to-be-built BlockObjects.
             //
             BeehiveObject.Metadata bObjectMetaData = new AbstractBeehiveObject.Metadata();
-            BeehiveObjectId deleteTokenHash = aObject.getDeleteTokenId();
+            TitanGuid deleteTokenHash = aObject.getDeleteTokenId();
 
             final long start = operation.getFileOffset();
             final int bObjectSize = aObject.getBObjectSize();
@@ -1395,23 +1397,23 @@ public class CelesteClientDaemon extends BeehiveService {
 
             AnchorObject.Object aObject = null;
 
-            AnchorObject anchorObjectHandler = (AnchorObject) this.node.getService(CelesteNode.OBJECT_PKG + ".AnchorObjectHandler");
-            VersionObject versionObjectHandler = (VersionObject) this.node.getService(CelesteNode.OBJECT_PKG + ".VersionObjectHandler");
-            final BlockObject blockObjectHandler = (BlockObject) this.node.getService(CelesteNode.OBJECT_PKG + ".BlockObjectHandler");
+            AnchorObject anchorObjectHandler = (AnchorObject) this.node.getService(AnchorObjectHandler.class);
+            VersionObject versionObjectHandler = (VersionObject) this.node.getService(VersionObjectHandler.class);
+            final BlockObject blockObjectHandler = (BlockObject) this.node.getService(BlockObjectHandler.class);
             timeProfiler.stamp("init");
 
             //
             // Find the file version from which to do the read.
             //
-            BeehiveObjectId vObjectId = operation.getVObjectId();
+            TitanGuid vObjectId = operation.getVObjectId();
             AObjectVersionMapAPI.Value currentVersion = null;
             try {
                 aObject = anchorObjectHandler.retrieve(operation.getFileIdentifier());
 
                 // If the object-id of the VersionObject is not supplied,
                 // we must fetch the current VObject object-id.
-                if (vObjectId == null || vObjectId.equals(BeehiveObjectId.ZERO)) {
-                    AObjectVersionMapAPI lineariser = (AObjectVersionMapAPI) this.node.getService(CelesteNode.SERVICE_PKG + ".AObjectVersionService");
+                if (vObjectId == null || vObjectId.equals(TitanGuidImpl.ZERO)) {
+                    AObjectVersionMapAPI lineariser = (AObjectVersionMapAPI) this.node.getService(AObjectVersionService.class);
                     currentVersion = lineariser.getValue(aObject.getObjectId(), aObject.getAObjectVersionMapParams());
                     VersionObject.Object.Reference vObjectReference = currentVersion.getReference();
                     vObjectId = vObjectReference.getObjectId();
@@ -1611,10 +1613,10 @@ public class CelesteClientDaemon extends BeehiveService {
 
             long stop = operation.getLength();
 
-            AnchorObject anchorObjectHandler = (AnchorObject) this.node.getService(CelesteNode.OBJECT_PKG + ".AnchorObjectHandler");
-            VersionObject versionObjectHandler = (VersionObject) this.node.getService(CelesteNode.OBJECT_PKG + ".VersionObjectHandler");
-            AObjectVersionMapAPI lineariser = (AObjectVersionMapAPI) this.node.getService(CelesteNode.SERVICE_PKG + ".AObjectVersionService");
-            BlockObject blockObjectHandler = (BlockObject) this.node.getService(CelesteNode.OBJECT_PKG + ".BlockObjectHandler");
+            AnchorObject anchorObjectHandler = (AnchorObject) this.node.getService(AnchorObjectHandler.class);
+            VersionObject versionObjectHandler = (VersionObject) this.node.getService(VersionObjectHandler.class);
+            AObjectVersionMapAPI lineariser = (AObjectVersionMapAPI) this.node.getService(AObjectVersionService.class);
+            BlockObject blockObjectHandler = (BlockObject) this.node.getService(BlockObjectHandler.class);
 
             AnchorObject.Object aObject = anchorObjectHandler.retrieve(operation.getFileIdentifier());
 
@@ -1642,7 +1644,7 @@ public class CelesteClientDaemon extends BeehiveService {
             this.checkFileLock(operation, currentValue, aObject, vObject);
 
             if (stop <= vObject.getFileSize()) {
-                BeehiveObjectId deleteTokenId = aObject.getDeleteTokenId();
+                TitanGuid deleteTokenId = aObject.getDeleteTokenId();
 
                 //
                 // The operation here is:  given the end of the file,
@@ -1783,7 +1785,7 @@ public class CelesteClientDaemon extends BeehiveService {
                 //
                 // All that's needed beyond that is to store credential.
                 //
-                CredentialObject handler = (CredentialObject) this.node.getService(CelesteNode.BEEHIVE_OBJECT_PKG + ".CredentialObjectHandler");
+                CredentialObject handler = (CredentialObject) this.node.getService(CredentialObjectHandler.class);
                 assert handler != null;
 
                 handler.storeObject(credential);
@@ -1845,7 +1847,7 @@ public class CelesteClientDaemon extends BeehiveService {
                 //
                 // All that's needed beyond that is to store credential.
                 //
-                CredentialObject handler = (CredentialObject)this.node.getService(CelesteNode.BEEHIVE_OBJECT_PKG + ".CredentialObjectHandler");
+                CredentialObject handler = (CredentialObject)this.node.getService(CredentialObjectHandler.class);
                 assert handler != null;
                 handler.storeObject(credential);
                 return credential.getMetadata();
@@ -1875,10 +1877,10 @@ public class CelesteClientDaemon extends BeehiveService {
 
         TimeProfiler timing = new TimeProfiler(operation.getOperationName());
 
-        final BeehiveObjectId credentialId = operation.getCredentialId();
+        final TitanGuid credentialId = operation.getCredentialId();
 
         try {
-            final CredentialObject handler = (CredentialObject) this.node.getService("sunlabs.titan.node.services.object.CredentialObjectHandler");
+            final CredentialObject handler = (CredentialObject) this.node.getService(CredentialObjectHandler.class);
             assert handler != null;
             Credential credential = handler.retrieve(credentialId);
             if (credential == null)
@@ -1908,9 +1910,9 @@ public class CelesteClientDaemon extends BeehiveService {
         try {
             this.checkOperationSignature(signature, operation);
 
-            AnchorObject anchorObjectHandler = (AnchorObject) this.node.getService(CelesteNode.OBJECT_PKG + ".AnchorObjectHandler");
-            AObjectVersionMapAPI lineariser = (AObjectVersionMapAPI) this.node.getService(CelesteNode.SERVICE_PKG + ".AObjectVersionService");
-            VersionObject versionObjectHandler = (VersionObject)  this.node.getService(CelesteNode.OBJECT_PKG + ".VersionObjectHandler");
+            AnchorObject anchorObjectHandler = (AnchorObject) this.node.getService(AnchorObjectHandler.class);
+            AObjectVersionMapAPI lineariser = (AObjectVersionMapAPI) this.node.getService(AObjectVersionService.class);
+            VersionObject versionObjectHandler = (VersionObject)  this.node.getService(VersionObjectHandler.class);
 
             VersionObject.Object vObject = null;
             AnchorObject.Object aObject = null;
@@ -2022,13 +2024,13 @@ public class CelesteClientDaemon extends BeehiveService {
         try {
             this.checkOperationSignature(signature, operation);
 
-            AnchorObject anchorObjectHandler = (AnchorObject) this.node.getService(CelesteNode.OBJECT_PKG + ".AnchorObjectHandler");
-            AObjectVersionMapAPI lineariser = (AObjectVersionMapAPI) this.node.getService(CelesteNode.SERVICE_PKG + ".AObjectVersionService");
-            VersionObject versionObjectHandler = (VersionObject) this.node.getService(CelesteNode.OBJECT_PKG + ".VersionObjectHandler");
+            AnchorObject anchorObjectHandler = (AnchorObject) this.node.getService(AnchorObjectHandler.class);
+            AObjectVersionMapAPI lineariser = (AObjectVersionMapAPI) this.node.getService(AObjectVersionService.class);
+            VersionObject versionObjectHandler = (VersionObject) this.node.getService(VersionObjectHandler.class);
 
             aObject = anchorObjectHandler.retrieve(operation.getFileIdentifier());
 
-            BeehiveObjectId vObjectId = operation.getVObjectId();
+            TitanGuid vObjectId = operation.getVObjectId();
 
             AObjectVersionMapAPI.Value currentValue = lineariser.getValue(aObject.getObjectId(), aObject.getAObjectVersionMapParams());
             VersionObject.Object.Reference vObjectReference = currentValue.getReference();
@@ -2152,9 +2154,9 @@ public class CelesteClientDaemon extends BeehiveService {
             //
             this.checkOperationSignature(signature, operation);
 
-            AnchorObject anchorObjectHandler = (AnchorObject) this.node.getService(CelesteNode.OBJECT_PKG + ".AnchorObjectHandler");
-            AObjectVersionMapAPI lineariser = (AObjectVersionMapAPI) this.node.getService(CelesteNode.SERVICE_PKG + ".AObjectVersionService");
-            VersionObject versionObjectHandler = (VersionObject) this.node.getService(CelesteNode.OBJECT_PKG + ".VersionObjectHandler");
+            AnchorObject anchorObjectHandler = (AnchorObject) this.node.getService(AnchorObjectHandler.class);
+            AObjectVersionMapAPI lineariser = (AObjectVersionMapAPI) this.node.getService(AObjectVersionService.class);
+            VersionObject versionObjectHandler = (VersionObject) this.node.getService(VersionObjectHandler.class);
 
             AnchorObject.Object aObject = anchorObjectHandler.retrieve(operation.getFileIdentifier());
 
@@ -2244,7 +2246,7 @@ public class CelesteClientDaemon extends BeehiveService {
 
     private ProfileCache credentialCache;
 
-    public Credential getProfile(BeehiveObjectId credentialId)
+    public Credential getProfile(TitanGuid credentialId)
         throws IOException, CelesteException.AccessControlException, CelesteException.NotFoundException, CelesteException.RuntimeException {
 
         // not using get() in the cache but instead manually putting it into
@@ -2267,8 +2269,8 @@ public class CelesteClientDaemon extends BeehiveService {
      * Throws an {@link CelesteException.VerificationException} if the signature does not validate successfully.
      * </p>
      * @param operation the {@link AbstractCelesteOperation} from which the signing credential is taken.
-     * @param signature the {@link Credential.Signature} on the operation and any additional {@link BeehiveObjectId} instances as parameters.
-     * @param objectIds an array of {@link BeehiveObjectId} instances which are also used as data to verify with the signature.
+     * @param signature the {@link Credential.Signature} on the operation and any additional {@link TitanGuid} instances as parameters.
+     * @param objectIds an array of {@link TitanGuid} instances which are also used as data to verify with the signature.
      *
      * @throws CelesteException.VerificationException if the signature does not verify
      * @throws CelesteException.CredentialException
@@ -2277,7 +2279,7 @@ public class CelesteClientDaemon extends BeehiveService {
      * @throws CelesteException.NotFoundException
      * @throws IOException
      */
-    public void checkOperationSignature(Credential.Signature signature, AbstractCelesteOperation operation, BeehiveObjectId...objectIds)
+    public void checkOperationSignature(Credential.Signature signature, AbstractCelesteOperation operation, TitanGuid...objectIds)
     throws CelesteException.VerificationException, CelesteException.CredentialException, CelesteException.RuntimeException,
     CelesteException.AccessControlException, CelesteException.NotFoundException, IOException {
 
@@ -2289,7 +2291,7 @@ public class CelesteClientDaemon extends BeehiveService {
                         throw new CelesteException.CredentialException("Credential object-id is null.");
                     }
                     Credential clientCredential = this.getProfile(operation.getClientId());
-                    BeehiveObjectId[] ids = new BeehiveObjectId[objectIds.length + 1];
+                    TitanGuid[] ids = new TitanGuid[objectIds.length + 1];
                     ids[0] = operation.getId();
                     for (int i = 0; i < objectIds.length; i++) {
                         ids[i+1] = objectIds[i];

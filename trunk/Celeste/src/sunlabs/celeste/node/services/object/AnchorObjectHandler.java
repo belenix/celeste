@@ -1,5 +1,5 @@
 /*
- * Copyright 2007-2008 Sun Microsystems, Inc. All Rights Reserved.
+ * Copyright 2007-2010 Oracle. All Rights Reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER
  *
  * This code is free software; you can redistribute it and/or modify
@@ -17,11 +17,10 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
  * 02110-1301 USA
  *
- * Please contact Sun Microsystems, Inc., 16 Network Circle, Menlo
- * Park, CA 94025 or visit www.sun.com if you need additional
- * information or have any questions.
+ * Please contact Oracle Corporation, 500 Oracle Parkway, Redwood Shores, CA 94065
+ * or visit www.oracle.com if you need additional information or
+ * have any questions.
  */
-
 package sunlabs.celeste.node.services.object;
 
 import java.io.IOException;
@@ -44,15 +43,17 @@ import sunlabs.celeste.FileIdentifier;
 import sunlabs.celeste.client.ReplicationParameters;
 import sunlabs.celeste.node.services.AObjectVersionService;
 import sunlabs.celeste.node.services.api.AObjectVersionMapAPI;
-import sunlabs.titan.BeehiveObjectId;
+import sunlabs.titan.TitanGuidImpl;
 import sunlabs.titan.api.BeehiveObject;
 import sunlabs.titan.api.ObjectStore;
+import sunlabs.titan.api.TitanGuid;
+import sunlabs.titan.api.TitanNodeId;
 import sunlabs.titan.node.AbstractBeehiveObject;
 import sunlabs.titan.node.BeehiveMessage;
+import sunlabs.titan.node.BeehiveMessage.RemoteException;
 import sunlabs.titan.node.BeehiveNode;
 import sunlabs.titan.node.BeehiveObjectPool;
 import sunlabs.titan.node.BeehiveObjectStore;
-import sunlabs.titan.node.BeehiveMessage.RemoteException;
 import sunlabs.titan.node.BeehiveObjectStore.DeletedObjectException;
 import sunlabs.titan.node.BeehiveObjectStore.NoSpaceException;
 import sunlabs.titan.node.BeehiveObjectStore.NotFoundException;
@@ -87,10 +88,10 @@ public final class AnchorObjectHandler extends AbstractObjectHandler implements 
         public static class Version implements AnchorObject.Object.Version {
             private final static long serialVersionUID = 1L;
 
-            private final BeehiveObjectId generationId;
+            private final TitanGuid generationId;
             private final long serialNumber;
 
-            protected Version(BeehiveObjectId generationId, long serialNumber) {
+            protected Version(TitanGuid generationId, long serialNumber) {
                 this.generationId = generationId;
                 this.serialNumber = serialNumber;
             }
@@ -99,11 +100,11 @@ public final class AnchorObjectHandler extends AbstractObjectHandler implements 
                 if (string == null)
                     throw new IllegalArgumentException("AObject version cannot be null");
                 String[] tokens = string.split("/");
-                this.generationId = tokens[0].equals("null") ? null : new BeehiveObjectId(tokens[0]);
+                this.generationId = tokens[0].equals("null") ? null : new TitanGuidImpl(tokens[0]);
                 this.serialNumber = Long.parseLong(tokens[1]);
             }
 
-            public BeehiveObjectId getGeneration() {
+            public TitanGuid getGeneration() {
                 return this.generationId;
             }
 
@@ -175,7 +176,7 @@ public final class AnchorObjectHandler extends AbstractObjectHandler implements 
         private AObjectVersionMapAPI.Parameters aObjectVersionMapParams;
 
         public AObject(FileIdentifier fileIdentifier, ReplicationParameters replicationParams,
-                BeehiveObjectId deleteTokenId, long timeToLive, int bObjectSize, boolean signWrites) {
+                TitanGuid deleteTokenId, long timeToLive, int bObjectSize, boolean signWrites) {
             super(AnchorObjectHandler.class, deleteTokenId, timeToLive);
 
             this.replicationParams = replicationParams;
@@ -193,11 +194,11 @@ public final class AnchorObjectHandler extends AbstractObjectHandler implements 
         }
 
         @Override
-        public BeehiveObjectId getDataId() {
-            return new BeehiveObjectId(Integer.toString(this.bObjectSize).getBytes()).add(this.fileIdentifier.getObjectId());
+        public TitanGuid getDataId() {
+            return new TitanGuidImpl(Integer.toString(this.bObjectSize).getBytes()).add(this.fileIdentifier.getObjectId());
         }
 
-        public void delete(BeehiveObjectId profferedDeleteToken, long timeToLive) throws BeehiveObjectStore.DeleteTokenException {
+        public void delete(TitanGuid profferedDeleteToken, long timeToLive) throws BeehiveObjectStore.DeleteTokenException {
             DeleteableObject.ObjectDeleteHelper(this, profferedDeleteToken, timeToLive);
         }
 
@@ -245,16 +246,16 @@ public final class AnchorObjectHandler extends AbstractObjectHandler implements 
     }
 
     // This is a per-object lock signaling that an object is undergoing the delete process.
-    private ObjectLock<BeehiveObjectId> publishObjectDeleteLocks;
+    private ObjectLock<TitanGuid> publishObjectDeleteLocks;
 
     // This is a lock signaling that the deleteLocalObject() method is already deleting the specified object.
-    private ObjectLock<BeehiveObjectId> deleteLocalObjectLocks;
+    private ObjectLock<TitanGuid> deleteLocalObjectLocks;
 
     public AnchorObjectHandler(BeehiveNode node)
     throws MalformedObjectNameException, NotCompliantMBeanException, InstanceAlreadyExistsException, MBeanRegistrationException {
         super(node, AnchorObjectHandler.name, "Celeste Anchor Object Handler");
-        this.publishObjectDeleteLocks = new ObjectLock<BeehiveObjectId>();
-        this.deleteLocalObjectLocks = new ObjectLock<BeehiveObjectId>();
+        this.publishObjectDeleteLocks = new ObjectLock<TitanGuid>();
+        this.deleteLocalObjectLocks = new ObjectLock<TitanGuid>();
     }
     
     @Override
@@ -263,10 +264,10 @@ public final class AnchorObjectHandler extends AbstractObjectHandler implements 
     }
 
     /**
-     * Given a generation-id (as a {@link BeehiveObjectId} and a serial-number,
+     * Given a generation-id (as a {@link TitanGuid} and a serial-number,
      * generate and return a {@link AnchorObject.Object}.
      */
-    public AnchorObject.Object.Version makeVersion(BeehiveObjectId generationId, long serialNumber) {
+    public AnchorObject.Object.Version makeVersion(TitanGuid generationId, long serialNumber) {
         return new AObject.Version(generationId, serialNumber);
     }
 
@@ -284,7 +285,7 @@ public final class AnchorObjectHandler extends AbstractObjectHandler implements 
         // Reply signifying success, the value of the Publish.Response() is inconsequential.
         // See the storeObject() method below.
         BeehiveMessage result = message.composeReply(this.node.getNodeAddress(),
-                new PublishDaemon.PublishObject.Response(new HashSet<BeehiveObjectId>(publishRequest.getObjectsToPublish().keySet())));
+                new PublishDaemon.PublishObject.Response(new HashSet<TitanGuid>(publishRequest.getObjectsToPublish().keySet())));
 
         if (message.isTraced()) {
             this.log.finest("reply %s %s", result.getStatus(), result.traceReport());
@@ -306,14 +307,14 @@ public final class AnchorObjectHandler extends AbstractObjectHandler implements 
 
     public AnchorObject.Object create(FileIdentifier fileIdentifier,
             ReplicationParameters replicationParams,
-            BeehiveObjectId deleteTokenId,
+            TitanGuid deleteTokenId,
             long timeToLive,
             int bObjectSize,
             boolean signWrites) {
         return new AObject(fileIdentifier, replicationParams, deleteTokenId, timeToLive, bObjectSize, signWrites);
     }
 
-    public DOLRStatus delete(FileIdentifier fileIdentifier, BeehiveObjectId deletionToken, long timeToLive)
+    public DOLRStatus delete(FileIdentifier fileIdentifier, TitanGuid deletionToken, long timeToLive)
     throws IOException, BeehiveObjectStore.NoSpaceException {
         return this.deleteObject(fileIdentifier.getObjectId(), deletionToken, timeToLive);
     }
@@ -328,7 +329,7 @@ public final class AnchorObjectHandler extends AbstractObjectHandler implements 
         return RetrievableObject.retrieveLocalObject(this, message);
     }
 
-    public AObject retrieve(BeehiveObjectId objectId)
+    public AObject retrieve(TitanGuid objectId)
     throws BeehiveObjectStore.NotFoundException, BeehiveObjectStore.DeletedObjectException, ClassCastException {
         return RetrievableObject.retrieve(this, AObject.class, objectId);
     }
@@ -371,7 +372,7 @@ public final class AnchorObjectHandler extends AbstractObjectHandler implements 
         return message.composeReply(this.node.getNodeAddress());
     }
 
-    public DOLRStatus deleteObject(BeehiveObjectId objectId, BeehiveObjectId profferedDeletionToken, long timeToLive)
+    public DOLRStatus deleteObject(TitanGuid objectId, TitanGuid profferedDeletionToken, long timeToLive)
     throws BeehiveObjectStore.NoSpaceException {
 
         if (this.log.isLoggable(Level.FINE)) {
@@ -383,7 +384,7 @@ public final class AnchorObjectHandler extends AbstractObjectHandler implements 
         return reply.getStatus();
     }
 
-    public BeehiveObject createAntiObject(DeleteableObject.Handler.Object object, BeehiveObjectId profferedDeleteToken, long timeToLive)
+    public BeehiveObject createAntiObject(DeleteableObject.Handler.Object object, TitanGuid profferedDeleteToken, long timeToLive)
     throws IOException, ClassCastException, BeehiveObjectStore.NoSpaceException, BeehiveObjectStore.DeleteTokenException {
 
         AnchorObject.Object aObject = AnchorObject.Object.class.cast(object);
@@ -453,7 +454,7 @@ public final class AnchorObjectHandler extends AbstractObjectHandler implements 
         return new XHTML.Div("nothing here");
     }
 
-    public ObjectLock<BeehiveObjectId> getPublishObjectDeleteLocks() {
+    public ObjectLock<TitanGuid> getPublishObjectDeleteLocks() {
         return publishObjectDeleteLocks;
     }
 
@@ -466,8 +467,9 @@ public final class AnchorObjectHandler extends AbstractObjectHandler implements 
             AnchorObject.Object aObject = this.retrieve(request.getObjectId());
 
             // XXX It would be good to have the Request contain a Map and not a Set, and then just use keySet().
-            Set<BeehiveObjectId> excludeNodes = new HashSet<BeehiveObjectId>();
-            for (BeehiveObjectId publisher : request.getExcludedNodes()) {
+            // XXX Why do this at all, just use the set.
+            Set<TitanNodeId> excludeNodes = new HashSet<TitanNodeId>();
+            for (TitanNodeId publisher : request.getExcludedNodes()) {
                 excludeNodes.add(publisher);                
             }
             if (this.log.isLoggable(Level.FINE)) {

@@ -34,14 +34,15 @@ import sunlabs.celeste.client.ClientMetaData;
 import sunlabs.celeste.client.ReplicationParameters;
 import sunlabs.celeste.node.CelesteACL;
 import sunlabs.celeste.node.services.CelesteClientDaemon;
-import sunlabs.titan.BeehiveObjectId;
+import sunlabs.titan.TitanGuidImpl;
+import sunlabs.titan.api.TitanGuid;
 
 public class NewCredentialOperation extends UpdateOperation {
     private static final long serialVersionUID = 1L;
 
     public static final String name = "NewCredential";
 
-    private BeehiveObjectId credentialId;
+    private TitanGuid credentialId;
     private ReplicationParameters replicationParams;
 
     /**
@@ -52,24 +53,24 @@ public class NewCredentialOperation extends UpdateOperation {
      * @param deleteTokenId
      * @param replicationParams
      */
-    public NewCredentialOperation(BeehiveObjectId credentialId, BeehiveObjectId deleteTokenId, String replicationParams) {
+    public NewCredentialOperation(TitanGuid credentialId, TitanGuid deleteTokenId, String replicationParams) {
         this(credentialId, deleteTokenId, new ReplicationParameters(replicationParams));
     }
 
-    public NewCredentialOperation(BeehiveObjectId credentialId, BeehiveObjectId deleteTokenId, ReplicationParameters replicationParams) {
+    public NewCredentialOperation(TitanGuid credentialId, TitanGuid deleteTokenId, ReplicationParameters replicationParams) {
         //
         // A credential defines its own name space; hence the first use of
         // credentialId below.  As a bootstrapping measure, it's created under
         // its own authority, which accounts for the second use.
         //
-        super(NewCredentialOperation.name, new FileIdentifier(credentialId, BeehiveObjectId.ZERO), credentialId, null, new ClientMetaData());
+        super(NewCredentialOperation.name, new FileIdentifier(credentialId, TitanGuidImpl.ZERO), credentialId, null, new ClientMetaData());
         this.credentialId = credentialId;
         this.replicationParams = replicationParams;
     }
 
     @Override
-    public BeehiveObjectId getId() {
-        BeehiveObjectId id = super.getId()
+    public TitanGuid getId() {
+        TitanGuid id = super.getId()
         .add(this.credentialId)
         .add(this.replicationParams.toByteArray())
         ;
@@ -94,7 +95,7 @@ public class NewCredentialOperation extends UpdateOperation {
         return result;
     }
 
-    public BeehiveObjectId getProfileId() {
+    public TitanGuid getProfileId() {
         return this.credentialId;
     }
 

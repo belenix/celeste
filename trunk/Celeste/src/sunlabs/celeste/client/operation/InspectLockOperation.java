@@ -8,7 +8,7 @@ import sunlabs.celeste.CelesteException;
 import sunlabs.celeste.FileIdentifier;
 import sunlabs.celeste.node.CelesteACL.CelesteOps;
 import sunlabs.celeste.node.services.CelesteClientDaemon;
-import sunlabs.titan.BeehiveObjectId;
+import sunlabs.titan.api.TitanGuid;
 
 public class InspectLockOperation extends AbstractCelesteOperation {
     private static final long serialVersionUID = 1L;
@@ -16,10 +16,10 @@ public class InspectLockOperation extends AbstractCelesteOperation {
 
     /**
      * @param fileIdentifier The {@link FileIdentifier} of the file lock to inspect.
-     * @param clientId The {@link BeehiveObjectId} of the client's credential.
-     * @param vObjectId The {@link BeehiveObjectId} predicate specifying the expected recent version of the file.
+     * @param clientId The {@link TitanGuid} of the client's credential.
+     * @param vObjectId The {@link TitanGuid} predicate specifying the expected recent version of the file.
      */
-    public InspectLockOperation(FileIdentifier fileIdentifier, BeehiveObjectId clientId) {
+    public InspectLockOperation(FileIdentifier fileIdentifier, TitanGuid clientId) {
         super(InspectLockOperation.name, fileIdentifier, clientId, null);
     }
 

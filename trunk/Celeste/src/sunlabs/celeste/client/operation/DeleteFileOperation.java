@@ -32,22 +32,22 @@ import sunlabs.celeste.CelesteException;
 import sunlabs.celeste.FileIdentifier;
 import sunlabs.celeste.node.CelesteACL;
 import sunlabs.celeste.node.services.CelesteClientDaemon;
-import sunlabs.titan.BeehiveObjectId;
+import sunlabs.titan.api.TitanGuid;
 
 public class DeleteFileOperation extends AbstractCelesteOperation {
     private final static long serialVersionUID = 1L;
     public final static String name = "delete-file";
 
-    private BeehiveObjectId deleteToken;
+    private TitanGuid deleteToken;
     private long timeToLive;
 
-    public DeleteFileOperation(FileIdentifier fileIdentifier, BeehiveObjectId clientId, BeehiveObjectId deleteToken, long timeToLive) {
+    public DeleteFileOperation(FileIdentifier fileIdentifier, TitanGuid clientId, TitanGuid deleteToken, long timeToLive) {
         super(DeleteFileOperation.name, fileIdentifier, clientId, null);
         this.deleteToken = deleteToken;
         this.timeToLive = timeToLive;
     }
 
-    public BeehiveObjectId getDeleteToken() {
+    public TitanGuid getDeleteToken() {
         return this.deleteToken;
     }
     
@@ -56,8 +56,8 @@ public class DeleteFileOperation extends AbstractCelesteOperation {
     }
     
     @Override
-    public BeehiveObjectId getId() {
-        BeehiveObjectId id = super.getId()
+    public TitanGuid getId() {
+        TitanGuid id = super.getId()
         .add(this.deleteToken);
         return id;
     }

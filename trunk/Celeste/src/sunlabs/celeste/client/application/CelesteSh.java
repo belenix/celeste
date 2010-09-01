@@ -70,9 +70,10 @@ import sunlabs.celeste.client.operation.UnlockFileOperation;
 import sunlabs.celeste.client.operation.WriteFileOperation;
 import sunlabs.celeste.node.CelesteACL;
 import sunlabs.celeste.node.services.api.AObjectVersionMapAPI;
-import sunlabs.titan.BeehiveObjectId;
+import sunlabs.titan.api.TitanGuid;
 import sunlabs.titan.Copyright;
 import sunlabs.titan.Release;
+import sunlabs.titan.TitanGuidImpl;
 import sunlabs.titan.api.Credential;
 import sunlabs.titan.node.services.api.BeehiveExtension;
 import sunlabs.titan.util.ExtentBufferStreamer;
@@ -82,14 +83,14 @@ import sunlabs.titan.util.OrderedProperties;
  * This is a command line Celeste client interface.
  */
 public class CelesteSh {
-    private static BeehiveObjectId parseObjectId(String value) {
+    private static TitanGuid parseObjectId(String value) {
         if (value.equals("null"))
             return null;
 
-        if (BeehiveObjectId.IsValid(value)) {
-            return new BeehiveObjectId(value);
+        if (TitanGuidImpl.IsValid(value)) {
+            return new TitanGuidImpl(value);
         }
-        return new BeehiveObjectId(value.getBytes());
+        return new TitanGuidImpl(value.getBytes());
     }
     
     private static void writeNamedFile(String fileName, byte[] data)
@@ -169,7 +170,7 @@ public class CelesteSh {
         this.properties.setProperty("verbose", "false");
     }
 
-    private static Credential getCredential(CelesteAPI celeste, BeehiveObjectId credentialId) throws IOException, Credential.Exception, Exception {
+    private static Credential getCredential(CelesteAPI celeste, TitanGuid credentialId) throws IOException, Credential.Exception, Exception {
         return celeste.readCredential(new ReadProfileOperation(credentialId));
     }
 
@@ -269,14 +270,14 @@ public class CelesteSh {
                 }
             }
             String requestorName = options.pop();
-            BeehiveObjectId requestorId = parseObjectId(requestorName);
+            TitanGuid requestorId = parseObjectId(requestorName);
             String requestorPassword = options.pop();
             String nameSpaceName = options.pop();
-            BeehiveObjectId nameSpaceId = parseObjectId(nameSpaceName);
+            TitanGuid nameSpaceId = parseObjectId(nameSpaceName);
             String nameSpacePassword = options.pop();
-            BeehiveObjectId fileId = parseObjectId(options.pop());
-            BeehiveObjectId ownerId = parseObjectId(options.pop());
-            BeehiveObjectId groupId = parseObjectId(options.pop());
+            TitanGuid fileId = parseObjectId(options.pop());
+            TitanGuid ownerId = parseObjectId(options.pop());
+            TitanGuid groupId = parseObjectId(options.pop());
             String userSuppliedData = options.pop();
             String replicationParams = options.pop();
             int bObjectSize = Integer.parseInt(options.pop());
@@ -293,8 +294,8 @@ public class CelesteSh {
                 return -1;
             }
 
-            BeehiveObjectId deleteToken = new BeehiveObjectId((nameSpaceId.toString() + fileId.toString() + userSuppliedData).getBytes());
-            BeehiveObjectId deleteTokenId = deleteToken.getObjectId();
+            TitanGuid deleteToken = new TitanGuidImpl((nameSpaceId.toString() + fileId.toString() + userSuppliedData).getBytes());
+            TitanGuid deleteTokenId = deleteToken.getGuid();
 
             ClientMetaData clientMetaData = new ClientMetaData();
 
@@ -364,7 +365,7 @@ public class CelesteSh {
             }
 
             Credential credential = new Profile_(nameSpaceName, passphrase.toCharArray());
-            NewNameSpaceOperation operation = new NewNameSpaceOperation(credential.getObjectId(), BeehiveObjectId.ZERO, replicationParams);
+            NewNameSpaceOperation operation = new NewNameSpaceOperation(credential.getObjectId(), TitanGuidImpl.ZERO, replicationParams);
             Credential.Signature signature = credential.sign(passphrase.toCharArray(), operation.getId());
 
             this.celeste.newNameSpace(operation, signature, credential);
@@ -396,7 +397,7 @@ public class CelesteSh {
             }
 
             Credential credential = new Profile_(credentialName, passphrase.toCharArray());
-            NewCredentialOperation operation = new NewCredentialOperation(credential.getObjectId(), BeehiveObjectId.ZERO, replicationParams);
+            NewCredentialOperation operation = new NewCredentialOperation(credential.getObjectId(), TitanGuidImpl.ZERO, replicationParams);
             Credential.Signature signature = credential.sign(passphrase.toCharArray(), operation.getId());
 
             this.celeste.newCredential(operation, signature, credential);
@@ -431,7 +432,7 @@ public class CelesteSh {
 //            }
 //
 //            Profile_ profile = new Profile_(file, passphrase.toCharArray());
-//            NewCredentialOperation operation = new NewCredentialOperation(profile.getObjectId(), BeehiveObjectId.ZERO, replicationParams);
+//            NewCredentialOperation operation = new NewCredentialOperation(profile.getObjectId(), TitanGuid.ZERO, replicationParams);
 //            CredentialOperations.Signature signature = profile.sign(passphrase.toCharArray(), operation.getId());
 //
 //            StorageMessage reply = this.celeste.newCredential(operation, signature, profile);
@@ -460,10 +461,10 @@ public class CelesteSh {
         long offset = 0;
         int length = -1;
         try {
-            BeehiveObjectId readerId = parseObjectId(options.pop());
+            TitanGuid readerId = parseObjectId(options.pop());
             String readerPassword =options.pop();
-            BeehiveObjectId nameSpaceId = parseObjectId(options.pop());
-            BeehiveObjectId fileId = parseObjectId(options.pop());
+            TitanGuid nameSpaceId = parseObjectId(options.pop());
+            TitanGuid fileId = parseObjectId(options.pop());
             if (!options.empty()) {
                 offset = Long.parseLong(options.pop());
             }
@@ -532,10 +533,10 @@ public class CelesteSh {
         }
 
         try {
-            BeehiveObjectId readerId = parseObjectId(options.pop());
+            TitanGuid readerId = parseObjectId(options.pop());
             String readerPassword = options.pop();
-            BeehiveObjectId nameSpaceId = parseObjectId(options.pop());
-            BeehiveObjectId fileId = parseObjectId(options.pop());
+            TitanGuid nameSpaceId = parseObjectId(options.pop());
+            TitanGuid fileId = parseObjectId(options.pop());
 
             if (!options.empty()) {
                 blockFactor = Integer.parseInt(options.pop());
@@ -565,7 +566,7 @@ public class CelesteSh {
 
             if (length < 0)
             	length = fileSize;
-            BeehiveObjectId versionObjectId = null;
+            TitanGuid versionObjectId = null;
 
             OutputStream fout = dataOutputFileName.equals("-") ? System.out : new FileOutputStream(dataOutputFileName);
 
@@ -612,11 +613,11 @@ public class CelesteSh {
         }
 
         try {
-            BeehiveObjectId readerId = parseObjectId(options.pop());
+            TitanGuid readerId = parseObjectId(options.pop());
             String readerPassword = options.pop();
             String[] urls = options.pop().split(",");
-            BeehiveObjectId nameSpaceId = parseObjectId(options.pop());
-            BeehiveObjectId fileId = parseObjectId(options.pop());
+            TitanGuid nameSpaceId = parseObjectId(options.pop());
+            TitanGuid fileId = parseObjectId(options.pop());
             
         	List<String> argList = new LinkedList<String>();
             while (!options.empty()) {
@@ -672,11 +673,11 @@ public class CelesteSh {
             return -1;
         }
         try {
-            BeehiveObjectId readerId = parseObjectId(options.pop());
+            TitanGuid readerId = parseObjectId(options.pop());
             String readerPassword = options.pop();
-            BeehiveObjectId nameSpaceId = parseObjectId(options.pop());
-            BeehiveObjectId fileId = parseObjectId(options.pop());
-            BeehiveObjectId vObjectId = parseObjectId(options.pop());
+            TitanGuid nameSpaceId = parseObjectId(options.pop());
+            TitanGuid fileId = parseObjectId(options.pop());
+            TitanGuid vObjectId = parseObjectId(options.pop());
             long offset = Long.parseLong(options.pop());
             int length = Integer.parseInt(options.pop());
             String output = options.pop();
@@ -736,10 +737,10 @@ public class CelesteSh {
         boolean signatureMustIncludeData = true;
 
         try {
-            BeehiveObjectId clientId = parseObjectId(options.pop());
+            TitanGuid clientId = parseObjectId(options.pop());
             String passphrase = options.pop();
-            BeehiveObjectId nameSpaceId = parseObjectId(options.pop());
-            BeehiveObjectId fileId = parseObjectId(options.pop());
+            TitanGuid nameSpaceId = parseObjectId(options.pop());
+            TitanGuid fileId = parseObjectId(options.pop());
             long startByte = Long.parseLong(options.pop());
 
             if (!options.empty()) {
@@ -755,7 +756,7 @@ public class CelesteSh {
 
             ResponseMessage a = this.celeste.inspectFile(inspect);
             OrderedProperties metadata = a.getMetadata();
-            BeehiveObjectId latestVObjectId = new BeehiveObjectId(metadata.getProperty(CelesteAPI.VOBJECTID_NAME));
+            TitanGuid latestVObjectId = new TitanGuidImpl(metadata.getProperty(CelesteAPI.VOBJECTID_NAME));
             signatureMustIncludeData = Boolean.parseBoolean(metadata.getProperty(CelesteAPI.WRITE_SIGNATURE_INCLUDES_DATA, "true"));
 
             Credential clientCredential = CelesteSh.getCredential(this.celeste, clientId);
@@ -768,7 +769,7 @@ public class CelesteSh {
 
             Credential.Signature signature;
             if (signatureMustIncludeData) {
-                signature = clientCredential.sign(passphrase.toCharArray(), operation.getId(), new BeehiveObjectId(data));
+                signature = clientCredential.sign(passphrase.toCharArray(), operation.getId(), new TitanGuidImpl(data));
             } else {
                 signature = clientCredential.sign(passphrase.toCharArray(), operation.getId());
             }
@@ -803,10 +804,10 @@ public class CelesteSh {
       String fileName = "-";
 
       try {
-          BeehiveObjectId requestorId = parseObjectId(options.pop());
+          TitanGuid requestorId = parseObjectId(options.pop());
           String passphrase = options.pop();
-          BeehiveObjectId nameSpaceId = parseObjectId(options.pop());
-          BeehiveObjectId fileId = parseObjectId(options.pop());
+          TitanGuid nameSpaceId = parseObjectId(options.pop());
+          TitanGuid fileId = parseObjectId(options.pop());
           long startByte = Long.parseLong(options.pop());
           int chunkFactor = 2;
 
@@ -818,7 +819,7 @@ public class CelesteSh {
           InspectFileOperation inspect = new InspectFileOperation(fileIdentifier, requestorId);
           ResponseMessage inspection = this.celeste.inspectFile(inspect);
           OrderedProperties metadata = inspection.getMetadata();
-          BeehiveObjectId latestVObjectId = new BeehiveObjectId(metadata.getProperty(CelesteAPI.VOBJECTID_NAME));
+          TitanGuid latestVObjectId = new TitanGuidImpl(metadata.getProperty(CelesteAPI.VOBJECTID_NAME));
 
           boolean signatureMustIncludeData = Boolean.parseBoolean(metadata.getProperty(CelesteAPI.WRITE_SIGNATURE_INCLUDES_DATA, "true"));
 
@@ -845,12 +846,12 @@ public class CelesteSh {
 
               Credential.Signature signature;
               if (signatureMustIncludeData) {
-                  signature = clientCredential.sign(passphrase.toCharArray(), operation.getId(), new BeehiveObjectId(data));
+                  signature = clientCredential.sign(passphrase.toCharArray(), operation.getId(), new TitanGuidImpl(data));
               } else {
                   signature = clientCredential.sign(passphrase.toCharArray(), operation.getId());
               }
               OrderedProperties reply = this.celeste.writeFile(operation, signature, data);
-              latestVObjectId = new BeehiveObjectId(reply.getProperty(CelesteAPI.VOBJECTID_NAME));
+              latestVObjectId = new TitanGuidImpl(reply.getProperty(CelesteAPI.VOBJECTID_NAME));
               startByte += nread;
           }
 
@@ -878,10 +879,10 @@ public class CelesteSh {
 
        try {
 //    	   String metaDataFileName = null;
-           BeehiveObjectId requestorId = parseObjectId(options.pop());
+           TitanGuid requestorId = parseObjectId(options.pop());
            String passphrase = options.pop();
-           BeehiveObjectId nameSpaceId = parseObjectId(options.pop());
-           BeehiveObjectId fileId = parseObjectId(options.pop());
+           TitanGuid nameSpaceId = parseObjectId(options.pop());
+           TitanGuid fileId = parseObjectId(options.pop());
            long startByte = Long.parseLong(options.pop());
            int bufferFactor = Integer.parseInt(options.pop());
 
@@ -897,7 +898,7 @@ public class CelesteSh {
            InspectFileOperation inspect = new InspectFileOperation(fileIdentifier, requestorId);
            ResponseMessage inspection = this.celeste.inspectFile(inspect);
            OrderedProperties metadata = inspection.getMetadata();
-           BeehiveObjectId latestVObjectId = new BeehiveObjectId(metadata.getProperty(CelesteAPI.VOBJECTID_NAME));
+           TitanGuid latestVObjectId = new TitanGuidImpl(metadata.getProperty(CelesteAPI.VOBJECTID_NAME));
 
            boolean signatureMustIncludeData = Boolean.parseBoolean(metadata.getProperty(CelesteAPI.WRITE_SIGNATURE_INCLUDES_DATA, "true"));
 
@@ -923,12 +924,12 @@ public class CelesteSh {
 
                Credential.Signature signature;
                if (signatureMustIncludeData) {
-                   signature = clientCredential.sign(passphrase.toCharArray(), operation.getId(), new BeehiveObjectId(data));
+                   signature = clientCredential.sign(passphrase.toCharArray(), operation.getId(), new TitanGuidImpl(data));
                } else {
                    signature = clientCredential.sign(passphrase.toCharArray(), operation.getId());
                }
                OrderedProperties reply = this.celeste.writeFile(operation, signature, data);
-               latestVObjectId = new BeehiveObjectId(reply.getProperty(CelesteAPI.VOBJECTID_NAME));
+               latestVObjectId = new TitanGuidImpl(reply.getProperty(CelesteAPI.VOBJECTID_NAME));
                startByte += nread;
            }
 
@@ -977,14 +978,14 @@ public class CelesteSh {
             return -1;
         }
         try {
-            BeehiveObjectId requestorId = parseObjectId(options.pop());
+            TitanGuid requestorId = parseObjectId(options.pop());
             String requestorPassword = options.pop();
-            BeehiveObjectId nameSpaceId = parseObjectId(options.pop());
-            BeehiveObjectId fileId = parseObjectId(options.pop());
+            TitanGuid nameSpaceId = parseObjectId(options.pop());
+            TitanGuid fileId = parseObjectId(options.pop());
             String userSuppliedData = options.pop();
             long timeToLive = Long.parseLong(options.pop());
 
-            BeehiveObjectId deleteToken = new BeehiveObjectId((nameSpaceId.toString() + fileId.toString() + userSuppliedData).getBytes());
+            TitanGuid deleteToken = new TitanGuidImpl((nameSpaceId.toString() + fileId.toString() + userSuppliedData).getBytes());
 
             DeleteFileOperation operation = new DeleteFileOperation(new FileIdentifier(nameSpaceId, fileId), requestorId, deleteToken, timeToLive);
 
@@ -1014,11 +1015,11 @@ public class CelesteSh {
         }
 
         try {
-            BeehiveObjectId requestorId = parseObjectId(options.pop());
+            TitanGuid requestorId = parseObjectId(options.pop());
             String requestorPassword = options.pop();
-            BeehiveObjectId nameSpaceId = parseObjectId(options.pop());
-            BeehiveObjectId fileId = parseObjectId(options.pop());
-            BeehiveObjectId vObjectId = parseObjectId(options.pop());
+            TitanGuid nameSpaceId = parseObjectId(options.pop());
+            TitanGuid fileId = parseObjectId(options.pop());
+            TitanGuid vObjectId = parseObjectId(options.pop());
             String clientMetaDataFile = options.pop();
             String celesteMetaDataFile = options.pop();
 
@@ -1055,10 +1056,10 @@ public class CelesteSh {
         }
 
         try {
-            BeehiveObjectId requestorId = parseObjectId(options.pop());
+            TitanGuid requestorId = parseObjectId(options.pop());
             String requestorPassword = options.pop();
-            BeehiveObjectId nameSpaceId = parseObjectId(options.pop());
-            BeehiveObjectId fileId = parseObjectId(options.pop());
+            TitanGuid nameSpaceId = parseObjectId(options.pop());
+            TitanGuid fileId = parseObjectId(options.pop());
 
             InspectLockOperation operation = new InspectLockOperation(new FileIdentifier(nameSpaceId, fileId), requestorId);
 
@@ -1091,10 +1092,10 @@ public class CelesteSh {
         String celesteMetaDataFile = null;
 
         try {
-            BeehiveObjectId requestorId = parseObjectId(options.pop());
+            TitanGuid requestorId = parseObjectId(options.pop());
             String requestorPassword = options.pop();
-            BeehiveObjectId nameSpaceId = parseObjectId(options.pop());
-            BeehiveObjectId fileId = parseObjectId(options.pop());
+            TitanGuid nameSpaceId = parseObjectId(options.pop());
+            TitanGuid fileId = parseObjectId(options.pop());
             
             String token = options.pop();
             if (token.compareTo("null") == 0)
@@ -1108,7 +1109,7 @@ public class CelesteSh {
             InspectFileOperation inspect = new InspectFileOperation(fileIdentifier, requestorId);
             ResponseMessage inspection = this.celeste.inspectFile(inspect);
             OrderedProperties metadata = inspection.getMetadata();
-            BeehiveObjectId latestVObjectId = new BeehiveObjectId(metadata.getProperty(CelesteAPI.VOBJECTID_NAME));
+            TitanGuid latestVObjectId = new TitanGuidImpl(metadata.getProperty(CelesteAPI.VOBJECTID_NAME));
 
             Credential readerCredential = CelesteSh.getCredential(this.celeste, requestorId);
             LockFileOperation operation = new LockFileOperation(fileIdentifier, requestorId, token);
@@ -1146,11 +1147,11 @@ public class CelesteSh {
         }
 
         try {
-            BeehiveObjectId requestorId = parseObjectId(options.pop());
+            TitanGuid requestorId = parseObjectId(options.pop());
             String requestorPassword = options.pop();
-            BeehiveObjectId nameSpaceId = parseObjectId(options.pop());
-            BeehiveObjectId fileId = parseObjectId(options.pop());
-            BeehiveObjectId vObjectId = parseObjectId(options.pop());
+            TitanGuid nameSpaceId = parseObjectId(options.pop());
+            TitanGuid fileId = parseObjectId(options.pop());
+            TitanGuid vObjectId = parseObjectId(options.pop());
 
             InspectFileOperation operation =
                 new InspectFileOperation(new FileIdentifier(nameSpaceId, fileId), requestorId, vObjectId);
@@ -1198,10 +1199,10 @@ public class CelesteSh {
         }
 
         try {
-            BeehiveObjectId requestorId = parseObjectId(options.pop());
+            TitanGuid requestorId = parseObjectId(options.pop());
             String requestorPassword = options.pop();
-            BeehiveObjectId nameSpaceId = parseObjectId(options.pop());
-            BeehiveObjectId nameId = parseObjectId(options.pop());
+            TitanGuid nameSpaceId = parseObjectId(options.pop());
+            TitanGuid nameId = parseObjectId(options.pop());
             long stopByte = Long.parseLong(options.pop());
 
             FileIdentifier fileIdentifier = new FileIdentifier(nameSpaceId, nameId);
@@ -1210,7 +1211,7 @@ public class CelesteSh {
             ResponseMessage a = celeste.inspectFile(inspect);
 
             OrderedProperties metadata = a.getMetadata();
-            BeehiveObjectId latestVObjectId = new BeehiveObjectId(metadata.getProperty(CelesteAPI.VOBJECTID_NAME));
+            TitanGuid latestVObjectId = new TitanGuidImpl(metadata.getProperty(CelesteAPI.VOBJECTID_NAME));
 
             Credential requestorCredential = CelesteSh.getCredential(this.celeste, requestorId);
 
@@ -1249,12 +1250,12 @@ public class CelesteSh {
             return -1;
         }
         try {
-            BeehiveObjectId requestorId = parseObjectId(options.pop());
+            TitanGuid requestorId = parseObjectId(options.pop());
             String requestorPassword = options.pop();
-            BeehiveObjectId nameSpaceId = parseObjectId(options.pop());
-            BeehiveObjectId fileId = parseObjectId(options.pop());
-            BeehiveObjectId ownerId = parseObjectId(options.pop());
-            BeehiveObjectId groupId = parseObjectId(options.pop());
+            TitanGuid nameSpaceId = parseObjectId(options.pop());
+            TitanGuid fileId = parseObjectId(options.pop());
+            TitanGuid ownerId = parseObjectId(options.pop());
+            TitanGuid groupId = parseObjectId(options.pop());
             ClientMetaData clientMetaData = new ClientMetaData();
 
             FileIdentifier fileIdentifier = new FileIdentifier(nameSpaceId, fileId);
@@ -1262,7 +1263,7 @@ public class CelesteSh {
 
             ResponseMessage a = this.celeste.inspectFile(inspect);
             OrderedProperties metadata = a.getMetadata();
-            BeehiveObjectId predicatedVObjectId = new BeehiveObjectId(metadata.getProperty(CelesteAPI.VOBJECTID_NAME));
+            TitanGuid predicatedVObjectId = new TitanGuidImpl(metadata.getProperty(CelesteAPI.VOBJECTID_NAME));
 
             SetOwnerAndGroupOperation operation = new SetOwnerAndGroupOperation(fileIdentifier, requestorId, predicatedVObjectId, clientMetaData, ownerId, groupId);
 
@@ -1316,7 +1317,7 @@ public class CelesteSh {
             if (credentialFlag) {
                 // Test for a credential
                 String credentialName = options.pop();
-                ReadProfileOperation operation = new ReadProfileOperation(new BeehiveObjectId(credentialName.getBytes()));
+                ReadProfileOperation operation = new ReadProfileOperation(new TitanGuidImpl(credentialName.getBytes()));
 
                 try {
                     this.celeste.readCredential(operation);
@@ -1336,11 +1337,11 @@ public class CelesteSh {
             }
 
             if (eFlag) {
-                BeehiveObjectId requestorId = parseObjectId(options.pop());
+                TitanGuid requestorId = parseObjectId(options.pop());
                 String requestorPassword = options.pop();
-                BeehiveObjectId nameSpaceId = parseObjectId(options.pop());
-                BeehiveObjectId fileId = parseObjectId(options.pop());
-                BeehiveObjectId vObjectId = null;
+                TitanGuid nameSpaceId = parseObjectId(options.pop());
+                TitanGuid fileId = parseObjectId(options.pop());
+                TitanGuid vObjectId = null;
                 if (!options.empty()) {
                     vObjectId = parseObjectId(options.pop());
                 }
@@ -1383,10 +1384,10 @@ public class CelesteSh {
        String token = null;
 
        try {
-           BeehiveObjectId requestorId = parseObjectId(options.pop());
+           TitanGuid requestorId = parseObjectId(options.pop());
            String requestorPassword = options.pop();
-           BeehiveObjectId nameSpaceId = parseObjectId(options.pop());
-           BeehiveObjectId fileId = parseObjectId(options.pop());
+           TitanGuid nameSpaceId = parseObjectId(options.pop());
+           TitanGuid fileId = parseObjectId(options.pop());
            if (!options.isEmpty()) {
                token = options.pop();
                if (token.compareTo("null") == 0)
@@ -1433,10 +1434,10 @@ public class CelesteSh {
             return -1;
         }
         try {
-            BeehiveObjectId requestorId = parseObjectId(options.pop());
+            TitanGuid requestorId = parseObjectId(options.pop());
             String passphrase = options.pop();
-            BeehiveObjectId nameSpaceId = parseObjectId(options.pop());
-            BeehiveObjectId fileId = parseObjectId(options.pop());
+            TitanGuid nameSpaceId = parseObjectId(options.pop());
+            TitanGuid fileId = parseObjectId(options.pop());
             String aclString = options.pop();
 
             ClientMetaData clientMetaData = new ClientMetaData();
@@ -1446,7 +1447,7 @@ public class CelesteSh {
 
             ResponseMessage a = this.celeste.inspectFile(inspect);
             OrderedProperties metadata = a.getMetadata();
-            BeehiveObjectId predicatedVObjectId = new BeehiveObjectId(metadata.getProperty(CelesteAPI.VOBJECTID_NAME));
+            TitanGuid predicatedVObjectId = new TitanGuidImpl(metadata.getProperty(CelesteAPI.VOBJECTID_NAME));
             CelesteACL acl = CelesteACL.getEncodedInstance(aclString.getBytes());
 
             SetACLOperation operation = new SetACLOperation(fileIdentifier, requestorId, predicatedVObjectId, clientMetaData, acl);
@@ -1487,7 +1488,7 @@ public class CelesteSh {
         String output = "-";
 
         try {
-            BeehiveObjectId credentialId = parseObjectId(options.pop());
+            TitanGuid credentialId = parseObjectId(options.pop());
             if (!options.empty())
                 output = options.pop();
 

@@ -26,14 +26,14 @@ package sunlabs.titan.node;
 import java.io.File;
 import java.io.FilenameFilter;
 import java.io.Serializable;
-
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
 import sunlabs.asdf.util.ObjectLock;
 import sunlabs.asdf.web.XML.XHTML;
-import sunlabs.titan.BeehiveObjectId;
+import sunlabs.titan.TitanGuidImpl;
+import sunlabs.titan.api.TitanGuid;
 public class Dossier {
     private final static long serialVersionUID = 1L;
 
@@ -266,13 +266,13 @@ public class Dossier {
         }
     }
 
-    public BackedObjectMap<BeehiveObjectId,Dossier.Entry> entries;
+    public BackedObjectMap<TitanGuid,Dossier.Entry> entries;
 
-    private ObjectLock<BeehiveObjectId> locks;
+    private ObjectLock<TitanGuid> locks;
 
     public Dossier(String name) throws BackedObjectMap.AccessException {
-        this.entries = new BackedObjectMap<BeehiveObjectId,Dossier.Entry>(name + File.separator + "dossier", false);
-        this.locks = new ObjectLock<BeehiveObjectId>();
+        this.entries = new BackedObjectMap<TitanGuid,Dossier.Entry>(name + File.separator + "dossier", false);
+        this.locks = new ObjectLock<TitanGuid>();
     }
 
     /**
@@ -284,7 +284,7 @@ public class Dossier {
      * @return the address's {@code Dossier.Entry}
      */
     public Dossier.Entry getEntryAndLock(NodeAddress address) throws ClassCastException, SecurityException {
-        BeehiveObjectId objectId = address.getObjectId();
+        TitanGuid objectId = address.getObjectId();
 
         this.locks.lock(objectId);
         try {
@@ -332,7 +332,7 @@ public class Dossier {
 
     protected static class BeehiveObjectIdFilter implements FilenameFilter {
         public boolean accept(File dir, String name) {
-            return BeehiveObjectId.IsValid(name);
+            return TitanGuidImpl.IsValid(name);
         }
     }
 
@@ -355,11 +355,11 @@ public class Dossier {
         }
     }
 
-    public Set<Map.Entry<BeehiveObjectId,Dossier.Entry>> entrySet() {
+    public Set<Map.Entry<TitanGuid,Dossier.Entry>> entrySet() {
         return this.entries.entrySet();
     }
 
-    public Set<BeehiveObjectId> keySet() {
+    public Set<TitanGuid> keySet() {
         return this.entries.keySet();
     }
 }

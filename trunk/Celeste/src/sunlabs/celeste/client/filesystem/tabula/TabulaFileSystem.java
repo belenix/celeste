@@ -24,18 +24,16 @@
 
 package sunlabs.celeste.client.filesystem.tabula;
 
+import static sunlabs.celeste.client.filesystem.FileAttributes.Names.CONTENT_TYPE_NAME;
+
 import java.net.InetSocketAddress;
-
 import java.nio.ByteBuffer;
-
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.SortedSet;
 
 import sunlabs.asdf.util.Time;
-
-
 import sunlabs.celeste.FileIdentifier;
 import sunlabs.celeste.api.CelesteAPI;
 import sunlabs.celeste.client.CelesteProxy;
@@ -52,12 +50,11 @@ import sunlabs.celeste.node.CelesteACL;
 import sunlabs.celeste.node.ProfileCache;
 import sunlabs.celeste.util.ACL;
 import sunlabs.celeste.util.ACL.ACLException;
-import sunlabs.titan.BeehiveObjectId;
+import sunlabs.titan.TitanGuidImpl;
 import sunlabs.titan.api.Credential;
+import sunlabs.titan.api.TitanGuid;
 import sunlabs.titan.util.ExtentBuffer;
 import sunlabs.titan.util.OrderedProperties;
-
-import static sunlabs.celeste.client.filesystem.FileAttributes.Names.CONTENT_TYPE_NAME;
 
 /**
  * <p>
@@ -225,7 +222,7 @@ public class TabulaFileSystem {
         //      punt on it until better unified attribute/property support is
         //      in place?
         //
-        public void create(BeehiveObjectId groupId) throws
+        public void create(TitanGuid groupId) throws
                 FSException.CommunicationFailure,
                 FSException.CredentialNotFound,
                 FSException.Exists,
@@ -343,8 +340,8 @@ public class TabulaFileSystem {
     // The (well-known) unique file id for the file holding the external
     // representation of the FileTreeMap for this file system.
     //
-    private final static BeehiveObjectId fileTreeMapUniqueId =
-        new BeehiveObjectId("FileTreeMap".getBytes());
+    private final static TitanGuid fileTreeMapUniqueId =
+        new TitanGuidImpl("FileTreeMap".getBytes());
     //
     // The FileIdentifer of the above file.
     //
@@ -352,7 +349,7 @@ public class TabulaFileSystem {
     //
     // The most recent known version of the above file as stored in Celeste.
     //
-    private BeehiveObjectId fileTreeMapVersion = null;
+    private TitanGuid fileTreeMapVersion = null;
     //
     // The content type ascribed to this file.
     //
@@ -390,7 +387,7 @@ public class TabulaFileSystem {
     // system handle.
     //
     private final Credential          invokerCredential;
-    private final BeehiveObjectId   invokerId;
+    private final TitanGuid   invokerId;
     private final String            invokerPassword;
 
     //
@@ -576,12 +573,12 @@ public class TabulaFileSystem {
     }
 
     /**
-     * Returns the {@code BeehiveObjectId} of the name space associated with
+     * Returns the {@code TitanGuid} of the name space associated with
      * this file system.
      *
      * @return this file system's name space's object id
      */
-    public BeehiveObjectId getNameSpaceId() {
+    public TitanGuid getNameSpaceId() {
         return this.nameSpaceProfile.getObjectId();
     }
 
@@ -1336,8 +1333,7 @@ public class TabulaFileSystem {
                 // Set up the lock that will be applied should all checks
                 // succeed.
                 //
-                Lock lock = new Lock(this.invokerId, depth,
-                    new BeehiveObjectId().toString());
+                Lock lock = new Lock(this.invokerId, depth, new TitanGuidImpl().toString());
 
                 //
                 // Verify that the file system object at path exists, is
@@ -1749,7 +1745,7 @@ public class TabulaFileSystem {
             fileImpl = this.getAndRemove(this.fileTreeMapFid);
             //
             // XXX: Using null as the group value eventually leads to the
-            //      BeehiveObjectId() constructor being contronted with "null"
+            //      TitanGuid() constructor being contronted with "null"
             //      as its argument.  Somewhere or another I suspect we have
             //      String.Format("%s", null) coming into play.  Track down
             //      and fix!
@@ -1758,7 +1754,7 @@ public class TabulaFileSystem {
             //
             fileImpl.create(attrs, props,
                 this.invokerCredential, this.getInvokerPassword(),
-                BeehiveObjectId.ZERO);
+                TitanGuidImpl.ZERO);
             this.fileTreeMapVersion = fileImpl.getLatestVersionId(false);
         } catch (FileException.Exists e) {
             //
@@ -1987,7 +1983,7 @@ public class TabulaFileSystem {
     // Convenience method to generate an unused FileIdentifier.
     //
     private FileIdentifier newFid() {
-        return new FileIdentifier(this.getNameSpaceId(), new BeehiveObjectId());
+        return new FileIdentifier(this.getNameSpaceId(), new TitanGuidImpl());
     }
 
     //
@@ -2079,14 +2075,9 @@ public class TabulaFileSystem {
         // Create the name space...
         //
         try {
-            Profile_ fileSystemCredential =
-                new Profile_(fsName, fsPassword.toCharArray());
-            NewNameSpaceOperation operation = new NewNameSpaceOperation(
-                fileSystemCredential.getObjectId(),
-                BeehiveObjectId.ZERO,
-                replicationParams);
-            Credential.Signature signature = fileSystemCredential.sign(
-                fsPassword.toCharArray(), operation.getId());
+            Profile_ fileSystemCredential = new Profile_(fsName, fsPassword.toCharArray());
+            NewNameSpaceOperation operation = new NewNameSpaceOperation(fileSystemCredential.getObjectId(), TitanGuidImpl.ZERO, replicationParams);
+            Credential.Signature signature = fileSystemCredential.sign(fsPassword.toCharArray(), operation.getId());
             node.newNameSpace(operation, signature, fileSystemCredential);
         } catch (Exception e) {
             e.printStackTrace(System.err);
@@ -2096,14 +2087,9 @@ public class TabulaFileSystem {
         // ... and the invoker credential.
         //
         try {
-            Profile_ invokerCredential =
-                new Profile_(credName, credPassword.toCharArray());
-            NewCredentialOperation operation = new NewCredentialOperation(
-                invokerCredential.getObjectId(),
-                BeehiveObjectId.ZERO,
-                replicationParams);
-            Credential.Signature signature = invokerCredential.sign(
-                credPassword.toCharArray(), operation.getId());
+            Profile_ invokerCredential = new Profile_(credName, credPassword.toCharArray());
+            NewCredentialOperation operation = new NewCredentialOperation(invokerCredential.getObjectId(), TitanGuidImpl.ZERO, replicationParams);
+            Credential.Signature signature = invokerCredential.sign(credPassword.toCharArray(), operation.getId());
             node.newCredential(operation, signature, invokerCredential);
         } catch (Exception e) {
             e.printStackTrace(System.err);

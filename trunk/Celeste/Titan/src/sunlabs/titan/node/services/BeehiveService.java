@@ -44,9 +44,10 @@ import sunlabs.asdf.util.Attributes;
 import sunlabs.asdf.web.XML.XHTML;
 import sunlabs.asdf.web.http.HTTP;
 import sunlabs.titan.api.Service;
+import sunlabs.titan.api.TitanNode;
 import sunlabs.titan.api.management.BeehiveServiceMBean;
 import sunlabs.titan.node.BeehiveMessage;
-import sunlabs.titan.node.BeehiveNode;
+//import sunlabs.titan.node.BeehiveNode;
 import sunlabs.titan.node.util.DOLRLogger;
 import sunlabs.titan.node.util.DOLRLoggerMBean;
 import sunlabs.titan.util.WeakMBeanRegistrar;
@@ -95,7 +96,7 @@ public abstract class BeehiveService extends NotificationBroadcasterSupport impl
             "The maximum number log files to keep.");
 
     /** The {@code Node} instance that this Application belongs to. */
-    protected final BeehiveNode node;
+    protected final TitanNode node;
 
     /** The name of this {@code Service} */
     protected final String name;
@@ -113,13 +114,13 @@ public abstract class BeehiveService extends NotificationBroadcasterSupport impl
 
     protected final DOLRLogger log;
 
-    public BeehiveService(BeehiveNode node, String applicationName, String description)
+    public BeehiveService(TitanNode node, String applicationName, String description)
     throws MalformedObjectNameException, NotCompliantMBeanException, InstanceAlreadyExistsException, MBeanRegistrationException {
         if (applicationName == null || applicationName.matches("\\s"))
             throw new IllegalArgumentException("applicationName must be non-null and cannot contain white space");
 
-        node.configuration.add(BeehiveService.LogFileSize);
-        node.configuration.add(BeehiveService.LogFileCount);
+        node.getConfiguration().add(BeehiveService.LogFileSize);
+        node.getConfiguration().add(BeehiveService.LogFileCount);
 
         this.name = applicationName;
         this.node = node;
@@ -130,7 +131,8 @@ public abstract class BeehiveService extends NotificationBroadcasterSupport impl
         // Create the private "spool" directory for this Service.
         new File(this.getSpoolDirectory()).mkdirs();
 
-        this.log = new DOLRLogger(applicationName, node.getObjectId(), this.getSpoolDirectory(), node.configuration.asInt(BeehiveService.LogFileSize), node.configuration.asInt(BeehiveService.LogFileCount));
+        this.log = new DOLRLogger(applicationName, node.getNodeId(), this.getSpoolDirectory(),
+                node.getConfiguration().asInt(BeehiveService.LogFileSize), node.getConfiguration().asInt(BeehiveService.LogFileCount));
         //this.log.load();
 
         if (node.getJMXObjectName() != null) {
@@ -246,14 +248,13 @@ public abstract class BeehiveService extends NotificationBroadcasterSupport impl
      * store or cache data for this {@link Service}.
      */
     public String getSpoolDirectory() {
-        return this.node.getSpoolDirectory() + File.separator +
-            "applications" + File.separator + this.name + File.separator;
+        return this.node.getSpoolDirectory() + File.separator + "applications" + File.separator + this.name + File.separator;
     }
 
     /**
      * Get the {@link BeehiveNode} instance of this Service.
      */
-    public BeehiveNode getNode() {
+    public TitanNode getNode() {
         return this.node;
     }
 
@@ -316,9 +317,9 @@ public abstract class BeehiveService extends NotificationBroadcasterSupport impl
 
     	XHTML.Table.Body tbody = new XHTML.Table.Body();
     	// This will work when the Services no longer have the version # in the name.
-    	for (String name : this.node.configuration.keySet()) {
+    	for (String name : this.node.getConfiguration().keySet()) {
     		if (name.startsWith(this.getName())) {
-    			tbody.add(new XHTML.Table.Row(new XHTML.Table.Data(name), new XHTML.Table.Data(String.valueOf(this.node.configuration.get(name).getValue()))));
+    			tbody.add(new XHTML.Table.Row(new XHTML.Table.Data(name), new XHTML.Table.Data(String.valueOf(this.node.getConfiguration().get(name).getValue()))));
     		}
     	}
 

@@ -33,7 +33,7 @@ import javax.management.NotCompliantMBeanException;
 
 import sunlabs.asdf.web.XML.XHTML;
 import sunlabs.asdf.web.http.HTTP;
-import sunlabs.titan.BeehiveObjectId;
+import sunlabs.titan.TitanGuidImpl;
 import sunlabs.titan.api.BeehiveObject;
 import sunlabs.titan.node.BeehiveMessage;
 import sunlabs.titan.node.BeehiveNode;
@@ -67,7 +67,7 @@ public final class RetrieveObjectService extends BeehiveService implements Retri
         }
     }
 
-    public BeehiveObject retrieveObject(final BeehiveObjectId objectId) {
+    public BeehiveObject retrieveObject(final TitanGuidImpl objectId) {
         BeehiveMessage reply = RetrieveObjectService.this.node.sendToObject(objectId, RetrieveObjectService.name, "retrieveLocalObject", objectId);
         if (!reply.getStatus().isSuccessful())
             return null;

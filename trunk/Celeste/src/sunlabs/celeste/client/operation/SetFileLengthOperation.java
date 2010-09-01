@@ -33,7 +33,8 @@ import sunlabs.celeste.FileIdentifier;
 import sunlabs.celeste.client.ClientMetaData;
 import sunlabs.celeste.node.CelesteACL;
 import sunlabs.celeste.node.services.CelesteClientDaemon;
-import sunlabs.titan.BeehiveObjectId;
+import sunlabs.titan.api.Credential;
+import sunlabs.titan.api.TitanGuid;
 
 
 public class SetFileLengthOperation extends UpdateOperation {
@@ -47,11 +48,11 @@ public class SetFileLengthOperation extends UpdateOperation {
      * Celeste whenever you do a file update.
      *
      * @param fileIdentifier The {@link FileIdentifier} of the file to set length.
-     * @param agentId the {@link BeehiveObjectId} of the {@link Credential} authorising the operation
+     * @param agentId the {@link TitanGuid} of the {@link Credential} authorising the operation
      * @param predicatedVObjectId
      * @param length
      */
-    public SetFileLengthOperation(FileIdentifier fileIdentifier, BeehiveObjectId agentId, BeehiveObjectId predicatedVObjectId, ClientMetaData clientMetaData, long length) {
+    public SetFileLengthOperation(FileIdentifier fileIdentifier, TitanGuid agentId, TitanGuid predicatedVObjectId, ClientMetaData clientMetaData, long length) {
         super(SetFileLengthOperation.name, fileIdentifier, agentId, predicatedVObjectId, clientMetaData);
         
         this.length = length;
@@ -62,8 +63,8 @@ public class SetFileLengthOperation extends UpdateOperation {
     }
 
     @Override
-    public BeehiveObjectId getId() {
-        BeehiveObjectId id = super.getId()
+    public TitanGuid getId() {
+        TitanGuid id = super.getId()
         .add(Long.toString(this.length));
         return id;
     }

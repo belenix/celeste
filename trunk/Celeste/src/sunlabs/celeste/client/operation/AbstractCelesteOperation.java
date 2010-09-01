@@ -34,7 +34,8 @@ import sunlabs.asdf.web.http.HTTP;
 import sunlabs.celeste.FileIdentifier;
 import sunlabs.celeste.node.CelesteACL;
 import sunlabs.celeste.node.services.CelesteClientDaemon;
-import sunlabs.titan.BeehiveObjectId;
+import sunlabs.titan.TitanGuidImpl;
+import sunlabs.titan.api.TitanGuid;
 
 /**
  * The base class implementing the {@link CelesteOperation} interface.
@@ -62,11 +63,11 @@ public abstract class AbstractCelesteOperation implements CelesteOperation {
 
     protected String operationName;
     protected FileIdentifier fileIdentifier;
-    protected BeehiveObjectId clientId;
-    protected BeehiveObjectId predicatedVersionId;
+    protected TitanGuid clientId;
+    protected TitanGuid predicatedVersionId;
 
 
-    public AbstractCelesteOperation(String operationName, FileIdentifier fileIdentifier, BeehiveObjectId clientId, BeehiveObjectId predicatedVersionId) {
+    public AbstractCelesteOperation(String operationName, FileIdentifier fileIdentifier, TitanGuid clientId, TitanGuid predicatedVersionId) {
         this.operationName = operationName;
         this.fileIdentifier = fileIdentifier;
         this.clientId = clientId;
@@ -80,8 +81,8 @@ public abstract class AbstractCelesteOperation implements CelesteOperation {
     /**
      * Return a {@link BeehiveObjectId} based on the content of this operation.
      */
-    public BeehiveObjectId getId() {
-        BeehiveObjectId result = new BeehiveObjectId(this.operationName.getBytes())
+    public TitanGuid getId() {
+        TitanGuid result = new TitanGuidImpl(this.operationName.getBytes())
             .add(this.fileIdentifier.getNameSpaceId())
             .add(this.fileIdentifier.getFileId())
             .add(this.clientId)
@@ -93,11 +94,11 @@ public abstract class AbstractCelesteOperation implements CelesteOperation {
         return this.operationName;
     }
 
-    public BeehiveObjectId getClientId() {
+    public TitanGuid getClientId() {
         return this.clientId;
     }
 
-    public BeehiveObjectId getVObjectId() {
+    public TitanGuid getVObjectId() {
         return this.predicatedVersionId;
     }
 

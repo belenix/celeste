@@ -38,14 +38,14 @@ import javax.management.NotCompliantMBeanException;
 
 import sunlabs.asdf.web.XML.XHTML;
 import sunlabs.asdf.web.http.HTTP;
-import sunlabs.titan.BeehiveObjectId;
-import sunlabs.titan.api.Credential;
 import sunlabs.titan.api.BeehiveObject.Metadata;
+import sunlabs.titan.api.Credential;
+import sunlabs.titan.api.TitanGuid;
 import sunlabs.titan.node.BeehiveMessage;
+import sunlabs.titan.node.BeehiveMessage.RemoteException;
 import sunlabs.titan.node.BeehiveNode;
 import sunlabs.titan.node.BeehiveObjectPool;
 import sunlabs.titan.node.BeehiveObjectStore;
-import sunlabs.titan.node.BeehiveMessage.RemoteException;
 import sunlabs.titan.node.Publishers.PublishRecord;
 import sunlabs.titan.node.object.AbstractObjectHandler;
 import sunlabs.titan.node.object.RetrievableObject;
@@ -87,7 +87,7 @@ public final class CredentialObjectHandler extends AbstractObjectHandler impleme
             }
 
             // Don't add a new object if it differs from the objects we already have with this object-id.
-            for (Map.Entry<BeehiveObjectId, Metadata> object : publishRequest.getObjectsToPublish().entrySet()) {
+            for (Map.Entry<TitanGuid, Metadata> object : publishRequest.getObjectsToPublish().entrySet()) {
                 Set<PublishRecord> alreadyPublishedObjects = this.node.getObjectPublishers().getPublishers(object.getKey());
                 if (alreadyPublishedObjects.size() > 0) {
                     for (PublishRecord record : alreadyPublishedObjects) {
@@ -102,7 +102,7 @@ public final class CredentialObjectHandler extends AbstractObjectHandler impleme
 
             AbstractObjectHandler.publishObjectBackup(this, publishRequest);
             // Dup the getObjectsToPublish set as it's backed by a Map and is not serializable.
-            return msg.composeReply(this.node.getNodeAddress(), new PublishDaemon.PublishObject.Response(new HashSet<BeehiveObjectId>(publishRequest.getObjectsToPublish().keySet())));
+            return msg.composeReply(this.node.getNodeAddress(), new PublishDaemon.PublishObject.Response(new HashSet<TitanGuid>(publishRequest.getObjectsToPublish().keySet())));
         } catch (ClassNotFoundException e) {
             e.printStackTrace();
             return msg.composeReply(this.node.getNodeAddress(), e);
@@ -128,7 +128,7 @@ public final class CredentialObjectHandler extends AbstractObjectHandler impleme
     // N.B.  Here we assume that Credential is equivalent to (the
     // hypothetical) CredentialObject.CredentialAPI interface.
     //
-    public Credential retrieve(BeehiveObjectId objectId) throws
+    public Credential retrieve(TitanGuid objectId) throws
             BeehiveObjectStore.DeletedObjectException,
             BeehiveObjectStore.NotFoundException {
 

@@ -26,10 +26,12 @@ package sunlabs.titan.node.services.api;
 import java.util.Map;
 import java.util.Set;
 
-import sunlabs.titan.BeehiveObjectId;
+import sunlabs.titan.api.TitanGuid;
+import sunlabs.titan.api.TitanNodeId;
 import sunlabs.titan.node.BeehiveMessage;
-import sunlabs.titan.node.NodeAddress;
 import sunlabs.titan.node.BeehiveMessage.RemoteException;
+import sunlabs.titan.node.NodeAddress;
+import sunlabs.titan.node.TitanNodeIdImpl;
 import sunlabs.titan.util.OrderedProperties;
 
 /**
@@ -40,7 +42,7 @@ import sunlabs.titan.util.OrderedProperties;
  * <p>
  * All nodes in the system periodically advertise their availability by
  * transmitting a {@link BeehiveMessage} {@code RouteToNode} {@link BeehiveMessage}
- * to the node {@link BeehiveObjectId} identified by {@link Census#CensusKeeper}.
+ * to the node {@link TitanGuid} identified by {@link Census#CensusKeeper}.
  * The message contains an instance of {@link OrderedProperties} listing the properties the
  * node is willing to share with subsequent queries and is used for matching queries to the
  * subset of nodes in the census.
@@ -53,7 +55,7 @@ public interface Census {
      * The Census keeper is the node the receives messages sent to the {@code CensusKeeper} object-id.
      *
      */
-    public final static BeehiveObjectId CensusKeeper = BeehiveObjectId.ZERO;
+    public final static TitanNodeId CensusKeeper = TitanNodeIdImpl.ZERO;
 
     /**
      * The time-stamp for this record.
@@ -74,31 +76,31 @@ public interface Census {
      *
      * @param census this {@link Map} containing additional census data.
      */
-    public void putAllLocal(Map<BeehiveObjectId,OrderedProperties> census);
+    public void putAllLocal(Map<TitanNodeId,OrderedProperties> census);
 
     /**
-     * Select {@code count} number of nodes by {@link BeehiveObjectId} from the Census,
-     * excluding those nodes specified by {@link BeehiveObjectId} in the Set {@code exclude}.
+     * Select {@code count} number of nodes by {@link TitanGuid} from the Census,
+     * excluding those nodes specified by {@link TitanGuid} in the Set {@code exclude}.
      *
      * @param count the number of nodes to select.  If zero, all nodes are selected.
      * @param exclude a {@link Set} of nodes to specifically exclude from the selection.
      * @param match an {@link OrderedProperties} instance containing the set of properties that selected nodes much match.
-     * @return A {@link Map} of {@link BeehiveObjectId} to {@link OrderedProperties} for each node selected.
+     * @return A {@link Map} of {@link TitanGuid} to {@link OrderedProperties} for each node selected.
      * @throws RemoteException if the remote node threw an Exception.
      * @throws ClassCastException 
      */
-    public Map<BeehiveObjectId,OrderedProperties> select(int count, Set<BeehiveObjectId> exclude, OrderedProperties match) throws ClassCastException;
+    public Map<TitanNodeId,OrderedProperties> select(int count, Set<TitanNodeId> excludedNodes, OrderedProperties matchedAttributes) throws ClassCastException;
 
     /**
-     * Select {@code count} number of nodes by {@link BeehiveObjectId} from the Census system.
+     * Select {@code count} number of nodes by {@link TitanGuid} from the Census system.
      * If {@code count} is zero, then return all of the nodes in the system.
      *
      * @param count the number of nodes to select.
-     * @return A {@link Map} of {@link BeehiveObjectId} to {@link OrderedProperties} for each node selected.
+     * @return A {@link Map} of {@link TitanGuid} to {@link OrderedProperties} for each node selected.
      * @throws RemoteException if the remote node threw an Exception.
      * @throws ClassCastException 
      */
-    public Map<BeehiveObjectId,OrderedProperties> select(int count) throws ClassCastException, RemoteException;
+    public Map<TitanNodeId,OrderedProperties> select(int count) throws ClassCastException, RemoteException;
 
     /**
      * Get the current system-wide Census data, using an already existing node in the system to proxy the request.
@@ -107,7 +109,7 @@ public interface Census {
      * @param count the number of nodes to select
      * @param exclude a {@link Set} of nodes to specifically exclude from the selection, or {@code null}.
      * @param match an {@link OrderedProperties} instance containing the set of properties that selected nodes much match, or {@code null}.
-     * @return A {@link Map} of {@link BeehiveObjectId} to {@link OrderedProperties} for each node selected.
+     * @return A {@link Map} of {@link TitanGuid} to {@link OrderedProperties} for each node selected.
      */
-    public Map<BeehiveObjectId,OrderedProperties> select(NodeAddress gateway, int count, Set<BeehiveObjectId> exclude, OrderedProperties match);
+    public Map<TitanNodeId, OrderedProperties> select(NodeAddress gateway, int count, Set<TitanNodeId> excludedNodes, OrderedProperties matchedAttributes);
 }

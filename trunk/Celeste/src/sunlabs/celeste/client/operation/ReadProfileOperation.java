@@ -32,7 +32,8 @@ import sunlabs.celeste.CelesteException;
 import sunlabs.celeste.FileIdentifier;
 import sunlabs.celeste.node.CelesteACL;
 import sunlabs.celeste.node.services.CelesteClientDaemon;
-import sunlabs.titan.BeehiveObjectId;
+import sunlabs.titan.TitanGuidImpl;
+import sunlabs.titan.api.TitanGuid;
 
 public class ReadProfileOperation extends AbstractCelesteOperation {
     private static final long serialVersionUID = 3L;
@@ -45,13 +46,13 @@ public class ReadProfileOperation extends AbstractCelesteOperation {
      *
      * @param credentialId the {@link BeehiveObjectId} of the {@code Credential} to retrieve
      */
-    public ReadProfileOperation(BeehiveObjectId credentialId) {
-        super(ReadProfileOperation.name, new FileIdentifier(credentialId, BeehiveObjectId.ZERO), BeehiveObjectId.ZERO, null);
+    public ReadProfileOperation(TitanGuid credentialId) {
+        super(ReadProfileOperation.name, new FileIdentifier(credentialId, TitanGuidImpl.ZERO), TitanGuidImpl.ZERO, null);
     }
 
     @Override
-    public BeehiveObjectId getId() {
-        BeehiveObjectId id = super.getId();
+    public TitanGuid getId() {
+        TitanGuid id = super.getId();
         return id;
     }
 
@@ -60,7 +61,7 @@ public class ReadProfileOperation extends AbstractCelesteOperation {
         return CelesteACL.CelesteOps.readProfile;
     }
 
-    public BeehiveObjectId getCredentialId() {
+    public TitanGuid getCredentialId() {
         return this.getFileIdentifier().getNameSpaceId();
     }
     

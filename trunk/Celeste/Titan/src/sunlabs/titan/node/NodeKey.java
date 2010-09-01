@@ -31,7 +31,7 @@ import java.security.GeneralSecurityException;
 import java.security.KeyStore;
 import java.security.cert.Certificate;
 
-import sunlabs.titan.BeehiveObjectId;
+import sunlabs.titan.TitanGuidImpl;
 
 /**
  * <p>
@@ -45,7 +45,7 @@ public final class NodeKey {
     private static final String KEY_NAME = "PrivateKey";
 
     private KeyStore keyStore;
-    private BeehiveObjectId objectId;
+    private TitanGuidImpl objectId;
 
     /**
      * Creates a key for the a beehive node operating on a given port on a
@@ -78,7 +78,7 @@ public final class NodeKey {
             this.keyStore = KeyStore.getInstance(KeyStore.getDefaultType());
             this.keyStore.load(new BufferedInputStream(new FileInputStream(keyStoreFile)), keyStorePassword.toCharArray());
             Certificate cert = this.keyStore.getCertificate(NodeKey.KEY_NAME);
-            this.objectId = new BeehiveObjectId(cert.getPublicKey());
+            this.objectId = new TitanGuidImpl(cert.getPublicKey());
         } catch (GeneralSecurityException ex) {
             throw new IOException(ex);
         }
@@ -92,7 +92,7 @@ public final class NodeKey {
         return keyPassword.toCharArray();
     }
 
-    BeehiveObjectId getObjectId() {
+    TitanGuidImpl getObjectId() {
         return this.objectId;
     }
 

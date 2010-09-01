@@ -34,14 +34,15 @@ import sunlabs.celeste.client.ClientMetaData;
 import sunlabs.celeste.client.ReplicationParameters;
 import sunlabs.celeste.node.CelesteACL;
 import sunlabs.celeste.node.services.CelesteClientDaemon;
-import sunlabs.titan.BeehiveObjectId;
+import sunlabs.titan.TitanGuidImpl;
+import sunlabs.titan.api.TitanGuid;
 
 public class NewNameSpaceOperation extends UpdateOperation {
     private static final long serialVersionUID = 1L;
 
     public static final String name = "NewNameSpace";
 
-    private BeehiveObjectId credentialId;
+    private TitanGuid credentialId;
     private ReplicationParameters replicationParams;
     
     /**
@@ -52,21 +53,19 @@ public class NewNameSpaceOperation extends UpdateOperation {
      * @param deleteTokenId
      * @param replicationParams
      */
-    public NewNameSpaceOperation(BeehiveObjectId credentialId, BeehiveObjectId deleteTokenId, String replicationParams) {
+    public NewNameSpaceOperation(TitanGuid credentialId, TitanGuid deleteTokenId, String replicationParams) {
         this(credentialId, deleteTokenId, new ReplicationParameters(replicationParams));
     }
     
-    public NewNameSpaceOperation(BeehiveObjectId credentialId, BeehiveObjectId deleteTokenId, ReplicationParameters replicationParams) {
-        super(NewNameSpaceOperation.name, new FileIdentifier(credentialId, BeehiveObjectId.ZERO), credentialId, null, new ClientMetaData());
+    public NewNameSpaceOperation(TitanGuid credentialId, TitanGuid deleteTokenId, ReplicationParameters replicationParams) {
+        super(NewNameSpaceOperation.name, new FileIdentifier(credentialId, TitanGuidImpl.ZERO), credentialId, null, new ClientMetaData());
         this.credentialId = credentialId;
         this.replicationParams = replicationParams;
     }
 
     @Override
-    public BeehiveObjectId getId() {
-        BeehiveObjectId id = super.getId()
-        .add(this.credentialId)
-        .add(this.replicationParams.toByteArray())
+    public TitanGuid getId() {
+        TitanGuid id = super.getId().add(this.credentialId).add(this.replicationParams.toByteArray())
         ;
         return id;
     }
@@ -89,7 +88,7 @@ public class NewNameSpaceOperation extends UpdateOperation {
         return result;
     }
 
-    public BeehiveObjectId getProfileId() {
+    public TitanGuid getProfileId() {
         return this.credentialId;
     }
 

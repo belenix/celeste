@@ -31,7 +31,8 @@ import java.nio.ByteBuffer;
 import java.util.Arrays;
 
 import sunlabs.celeste.util.CelesteEncoderDecoder;
-import sunlabs.titan.BeehiveObjectId;
+import sunlabs.titan.TitanGuidImpl;
+import sunlabs.titan.api.TitanGuid;
 
 /**
  * <p>
@@ -126,10 +127,10 @@ public class ClientMetaData implements Serializable {
         return opaqueContext;
     }
 
-    public BeehiveObjectId getId() {
+    public TitanGuid getId() {
         if (this.opaqueContext == null)
-            return new BeehiveObjectId(new byte[0]);
-        return new BeehiveObjectId(this.opaqueContext);
+            return new TitanGuidImpl(new byte[0]);
+        return new TitanGuidImpl(this.opaqueContext);
     }
 
     /**

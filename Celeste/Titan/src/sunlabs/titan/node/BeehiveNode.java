@@ -29,21 +29,17 @@ import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
 import java.io.EOFException;
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.InterruptedIOException;
 import java.io.Serializable;
 import java.lang.management.ManagementFactory;
-import java.lang.management.RuntimeMXBean;
-import java.net.InetAddress;
 import java.net.MalformedURLException;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
-import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
 import java.nio.channels.SelectionKey;
@@ -55,7 +51,6 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
-import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.RejectedExecutionException;
@@ -89,13 +84,15 @@ import sunlabs.asdf.util.Units;
 import sunlabs.asdf.web.XML.XHTML;
 import sunlabs.asdf.web.XML.XML;
 import sunlabs.asdf.web.http.HTTP;
-import sunlabs.titan.BeehiveObjectId;
 import sunlabs.titan.Copyright;
 import sunlabs.titan.Release;
-import sunlabs.titan.TitanNode;
+import sunlabs.titan.TitanGuidImpl;
 import sunlabs.titan.api.BeehiveObject;
 import sunlabs.titan.api.ObjectStore;
 import sunlabs.titan.api.Service;
+import sunlabs.titan.api.TitanGuid;
+import sunlabs.titan.api.TitanNode;
+import sunlabs.titan.api.TitanNodeId;
 import sunlabs.titan.api.management.NodeMBean;
 import sunlabs.titan.node.BeehiveMessage.RemoteException;
 import sunlabs.titan.node.object.AbstractObjectHandler;
@@ -138,7 +135,6 @@ public class BeehiveNode implements TitanNode, NodeMBean {
                 return new PlainChannelHandler(this.node, selectionKey, this.timeoutMillis);
             }            
         }
-
 
         private enum ParserState {
             READ_HEADER_LENGTH,
@@ -237,7 +233,7 @@ public class BeehiveNode implements TitanNode, NodeMBean {
         private BeehiveNode node;
         
         public RequestHandler(BeehiveNode node, BeehiveMessage request, ChannelHandler channel) {
-            super(String.format("%s.RequestHandler", node.getObjectId()));
+            super(String.format("%s.RequestHandler", node.getNodeId()));
             this.node = node;
             this.request = request;
             this.channel = channel;                
@@ -831,7 +827,7 @@ public class BeehiveNode implements TitanNode, NodeMBean {
 
     private Publishers objectPublishers;
 
-    private BeehiveObjectId networkObjectId;
+    private TitanGuid networkObjectId;
 
     private long startTime;
 
@@ -927,24 +923,24 @@ public class BeehiveNode implements TitanNode, NodeMBean {
         }
 
         this.nodeKey = new NodeKey(keyStoreFileName, internetworkAddress, localBeehivePort);
-        this.address = new NodeAddress(this.nodeKey.getObjectId(), internetworkAddress, localBeehivePort, this.configuration.asInt(WebDAVDaemon.Port));
+        this.address = new NodeAddress(new TitanNodeIdImpl(this.nodeKey.getObjectId()), internetworkAddress, localBeehivePort, this.configuration.asInt(WebDAVDaemon.Port));
 
         this.configuration.set(BeehiveNode.NodeAddress, this.address.format());
 
         // Give the main Thread for this node a name and setup a ThreadGroup.
         // This is to distinguish this node from other nodes when they are
         // all running in one JVM.
-        this.threadGroup = new ThreadGroup(this.getObjectId().toString());
+        this.threadGroup = new ThreadGroup(this.getNodeId().toString());
 
-        this.tasks = new ScheduledThreadPoolExecutor(this.configuration.asInt(BeehiveNode.TaskPoolSize), new BeehiveNode.SimpleThreadFactory(this.getObjectId().toString()));
+        this.tasks = new ScheduledThreadPoolExecutor(this.configuration.asInt(BeehiveNode.TaskPoolSize), new BeehiveNode.SimpleThreadFactory(this.getNodeId().toString()));
         
-        this.clientTasks = new ScheduledThreadPoolExecutor(this.configuration.asInt(BeehiveNode.ClientPoolSize), new BeehiveNode.SimpleThreadFactory(this.getObjectId().toString()));
+        this.clientTasks = new ScheduledThreadPoolExecutor(this.configuration.asInt(BeehiveNode.ClientPoolSize), new BeehiveNode.SimpleThreadFactory(this.getNodeId().toString()));
 
         // Since the spool directory is a "user" supplied value, we must ensure that it is formatted properly.
-        this.spoolDirectory = localFsRoot + File.separator + BeehiveNode.beehiveNodeBackingStorePrefix + this.getObjectId();
+        this.spoolDirectory = localFsRoot + File.separator + BeehiveNode.beehiveNodeBackingStorePrefix + this.getNodeId();
         new File(this.spoolDirectory).mkdirs();
 
-        this.log = new DOLRLogger(BeehiveNode.class.getName(), this.getObjectId(), this.spoolDirectory,
+        this.log = new DOLRLogger(BeehiveNode.class.getName(), this.getNodeId(), this.spoolDirectory,
                 this.configuration.asInt(BeehiveNode.LogFileSize),  this.configuration.asInt(BeehiveNode.LogFileCount));
 
         try {
@@ -1009,7 +1005,7 @@ public class BeehiveNode implements TitanNode, NodeMBean {
 
             this.services = new ApplicationFramework(this,
                     new DOLRLogger(ApplicationFramework.class.getName(),
-                            getObjectId(), getSpoolDirectory(),
+                            getNodeId(), getSpoolDirectory(),
                             this.configuration.asInt(BeehiveNode.LogFileSize), this.configuration.asInt(BeehiveNode.LogFileCount)));
 
             // Load and start the services that have long-running operations.
@@ -1057,6 +1053,10 @@ public class BeehiveNode implements TitanNode, NodeMBean {
         }
     }
 
+    public Attributes getConfiguration() {
+        return this.configuration;
+    }
+    
     /**
      * Run the given {@link Runnable} on this node's {@link ExecutorService}
      * @param runnable
@@ -1098,7 +1098,7 @@ public class BeehiveNode implements TitanNode, NodeMBean {
     /**
      * Get the object-id of the network that this Node is connected to.
      */
-    public BeehiveObjectId getNetworkObjectId() {
+    public TitanGuid getNetworkObjectId() {
         return this.networkObjectId;
     }
 
@@ -1112,7 +1112,7 @@ public class BeehiveNode implements TitanNode, NodeMBean {
     /**
      * Return this Node's object-id.
      */
-    public BeehiveObjectId getObjectId() {
+    public TitanNodeId getNodeId() {
         return this.address.getObjectId();
     }
 
@@ -1236,13 +1236,13 @@ public class BeehiveNode implements TitanNode, NodeMBean {
      */
     public BeehiveMessage receive(BeehiveMessage request) {
         try {
-            BeehiveObjectId destinationNodeId = request.getDestinationNodeId();
+            TitanNodeId destinationNodeId = request.getDestinationNodeId();
 
             if (destinationNodeId == null) {
                 System.out.printf("destination node is null%n");
             }
 
-            if (destinationNodeId.equals(this.getObjectId())) {
+            if (destinationNodeId.equals(this.getNodeId())) {
                 // Any message other than route-to-node or route-to-object would indicate an ObjectId collision.
                 if (request.isTraced()) {
                     BeehiveNode.this.log.info("recv1(%s)", request.traceReport());
@@ -1274,7 +1274,7 @@ public class BeehiveNode implements TitanNode, NodeMBean {
                 // must check to see if the message was sent to a particular node exactly.
                 // If so, and we are NOT that node, return a reply indicating failure.
                 // Otherwise, accept the message.
-                if (request.isExactRouting() && !destinationNodeId.equals(this.getObjectId())) {
+                if (request.isExactRouting() && !destinationNodeId.equals(this.getNodeId())) {
                     return request.composeReply(this.address, new BeehiveNode.NoSuchNodeException("%s", destinationNodeId.toString()));
                 }
                 BeehiveMessage result = this.services.sendMessageToApp(request);
@@ -1350,7 +1350,7 @@ public class BeehiveNode implements TitanNode, NodeMBean {
         if (rootReply.getStatus().isSuccessful()) {
             try {
                 Publish.Request request = message.getPayload(Publish.Request.class, this);
-                for (Map.Entry<BeehiveObjectId,BeehiveObject.Metadata> entry : request.getObjectsToPublish().entrySet()) {
+                for (Map.Entry<TitanGuid,BeehiveObject.Metadata> entry : request.getObjectsToPublish().entrySet()) {
                     BeehiveNode.this.log.finest("%s->%s ttl=%ds", entry.getKey(), request.getPublisherAddress(), request.getSecondsToLive());
                     this.objectPublishers.update(entry.getKey(),
                             new Publishers.PublishRecord(entry.getKey(), request.getPublisherAddress(), entry.getValue(), request.getSecondsToLive()));
@@ -1410,7 +1410,7 @@ public class BeehiveNode implements TitanNode, NodeMBean {
         }
 
         // 1a
-        if (request.subjectId.equals(this.getObjectId())) {
+        if (request.subjectId.equals(this.getNodeId())) {
             //this.log.finest(request.subjectId + " 1a: I am target for application: " + request.getSubjectClass());
             return this.services.sendMessageToApp(request);
         }
@@ -1437,7 +1437,7 @@ public class BeehiveNode implements TitanNode, NodeMBean {
         BeehiveMessage proxyMessage;
         proxyMessage = new BeehiveMessage(BeehiveMessage.Type.RouteToNode,
                 request.getSource(),
-                BeehiveObjectId.ANY,
+                TitanNodeIdImpl.ANY,
                 request.subjectId,
                 request.getSubjectClass(),
                 request.getSubjectClassMethod(),
@@ -1523,7 +1523,7 @@ public class BeehiveNode implements TitanNode, NodeMBean {
         }
 
         PublishDaemon.UnpublishObject.Request unpublishRequest = request.getPayload(PublishDaemon.UnpublishObject.Request.class, this);
-        for (BeehiveObjectId objectId : unpublishRequest.getObjectIds()) {
+        for (TitanGuid objectId : unpublishRequest.getObjectIds()) {
             // Remove the unpublished object from this node's publisher records.
             this.getObjectPublishers().remove(objectId, request.getSource().getObjectId());
         }
@@ -1543,7 +1543,7 @@ public class BeehiveNode implements TitanNode, NodeMBean {
      * </p>
      * @param objectId
      */
-    public boolean removeLocalObject(final BeehiveObjectId objectId) throws BeehiveObjectStore.NotFoundException {
+    public boolean removeLocalObject(final TitanGuid objectId) throws BeehiveObjectStore.NotFoundException {
         BeehiveObject object = this.store.getAndLock(BeehiveObject.class, objectId);
         if (object == null) {
             return false;
@@ -1579,7 +1579,13 @@ public class BeehiveNode implements TitanNode, NodeMBean {
             .addAttribute(new XML.Attr("dojoType", "dijit.ProgressBar"));
 
         // Executors
-        XHTML.Table.Body executorBody = new XHTML.Table.Body(new XHTML.Table.Row());
+        XHTML.Table.Body executorBody = new XHTML.Table.Body(
+                new XHTML.Table.Row(new XHTML.Table.Data("ActiveCount"), new XHTML.Table.Data(this.tasks.getActiveCount())),
+                new XHTML.Table.Row(new XHTML.Table.Data("CorePoolSize"), new XHTML.Table.Data(this.tasks.getTaskCount())),
+                new XHTML.Table.Row(new XHTML.Table.Data("CompletedTaskCount"), new XHTML.Table.Data(this.tasks.getCompletedTaskCount())),
+                new XHTML.Table.Row(new XHTML.Table.Data("CorePoolSize"), new XHTML.Table.Data(this.tasks.getCorePoolSize())),
+                new XHTML.Table.Row(new XHTML.Table.Data("Queue"), new XHTML.Table.Data(this.tasks.getQueue()))
+                );
 
         XHTML.Div executors = new XHTML.Div(new XHTML.Table(new XHTML.Table.Caption("Executors"), executorBody));
 
@@ -1601,7 +1607,7 @@ public class BeehiveNode implements TitanNode, NodeMBean {
                 ));
     }
 
-    public BeehiveMessage routeToNodeMulticast(BeehiveObjectId nodeId, String klasse, String method, Serializable data) {
+    public BeehiveMessage routeToNodeMulticast(TitanNodeId nodeId, String klasse, String method, Serializable data) {
         BeehiveMessage msg = new BeehiveMessage(BeehiveMessage.Type.RouteToNode,
                 this.getNodeAddress(),
                 nodeId,
@@ -1616,7 +1622,7 @@ public class BeehiveNode implements TitanNode, NodeMBean {
         return reply;
     }
 
-    public BeehiveMessage sendToNode(BeehiveObjectId nodeId, String klasse, String method, Serializable data) {
+    public BeehiveMessage sendToNode(TitanNodeId nodeId, String klasse, String method, Serializable data) {
         BeehiveMessage msg = new BeehiveMessage(BeehiveMessage.Type.RouteToNode,
                 this.getNodeAddress(),
                 nodeId,
@@ -1631,12 +1637,7 @@ public class BeehiveNode implements TitanNode, NodeMBean {
         return reply;
     }
     
-    /**
-     * Send to a specific object-id on a specific node.
-     * This directly violates the separation of nodes and objects.
-     */
-    @Deprecated
-    public BeehiveMessage sendToNode(BeehiveObjectId nodeId, BeehiveObjectId objectId, String klasse, String method, Serializable data) {
+    public BeehiveMessage sendToNode(TitanNodeId nodeId, TitanGuid objectId, String klasse, String method, Serializable data) {
         BeehiveMessage msg = new BeehiveMessage(BeehiveMessage.Type.RouteToNode,
                 this.getNodeAddress(),
                 nodeId,
@@ -1651,7 +1652,7 @@ public class BeehiveNode implements TitanNode, NodeMBean {
         return reply;
     }
 
-    public BeehiveMessage sendToNodeExactly(BeehiveObjectId nodeId, String objectClass, String method, Serializable data) throws NoSuchNodeException {
+    public BeehiveMessage sendToNodeExactly(TitanNodeId nodeId, String objectClass, String method, Serializable data) throws NoSuchNodeException {
         BeehiveMessage msg = new BeehiveMessage(BeehiveMessage.Type.RouteToNode,
                 this.getNodeAddress(),
                 nodeId,
@@ -1670,13 +1671,13 @@ public class BeehiveNode implements TitanNode, NodeMBean {
         return reply;
     }
 
-    public BeehiveMessage sendToObject(BeehiveObjectId objectId, String klasse, String method, Serializable data) {
+    public BeehiveMessage sendToObject(TitanGuid objectId, String klasse, String method, Serializable data) {
         // It would be interesting to have a MULTICAST route-to-object
         // message which is sent to each known object.
         BeehiveMessage message = new BeehiveMessage(
                 BeehiveMessage.Type.RouteToObject,
                 this.getNodeAddress(),
-                objectId,
+                new TitanNodeIdImpl(objectId),
                 objectId,
                 klasse,
                 method,
@@ -1687,13 +1688,13 @@ public class BeehiveNode implements TitanNode, NodeMBean {
         return reply;
     }
     
-    public BeehiveMessage sendToObject(BeehiveObjectId objectId, String klasse, String method, Serializable data, boolean traced) {
+    public BeehiveMessage sendToObject(TitanGuid objectId, String klasse, String method, Serializable data, boolean traced) {
         // It would be interesting to have a MULTICAST route-to-object
         // message which is sent to each known object.
         BeehiveMessage message = new BeehiveMessage(
                 BeehiveMessage.Type.RouteToObject,
                 this.getNodeAddress(),
-                objectId,
+                new TitanNodeIdImpl(objectId),
                 objectId,
                 klasse,
                 method,
@@ -1742,7 +1743,7 @@ public class BeehiveNode implements TitanNode, NodeMBean {
                 }
             } else {
                 // If this node has no gateway, then it is the first node and gets to choose the network object-id.
-                this.networkObjectId = new BeehiveObjectId();
+                this.networkObjectId = new TitanGuidImpl();
             }
 
             if (gateway != null) {
@@ -1755,7 +1756,7 @@ public class BeehiveNode implements TitanNode, NodeMBean {
 
                 Census census = this.getService(CensusDaemon.class);
 
-                Map<BeehiveObjectId,OrderedProperties> list = census.select(gateway, 0, null, null);
+                Map<TitanNodeId,OrderedProperties> list = census.select(gateway, 0, null, null);
                 census.putAllLocal(list);
             }
 
@@ -1891,6 +1892,7 @@ public class BeehiveNode implements TitanNode, NodeMBean {
         long upSeconds = Time.millisecondsToSeconds(upTime % Time.MINUTES_IN_MILLISECONDS);
 
         XMLNode result = xml.newXMLNode(this.address.getObjectId(), String.format("Uptime: %dd %dh %dm %ds", upDays, upHours, upMinutes, upSeconds));
+
         result.bindNameSpace();
         
         result.add(this.map.toXML());
@@ -1917,7 +1919,7 @@ public class BeehiveNode implements TitanNode, NodeMBean {
         }
 
         message.timestamp = System.currentTimeMillis();
-        if (message.getDestinationNodeId().equals(this.getObjectId())) {
+        if (message.getDestinationNodeId().equals(this.getNodeId())) {
             return this.receive(message);
         }
 
@@ -1927,7 +1929,7 @@ public class BeehiveNode implements TitanNode, NodeMBean {
             if ((reply = this.transmit(neighbour, message)) != null) {
                 return reply;
             }
-            this.log.info("Removing dead neighbour %s", neighbour.format());
+            this.log.warning("Removing dead neighbour %s", neighbour.format());
 
             // XXX Should also clean out any other remaining cached sockets to this neighbour.
             this.map.remove(neighbour);
@@ -1971,27 +1973,27 @@ public class BeehiveNode implements TitanNode, NodeMBean {
                 }
                 return response;
             } catch (InterruptedIOException e) {
-                this.log.fine("harmless %s (bytes transfered=%d) address %s %s.%s", e.toString(), e.bytesTransferred, addr.format(), socket, message.getSubjectClass(), message.getSubjectClassMethod());
+                this.log.warning("%s disconnecting node %s(%s.%s)", e.toString(), addr.format(), message.getSubjectClass(), message.getSubjectClassMethod());
                 socketValid = false;
                 return null;  // return and don't continue to try, but don't disconnect the node.
             } catch (java.net.NoRouteToHostException e) {
-                this.log.warning("%s dropping node %s(%s) %s.%s", e.toString(), addr.format(), socket, message.getSubjectClass(), message.getSubjectClassMethod());
+                this.log.warning("%s disconnecting node %s(%s.%s)", e.toString(), addr.format(), message.getSubjectClass(), message.getSubjectClassMethod());
                 socketValid = false;
                 return null; // return and don't continue to try.
             } catch (java.net.ConnectException e) {
-                this.log.warning("dropping node %s node %s %s.%s", e.toString(), addr.format(), message.getSubjectClass(), message.getSubjectClassMethod());
+                this.log.warning("%s disconnecting node %s(%s.%s)", e.toString(), addr.format(), message.getSubjectClass(), message.getSubjectClassMethod());
                 socketValid = false;
                 return null; // return and don't continue to try.
             } catch (java.net.SocketException e) {
-                this.log.fine("harmless %s node %s(%s) %s.%s", e.toString(), addr.format(), socket, message.getSubjectClass(), message.getSubjectClassMethod());
+                this.log.warning("%s retry node %s(%s) %s.%s", e.toString(), addr.format(), socket, message.getSubjectClass(), message.getSubjectClassMethod());
                 socketValid = false;
                 // close this socket and try again with a new one.
             } catch (IOException e) {
-                this.log.fine("harmless %s node %s(%s) %s.%s", e.toString(), addr.format(), socket, message.getSubjectClass(), message.getSubjectClassMethod());
+                this.log.warning("%s retry node %s(%s) %s.%s", e.toString(), addr.format(), socket, message.getSubjectClass(), message.getSubjectClassMethod());
                 socketValid = false;
                 // close this socket and try again with a new one.
             } catch (Exception e) {
-                this.log.warning("unexpected %s node %s(%s) %s.%s.", e.toString(), addr.format(), socket, message.getSubjectClass(), message.getSubjectClassMethod());
+                this.log.warning("%s retry node %s(%s) %s.%s.", e.toString(), addr.format(), socket, message.getSubjectClass(), message.getSubjectClassMethod());
                 e.printStackTrace();
                 //
                 // One of the cases above will catch anything that actually
@@ -2050,12 +2052,10 @@ public class BeehiveNode implements TitanNode, NodeMBean {
         }
     }
 
-    private static String release = String.valueOf(Beehive.class.getPackage().getImplementationVersion());
-
     /**
-     *
-     */
-    
+     * Run a single node.
+     * Configuration parameters from the node are fetched from a URL supplied as the first argument to this class method.
+     */    
     public static void main(String[] args) {
 
         // Read this command line argument as a URL to fetch configuration properties.

@@ -52,7 +52,7 @@ import java.util.logging.Level;
 
 import sunlabs.asdf.web.XML.XHTML;
 import sunlabs.asdf.web.http.HTTP;
-import sunlabs.titan.BeehiveObjectId;
+import sunlabs.titan.TitanGuidImpl;
 import sunlabs.titan.api.Service;
 import sunlabs.titan.api.XHTMLInspectable;
 import sunlabs.titan.node.BeehiveObjectStore.NotFoundException;
@@ -988,7 +988,7 @@ public final class ApplicationFramework implements XHTMLInspectable {
         //      advance, this will be problematic.  (So some sort of fix
         //      is required.)
         //
-        BeehiveObjectId id = new BeehiveObjectId(app.getName().getBytes());
+        TitanGuidImpl id = new TitanGuidImpl(app.getName().getBytes());
 
         // XXX Consider changes to allow packages of applications to be loaded
         //     with a single loader. To allow the classes to eventually be
@@ -1260,7 +1260,7 @@ public final class ApplicationFramework implements XHTMLInspectable {
             //      that have superceded the one that the caller knows about.
             //      Not good...
             //
-            BeehiveObjectId nameID = new BeehiveObjectId(appName.getBytes());
+            TitanGuidImpl nameID = new TitanGuidImpl(appName.getBytes());
 
             if (this.log.isLoggable(Level.FINE)) {
                 this.log.fine("Attempting to load %s %s from object pool",

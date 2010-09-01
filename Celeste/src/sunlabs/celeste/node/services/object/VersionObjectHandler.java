@@ -52,19 +52,20 @@ import sunlabs.celeste.client.operation.AbstractCelesteOperation;
 import sunlabs.celeste.client.operation.CelesteOperation;
 import sunlabs.celeste.client.operation.CreateFileOperation;
 import sunlabs.celeste.node.CelesteACL;
-import sunlabs.celeste.node.CelesteNode;
 import sunlabs.celeste.node.object.ExtensibleObject;
 import sunlabs.celeste.util.ACL;
-import sunlabs.titan.BeehiveObjectId;
+import sunlabs.titan.TitanGuidImpl;
 import sunlabs.titan.api.BeehiveObject;
 import sunlabs.titan.api.Credential;
 import sunlabs.titan.api.ObjectStore;
+import sunlabs.titan.api.TitanGuid;
+import sunlabs.titan.api.TitanNodeId;
 import sunlabs.titan.node.AbstractBeehiveObject;
 import sunlabs.titan.node.BeehiveMessage;
+import sunlabs.titan.node.BeehiveMessage.RemoteException;
 import sunlabs.titan.node.BeehiveNode;
 import sunlabs.titan.node.BeehiveObjectPool;
 import sunlabs.titan.node.BeehiveObjectStore;
-import sunlabs.titan.node.BeehiveMessage.RemoteException;
 import sunlabs.titan.node.BeehiveObjectStore.DeletedObjectException;
 import sunlabs.titan.node.BeehiveObjectStore.NoSpaceException;
 import sunlabs.titan.node.BeehiveObjectStore.NotFoundException;
@@ -121,7 +122,7 @@ public final class VersionObjectHandler extends AbstractObjectHandler implements
 
 //        private StorableFragmentedObject.Handler.FragmentMap fragmentHead;
 
-        private BeehiveObjectId anchorObjectId;
+        private TitanGuid anchorObjectId;
         
         private Credential.Signature signature;
         private AbstractCelesteOperation celesteOperation;
@@ -141,8 +142,8 @@ public final class VersionObjectHandler extends AbstractObjectHandler implements
         // operation invocations.  Each version also has an ACL, which records the
         // specific permissions required to invoke each operation.
         //
-        private BeehiveObjectId owner = null;
-        private BeehiveObjectId group = null;
+        private TitanGuid owner = null;
+        private TitanGuid group = null;
         private CelesteACL acl = null;
         
 //        private Trigger preOperationTrigger;
@@ -167,9 +168,9 @@ public final class VersionObjectHandler extends AbstractObjectHandler implements
             public final static long serialVersionUID = 1L;
 
             private final AnchorObject.Object.Version version;
-            private BeehiveObjectId objectId;
+            private TitanGuid objectId;
 
-            public Reference(AnchorObject.Object.Version version, BeehiveObjectId objectId) {
+            public Reference(AnchorObject.Object.Version version, TitanGuid objectId) {
                 this.objectId = objectId;
                 this.version = version;
             }
@@ -177,7 +178,7 @@ public final class VersionObjectHandler extends AbstractObjectHandler implements
             public Reference(String reference) {
                 String[] tokens = reference.split(":");
                 this.version = new AnchorObjectHandler.AObject.Version(tokens[0]);
-                this.objectId = new BeehiveObjectId(tokens[1]);
+                this.objectId = new TitanGuidImpl(tokens[1]);
             }
 
             @Override
@@ -195,7 +196,7 @@ public final class VersionObjectHandler extends AbstractObjectHandler implements
                 return false;
             }
 
-            public BeehiveObjectId getObjectId() {
+            public TitanGuid getObjectId() {
                 return this.objectId;
             }
 
@@ -224,7 +225,7 @@ public final class VersionObjectHandler extends AbstractObjectHandler implements
          * Create a {@code VObject} representing the first version of a new file.
          */
         protected VObject(
-                BeehiveObjectId anchorObjectId,
+                TitanGuid anchorObjectId,
                 ReplicationParameters replicationParams,
                 CreateFileOperation createOperation,
                 ClientMetaData clientData,
@@ -260,18 +261,18 @@ public final class VersionObjectHandler extends AbstractObjectHandler implements
         }
 
         @Override
-        public BeehiveObjectId getDataId() {
+        public TitanGuid getDataId() {
             return this.getDeleteTokenId()
             	.add(this.getAnchorObjectId())
                 .add(this.getVersion().getGeneration())
                 .add(String.valueOf(this.getVersion().getSerialNumber()));
         }
 
-        public void delete(BeehiveObjectId profferedDeleteToken, long timeToLive) throws BeehiveObjectStore.DeleteTokenException {
+        public void delete(TitanGuid profferedDeleteToken, long timeToLive) throws BeehiveObjectStore.DeleteTokenException {
             DeleteableObject.ObjectDeleteHelper(this, profferedDeleteToken, timeToLive);
         }
 
-        public boolean checkAccess(BeehiveObjectId clientId, CelesteACL.CelesteOps privilege) {
+        public boolean checkAccess(TitanGuid clientId, CelesteACL.CelesteOps privilege) {
             CelesteACL acl = this.getACL();
             if (acl != null) {
                 try {
@@ -577,7 +578,7 @@ public final class VersionObjectHandler extends AbstractObjectHandler implements
             this.clientMetaData = context;
         }
 
-        public BeehiveObjectId getAnchorObjectId() {
+        public TitanGuid getAnchorObjectId() {
         	return this.anchorObjectId;
         }
 
@@ -597,7 +598,7 @@ public final class VersionObjectHandler extends AbstractObjectHandler implements
          *
          * @return this version's owner
          */
-        public BeehiveObjectId getOwner() {
+        public TitanGuid getOwner() {
             return this.owner;
         }
 
@@ -606,7 +607,7 @@ public final class VersionObjectHandler extends AbstractObjectHandler implements
          *
          * @param owner   the new owner
          */
-        public void setOwner(BeehiveObjectId owner) {
+        public void setOwner(TitanGuid owner) {
             this.owner = owner;
         }
 
@@ -615,7 +616,7 @@ public final class VersionObjectHandler extends AbstractObjectHandler implements
          *
          * @return this version's group
          */
-        public BeehiveObjectId getGroup() {
+        public TitanGuid getGroup() {
             return this.group;
         }
 
@@ -624,7 +625,7 @@ public final class VersionObjectHandler extends AbstractObjectHandler implements
          *
          * @param group   the new group
          */
-        public void setGroup(BeehiveObjectId group) {
+        public void setGroup(TitanGuid group) {
             this.group = group;
         }
 
@@ -745,10 +746,10 @@ public final class VersionObjectHandler extends AbstractObjectHandler implements
     }
 
     // This is a lock signaling that a published object is undergoing a deletion.
-    private ObjectLock<BeehiveObjectId> publishObjectDeleteLocks;
+    private ObjectLock<TitanGuid> publishObjectDeleteLocks;
 
     // This is a lock signaling that the deleteLocalObject() method is already deleting the specified object.
-    private ObjectLock<BeehiveObjectId> deleteLocalObjectLocks;
+    private ObjectLock<TitanGuid> deleteLocalObjectLocks;
 
     public VersionObjectHandler(BeehiveNode node) throws
             MalformedObjectNameException,
@@ -757,11 +758,11 @@ public final class VersionObjectHandler extends AbstractObjectHandler implements
             MBeanRegistrationException {
         super(node, VersionObjectHandler.name, "Celeste Version Object Handler");
 
-        this.publishObjectDeleteLocks = new ObjectLock<BeehiveObjectId>();
-        this.deleteLocalObjectLocks = new ObjectLock<BeehiveObjectId>();
+        this.publishObjectDeleteLocks = new ObjectLock<TitanGuid>();
+        this.deleteLocalObjectLocks = new ObjectLock<TitanGuid>();
     }
 
-    public VersionObject.Object create(BeehiveObjectId anchorObjectId,
+    public VersionObject.Object create(TitanGuid anchorObjectId,
             ReplicationParameters replicationParams,
             CreateFileOperation createOperation,
             ClientMetaData clientMetaData,
@@ -789,7 +790,7 @@ public final class VersionObjectHandler extends AbstractObjectHandler implements
         }
 
         // Dup the getObjectsToPublish set as it's backed by a Map and is not serializable.
-        return message.composeReply(this.node.getNodeAddress(), new PublishDaemon.PublishObject.Response(new HashSet<BeehiveObjectId>(publishRequest.getObjectsToPublish().keySet())));
+        return message.composeReply(this.node.getNodeAddress(), new PublishDaemon.PublishObject.Response(new HashSet<TitanGuid>(publishRequest.getObjectsToPublish().keySet())));
     }
 
     public BeehiveMessage unpublishObject(BeehiveMessage message) throws ClassCastException, BeehiveMessage.RemoteException, ClassNotFoundException {
@@ -827,8 +828,9 @@ public final class VersionObjectHandler extends AbstractObjectHandler implements
             VersionObject.Object aObject = this.retrieve(request.getObjectId());
 
             // XXX It would be good to have the Request contain a Map and not a Set, and then just use keySet().
-            Set<BeehiveObjectId> excludeNodes = new HashSet<BeehiveObjectId>();
-            for (BeehiveObjectId publisher : request.getExcludedNodes()) {
+            // XXX Why do this at all, just use the set.
+            Set<TitanNodeId> excludeNodes = new HashSet<TitanNodeId>();
+            for (TitanNodeId publisher : request.getExcludedNodes()) {
                 excludeNodes.add(publisher);                
             }
             if (this.log.isLoggable(Level.FINE)) {
@@ -878,12 +880,12 @@ public final class VersionObjectHandler extends AbstractObjectHandler implements
      * </p>
      * @throws RemoteException 
      */
-    public VersionObject.Object retrieve(BeehiveObjectId objectId)
+    public VersionObject.Object retrieve(TitanGuid objectId)
     throws ClassCastException, BeehiveObjectStore.DeletedObjectException, BeehiveObjectStore.NotFoundException {
         return RetrievableObject.retrieve(this, VersionObject.Object.class, objectId);
     }
 
-    public Manifest getManifest(BeehiveObjectId objectId, long offset, long length)
+    public Manifest getManifest(TitanGuid objectId, long offset, long length)
     throws VersionObject.BadManifestException, ClassCastException, DeletedObjectException, BeehiveObjectStore.NotFoundException, RemoteException {
         // XXX Make this a request and send it to the object.
         VersionObject.Object vObject = this.retrieve(objectId);
@@ -906,27 +908,25 @@ public final class VersionObjectHandler extends AbstractObjectHandler implements
         return message.composeReply(this.node.getNodeAddress());
     }
 
-    public ObjectLock<BeehiveObjectId> getPublishObjectDeleteLocks() {
+    public ObjectLock<TitanGuid> getPublishObjectDeleteLocks() {
         return publishObjectDeleteLocks;
     }
 
-    public DOLRStatus deleteObject(BeehiveObjectId objectId, BeehiveObjectId profferedDeletionToken, long timeToLive)
+    public DOLRStatus deleteObject(TitanGuid objectId, TitanGuid profferedDeletionToken, long timeToLive)
     throws BeehiveObjectStore.NoSpaceException {
 
-        boolean trace = false;
         if (this.log.isLoggable(Level.FINE)) {
             this.log.fine("%s %s %ds", objectId, profferedDeletionToken, timeToLive);
-            trace = true;
         }
         DeleteableObject.Request request = new DeleteableObject.Request(objectId, profferedDeletionToken, timeToLive);
-        BeehiveMessage reply = this.node.sendToObject(objectId, this.getName(), "deleteLocalObject", request, trace);
+        BeehiveMessage reply = this.node.sendToObject(objectId, this.getName(), "deleteLocalObject", request);
         if (!reply.getStatus().isSuccessful()) {
             this.log.fine("FAILED %s", objectId);
         }
         return reply.getStatus();
     }
 
-    public BeehiveObject createAntiObject(DeleteableObject.Handler.Object object, BeehiveObjectId profferedDeleteToken, long timeToLive)
+    public BeehiveObject createAntiObject(DeleteableObject.Handler.Object object, TitanGuid profferedDeleteToken, long timeToLive)
     throws IOException, ClassCastException, BeehiveObjectStore.NoSpaceException, BeehiveObjectStore.DeleteTokenException {
 
         //this.log.info("%s", object.getObjectId());
@@ -935,7 +935,7 @@ public final class VersionObjectHandler extends AbstractObjectHandler implements
 
         VersionObject.Object.Reference previousVObject = vObject.getPreviousVObject();
         if (previousVObject != null) {
-            BeehiveObjectId previousVObjectId = previousVObject.getObjectId();
+            TitanGuid previousVObjectId = previousVObject.getObjectId();
             this.deleteObject(previousVObjectId, profferedDeleteToken, timeToLive);
         }
 
@@ -960,7 +960,7 @@ public final class VersionObjectHandler extends AbstractObjectHandler implements
         return ExtensibleObject.extensibleOperation(this, message);
     }
     
-    public <C> C extension(Class<? extends C> klasse, BeehiveObjectId objectId, ExtensibleObject.Operation.Request op) throws ClassCastException, ClassNotFoundException, RemoteException {
+    public <C> C extension(Class<? extends C> klasse, TitanGuid objectId, ExtensibleObject.Operation.Request op) throws ClassCastException, ClassNotFoundException, RemoteException {
         return ExtensibleObject.extension(this, klasse, objectId, op);
     }
 }

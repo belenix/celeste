@@ -24,29 +24,28 @@
 
 package sunlabs.celeste.client.filesystem.simple;
 
+import static sunlabs.celeste.client.filesystem.FileAttributes.Names.CONTENT_TYPE_NAME;
+
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.Serializable;
-
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
 
-
 import sunlabs.celeste.FileIdentifier;
 import sunlabs.celeste.client.filesystem.FileAttributes;
 import sunlabs.celeste.client.filesystem.FileException;
 import sunlabs.celeste.node.services.api.AObjectVersionMapAPI;
-import sunlabs.titan.BeehiveObjectId;
+import sunlabs.titan.TitanGuidImpl;
 import sunlabs.titan.api.Credential;
+import sunlabs.titan.api.TitanGuid;
 import sunlabs.titan.util.ExponentialBackoff;
 import sunlabs.titan.util.ExtentBuffer;
 import sunlabs.titan.util.OrderedProperties;
-
-import static sunlabs.celeste.client.filesystem.FileAttributes.Names.CONTENT_TYPE_NAME;
 
 /**
  * DirectoryImpl represents directories as they are stored in Celeste files.
@@ -302,7 +301,7 @@ public class DirectoryImpl {
         // entry won't get the proper serial number.)
         //
         synchronized (this) {
-            BeehiveObjectId thisGroupId = BeehiveObjectId.ZERO;
+            TitanGuid thisGroupId = TitanGuidImpl.ZERO;
 
             try {
                 this.store.create(attributes, clientProperties, invokerCredential,
@@ -424,7 +423,7 @@ public class DirectoryImpl {
         ExponentialBackoff delayer = new ExponentialBackoff(2, 100);
         for (int retries = 0; retries < retryLimit; retries++) {
             long readStartTime = System.currentTimeMillis();
-            BeehiveObjectId currentVersion = overwriteAllowed ?
+            TitanGuid currentVersion = overwriteAllowed ?
                 null : this.store.getLatestVersionId(false);
             OrderedProperties dir = readDir(accessorProfile, requestorPassword);
             readDirTime += System.currentTimeMillis() - readStartTime;
@@ -647,7 +646,7 @@ public class DirectoryImpl {
         }
         String[] objectIds = value.split(":");
         return new FileIdentifier(
-            new BeehiveObjectId(objectIds[0]), new BeehiveObjectId(objectIds[1]));
+            new TitanGuidImpl(objectIds[0]), new TitanGuidImpl(objectIds[1]));
     }
 
     /**
@@ -1002,7 +1001,7 @@ public class DirectoryImpl {
     //
     private void writeDir(OrderedProperties dir,
             Credential accessorProfile, char[] requestorPassword,
-            BeehiveObjectId initialPredicatedVersion)
+            TitanGuid initialPredicatedVersion)
         throws
             FileException.BadVersion,
             FileException.CapacityExceeded,
@@ -1062,8 +1061,7 @@ public class DirectoryImpl {
         //      so that the transaction proper is only required to guard
         //      against races between sets of mutually non-local threads.
         //
-        BeehiveObjectId predicatedVersion =
-            (initialPredicatedVersion != null) ?
+        TitanGuid predicatedVersion = (initialPredicatedVersion != null) ?
                 initialPredicatedVersion : this.store.getLatestVersionId(false);
         int retryCount = 0;
         ExponentialBackoff delayer = new ExponentialBackoff(2, 100);

@@ -1,5 +1,5 @@
 /*
- * Copyright 2007-2008 Sun Microsystems, Inc. All Rights Reserved.
+ * Copyright 2007-2010 Oracle. All Rights Reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER
  *
  * This code is free software; you can redistribute it and/or modify
@@ -17,14 +17,13 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
  * 02110-1301 USA
  *
- * Please contact Sun Microsystems, Inc., 16 Network Circle, Menlo
- * Park, CA 94025 or visit www.sun.com if you need additional
- * information or have any questions.
+ * Please contact Oracle Corporation, 500 Oracle Parkway, Redwood Shores, CA 94065
+ * or visit www.oracle.com if you need additional information or
+ * have any questions.
  */
-
 package sunlabs.celeste.client.filesystem;
 
-import sunlabs.titan.BeehiveObjectId;
+import sunlabs.titan.api.TitanGuid;
 
 /**
  * <p>
@@ -53,9 +52,9 @@ import sunlabs.titan.BeehiveObjectId;
  * </ul>
  */
 public class FileId {
-    private final BeehiveObjectId  networkId;
-    private final BeehiveObjectId  nameSpaceId;
-    private final BeehiveObjectId  uniqueId;
+    private final TitanGuid  networkId;
+    private final TitanGuid  nameSpaceId;
+    private final TitanGuid  uniqueId;
 
     /**
      * Create a new {@code FileId} from the given {@code celesteProxy} and
@@ -71,8 +70,8 @@ public class FileId {
      * @throws IllegalArgumentException
      *      if any of the arguments are {@code null}
      */
-    public FileId(BeehiveObjectId networkId, BeehiveObjectId nameSpaceId,
-            BeehiveObjectId uniqueId) {
+    public FileId(TitanGuid networkId, TitanGuid nameSpaceId,
+            TitanGuid uniqueId) {
         if (networkId == null || nameSpaceId == null || uniqueId == null)
             throw new IllegalArgumentException(
                 "all arguments must be non-null");
@@ -88,7 +87,7 @@ public class FileId {
      *
      * @return  the Celeste confederation's network id
      */
-    public BeehiveObjectId getNetworkId() {
+    public TitanGuid getNetworkId() {
         return this.networkId;
     }
 
@@ -98,7 +97,7 @@ public class FileId {
      *
      * @return  the profile's id
      */
-    public BeehiveObjectId getNameSpaceId() {
+    public TitanGuid getNameSpaceId() {
         return this.nameSpaceId;
     }
 
@@ -108,7 +107,7 @@ public class FileId {
      *
      * @return  the unique id
      */
-    public BeehiveObjectId  getUniqueId() {
+    public TitanGuid  getUniqueId() {
         return this.uniqueId;
     }
 
@@ -152,10 +151,10 @@ public class FileId {
 
     /**
      * A variant of {@link #toString()} that emits only the first {@code
-     * prefixLength} characters of each {@code BeehiveObjectId} in the tuple
+     * prefixLength} characters of each {@code TitanGuid} in the tuple
      * representing this {@code FileId}.
      *
-     * @param prefixLength  the length to truncate {@code BeehiveObjectId}s to
+     * @param prefixLength  the length to truncate {@code TitanGuid}s to
      *
      * @return  an abbreviated string representation of this {@code FileId}
      */
@@ -170,7 +169,7 @@ public class FileId {
         //      dynamically.  But the Java String.format() method doesn't
         //      appear to allow this.
         //
-        // XXX: BeehiveObjectId ought to supply a toString(prefixLength)
+        // XXX: TitanGuid ought to supply a toString(prefixLength)
         //      method.
         //
         String format = String.format("FileId[%%%d.%ds, %%%d.%ds, %%%d.%ds]",

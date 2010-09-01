@@ -28,10 +28,11 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 
-import sunlabs.titan.BeehiveObjectId;
+import sunlabs.titan.TitanGuidImpl;
+import sunlabs.titan.api.TitanGuid;
 
 public class PrincipalAttestationMap extends
-        HashMap<BeehiveObjectId, PrincipalAttestation> {
+        HashMap<TitanGuid, PrincipalAttestation> {
     private final static long serialVersionUID = 1L;
 
     public PrincipalAttestationMap() {
@@ -55,7 +56,7 @@ public class PrincipalAttestationMap extends
         String[] entries = encodedForm.split(";");
         for (String entry : entries) {
             String[] keyValue = entry.split("-");
-            BeehiveObjectId key = new BeehiveObjectId(keyValue[0]);
+            TitanGuid key = new TitanGuidImpl(keyValue[0]);
             PrincipalAttestation value =
                 new PrincipalAttestation(keyValue[1]);
             this.put(key, value);
@@ -82,10 +83,9 @@ public class PrincipalAttestationMap extends
         // iteration can be detected, thereby avoiding adding a final trailing
         // ";".
         //
-        Iterator<Map.Entry<BeehiveObjectId, PrincipalAttestation>> it =
-            this.entrySet().iterator();
+        Iterator<Map.Entry<TitanGuid, PrincipalAttestation>> it = this.entrySet().iterator();
         while (it.hasNext()) {
-            Map.Entry<BeehiveObjectId, PrincipalAttestation> entry = it.next();
+            Map.Entry<TitanGuid, PrincipalAttestation> entry = it.next();
             sb.append(String.format("%s-%s",
                 entry.getKey().toString(),
                 entry.getValue().toString()));

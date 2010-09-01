@@ -31,7 +31,7 @@ import sunlabs.celeste.CelesteException;
 import sunlabs.celeste.FileIdentifier;
 import sunlabs.celeste.node.CelesteACL;
 import sunlabs.celeste.node.services.CelesteClientDaemon;
-import sunlabs.titan.BeehiveObjectId;
+import sunlabs.titan.api.TitanGuid;
 
 /**
  * Lock a Celeste file.
@@ -66,16 +66,16 @@ public class LockFileOperation extends AbstractCelesteOperation {
      * </p>
      *
      * @param fileIdentifier    the {@link FileIdentifier} of the file to lock
-     * @param clientId          the {@link BeehiveObjectId} of the client's
+     * @param clientId          the {@link TitanGuid} of the client's
      *                          credential
-     * @param vObjectId         a {@link BeehiveObjectId} predicate
+     * @param vObjectId         a {@link TitanGuid} predicate
      *                          specifying the version of the file expected to
      *                          be current
      * @param annotation        uninterpreted client-supplied information
      *                          associated with the lock
      */
-    public LockFileOperation(FileIdentifier fileIdentifier, BeehiveObjectId clientId, String token,
-            BeehiveObjectId vObjectId, Serializable annotation) {
+    public LockFileOperation(FileIdentifier fileIdentifier, TitanGuid clientId, String token,
+            TitanGuid vObjectId, Serializable annotation) {
         super(LockFileOperation.name, fileIdentifier, clientId, vObjectId);
         this.type = Type.WRITE;
         this.token = token;
@@ -88,10 +88,10 @@ public class LockFileOperation extends AbstractCelesteOperation {
      * A lock can only be established on the most recent version of a file.
      * </p>
      * @param fileIdentifier The {@link FileIdentifier} of the file to lock.
-     * @param clientId The {@link BeehiveObjectId} of the client's credential.
-     * @param vObjectId The {@link BeehiveObjectId} predicate specifying the expected recent version of the file.
+     * @param clientId The {@link TitanGuid} of the client's credential.
+     * @param vObjectId The {@link TitanGuid} predicate specifying the expected recent version of the file.
      */
-    public LockFileOperation(FileIdentifier fileIdentifier, BeehiveObjectId clientId, String token, BeehiveObjectId vObjectId) {
+    public LockFileOperation(FileIdentifier fileIdentifier, TitanGuid clientId, String token, TitanGuid vObjectId) {
         this(fileIdentifier, clientId, token, vObjectId, null);
     }
 
@@ -99,19 +99,19 @@ public class LockFileOperation extends AbstractCelesteOperation {
      * Construct a Celeste LockFileOperation.
      *
      * @param fileIdentifier The {@link FileIdentifier} of the file to lock.
-     * @param clientId The {@link BeehiveObjectId} of the client's credential
+     * @param clientId The {@link TitanGuid} of the client's credential
      * @param token The lock "token" distinguishing this lock from others on the lock stack.
      */
-    public LockFileOperation(FileIdentifier fileIdentifier, BeehiveObjectId clientId, String token) {
+    public LockFileOperation(FileIdentifier fileIdentifier, TitanGuid clientId, String token) {
         this(fileIdentifier, clientId, token, null);
     }
 
     /**
      * Construct a Celeste LockFileOperation
      * @param fileIdentifier The {@link FileIdentifier} of the file to lock.
-     * @param clientId The {@link BeehiveObjectId} of the client's credential
+     * @param clientId The {@link TitanGuid} of the client's credential
      */
-    public LockFileOperation(FileIdentifier fileIdentifier, BeehiveObjectId clientId) {
+    public LockFileOperation(FileIdentifier fileIdentifier, TitanGuid clientId) {
         this(fileIdentifier, clientId, null, null);
     }
 

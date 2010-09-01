@@ -24,8 +24,9 @@
 
 package sunlabs.celeste.client.filesystem.simple;
 
-import java.lang.management.ManagementFactory;
+import static java.lang.Math.max;
 
+import java.lang.management.ManagementFactory;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
@@ -42,20 +43,17 @@ import javax.management.NotCompliantMBeanException;
 import javax.management.ObjectName;
 
 import sunlabs.asdf.jmx.JMX;
-import sunlabs.asdf.web.XML.XML;
 import sunlabs.asdf.web.XML.XHTML.Table;
-
+import sunlabs.asdf.web.XML.XML;
 import sunlabs.celeste.CelesteException;
 import sunlabs.celeste.client.filesystem.FileException;
-import sunlabs.titan.BeehiveObjectId;
+import sunlabs.titan.api.TitanGuid;
 import sunlabs.titan.util.Extent;
 import sunlabs.titan.util.ExtentBuffer;
 import sunlabs.titan.util.ExtentBufferMap;
 import sunlabs.titan.util.ExtentImpl;
 import sunlabs.titan.util.ExtentMap;
 import sunlabs.titan.util.WeakMBeanRegistrar;
-
-import static java.lang.Math.max;
 
 //
 // XXX: Should the class-level javadoc comment say anything about JMX (e.g.,
@@ -67,7 +65,7 @@ import static java.lang.Math.max;
  *
  * The {@code BufferCache} class provides caching services for clients (such
  * as {@link sunlabs.celeste.client.filesystem.simple.FileImpl FileImpl)}
- * that manage successive versions of a file, using {link BeehiveObjectId}s
+ * that manage successive versions of a file, using {link TitanGuid}s
  * to identify those versions.
  *
  * </p><p>
@@ -111,7 +109,7 @@ public class BufferCache implements BufferCacheMBean {
         /**
          * The file version to which the result applies
          */
-        public final BeehiveObjectId   version;
+        public final TitanGuid   version;
         /**
          * An extent buffer holding the results of the read
          */
@@ -123,7 +121,7 @@ public class BufferCache implements BufferCacheMBean {
          * @param version   the file version to which the result applies
          * @param buffer    an extent buffer holding the results of the read
          */
-        public ReadResult(BeehiveObjectId version, ExtentBuffer buffer) {
+        public ReadResult(TitanGuid version, ExtentBuffer buffer) {
             this.version = version;
             this.buffer = buffer;
         }
@@ -292,8 +290,8 @@ public class BufferCache implements BufferCacheMBean {
     // flush method that provides an option to retain the data for the most
     // recent version.)
     //
-    private Map<BeehiveObjectId, ExtentBufferMap>  buffersByVersion =
-        new LinkedHashMap<BeehiveObjectId, ExtentBufferMap>();
+    private Map<TitanGuid, ExtentBufferMap>  buffersByVersion =
+        new LinkedHashMap<TitanGuid, ExtentBufferMap>();
 
     //
     // The policy information for each buffer.  (Every ExtentBuffer in each of
@@ -323,8 +321,8 @@ public class BufferCache implements BufferCacheMBean {
     // Maps (per file version) of pending read requests.  Each is keyed by
     // extents that record the desired span of each i/o.
     //
-    private Map<BeehiveObjectId, ExtentMap<PendingExtent>> pendingReadsByVersion =
-        new HashMap<BeehiveObjectId, ExtentMap<PendingExtent>>();
+    private Map<TitanGuid, ExtentMap<PendingExtent>> pendingReadsByVersion =
+        new HashMap<TitanGuid, ExtentMap<PendingExtent>>();
 
     //
     // Used where we might otherwise synchronize on this, to allow for
@@ -512,7 +510,7 @@ public class BufferCache implements BufferCacheMBean {
      * @param version   the file version to check
      * @param extent    the extent to check
      */
-    public boolean isCached(BeehiveObjectId version, Extent extent) {
+    public boolean isCached(TitanGuid version, Extent extent) {
         return isCached(version, extent, false);
     }
 
@@ -530,7 +528,7 @@ public class BufferCache implements BufferCacheMBean {
      * @return {@code true} if the designated portion of {@code} extent is
      *          present in the cache and {@code false} otherwise
      */
-    public boolean isCached(BeehiveObjectId version, Extent extent,
+    public boolean isCached(TitanGuid version, Extent extent,
             boolean entire) {
         this.lock();
         try {
@@ -598,7 +596,7 @@ public class BufferCache implements BufferCacheMBean {
      *      if any of several possible things go wrong while attempting to
      *      satisfy the read
      */
-    public ReadResult read(BeehiveObjectId desiredVersion, Extent desiredExtent,
+    public ReadResult read(TitanGuid desiredVersion, Extent desiredExtent,
             Reader reader)
         throws
             FileException.PermissionDenied,
@@ -668,7 +666,7 @@ public class BufferCache implements BufferCacheMBean {
     //      down extents.  (The reader also ought to be free to move the
     //      starting offset down to a convenient alignment boundary.)
     //
-    public ReadResult read(BeehiveObjectId desiredVersion, Extent desiredExtent,
+    public ReadResult read(TitanGuid desiredVersion, Extent desiredExtent,
             Reader reader, boolean async)
         throws
             FileException.PermissionDenied,
@@ -958,8 +956,8 @@ public class BufferCache implements BufferCacheMBean {
      * @param newVersion        the new file version resulting from the write
      * @param modifiedExtent    the data written to create the new version
      */
-    public void predicatedWrite(BeehiveObjectId oldVersion,
-            BeehiveObjectId newVersion, ExtentBuffer modifiedExtent) {
+    public void predicatedWrite(TitanGuid oldVersion,
+            TitanGuid newVersion, ExtentBuffer modifiedExtent) {
         this.lock();
         try {
             ExtentBufferMap oldMap = this.buffersByVersion.get(oldVersion);
@@ -1003,8 +1001,8 @@ public class BufferCache implements BufferCacheMBean {
      *                          truncate
      * @param newLength         the length of the new file version
      */
-    public void predicatedTruncate(BeehiveObjectId oldVersion,
-            BeehiveObjectId newVersion, long newLength) {
+    public void predicatedTruncate(TitanGuid oldVersion,
+            TitanGuid newVersion, long newLength) {
         this.lock();
         try {
             ExtentBufferMap oldMap = this.buffersByVersion.get(oldVersion);
@@ -1050,8 +1048,8 @@ public class BufferCache implements BufferCacheMBean {
      *                      predicated
      * @param newVersion    the new file version resulting from the operation
      */
-    public void predicatedAttributeChange(BeehiveObjectId oldVersion,
-            BeehiveObjectId newVersion) {
+    public void predicatedAttributeChange(TitanGuid oldVersion,
+            TitanGuid newVersion) {
         this.lock();
         try {
             ExtentBufferMap oldMap = this.buffersByVersion.get(oldVersion);
@@ -1271,9 +1269,9 @@ public class BufferCache implements BufferCacheMBean {
             // last key delivered by iterating over its key set is what we
             // want.
             //
-            BeehiveObjectId mostRecentVersion = null;
+            TitanGuid mostRecentVersion = null;
             if (retainCurrentVersion) {
-                Iterator<BeehiveObjectId> keyIterator =
+                Iterator<TitanGuid> keyIterator =
                     this.buffersByVersion.keySet().iterator();
                 while (keyIterator.hasNext())
                     mostRecentVersion = keyIterator.next();
@@ -1290,10 +1288,10 @@ public class BufferCache implements BufferCacheMBean {
             // versions; this is a consequence of sharing buffers for extents
             // that a file update didn't change.
             //
-            Iterator<Map.Entry<BeehiveObjectId, ExtentBufferMap>> entryIterator =
+            Iterator<Map.Entry<TitanGuid, ExtentBufferMap>> entryIterator =
                 this.buffersByVersion.entrySet().iterator();
             while (entryIterator.hasNext()) {
-                Map.Entry<BeehiveObjectId, ExtentBufferMap> entry =
+                Map.Entry<TitanGuid, ExtentBufferMap> entry =
                     entryIterator.next();
                 //
                 // This check will trigger only on the last iteration and only
@@ -1340,7 +1338,7 @@ public class BufferCache implements BufferCacheMBean {
      *      if the given file version has a buffered extent without
      *      corresponding policy information
      */
-    void verifyPolicyInfo(BeehiveObjectId version) {
+    void verifyPolicyInfo(TitanGuid version) {
         this.lock();
         try {
             ExtentBufferMap map = buffersByVersion.get(version);
@@ -1628,7 +1626,7 @@ public class BufferCache implements BufferCacheMBean {
     //
     // Get the ExtentBufferMap for version, creating it if necessary.
     //
-    private ExtentBufferMap getExtentBufferMap(BeehiveObjectId version) {
+    private ExtentBufferMap getExtentBufferMap(TitanGuid version) {
         ExtentBufferMap bufferMap = null;
         synchronized (this.buffersByVersion) {
             bufferMap = this.buffersByVersion.get(version);
@@ -1644,8 +1642,7 @@ public class BufferCache implements BufferCacheMBean {
     // Update the policy information for the ExtentBuffer covering the given
     // offset of version with referenceTime.
     //
-    private void updateReferenceTime(BeehiveObjectId version, long offset,
-            long referenceTime) {
+    private void updateReferenceTime(TitanGuid version, long offset, long referenceTime) {
         //
         // We synchronize against this (as opposed to something more
         // fine-grained) because we access multiple maps and the accesses must

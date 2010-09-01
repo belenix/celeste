@@ -31,8 +31,8 @@ import sunlabs.celeste.CelesteException;
 import sunlabs.celeste.FileIdentifier;
 import sunlabs.celeste.node.CelesteACL;
 import sunlabs.celeste.node.services.CelesteClientDaemon;
-import sunlabs.titan.BeehiveObjectId;
 import sunlabs.titan.api.Credential;
+import sunlabs.titan.api.TitanGuid;
 
 /**
  * Unlock a previously Locked Celeste file.
@@ -55,10 +55,10 @@ public class UnlockFileOperation extends AbstractCelesteOperation {
      * Construct a Celeste UnlockFileOperation.
      * 
      * @param fileIdentifier The {@link FileIdentifier} of the file to unlock.
-     * @param clientId The the {@link BeehiveObjectId} of the {@link Credential} authorising the operation.
-     * @param vObjectId The {@link BeehiveObjectId} predicate specifying the expected recent version of the file.
+     * @param clientId The the {@link TitanGuid} of the {@link Credential} authorising the operation.
+     * @param vObjectId The {@link TitanGuid} predicate specifying the expected recent version of the file.
      */
-    public UnlockFileOperation(FileIdentifier fileIdentifier, BeehiveObjectId clientId, String token, BeehiveObjectId vObjectId) {
+    public UnlockFileOperation(FileIdentifier fileIdentifier, TitanGuid clientId, String token, TitanGuid vObjectId) {
         super(UnlockFileOperation.name, fileIdentifier, clientId, vObjectId);
         this.token = token;
     }
@@ -67,10 +67,10 @@ public class UnlockFileOperation extends AbstractCelesteOperation {
      * Construct a Celeste LockFileOperation.
      * 
      * @param fileIdentifier The {@link FileIdentifier} of the file to lock.
-     * @param clientId The {@link BeehiveObjectId} of the client's credential 
+     * @param clientId The {@link TitanGuid} of the client's credential 
      * @param token The lock "token" distinguishing this lock from others on the lock stack. 
      */
-    public UnlockFileOperation(FileIdentifier fileIdentifier, BeehiveObjectId clientId, String token) {
+    public UnlockFileOperation(FileIdentifier fileIdentifier, TitanGuid clientId, String token) {
         this(fileIdentifier, clientId, token, null);
     }
     
@@ -78,9 +78,9 @@ public class UnlockFileOperation extends AbstractCelesteOperation {
      * Construct a Celeste UnlockFileOperation.
      * 
      * @param fileIdentifier The {@link FileIdentifier} of the file to unlock.
-     * @param clientId The {@link BeehiveObjectId} of the client's credential 
+     * @param clientId The {@link TitanGuid} of the client's credential 
      */
-    public UnlockFileOperation(FileIdentifier fileIdentifier, BeehiveObjectId clientId) {
+    public UnlockFileOperation(FileIdentifier fileIdentifier, TitanGuid clientId) {
         this(fileIdentifier, clientId, null, null);
     }
 

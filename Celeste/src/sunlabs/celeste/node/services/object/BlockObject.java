@@ -25,18 +25,15 @@
 package sunlabs.celeste.node.services.object;
 
 import java.io.Serializable;
-
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.FutureTask;
 
-import sunlabs.asdf.functional.AbstractMapFunction;
 import sunlabs.asdf.functional.MapFunction;
 import sunlabs.celeste.client.ReplicationParameters;
 import sunlabs.celeste.node.object.ExtensibleObject;
-import sunlabs.celeste.node.services.object.BlockObjectHandler.MappableBlockObjectReader;
-import sunlabs.titan.BeehiveObjectId;
 import sunlabs.titan.api.BeehiveObject;
+import sunlabs.titan.api.TitanGuid;
 import sunlabs.titan.node.object.DeleteableObject;
 import sunlabs.titan.node.object.InspectableObject;
 import sunlabs.titan.node.object.ReplicatableObject;
@@ -73,7 +70,7 @@ public interface BlockObject extends
         public final static String REPLICATIONPARAM_LOWWATER_NAME = "BObject.Replication.LowWater";
 
         public static interface Reference extends Serializable {
-            public BeehiveObjectId getObjectId();
+            public TitanGuid getObjectId();
 
             /**
              * Get the byte offset in the original file where the data in this
@@ -97,7 +94,7 @@ public interface BlockObject extends
             public BufferableExtent getBounds();
         }
 
-        public BlockObject.Object.Reference makeReference(long offset, BeehiveObjectId objectId);
+        public BlockObject.Object.Reference makeReference(long offset, TitanGuid objectId);
 
         public BufferableExtent getBounds();
 
@@ -117,7 +114,7 @@ public interface BlockObject extends
     }
 
     public BlockObject.Object create(BufferableExtent bounds,
-            ExtentBufferMap data, BeehiveObject.Metadata metadata, BeehiveObjectId deleteTokenId, long timeToLive, ReplicationParameters replicationParams);
+            ExtentBufferMap data, BeehiveObject.Metadata metadata, TitanGuid deleteTokenId, long timeToLive, ReplicationParameters replicationParams);
 
     /**
      * Construct a {@link FutureTask} instance that will fetch and return the {@code BlockObject}

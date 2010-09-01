@@ -34,8 +34,9 @@ import sunlabs.celeste.api.CelesteAPI;
 import sunlabs.celeste.client.CelesteProxy;
 import sunlabs.celeste.client.Profile_;
 import sunlabs.celeste.client.operation.ReadProfileOperation;
-import sunlabs.titan.BeehiveObjectId;
+import sunlabs.titan.TitanGuidImpl;
 import sunlabs.titan.api.Credential;
+import sunlabs.titan.api.TitanGuid;
 import sunlabs.titan.node.BeehiveNode;
 
 /**
@@ -72,7 +73,7 @@ public class ProfileCache {
     private final InetSocketAddress address;
     private final CelesteProxy.Cache proxyCache;
 
-    private Hashtable<BeehiveObjectId,CacheEntry> profileCache;
+    private Hashtable<TitanGuid,CacheEntry> profileCache;
 
     public ProfileCache(CelesteAPI node) {
         this(node.getInetSocketAddress(), null, ((int) ProfileCache.defaultCacheTimeout)/1000);
@@ -129,11 +130,11 @@ public class ProfileCache {
 
         this.address = address;
         this.cacheTimeout = timeout * 1000L;
-        this.profileCache = new Hashtable<BeehiveObjectId,CacheEntry>();
+        this.profileCache = new Hashtable<TitanGuid,CacheEntry>();
     }
 
     public void put(Credential p) {
-        BeehiveObjectId guid = p.getObjectId();
+        TitanGuid guid = p.getObjectId();
         CacheEntry e = this.profileCache.get(guid);
         if (e == null) {
             e = new CacheEntry(System.currentTimeMillis(), p);
@@ -143,7 +144,7 @@ public class ProfileCache {
         this.profileCache.put(guid, e);
     }
 
-    public void remove(BeehiveObjectId profileGUID) {
+    public void remove(TitanGuid profileGUID) {
         this.profileCache.remove(profileGUID);
     }
 
@@ -151,7 +152,7 @@ public class ProfileCache {
             ClassNotFoundException,
             CelesteException.CredentialException {
 
-        return this.get(new BeehiveObjectId(profileName.getBytes()));
+        return this.get(new TitanGuidImpl(profileName.getBytes()));
     }
 
     /**
@@ -167,7 +168,7 @@ public class ProfileCache {
      * @throws ClassNotFoundException
      * @throws CelesteException.CredentialException
      */
-    public Credential get(BeehiveObjectId profileId) throws ClassNotFoundException, CelesteException.CredentialException {
+    public Credential get(TitanGuid profileId) throws ClassNotFoundException, CelesteException.CredentialException {
         //
         // Use the cached entry if it exists and is current.
         //
@@ -213,7 +214,7 @@ public class ProfileCache {
         }
     }
 
-    public Credential get(BeehiveObjectId profileId, BeehiveObjectId versionId) throws Exception, Credential.Exception {
+    public Credential get(TitanGuid profileId, TitanGuid versionId) throws Exception, Credential.Exception {
         //
         // Profile_s are no longer versioned.  So just ignore the versionId
         // argument.
@@ -223,7 +224,7 @@ public class ProfileCache {
 
     public boolean profileExists(String profileName) {
         try {
-            return profileExists(new BeehiveObjectId(profileName.getBytes()));
+            return profileExists(new TitanGuidImpl(profileName.getBytes()));
         } catch (CelesteException e) {
             return false;
         }
@@ -233,7 +234,7 @@ public class ProfileCache {
      *
      * @param profileId
      */
-    public boolean profileExists(BeehiveObjectId profileId) throws CelesteException.RuntimeException {
+    public boolean profileExists(TitanGuid profileId) throws CelesteException.RuntimeException {
         CelesteAPI proxy = null;
         try {
             proxy = this.proxyCache.getAndRemove(this.address);
@@ -261,7 +262,7 @@ public class ProfileCache {
      *
      * @return  the profile or {@code null} if it is not current in the cache
      */
-    public Credential getCachedOnly(BeehiveObjectId profileGUID) {
+    public Credential getCachedOnly(TitanGuid profileGUID) {
         CacheEntry entry = this.profileCache.get(profileGUID);
 
         if (entry != null && System.currentTimeMillis() - this.cacheTimeout > entry.time) {

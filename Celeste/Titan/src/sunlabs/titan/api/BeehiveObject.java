@@ -1,5 +1,5 @@
 /*
- * Copyright 2007-2009 Sun Microsystems, Inc. All Rights Reserved.
+ * Copyright 2007-2010 Oracle. All Rights Reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER
  *
  * This code is free software; you can redistribute it and/or modify
@@ -17,9 +17,9 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
  * 02110-1301 USA
  *
- * Please contact Sun Microsystems, Inc., 16 Network Circle, Menlo
- * Park, CA 94025 or visit www.sun.com if you need additional
- * information or have any questions.
+ * Please contact Oracle Corporation, 500 Oracle Parkway, Redwood Shores, CA 94065
+ * or visit www.oracle.com if you need additional information or
+ * have any questions.
  */
 package sunlabs.titan.api;
 
@@ -34,7 +34,6 @@ import java.util.Set;
 import sunlabs.asdf.util.Time;
 import sunlabs.asdf.web.XML.XHTML;
 import sunlabs.asdf.web.http.HTTP;
-import sunlabs.titan.BeehiveObjectId;
 import sunlabs.titan.node.object.BeehiveObjectHandler;
 
 /**
@@ -69,19 +68,19 @@ import sunlabs.titan.node.object.BeehiveObjectHandler;
  * <ul>
  *  <li>The object's meta-data contains an {@code ObjectStore.DataHash}
  *      property which is the hash of the object's data/state (expressed as a
- *      {@link BeehiveObjectId} value -- see {@link #getDataId()} .</li>
+ *      {@link TitanGuid} value -- see {@link #getDataId()} .</li>
  *  <li>The object's meta-data contains an {@code ObjectStore.DeleteTokenId}
  *      property which is the hash of the (secret) Delete Token (expressed as
- *      a {@link BeehiveObjectId} value).</li>
+ *      a {@link TitanGuid} value).</li>
  *  <li>The object's meta-data contains an {@code ObjectStore.ObjectId}
  *      which is the hash of the {@code ObjectStore.DeleteTokenId} and
  *      the {@code ObjectStore.DataHash} properties (expressed as a
- *      {@link BeehiveObjectId} value).</li>
+ *      {@link TitanGuid} value).</li>
  *  <li><p style='text-align: left; font-style: italic'>
  *      objectId = HASH(DeleteTokenHash || DataHash)</p></li>
  * </ul>
  * </li>
- * <li><b>Signature (Hash) attestation</b> &mdash The {@link BeehiveObjectId} is
+ * <li><b>Signature (Hash) attestation</b> &mdash The {@link TitanGuid} is
  *     derived from a combination of hashes and a signature. All of the
  *     following conditions must be true:
  * <ul>
@@ -106,7 +105,7 @@ import sunlabs.titan.node.object.BeehiveObjectHandler;
  * </ul>
  * </li>
  * <li><b>Delete-Token attestation</b> &mdash This is the form of anti-objects
- * (objects that are deleted). The {@link BeehiveObjectId} is derived from a
+ * (objects that are deleted). The {@link TitanGuid} is derived from a
  * combination of hashes and a signature and the Delete Token is exposed.
  * All of the following conditions must be true:
  * <ul>
@@ -143,7 +142,7 @@ public interface BeehiveObject extends /*XHTMLInspectable,*/ Serializable {
 
         public String getProperty(String name);
 
-        public BeehiveObjectId getPropertyAsObjectId(String name, BeehiveObjectId defaultValue);
+        public TitanGuid getPropertyAsObjectId(String name, TitanGuid defaultValue);
 
         public long getPropertyAsLong(String name, long defaultValue);
 
@@ -165,17 +164,17 @@ public interface BeehiveObject extends /*XHTMLInspectable,*/ Serializable {
     }
 
     /**
-     * Produce the {@link BeehiveObjectId} that names this {@code BeehiveObject}.
+     * Produce the {@link TitanGuid} that names this {@code BeehiveObject}.
      * <p>
      * NB: The validity of the object-id of a {@code BeehiveObject} is governed by rules
      * specified in the preamble documentation for this class (See {@link BeehiveObject}).
      * </p>
      */
-    public BeehiveObjectId getObjectId();
+    public TitanGuid getObjectId();
 
     /**
      * <p>
-     * Set the {@link BeehiveObjectId} that names this {@code BeehiveObject}.
+     * Set the {@link TitanGuid} that names this {@code BeehiveObject}.
      * </p>
      * <p>
      * NB: The validity of the {@code BeehiveObjectId} of a {@code BeehiveObject}
@@ -184,7 +183,7 @@ public interface BeehiveObject extends /*XHTMLInspectable,*/ Serializable {
      * checked here.
      * </p>
      */
-    public void setObjectId(BeehiveObjectId objectId);
+    public void setObjectId(TitanGuid objectId);
 
     /**
      * Return the time this object was created on this node
@@ -214,22 +213,22 @@ public interface BeehiveObject extends /*XHTMLInspectable,*/ Serializable {
     public long getRemainingSecondsToLive(long now);
 
     /**
-     * Set the {@link BeehiveObjectId} of this object's deletion-token.
+     * Set the {@link TitanGuid} of this object's deletion-token.
      * @param deleteTokenId
      */
-    public void setDeleteTokenId(BeehiveObjectId deleteTokenId);
+    public void setDeleteTokenId(TitanGuid deleteTokenId);
 
     /**
-     * Get the {@link BeehiveObjectId} of this object's deletion-token.
+     * Get the {@link TitanGuid} of this object's deletion-token.
      */
-    public BeehiveObjectId getDeleteTokenId();
+    public TitanGuid getDeleteTokenId();
 
     /**
-     * Produce a {@link BeehiveObjectId} representing the data of this object.
+     * Produce a {@link TitanGuid} representing the data of this object.
      * The data is whatever the implementation of the object needs to include in
      * what distinguishes this object from any other equal() object.
      */
-    public BeehiveObjectId getDataId();
+    public TitanGuid getDataId();
 
     public BeehiveObject.Metadata getMetadata();
 
@@ -246,7 +245,7 @@ public interface BeehiveObject extends /*XHTMLInspectable,*/ Serializable {
 
     public String getProperty(String name);
 
-    public BeehiveObjectId getPropertyAsObjectId(String name, BeehiveObjectId defaultValue);
+    public TitanGuid getPropertyAsObjectId(String name, TitanGuid defaultValue);
 
     public long getPropertyAsLong(String name, long defaultValue);
     

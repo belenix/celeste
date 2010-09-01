@@ -25,7 +25,6 @@ package sunlabs.titan.api;
 
 import java.io.IOException;
 
-import sunlabs.titan.BeehiveObjectId;
 import sunlabs.titan.node.BeehiveMessage;
 import sunlabs.titan.node.BeehiveObjectStore;
 import sunlabs.titan.node.PublishObjectMessage;
@@ -39,7 +38,7 @@ import sunlabs.titan.node.services.xml.TitanXML.XMLObjectStore;
 
 // Not sure this interface is that useful as opposed to just using the class definition
 
-public interface ObjectStore extends XHTMLInspectable, Iterable<BeehiveObjectId> {
+public interface ObjectStore extends XHTMLInspectable, Iterable<TitanGuid> {
     /** If set, this object must not be cached */
     public final static String METADATA_UNCACHABLE = "ObjectStore.Uncachable";
 
@@ -81,18 +80,18 @@ public interface ObjectStore extends XHTMLInspectable, Iterable<BeehiveObjectId>
     /** The secret Delete Token. */
     public final static String METADATA_DELETETOKEN = "ObjectStore.DeleteToken";
 
-    /** The {@link BeehiveObjectId} of the (secret) Delete Token. */
+    /** The {@link TitanGuid} of the (secret) Delete Token. */
     public final static String METADATA_DELETETOKENID = "ObjectStore.DeleteTokenId";
     public final static String METADATA_DATAHASH = "ObjectStore.DataHash";
     public final static String METADATA_OBJECTID = "ObjectStore.ObjectId";
     public final static String METADATA_VOUCHER = "ObjectStore.Voucher";
 
-    public void lock(BeehiveObjectId objectId);
+    public void lock(TitanGuid objectId);
 
     /**
      * True, if the local object store contains the object named by {@code objectId}.
      */
-    public boolean containsObject(BeehiveObjectId objectId);
+    public boolean containsObject(TitanGuid objectId);
 
     /**
      * Create and publish an object in the local object store.
@@ -105,13 +104,13 @@ public interface ObjectStore extends XHTMLInspectable, Iterable<BeehiveObjectId>
      * @throws UnacceptableObjectException The {@link BeehiveObject} is unacceptable as it is presented due
      *         to some inconsistency or the object's {@link BeehiveObjectHandler} rejected it during publishing.
      */
-    public BeehiveObjectId create(BeehiveObject object) throws InvalidObjectException, ObjectExistenceException, NoSpaceException, UnacceptableObjectException;
+    public TitanGuid create(BeehiveObject object) throws InvalidObjectException, ObjectExistenceException, NoSpaceException, UnacceptableObjectException;
 
     /**
-     * Given a {@link BeehiveObjectId} get the corresponding {@link BeehiveObject} from the local object store.
+     * Given a {@link TitanGuid} get the corresponding {@link BeehiveObject} from the local object store.
       * <p>
      * If the object is not found, the node
-     * will perform a clean-up and <em>unpublish</em> of the specified {@code BeehiveObjectId}
+     * will perform a clean-up and <em>unpublish</em> of the specified {@code TitanGuid}
      * lest the system have some residual, but incorrect, location information for the
      * object-id and {@link BeehiveObjectStore.NotFoundException} is thrown.
      * </p>
@@ -132,14 +131,14 @@ public interface ObjectStore extends XHTMLInspectable, Iterable<BeehiveObjectId>
      * @param objectId
      * @throws ClassCastException
      */
-    public <C extends BeehiveObject> C get(final Class<? extends C> klasse, final BeehiveObjectId objectId) throws ClassCastException,
+    public <C extends BeehiveObject> C get(final Class<? extends C> klasse, final TitanGuid objectId) throws ClassCastException,
         BeehiveObjectStore.NotFoundException;
 
     /**
-     * Given a {@link BeehiveObjectId} get the corresponding {@link BeehiveObject} from the local object store.
+     * Given a {@link TitanGuid} get the corresponding {@link BeehiveObject} from the local object store.
      * <p>
      * If the object is not found, the node
-     * will perform a clean-up and <em>unpublish</em> of the specified {@code BeehiveObjectId}
+     * will perform a clean-up and <em>unpublish</em> of the specified {@code TitanGuid}
      * lest the system have some residual, but incorrect, location information for the
      * object-id and {@link BeehiveObjectStore.NotFoundException} is thrown.
      * </p>
@@ -152,62 +151,62 @@ public interface ObjectStore extends XHTMLInspectable, Iterable<BeehiveObjectId>
      * {@link ObjectStore#get} to obtain an instance of a {@link BeehiveObject} which is not locked.
      * </p>
      *
-     * @param objectId the {@link BeehiveObjectId} of the stored object to retrieve.
+     * @param objectId the {@link TitanGuid} of the stored object to retrieve.
      * @throws ClassCastException if the stored object is not the specified class.
      * @throws BeehiveObjectStore.NotFoundException if the stored object is not found
      */
-    public <C extends BeehiveObject> C getAndLock(final Class<? extends C> klasse, final BeehiveObjectId objectId) throws ClassCastException,
+    public <C extends BeehiveObject> C getAndLock(final Class<? extends C> klasse, final TitanGuid objectId) throws ClassCastException,
         BeehiveObjectStore.NotFoundException;
 
     /**
-     * Given a {@link BeehiveObjectId} try to obtain a locked instance of the corresponding
+     * Given a {@link TitanGuid} try to obtain a locked instance of the corresponding
      * {@link BeehiveObject} from the local object store.
-     * (See {@link #getAndLock(Class, BeehiveObjectId)})
+     * (See {@link #getAndLock(Class, TitanGuid)})
      * <p>
      * If the object cannot be immediately locked, the return result is {@code null}.
      * </p>
      *
-     * @param objectId the {@link BeehiveObjectId} of the stored object to retrieve.
+     * @param objectId the {@link TitanGuid} of the stored object to retrieve.
      * @throws ClassCastException if the stored object is not the specified class.
      * @throws BeehiveObjectStore.NotFoundException if the stored object is not found
      */
-    public <C extends BeehiveObject> C tryGetAndLock(final Class<? extends C> klasse, final BeehiveObjectId objectId) throws ClassCastException,
+    public <C extends BeehiveObject> C tryGetAndLock(final Class<? extends C> klasse, final TitanGuid objectId) throws ClassCastException,
         BeehiveObjectStore.NotFoundException;
 
     /**
      * Store (either create or update as appropriate) the given {@link BeehiveObject} in the object store.
-     * The object must be already locked by the current thread (see {@link #lock(BeehiveObjectId)}).
+     * The object must be already locked by the current thread (see {@link #lock(TitanGuid)}).
      * <p>
-     * As a side-effect, the {@link BeehiveObjectId} of the object is computed and set via {@link BeehiveObject#setObjectId(BeehiveObjectId)}.
+     * As a side-effect, the {@link TitanGuid} of the object is computed and set via {@link BeehiveObject#setObjectId(TitanGuid)}.
      * </p>
      */
-    public BeehiveObjectId store(BeehiveObject object) throws InvalidObjectException, NoSpaceException, UnacceptableObjectException;
+    public TitanGuid store(BeehiveObject object) throws InvalidObjectException, NoSpaceException, UnacceptableObjectException;
 
     /**
      * Update an existing {@link BeehiveObject} in the object store.
      * The object <em>must</em> already exist.
-     * The object <em>must</em> be locked by the current Thread (see {@link #lock(BeehiveObjectId)}).
+     * The object <em>must</em> be locked by the current Thread (see {@link #lock(TitanGuid)}).
      */
-    public BeehiveObjectId update(BeehiveObject object) throws InvalidObjectException, ObjectExistenceException, NoSpaceException,
+    public TitanGuid update(BeehiveObject object) throws InvalidObjectException, ObjectExistenceException, NoSpaceException,
         UnacceptableObjectException, IOException;
 
     /**
      * Remove a (locked) {@link BeehiveObject} from the local object store.
      * <p>
      * The {@link BeehiveObject} must be locked by the object store.
-     * (see {@link #getAndLock(Class, BeehiveObjectId)}, and {@link #lock(BeehiveObjectId)}
+     * (see {@link #getAndLock(Class, TitanGuid)}, and {@link #lock(TitanGuid)}
      * </p>
      */
     public boolean remove(BeehiveObject object) throws IllegalArgumentException;
 
     /**
-     * Remove a (locked) {@link BeehiveObjectId} from the local object store.  An Unpublish message is NOT sent.
+     * Remove a (locked) {@link TitanGuid} from the local object store.  An Unpublish message is NOT sent.
      * <p>
-     * The  {@link BeehiveObjectId} must be locked by the object store.
-     * (see {@link #getAndLock(Class, BeehiveObjectId)}, and {@link #lock(BeehiveObjectId)}
+     * The  {@link TitanGuid} must be locked by the object store.
+     * (see {@link #getAndLock(Class, TitanGuid)}, and {@link #lock(TitanGuid)}
      * </p>
      */
-    public boolean remove(BeehiveObjectId objectId) throws IllegalArgumentException;
+    public boolean remove(TitanGuid objectId) throws IllegalArgumentException;
 
     /**
      * Unlock a previously locked object in the object store.
@@ -216,16 +215,16 @@ public interface ObjectStore extends XHTMLInspectable, Iterable<BeehiveObjectId>
      * </p>
      * @see ObjectStore#unlock(BeehiveObject)
      *
-     * @param objectId the {@link BeehiveObjectId} of the {@link BeehiveObject} to lock.
+     * @param objectId the {@link TitanGuid} of the {@link BeehiveObject} to lock.
      */
-    public void unlock(BeehiveObjectId objectId);
+    public void unlock(TitanGuid objectId);
 
     /**
      * Unlock the given object and if the object is in the local store, emit
      * a {@link PublishObjectMessage}.  If the object is NOT in the local store,
      * emit an {@link UnpublishObjectMessage}.
      *
-     * @see ObjectStore#unlock(BeehiveObjectId)
+     * @see ObjectStore#unlock(TitanGuid)
      */
     // XXX Instead of returning a BeehiveMessage, return the actual Publish.Result.  This means the Publish and Unpublish methods always return a Result.
     public BeehiveMessage unlock(BeehiveObject object);

@@ -27,14 +27,14 @@ import java.math.BigInteger;
 
 import java.io.Serializable;
 
-import sunlabs.titan.BeehiveObjectId;
+import sunlabs.titan.TitanGuidImpl;
 import sunlabs.titan.node.object.InspectableObject;
 import sunlabs.titan.node.object.RetrievableObject;
 import sunlabs.titan.node.object.StorableObject;
 
 /**
  * A {@code Credential} represents an identity of an external entity such as a user, organisation, application, etc.
- * Credentials provide the ability to create and verify a signature of a list of {@link BeehiveObjectId} instances.
+ * Credentials provide the ability to create and verify a signature of a list of {@link TitanGuidImpl} instances.
  */
 public interface Credential extends Serializable, StorableObject.Handler.Object, RetrievableObject.Handler.Object, InspectableObject.Handler.Object {
 
@@ -93,7 +93,7 @@ public interface Credential extends Serializable, StorableObject.Handler.Object,
     public static class Signature implements Serializable {
         private final static long serialVersionUID = 1L;
 
-        private final BeehiveObjectId id;
+        private final TitanGuid id;
         private final String algorithm;
         private final byte[] signature;
 
@@ -107,8 +107,7 @@ public interface Credential extends Serializable, StorableObject.Handler.Object,
          * @param algorithm the algorithm used to create the digital signature
          * @param signature the digital signature
          */
-        public Signature(BeehiveObjectId id, String algorithm,
-            byte[] signature) {
+        public Signature(TitanGuid id, String algorithm, byte[] signature) {
 
             this.id = id;
             this.algorithm = algorithm;
@@ -122,7 +121,7 @@ public interface Credential extends Serializable, StorableObject.Handler.Object,
          * @return the id of the {@code Credential} used to create this
          * {@code Signature}
          */
-        public BeehiveObjectId getId() {
+        public TitanGuid getId() {
             return this.id;
         }
 
@@ -146,10 +145,10 @@ public interface Credential extends Serializable, StorableObject.Handler.Object,
         }
 
         /**
-         * Return the value of this signature as a {@link BeehiveObjectId}.
+         * Return the value of this signature as a {@link TitanGuidImpl}.
          */
-        public BeehiveObjectId getObjectId() {
-            return new BeehiveObjectId(this.signature);
+        public TitanGuid getObjectId() {
+            return new TitanGuidImpl(this.signature);
         }
 
         @Override
@@ -172,7 +171,7 @@ public interface Credential extends Serializable, StorableObject.Handler.Object,
      *
      * @return an object-id for this {@code Credential}
      */
-    public BeehiveObjectId getObjectId();
+    public TitanGuid getObjectId();
 
     /**
      *
@@ -184,7 +183,7 @@ public interface Credential extends Serializable, StorableObject.Handler.Object,
     public boolean isLimited();
     
     /**
-     * Sign the collection of {@link BeehiveObjectId} instances.
+     * Sign the collection of {@link TitanGuidImpl} instances.
      *
      * @param password a password needed by the implementing class to sign
      * the collection
@@ -195,7 +194,7 @@ public interface Credential extends Serializable, StorableObject.Handler.Object,
      *
      * @throws Credential.Exception
      */
-    public Credential.Signature sign(char[] password, BeehiveObjectId... ids) throws Credential.Exception;
+    public Credential.Signature sign(char[] password, TitanGuid... ids) throws Credential.Exception;
 
     /**
      * Verify that a given {@code Signature} was signed by this {@code Credential}.
@@ -210,7 +209,7 @@ public interface Credential extends Serializable, StorableObject.Handler.Object,
      *
      * @throws Credential.Exception
      */
-    public boolean verify(Credential.Signature signature, BeehiveObjectId... ids) throws Credential.Exception;
+    public boolean verify(Credential.Signature signature, TitanGuid... ids) throws Credential.Exception;
 
     public String getName();
 

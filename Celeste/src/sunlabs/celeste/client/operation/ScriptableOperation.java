@@ -7,7 +7,8 @@ import java.io.Serializable;
 import sunlabs.celeste.FileIdentifier;
 import sunlabs.celeste.node.CelesteACL;
 import sunlabs.celeste.node.services.CelesteClientDaemon;
-import sunlabs.titan.BeehiveObjectId;
+import sunlabs.titan.api.Credential;
+import sunlabs.titan.api.TitanGuid;
 
 public class ScriptableOperation extends AbstractCelesteOperation {
     private static final long serialVersionUID = 1L;
@@ -23,26 +24,26 @@ public class ScriptableOperation extends AbstractCelesteOperation {
      *
      * @param operationName a name identifying this kind of operation
      * @param fileIdentifier The {@link FileIdentifier} of the file.
-     * @param readerId      the {@link BeehiveObjectId} of the {@link Credential} authorising the operation
-     * @param vObjectId     the {@code BeehiveObjectId} of the version of the file this operation is to read, or {@code null} if
+     * @param readerId      the {@link TitanGuid} of the {@link Credential} authorising the operation
+     * @param vObjectId     the {@code TitanGuid} of the version of the file this operation is to read, or {@code null} if
      *                      it is to read the latest version
      * @param offset        the starting offset within the file of the span to be read
      * @param length        the length of the span to be read (or {@code -1L}
      *                      to read to the end of file)
      */
-    protected ScriptableOperation(FileIdentifier fileIdentifier, BeehiveObjectId readerId, BeehiveObjectId vObjectId, long offset, int length) {
+    protected ScriptableOperation(FileIdentifier fileIdentifier, TitanGuid readerId, TitanGuid vObjectId, long offset, int length) {
         super(ScriptableOperation.name, fileIdentifier, readerId, vObjectId);
         this.offset = offset;
         this.length = length;
     }
 
-    public ScriptableOperation(FileIdentifier fileIdentifier, BeehiveObjectId readerId, long offset, int length) {
+    public ScriptableOperation(FileIdentifier fileIdentifier, TitanGuid readerId, long offset, int length) {
         this(fileIdentifier, readerId, null, offset, length);
     }
 
     @Override
-    public BeehiveObjectId getId() {
-        BeehiveObjectId id = super.getId();
+    public TitanGuid getId() {
+        TitanGuid id = super.getId();
         return id;
     }
 

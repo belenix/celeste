@@ -25,7 +25,7 @@ package sunlabs.celeste.node.object;
 
 // XXX Eliminate this.  Beehive must define it's own access control from while applications (like Celeste) derive.
 import sunlabs.celeste.node.CelesteACL;
-import sunlabs.titan.BeehiveObjectId;
+import sunlabs.titan.api.TitanGuid;
 import sunlabs.titan.api.BeehiveObject;
 import sunlabs.titan.node.object.BeehiveObjectHandler;
 import sunlabs.titan.node.object.BeehiveObjectHandler.ObjectAPI;
@@ -52,7 +52,7 @@ public class AccessControlledObject {
             // XXX: Should have void return type and throw
             //      BeehiveException.AccessDenied if the access check fails.
             //
-            public boolean checkAccess(BeehiveObjectId clientId, CelesteACL.CelesteOps privilege);
+            public boolean checkAccess(TitanGuid clientId, CelesteACL.CelesteOps privilege);
         }
     }
 }

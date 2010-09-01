@@ -29,10 +29,8 @@ import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStream;
 import java.io.UnsupportedEncodingException;
 import java.net.InetSocketAddress;
 import java.net.MalformedURLException;
@@ -77,22 +75,24 @@ import sunlabs.asdf.web.ajax.dojo.Dojo;
 import sunlabs.asdf.web.http.ClassLoaderBackend;
 import sunlabs.asdf.web.http.FileSystemBackend;
 import sunlabs.asdf.web.http.HTTP;
+import sunlabs.asdf.web.http.HTTP.Request.Method;
 import sunlabs.asdf.web.http.HTTPServer;
 import sunlabs.asdf.web.http.HttpContent;
 import sunlabs.asdf.web.http.HttpHeader;
 import sunlabs.asdf.web.http.HttpMessage;
 import sunlabs.asdf.web.http.HttpResponse;
 import sunlabs.asdf.web.http.HttpUtil;
+import sunlabs.asdf.web.http.HttpUtil.PathName1;
 import sunlabs.asdf.web.http.InternetMediaType;
 import sunlabs.asdf.web.http.WebDAV;
 import sunlabs.asdf.web.http.WebDAVNameSpace;
 import sunlabs.asdf.web.http.WebDAVServerMain;
-import sunlabs.asdf.web.http.HTTP.Request.Method;
-import sunlabs.asdf.web.http.HttpUtil.PathName1;
-import sunlabs.titan.BeehiveObjectId;
 import sunlabs.titan.Copyright;
 import sunlabs.titan.Release;
+import sunlabs.titan.TitanGuidImpl;
 import sunlabs.titan.api.BeehiveObject;
+import sunlabs.titan.api.TitanGuid;
+import sunlabs.titan.api.TitanNodeId;
 import sunlabs.titan.node.BeehiveNode;
 import sunlabs.titan.node.BeehiveObjectStore;
 import sunlabs.titan.node.NodeAddress;
@@ -253,7 +253,7 @@ public final class WebDAVDaemon extends BeehiveService implements WebDAVDaemonMB
         }
         
         Daemon() {
-            super(WebDAVDaemon.this.node.getObjectId() + "." + WebDAVDaemon.this.getName());
+            super(WebDAVDaemon.this.node.getNodeId() + "." + WebDAVDaemon.this.getName());
         }
         
         @Override
@@ -261,7 +261,7 @@ public final class WebDAVDaemon extends BeehiveService implements WebDAVDaemonMB
             try {                
                 ServerSocketChannel serverSocketChannel = ServerSocketChannel.open();
                 serverSocketChannel.configureBlocking(true);
-                serverSocketChannel.socket().bind(new InetSocketAddress(WebDAVDaemon.this.node.configuration.asInt(WebDAVDaemon.Port)));
+                serverSocketChannel.socket().bind(new InetSocketAddress(WebDAVDaemon.this.node.getConfiguration().asInt(WebDAVDaemon.Port)));
                 serverSocketChannel.socket().setReuseAddress(true);
 
 //                ExecutorService executor = (ThreadPoolExecutor) Executors.newFixedThreadPool(WebDAVDaemon.this.clientMaximum,
@@ -279,13 +279,13 @@ public final class WebDAVDaemon extends BeehiveService implements WebDAVDaemonMB
                 while (true) {
                     SocketChannel clientSocket = serverSocketChannel.accept();
                     clientSocket.socket().setKeepAlive(false);
-                    clientSocket.socket().setSoTimeout(WebDAVDaemon.this.node.configuration.asInt(WebDAVDaemon.ClientTimeoutMillis));
+                    clientSocket.socket().setSoTimeout(WebDAVDaemon.this.node.getConfiguration().asInt(WebDAVDaemon.ClientTimeoutMillis));
 
                     clientSocket.socket().setReceiveBufferSize(16*1024);
                     clientSocket.socket().setSendBufferSize(16*1024);
                     HTTPServer server = new HTTPServer(clientSocket);
                     
-                    server.setName(WebDAVDaemon.this.node.getObjectId().toString() + ":" + server.getName());
+                    server.setName(WebDAVDaemon.this.node.getNodeId().toString() + ":" + server.getName());
                     
                     HTTP.NameSpace handler = new BeehiveNodeNameSpace(server, null);
                     HTTP.NameSpace fileHandler = new WebDAVNameSpace(server, backend);
@@ -310,11 +310,11 @@ public final class WebDAVDaemon extends BeehiveService implements WebDAVDaemonMB
 
     /**
      * Produce an {@link XHTML.Anchor} element that links to a XHTML document that
-     * inspects the {@link BeehiveObject} identified by the given {@link BeehiveObjectId}.
+     * inspects the {@link BeehiveObject} identified by the given {@link TitanGuidImpl}.
      * 
      * See {@link WebDAVDaemon} for the dispatch of the HTTP request the link induces.
      */
-    public static XHTML.Anchor inspectObjectXHTML(BeehiveObjectId objectId) {
+    public static XHTML.Anchor inspectObjectXHTML(TitanGuid objectId) {
         XHTML.Anchor link = new XHTML.Anchor(Xxhtml.Attr.HRef("/inspect/" + objectId))
         	.add(objectId.toString())
         	.setClass("ObjectId")
@@ -414,18 +414,18 @@ public final class WebDAVDaemon extends BeehiveService implements WebDAVDaemonMB
                 	return new HttpResponse(HTTP.Response.Status.BAD_REQUEST, new HttpContent.Text.Plain("Unknown service: " + name));
                 } else if (uri.getPath().startsWith("/census")) {
                     Census census = this.node.getService(CensusDaemon.class);
-                    Map<BeehiveObjectId,OrderedProperties> list = census.select(0);
+                    Map<TitanNodeId,OrderedProperties> list = census.select(0);
 
                     StringBuilder string = new StringBuilder().append(list.size()).append("\n");
-                    for (BeehiveObjectId node : new TreeSet<BeehiveObjectId>(list.keySet())) {
+                    for (TitanNodeId node : new TreeSet<TitanNodeId>(list.keySet())) {
                         string.append(node.toString()).append("\n");
                     }
 
                     return new HttpResponse(HTTP.Response.Status.OK, new HttpContent.Text.Plain(string.toString()));
                 } else if (uri.getPath().startsWith("/gateway")) {
-                    return new HttpResponse(HTTP.Response.Status.OK, new HttpContent.Text.Plain(this.node.getProperties()));
+                    return new HttpResponse(HTTP.Response.Status.OK, new HttpContent.Text.Plain(this.node.getConfiguration().toString()));
                 } else if (uri.getPath().startsWith("/config")) {
-                    return new HttpResponse(HTTP.Response.Status.OK, new HttpContent.Text.Plain(this.node.getProperties()));
+                    return new HttpResponse(HTTP.Response.Status.OK, new HttpContent.Text.Plain(this.node.getConfiguration().toString()));
                 } else if (uri.getPath().startsWith("/reflect")) {
                     Reflection reflection = this.node.getService(ReflectionService.class);
                     if (reflection != null) {
@@ -469,9 +469,9 @@ public final class WebDAVDaemon extends BeehiveService implements WebDAVDaemonMB
                     String objectId = uri.getPath().substring("/objectType/".length());
 
                     Reflection reflection = this.node.getService(ReflectionService.class);
-                    return new HttpResponse(HTTP.Response.Status.OK, new HttpContent.Text.Plain(reflection.getObjectType(new BeehiveObjectId(objectId))));
+                    return new HttpResponse(HTTP.Response.Status.OK, new HttpContent.Text.Plain(reflection.getObjectType(new TitanGuidImpl(objectId))));
                 } else if (uri.getPath().startsWith("/inspect/")) {
-                	BeehiveObjectId objectId = new BeehiveObjectId(uri.getPath().substring("/inspect/".length()));
+                	TitanGuid objectId = new TitanGuidImpl(uri.getPath().substring("/inspect/".length()));
                 	Reflection reflection = this.node.getService(ReflectionService.class);
                 	try {
                 		XHTML.EFlow eflow = reflection.inspectObject(objectId, uri, props);
@@ -483,7 +483,7 @@ public final class WebDAVDaemon extends BeehiveService implements WebDAVDaemonMB
 
                 // Read a file from the local file system, or from the jar file that this is running from.
                 try {
-                    return new HttpResponse(HTTP.Response.Status.OK, new HttpContent.RawInputStream(WebDAVDaemon.this.node.configuration.asString(WebDAVDaemon.ServerRoot), uri.getPath()));
+                    return new HttpResponse(HTTP.Response.Status.OK, new HttpContent.RawInputStream(WebDAVDaemon.this.node.getConfiguration().asString(WebDAVDaemon.ServerRoot), uri.getPath()));
                 } catch (java.io.FileNotFoundException e) {
                     e.printStackTrace();
                     return new HttpResponse(HTTP.Response.Status.NOT_FOUND, new HttpContent.Text.Plain(e.toString()));
@@ -505,9 +505,9 @@ public final class WebDAVDaemon extends BeehiveService implements WebDAVDaemonMB
                     if (objectId == null || objectId.equals("")) {
                         return new HttpResponse(HTTP.Response.Status.BAD_REQUEST, new HttpContent.Text.Plain("Bad Request: Missing object-id"));
                     }
-                    this.node.removeLocalObject(new BeehiveObjectId(objectId));
+                    this.node.removeLocalObject(new TitanGuidImpl(objectId));
 
-                    XHTML.Document result = makeDocument(this.node.getObjectId().toString(), new XHTML.Body(this.node.toXHTML(uri, props)), null, null);
+                    XHTML.Document result = makeDocument(this.node.getNodeId().toString(), new XHTML.Body(this.node.toXHTML(uri, props)), null, null);
                     return new HttpResponse(HTTP.Response.Status.OK, new HttpContent.Text.HTML(result));
                 } else if (action.equals("remove-object")) {
                     String oid = HttpMessage.asString(props.get("objectId"), null);
@@ -515,11 +515,11 @@ public final class WebDAVDaemon extends BeehiveService implements WebDAVDaemonMB
                     if (oid == null || oid.equals("")) {
                         return new HttpResponse(HTTP.Response.Status.BAD_REQUEST, new HttpContent.Text.Plain("Bad Request: Missing object-id"));
                     }
-                    BeehiveObjectId objectId = new BeehiveObjectId(oid);
+                    TitanGuid objectId = new TitanGuidImpl(oid);
                     this.node.getObjectStore().lock(objectId);
                     try {
                         this.node.getObjectStore().remove(objectId);
-                        XHTML.Document result = makeDocument(this.node.getObjectId().toString(), new XHTML.Body(this.node.toXHTML(uri, props)), null, null);
+                        XHTML.Document result = makeDocument(this.node.getNodeId().toString(), new XHTML.Body(this.node.toXHTML(uri, props)), null, null);
                         return new HttpResponse(HTTP.Response.Status.OK, new HttpContent.Text.HTML(result));
                     } finally {
                         this.node.getObjectStore().unlock(objectId);
@@ -556,7 +556,7 @@ public final class WebDAVDaemon extends BeehiveService implements WebDAVDaemonMB
                         //this.node.getNeighbourMap().put(new NodeAddress(location));
                         //this.node.getNeighbourMap().put(this.node.getAddress());
                         this.node.getNeighbourMap().add(new NodeAddress(location));
-                        return new HttpResponse(HTTP.Response.Status.OK, new HttpContent.Text.HTML(makeDocument(this.node.getObjectId().toString(), new XHTML.Body(this.node.toXHTML(uri, props)), null, null)));
+                        return new HttpResponse(HTTP.Response.Status.OK, new HttpContent.Text.HTML(makeDocument(this.node.getNodeId().toString(), new XHTML.Body(this.node.toXHTML(uri, props)), null, null)));
                     } catch (IOException e) {
                         return new HttpResponse(HTTP.Response.Status.INTERNAL_SERVER_ERROR,
                                 new HttpContent.Text.Plain(e.toString() + " " + e.getLocalizedMessage()));
@@ -565,7 +565,7 @@ public final class WebDAVDaemon extends BeehiveService implements WebDAVDaemonMB
                 }
             }
 
-            XHTML.Document result = makeDocument(this.node.getObjectId().toString(), new XHTML.Body(this.node.toXHTML(uri, props)), null, null);
+            XHTML.Document result = makeDocument(this.node.getNodeId().toString(), new XHTML.Body(this.node.toXHTML(uri, props)), null, null);
 
 //            try {
 //                OutputStream out = new FileOutputStream("WebDAVDaemon.out");
@@ -592,7 +592,7 @@ public final class WebDAVDaemon extends BeehiveService implements WebDAVDaemonMB
     private XHTML.Document makeDocument(String title, XHTML.Body body, XHTML.Link[] styleSheets, XHTML.Script[] scripts) throws URISyntaxException {
         List<XHTML.Link> styleLinks = new LinkedList<XHTML.Link>();
 
-        for (String url : this.node.configuration.get(WebDAVDaemon.InspectorCSS).asStringArray(",")) {
+        for (String url : this.node.getConfiguration().get(WebDAVDaemon.InspectorCSS).asStringArray(",")) {
             styleLinks.add(Xxhtml.Stylesheet(url).setMedia("all"));
         }
         if (styleSheets != null){
@@ -602,7 +602,7 @@ public final class WebDAVDaemon extends BeehiveService implements WebDAVDaemonMB
         }
 
         List<XHTML.Script> scriptLinks = new LinkedList<XHTML.Script>();
-        for (String url : this.node.configuration.get(WebDAVDaemon.InspectorJS).asStringArray(",")) {
+        for (String url : this.node.getConfiguration().get(WebDAVDaemon.InspectorJS).asStringArray(",")) {
             scriptLinks.add(new XHTML.Script("text/javascript").setSource(url));
         }
         if (scripts != null){
@@ -611,9 +611,9 @@ public final class WebDAVDaemon extends BeehiveService implements WebDAVDaemonMB
         	}
         }
 
-        Dojo dojo = new Dojo(this.node.configuration.asString(BeehiveNode.DojoRoot),
-                this.node.configuration.asString(BeehiveNode.DojoJavascript),
-                this.node.configuration.asString(BeehiveNode.DojoTheme)
+        Dojo dojo = new Dojo(this.node.getConfiguration().asString(BeehiveNode.DojoRoot),
+                this.node.getConfiguration().asString(BeehiveNode.DojoJavascript),
+                this.node.getConfiguration().asString(BeehiveNode.DojoTheme)
                 );
 
         dojo.setConfig("isDebug: false, parseOnLoad: true, baseUrl: './', useXDomain: true, modulePaths: {'sunlabs': '/dojo/1.3.1/sunlabs'}");
@@ -704,7 +704,7 @@ public final class WebDAVDaemon extends BeehiveService implements WebDAVDaemonMB
         if (root == null) { // We are inside of a .jar file.
             // paths beginning with '/' are matched directly with the path in the jar file.
             // Otherwise, it is prefixed by the package name.
-            String fullPath = "/" + WebDAVDaemon.this.node.configuration.asString(WebDAVDaemon.ServerRoot) + absolutePath;
+            String fullPath = "/" + WebDAVDaemon.this.node.getConfiguration().asString(WebDAVDaemon.ServerRoot) + absolutePath;
             InputStream inputStream = this.getClass().getResourceAsStream(fullPath);
             if (inputStream == null) {
                 throw new FileNotFoundException(fullPath);
@@ -712,7 +712,7 @@ public final class WebDAVDaemon extends BeehiveService implements WebDAVDaemonMB
             return inputStream;
         }
         
-        File file = new File(new File(WebDAVDaemon.this.node.configuration.asString(WebDAVDaemon.ServerRoot)).getAbsolutePath(), new PathName1(absolutePath).toString());
+        File file = new File(new File(WebDAVDaemon.this.node.getConfiguration().asString(WebDAVDaemon.ServerRoot)).getAbsolutePath(), new PathName1(absolutePath).toString());
         return new FileInputStream(file);
     }
     
@@ -724,7 +724,7 @@ public final class WebDAVDaemon extends BeehiveService implements WebDAVDaemonMB
         }
 
         public Source resolve(String href, String base) throws TransformerException {
-            HttpUtil.PathName root = new HttpUtil.PathName(WebDAVDaemon.this.node.configuration.asString(WebDAVDaemon.ServerRoot));
+            HttpUtil.PathName root = new HttpUtil.PathName(WebDAVDaemon.this.node.getConfiguration().asString(WebDAVDaemon.ServerRoot));
             
             HttpUtil.PathName ref = new HttpUtil.PathName(href);
             if (ref.isAbsolute()) {

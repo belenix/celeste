@@ -26,9 +26,8 @@ package sunlabs.celeste.client.filesystem.tabula;
 
 import java.util.Set;
 
-
 import sunlabs.celeste.util.ACL;
-import sunlabs.titan.BeehiveObjectId;
+import sunlabs.titan.api.TitanGuid;
 
 //
 // XXX: Should this class exist independently or should it be folded into
@@ -37,8 +36,7 @@ import sunlabs.titan.BeehiveObjectId;
 //      some of the distinction between directory operations and file
 //      operations.
 //
-public class DirectoryACL extends
-        ACL<DirectoryACL.DirectoryOps, BeehiveObjectId> {
+public class DirectoryACL extends ACL<DirectoryACL.DirectoryOps, TitanGuid> {
     private static final long serialVersionUID = 0L;
 
     /**
@@ -63,11 +61,10 @@ public class DirectoryACL extends
      * specifics of file system directories and operations on them.
      */
     public static class DirectoryACE extends
-            ACL.ACE<DirectoryOps, BeehiveObjectId> {
+            ACL.ACE<DirectoryOps, TitanGuid> {
         private static final long serialVersionUID = 1L;
 
-        public DirectoryACE(ACL.PrincipalMatcher<BeehiveObjectId> matcher,
-                Set<DirectoryOps> privileges, ACL.Disposition disposition) {
+        public DirectoryACE(ACL.PrincipalMatcher<TitanGuid> matcher, Set<DirectoryOps> privileges, ACL.Disposition disposition) {
             super(matcher, privileges, disposition);
         }
     }

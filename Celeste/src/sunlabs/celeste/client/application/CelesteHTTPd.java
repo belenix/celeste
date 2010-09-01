@@ -54,9 +54,9 @@ import javax.management.ObjectName;
 import sunlabs.asdf.jmx.JMX;
 import sunlabs.asdf.util.Time;
 import sunlabs.asdf.web.XML.XHTML;
+import sunlabs.asdf.web.XML.XHTML.Table;
 import sunlabs.asdf.web.XML.XML;
 import sunlabs.asdf.web.XML.Xxhtml;
-import sunlabs.asdf.web.XML.XHTML.Table;
 import sunlabs.asdf.web.http.HTTP;
 import sunlabs.asdf.web.http.HTTPServer;
 import sunlabs.asdf.web.http.HttpContent;
@@ -77,9 +77,9 @@ import sunlabs.celeste.client.filesystem.simple.FileImpl;
 import sunlabs.celeste.client.filesystem.tabula.PathName;
 import sunlabs.celeste.client.operation.NewCredentialOperation;
 import sunlabs.celeste.client.operation.ReadProfileOperation;
-import sunlabs.titan.BeehiveObjectId;
 import sunlabs.titan.Copyright;
 import sunlabs.titan.Release;
+import sunlabs.titan.TitanGuidImpl;
 import sunlabs.titan.api.Credential;
 import sunlabs.titan.util.WeakMBeanRegistrar;
 
@@ -504,7 +504,7 @@ public final class CelesteHTTPd implements CelesteHTTPdMBean {
         
 
         public SessionState() {
-            super(new BeehiveObjectId().toString());
+            super(new TitanGuidImpl().toString());
             this.replicationParams = SessionState.replicationParamList[0];
 //            this.currentWorkingDirectory = "/";
         }
@@ -817,7 +817,7 @@ public final class CelesteHTTPd implements CelesteHTTPdMBean {
                 session.nameSpaceId, session.nameSpacePassword.toCharArray());
             NewCredentialOperation operation = new NewCredentialOperation(
                 session.nameSpaceProfile.getObjectId(),
-                BeehiveObjectId.ZERO, session.replicationParams);
+                TitanGuidImpl.ZERO, session.replicationParams);
             Credential.Signature signature = session.nameSpaceProfile.sign(
                 session.nameSpacePassword.toCharArray(), operation.getId());
 
@@ -837,7 +837,7 @@ public final class CelesteHTTPd implements CelesteHTTPdMBean {
                     session.accessorId, session.accessorPassword.toCharArray());
                 operation = new NewCredentialOperation(
                     session.accessorProfile.getObjectId(),
-                    BeehiveObjectId.ZERO, session.replicationParams);
+                    TitanGuidImpl.ZERO, session.replicationParams);
                 signature = session.accessorProfile.sign(
                     session.accessorPassword.toCharArray(), operation.getId());
 
@@ -1511,7 +1511,7 @@ public final class CelesteHTTPd implements CelesteHTTPdMBean {
                         session.nameSpacePassword.toCharArray());
                     NewCredentialOperation operation = new NewCredentialOperation(
                         session.nameSpaceProfile.getObjectId(),
-                        BeehiveObjectId.ZERO, session.replicationParams);
+                        TitanGuidImpl.ZERO, session.replicationParams);
                     Credential.Signature signature = session.nameSpaceProfile.sign(
                         session.nameSpacePassword.toCharArray(), operation.getId());
                     this.celesteProxy.newCredential(operation, signature, session.nameSpaceProfile);
@@ -1553,7 +1553,7 @@ public final class CelesteHTTPd implements CelesteHTTPdMBean {
                         session.accessorPassword.toCharArray());
                     NewCredentialOperation operation = new NewCredentialOperation(
                         session.accessorProfile.getObjectId(),
-                        BeehiveObjectId.ZERO, session.replicationParams);
+                        TitanGuidImpl.ZERO, session.replicationParams);
                     Credential.Signature signature = session.accessorProfile.sign(
                         session.accessorPassword.toCharArray(), operation.getId());
                     this.celesteProxy.newCredential(operation, signature, session.accessorProfile);
@@ -1797,8 +1797,7 @@ public final class CelesteHTTPd implements CelesteHTTPdMBean {
 
     private boolean profileIsRegistered(SessionState session, String name) {
         try {
-            ReadProfileOperation op = new ReadProfileOperation(
-                new BeehiveObjectId(name.getBytes()));
+            ReadProfileOperation op = new ReadProfileOperation(new TitanGuidImpl(name.getBytes()));
             this.celesteProxy.readCredential(op);
             return true;
         } catch (CelesteException.CredentialException e) {

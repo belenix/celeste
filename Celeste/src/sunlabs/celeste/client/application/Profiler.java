@@ -63,10 +63,11 @@ import sunlabs.celeste.client.operation.ProbeOperation;
 import sunlabs.celeste.client.operation.ReadFileOperation;
 import sunlabs.celeste.client.operation.ReadProfileOperation;
 import sunlabs.celeste.client.operation.WriteFileOperation;
-import sunlabs.titan.BeehiveObjectId;
 import sunlabs.titan.Copyright;
 import sunlabs.titan.Release;
+import sunlabs.titan.TitanGuidImpl;
 import sunlabs.titan.api.Credential;
+import sunlabs.titan.api.TitanGuid;
 import sunlabs.titan.util.OrderedProperties;
 
 /**
@@ -205,8 +206,8 @@ public class Profiler {
                 long startTime = System.currentTimeMillis();
 
                 for (int i = 0; i < this.nOperations; i++) {
-                    BeehiveObjectId fileId = new BeehiveObjectId(Integer.toString(this.batch).getBytes()).add(Integer.toString(i).getBytes());
-                    BeehiveObjectId deleteTokenId = this.client.credential.getObjectId().add(fileId);
+                    TitanGuid fileId = new TitanGuidImpl(Integer.toString(this.batch).getBytes()).add(Integer.toString(i).getBytes());
+                    TitanGuid deleteTokenId = this.client.credential.getObjectId().add(fileId);
                     FileIdentifier fileIdentifier = new FileIdentifier(this.client.nameSpaces.get(0), fileId);
                     createOperation = new CreateFileOperation(this.client.credential.getObjectId(),
                             fileIdentifier,
@@ -275,7 +276,7 @@ public class Profiler {
         CelesteException.CredentialException, CelesteException.RuntimeException, CelesteException.AlreadyExistsException, CelesteException.NoSpaceException, CelesteException.VerificationException {
             try {
                 long startTime = System.currentTimeMillis();
-                BeehiveObjectId credentialId = new BeehiveObjectId(client.getName().getBytes());
+                TitanGuid credentialId = new TitanGuidImpl(client.getName().getBytes());
 
                 try {
                     ReadProfileOperation operation = new ReadProfileOperation(credentialId);
@@ -283,7 +284,7 @@ public class Profiler {
                     client.setCredential((Profile_) client.celeste.readCredential(operation));
                 } catch (CelesteException.NotFoundException notFound) {
                     client.setCredential(new Profile_(client.getName(), client.credentialPassword.toCharArray()));
-                    NewCredentialOperation operation = new NewCredentialOperation(client.getCredential().getObjectId(), BeehiveObjectId.ZERO, this.replicationParams);
+                    NewCredentialOperation operation = new NewCredentialOperation(client.getCredential().getObjectId(), TitanGuidImpl.ZERO, this.replicationParams);
                     Credential.Signature signature = client.getCredential().sign(client.credentialPassword.toCharArray(), operation.getId());
                     try {
                         client.celeste.newCredential(operation, signature, client.getCredential());
@@ -331,13 +332,13 @@ public class Profiler {
             long operationTime;
             long cummulativeTime = 0;
 
-            BeehiveObjectId vObjectId = null;
+            TitanGuid vObjectId = null;
 
             try {
                 long startTime = System.currentTimeMillis();
 
                 for (int i = 0; i < this.nOperations; i++) {
-                    BeehiveObjectId fileId = new BeehiveObjectId(Integer.toString(this.batch).getBytes()).add(Integer.toString(i).getBytes());
+                    TitanGuid fileId = new TitanGuidImpl(Integer.toString(this.batch).getBytes()).add(Integer.toString(i).getBytes());
 
                     operation = new InspectFileOperation(new FileIdentifier(this.client.nameSpaces.get(0), fileId), vObjectId);
                     operationTime = System.currentTimeMillis();
@@ -381,7 +382,7 @@ public class Profiler {
                 long startTime = System.currentTimeMillis();
 
                 try {
-                    BeehiveObjectId nameSpaceId = new BeehiveObjectId((client.getName() + "ns").getBytes());
+                    TitanGuid nameSpaceId = new TitanGuidImpl((client.getName() + "ns").getBytes());
                     ReadProfileOperation operation = new ReadProfileOperation(nameSpaceId);
 
                     client.nameSpaces.add(client.celeste.readCredential(operation).getObjectId());
@@ -389,7 +390,7 @@ public class Profiler {
 
                     Profile_ nameSpaceCredential = new Profile_(this.client.credential.getName() + "ns", client.credentialPassword.toCharArray());
 
-                    NewNameSpaceOperation operation = new NewNameSpaceOperation(nameSpaceCredential.getObjectId(), BeehiveObjectId.ZERO, replicationParams);
+                    NewNameSpaceOperation operation = new NewNameSpaceOperation(nameSpaceCredential.getObjectId(), TitanGuidImpl.ZERO, replicationParams);
                     Credential.Signature signature = client.getCredential().sign(client.credentialPassword.toCharArray(), operation.getId());
 
                     try {
@@ -526,7 +527,7 @@ public class Profiler {
             long operationTime;
             long cummulativeTime = 0;
 
-            BeehiveObjectId fileId = new BeehiveObjectId(Integer.toString(this.batch).getBytes()).add(Integer.toString(0).getBytes());
+            TitanGuid fileId = new TitanGuidImpl(Integer.toString(this.batch).getBytes()).add(Integer.toString(0).getBytes());
             FileIdentifier fileIdentifier = new FileIdentifier(this.client.nameSpaces.get(0), fileId);
 
             operationTime = System.currentTimeMillis();
@@ -589,9 +590,9 @@ public class Profiler {
 
             ClientMetaData clientMetaData = new ClientMetaData();
 
-            BeehiveObjectId fileId = new BeehiveObjectId(Integer.toString(this.batch).getBytes()).add(Integer.toString(0).getBytes());
+            TitanGuid fileId = new TitanGuidImpl(Integer.toString(this.batch).getBytes()).add(Integer.toString(0).getBytes());
 
-            BeehiveObjectId vObjectId = null;
+            TitanGuid vObjectId = null;
             InspectFileOperation inspectOperation = new InspectFileOperation(new FileIdentifier(this.client.nameSpaces.get(0), fileId), client.credential.getObjectId());
             operationTime = System.currentTimeMillis();
 
@@ -630,7 +631,7 @@ public class Profiler {
         public Profile_ credential;
         public String credentialPassword;
         public CelesteAPI celeste;
-        public List<BeehiveObjectId> nameSpaces;
+        public List<TitanGuid> nameSpaces;
         public String name;
 
         public Client(String name, String password, CelesteAPI celeste) throws Credential.Exception {
@@ -639,7 +640,7 @@ public class Profiler {
             this.name = name;
             this.credentialPassword = password;
             this.celeste = celeste;
-            this.nameSpaces = new LinkedList<BeehiveObjectId>();
+            this.nameSpaces = new LinkedList<TitanGuid>();
         }
 
         public Profile_ getCredential() {

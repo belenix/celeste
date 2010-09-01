@@ -33,7 +33,8 @@ import sunlabs.celeste.CelesteException;
 import sunlabs.celeste.FileIdentifier;
 import sunlabs.celeste.node.CelesteACL;
 import sunlabs.celeste.node.services.CelesteClientDaemon;
-import sunlabs.titan.BeehiveObjectId;
+import sunlabs.titan.api.Credential;
+import sunlabs.titan.api.TitanGuid;
 
 public class ExtensibleOperation extends AbstractCelesteOperation {
     private static final long serialVersionUID = 1L;
@@ -51,15 +52,15 @@ public class ExtensibleOperation extends AbstractCelesteOperation {
      * @param jarFileURLs    an array of {@link URL} instances refering to Java Jar files to load classes
      * @param args           an array of arbitrary, user-supplied Strings passed to the extension when it is started.
      */
-    public ExtensibleOperation(FileIdentifier fileIdentifier, BeehiveObjectId credentialId, URL[] jarFileURLs, String[] args) {
+    public ExtensibleOperation(FileIdentifier fileIdentifier, TitanGuid credentialId, URL[] jarFileURLs, String[] args) {
         super(ExtensibleOperation.name, fileIdentifier, credentialId, null);
         this.jarFileURLs = jarFileURLs;
         this.args = args;
     }
 
     @Override
-    public BeehiveObjectId getId() {
-        BeehiveObjectId id = super.getId();
+    public TitanGuid getId() {
+        TitanGuid id = super.getId();
         return id;
     }
 

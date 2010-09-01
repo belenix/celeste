@@ -30,29 +30,29 @@ import java.util.Set;
 
 import sunlabs.asdf.web.XML.XHTML;
 import sunlabs.asdf.web.http.HTTP;
-import sunlabs.titan.BeehiveObjectId;
 import sunlabs.titan.api.BeehiveObject;
 import sunlabs.titan.api.Service;
+import sunlabs.titan.api.TitanGuid;
 import sunlabs.titan.node.BeehiveMessage;
-import sunlabs.titan.node.BeehiveObjectStore;
 import sunlabs.titan.node.BeehiveMessage.RemoteException;
+import sunlabs.titan.node.BeehiveObjectStore;
 import sunlabs.titan.node.Publishers.PublishRecord;
 
 public interface Reflection extends Service {
 	@Deprecated
-    public BeehiveObject retrieveObject(final BeehiveObjectId objectId) throws RemoteException;
+    public BeehiveObject retrieveObject(final TitanGuid objectId) throws RemoteException;
 
     public static class ObjectType {
         public static class Request implements Serializable {
             private static final long serialVersionUID = 1L;
 
-            private BeehiveObjectId objectId;
+            private TitanGuid objectId;
 
-            public Request(BeehiveObjectId objectId) {
+            public Request(TitanGuid objectId) {
                 this.objectId = objectId;
             }
 
-            public BeehiveObjectId getObjectId() {
+            public TitanGuid getObjectId() {
                 return this.objectId;
             }
         }
@@ -76,17 +76,17 @@ public interface Reflection extends Service {
         public static class Request implements Serializable {
             private static final long serialVersionUID = 1L;
 
-            private BeehiveObjectId objectId;
+            private TitanGuid objectId;
             private URI uri;
             private Map<String,HTTP.Message> props;
 
-            public Request(BeehiveObjectId objectId, URI uri, Map<String,HTTP.Message> props) {
+            public Request(TitanGuid objectId, URI uri, Map<String,HTTP.Message> props) {
                 this.objectId = objectId;
                 this.uri = uri;
                 this.props = props;                
             }
 
-            public BeehiveObjectId getObjectId() {
+            public TitanGuid getObjectId() {
                 return this.objectId;
             }
 
@@ -122,10 +122,10 @@ public interface Reflection extends Service {
     
     public BeehiveMessage inspectObject(BeehiveMessage message) throws ClassCastException, ClassNotFoundException, BeehiveMessage.RemoteException;
     
-    public XHTML.EFlow inspectObject(BeehiveObjectId objectId, URI uri, Map<String,HTTP.Message> props) throws ClassCastException, ClassNotFoundException, BeehiveObjectStore.NotFoundException;
+    public XHTML.EFlow inspectObject(TitanGuid objectId, URI uri, Map<String,HTTP.Message> props) throws ClassCastException, ClassNotFoundException, BeehiveObjectStore.NotFoundException;
     
     /**
-     * Get the name of the type of the object identified by {@link BeehiveObjectId} {@code objectId}.
+     * Get the name of the type of the object identified by {@link TitanGuid} {@code objectId}.
      * 
      * @param objectId
      * @return the String name of the type of the {@link BeehiveObject} specified by the parameter {@code objectId}.
@@ -133,7 +133,7 @@ public interface Reflection extends Service {
      * @throws ClassNotFoundException
      * @throws RemoteException 
      */
-    public String getObjectType(final BeehiveObjectId objectId) throws ClassCastException, ClassNotFoundException, RemoteException;
+    public String getObjectType(final TitanGuid objectId) throws ClassCastException, ClassNotFoundException, RemoteException;
 
     /**
      * Responder to a BeehiveMessage sent to this node.

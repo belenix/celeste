@@ -40,25 +40,26 @@ import javax.management.NotCompliantMBeanException;
 
 import sunlabs.asdf.util.Time;
 import sunlabs.asdf.web.XML.XHTML;
+import sunlabs.asdf.web.XML.XHTML.EFlow;
 import sunlabs.asdf.web.XML.XML;
 import sunlabs.asdf.web.XML.Xxhtml;
-import sunlabs.asdf.web.XML.XHTML.EFlow;
 import sunlabs.asdf.web.http.HTTP;
 import sunlabs.asdf.web.http.HttpMessage;
 import sunlabs.celeste.client.operation.LockFileOperation;
 import sunlabs.celeste.node.services.api.AObjectVersionMapAPI;
 import sunlabs.celeste.node.services.object.VersionObject;
-import sunlabs.titan.BeehiveObjectId;
+import sunlabs.titan.TitanGuidImpl;
 import sunlabs.titan.api.BeehiveObject;
 import sunlabs.titan.api.ObjectStore;
+import sunlabs.titan.api.TitanGuid;
 import sunlabs.titan.node.AbstractBeehiveObject;
 import sunlabs.titan.node.BeehiveMessage;
+import sunlabs.titan.node.BeehiveMessage.RemoteException;
 import sunlabs.titan.node.BeehiveNode;
 import sunlabs.titan.node.BeehiveObjectStore;
-import sunlabs.titan.node.Publishers;
-import sunlabs.titan.node.BeehiveMessage.RemoteException;
 import sunlabs.titan.node.BeehiveObjectStore.InvalidObjectException;
 import sunlabs.titan.node.BeehiveObjectStore.NoSpaceException;
+import sunlabs.titan.node.Publishers;
 import sunlabs.titan.node.object.AbstractObjectHandler;
 import sunlabs.titan.node.object.MutableObject;
 import sunlabs.titan.node.services.BeehiveService;
@@ -137,12 +138,12 @@ public class AObjectVersionService extends AbstractObjectHandler implements AObj
         private static final long serialVersionUID = 1L;
         
         private int referenceCount;
-        private BeehiveObjectId lockerId;
+        private TitanGuid lockerId;
         private String token;
         private Serializable annotation;
         private LockFileOperation.Type type;
 
-        public Lock(LockFileOperation.Type type, BeehiveObjectId lockerId, int referenceCount, String token, Serializable annotation) {
+        public Lock(LockFileOperation.Type type, TitanGuid lockerId, int referenceCount, String token, Serializable annotation) {
             this.type = type;
             this.lockerId = lockerId;
             this.token = token;
@@ -162,7 +163,7 @@ public class AObjectVersionService extends AbstractObjectHandler implements AObj
             return this.token;
         }
 
-        public BeehiveObjectId getLockerObjectId() {
+        public TitanGuid getLockerObjectId() {
             return this.lockerId;
         }
         
@@ -300,7 +301,7 @@ public class AObjectVersionService extends AbstractObjectHandler implements AObj
          * @param timeToLive
          * @param deleteToken
          */
-        public FSBFTObject(MutableObject.ObjectHistory history, long timeToLive, BeehiveObjectId deleteTokenId) {
+        public FSBFTObject(MutableObject.ObjectHistory history, long timeToLive, TitanGuid deleteTokenId) {
             super(AObjectVersionService.class, deleteTokenId, timeToLive);
             this.history = history;
             this.setProperty(ObjectStore.METADATA_REPLICATION_STORE, 1);
@@ -309,8 +310,8 @@ public class AObjectVersionService extends AbstractObjectHandler implements AObj
         }
 
         @Override
-        public BeehiveObjectId getDataId() {
-            return new BeehiveObjectId("always the same".getBytes());
+        public TitanGuid getDataId() {
+            return new TitanGuidImpl("always the same".getBytes());
         }
 
         public void setObjectHistory(MutableObject.ObjectHistory history) {
@@ -351,12 +352,12 @@ public class AObjectVersionService extends AbstractObjectHandler implements AObj
         return new Parameters(parameterSpec);
     }
 
-    public void createValue(BeehiveObjectId objectId, BeehiveObjectId deleteTokenId, AObjectVersionMapAPI.Parameters params, long timeToLive)
+    public void createValue(TitanGuid objectId, TitanGuid deleteTokenId, AObjectVersionMapAPI.Parameters params, long timeToLive)
     throws MutableObject.InsufficientResourcesException, MutableObject.ExistenceException, MutableObject.ProtocolException {
         MutableObject.createValue(this, new MutableObject.ObjectId(objectId), deleteTokenId, params, timeToLive);
     }    
 
-    public void deleteValue(BeehiveObjectId objectId, BeehiveObjectId deleteToken, AObjectVersionMapAPI.Parameters params, long timeToLive)
+    public void deleteValue(TitanGuid objectId, TitanGuid deleteToken, AObjectVersionMapAPI.Parameters params, long timeToLive)
     throws MutableObject.InsufficientResourcesException, MutableObject.ExistenceException, MutableObject.ProtocolException, MutableObject.NotFoundException, 
     MutableObject.PredicatedValueException, MutableObject.ObjectHistory.ValidationException, MutableObject.DeletedException {
         MutableObject.deleteValue(this, new MutableObject.ObjectId(objectId), deleteToken, params, timeToLive);
@@ -393,7 +394,7 @@ public class AObjectVersionService extends AbstractObjectHandler implements AObj
             try {
                 BeehiveObjectStore.CreateSignatureVerifiedObject(request.getReplicaId(), object);
                 try {
-                    BeehiveObjectId objectId = AObjectVersionService.this.node.getObjectStore().create(object);
+                    TitanGuid objectId = AObjectVersionService.this.node.getObjectStore().create(object);
                     AObjectVersionService.this.node.getObjectStore().get(AObjectVersionService.FSBFTObject.class, objectId);
 
                     assert (objectId.equals(request.getReplicaId()));
@@ -467,7 +468,7 @@ public class AObjectVersionService extends AbstractObjectHandler implements AObj
         try {
             MutableObject.GetOperation.Request request = message.getPayload(MutableObject.GetOperation.Request.class, this.node);
             try {
-                BeehiveObjectId replicaId = request.getReplicaId();
+                TitanGuid replicaId = request.getReplicaId();
                 AObjectVersionService.FSBFTObject linearizerObject =
                     AObjectVersionService.this.node.getObjectStore().get(AObjectVersionService.FSBFTObject.class, replicaId);
 
@@ -497,7 +498,7 @@ public class AObjectVersionService extends AbstractObjectHandler implements AObj
         }
     }
 
-    private void removeLocalObjectHistory(BeehiveObjectId objectId) {
+    private void removeLocalObjectHistory(TitanGuid objectId) {
 //        this.linearizedObjects.remove(objectId.toString());
     }
 
@@ -522,7 +523,7 @@ public class AObjectVersionService extends AbstractObjectHandler implements AObj
                 object.setObjectHistory(objectHistory);
 
                 BeehiveObjectStore.CreateSignatureVerifiedObject(message.subjectId, object);
-                BeehiveObjectId objectId = AObjectVersionService.this.node.getObjectStore().update(object);
+                TitanGuid objectId = AObjectVersionService.this.node.getObjectStore().update(object);
 
                 assert(objectId.equals(message.subjectId));
 
@@ -570,12 +571,12 @@ public class AObjectVersionService extends AbstractObjectHandler implements AObj
         }
     }
 
-    public AObjectVersionMapAPI.Value getValue(BeehiveObjectId objectId, AObjectVersionMapAPI.Parameters params)
+    public AObjectVersionMapAPI.Value getValue(TitanGuid objectId, AObjectVersionMapAPI.Parameters params)
     throws MutableObject.InsufficientResourcesException, MutableObject.NotFoundException, MutableObject.ProtocolException {
         return (AObjectVersionMapAPI.Value) MutableObject.getValue(this, new MutableObject.ObjectId(objectId), params);
     }
 
-    public AObjectVersionMapAPI.Value setValue(BeehiveObjectId objectId, AObjectVersionMapAPI.Value predicatedValue, AObjectVersionMapAPI.Value value,
+    public AObjectVersionMapAPI.Value setValue(TitanGuid objectId, AObjectVersionMapAPI.Value predicatedValue, AObjectVersionMapAPI.Value value,
             AObjectVersionMapAPI.Parameters params)
     throws MutableObject.PredicatedValueException, MutableObject.InsufficientResourcesException,
     		MutableObject.ObjectHistory.ValidationException, MutableObject.ProtocolException, MutableObject.DeletedException {
@@ -607,7 +608,7 @@ public class AObjectVersionService extends AbstractObjectHandler implements AObj
             //
             // All of this is just to ensure there is only one of these objects in the system at a time.
             // For each published object in the request...
-    		for (Map.Entry<BeehiveObjectId, BeehiveObject.Metadata> entry : publishRequest.getObjectsToPublish().entrySet()) {
+    		for (Map.Entry<TitanGuid, BeehiveObject.Metadata> entry : publishRequest.getObjectsToPublish().entrySet()) {
     			// This should be part of a new ReplicatedObject helper.
     			Set<Publishers.PublishRecord> publisherSet = this.node.getObjectPublishers().getPublishersAndLock(entry.getKey());
     			try {
@@ -668,7 +669,7 @@ public class AObjectVersionService extends AbstractObjectHandler implements AObj
 //                  this.log.setLevel(Level.parse(this.logLevel.getValueAsString()));
                     this.log.config("Set run-time parameters: loggerLevel=" + this.log.getEffectiveLevel().toString());
                 } else if (action.equals("set")) {
-                    BeehiveObjectId objectId = new BeehiveObjectId(HttpMessage.asString(props.get("key"), defaultKey));
+                    TitanGuid objectId = new TitanGuidImpl(HttpMessage.asString(props.get("key"), defaultKey));
                     String value = HttpMessage.asString(props.get("value"), defaultValue);
 
                     MutableObject.Value predicatedValue = MutableObject.getValue(this, new MutableObject.ObjectId(objectId), new Parameters("1,1"));
@@ -676,27 +677,27 @@ public class AObjectVersionService extends AbstractObjectHandler implements AObj
                     MutableObject.setValue(this, new MutableObject.ObjectId(objectId), predicatedValue, new MutableObject.GenericObjectValue(value), new Parameters("1,1"));
                 } else if (action.equals("test-reset")) {
                     String key = HttpMessage.asString(props.get("key"), defaultKey);
-                    this.ResetLocalHistory(new BeehiveObjectId(key));
+                    this.ResetLocalHistory(new TitanGuidImpl(key));
 //                } else if (action.equals("test-truncate")) {
 //                    String key = HttpMessage.asString(props.get("key"), defaultKey);
-//                    this.TruncateLocalHistory(new BeehiveObjectId(key));
+//                    this.TruncateLocalHistory(new TitanGuid(key));
                 } else if (action.equals("create")) {
-                    BeehiveObjectId objectId = new BeehiveObjectId(HttpMessage.asString(props.get("key"), defaultKey));
-                    MutableObject.createValue(this, new MutableObject.ObjectId(objectId), new BeehiveObjectId("deleteMe".getBytes()), new Parameters("1,1"), Time.minutesInSeconds(5));
+                    TitanGuid objectId = new TitanGuidImpl(HttpMessage.asString(props.get("key"), defaultKey));
+                    MutableObject.createValue(this, new MutableObject.ObjectId(objectId), new TitanGuidImpl("deleteMe".getBytes()), new Parameters("1,1"), Time.minutesInSeconds(5));
                 } else if (action.equals("get")) {
-                    BeehiveObjectId objectId = new BeehiveObjectId(HttpMessage.asString(props.get("key"), defaultKey));
+                    TitanGuid objectId = new TitanGuidImpl(HttpMessage.asString(props.get("key"), defaultKey));
 
                     MutableObject.Value s = MutableObject.getValue(this, new MutableObject.ObjectId(objectId), new Parameters("1,1"));
                     XHTML.EFlow flow = new XHTML.Para(s.format());
 
-                    XHTML.Div body = new XHTML.Div(new XHTML.Heading.H1("%s&nbsp;%s", AObjectVersionService.name, this.getNode().getObjectId()), flow);
+                    XHTML.Div body = new XHTML.Div(new XHTML.Heading.H1("%s&nbsp;%s", AObjectVersionService.name, this.getNode().getNodeId()), flow);
                     return body;
                 } else if (action.equals("test-ohs")) {
-                    BeehiveObjectId objectId = new BeehiveObjectId(HttpMessage.asString(props.get("key"), defaultKey));
+                    TitanGuid objectId = new TitanGuidImpl(HttpMessage.asString(props.get("key"), defaultKey));
                     MutableObject.ObjectHistorySet ohs = MutableObject.getObjectHistorySet(this, new Parameters("1,1"), new MutableObject.ObjectId(objectId));
 
                     XHTML.Div body = new XHTML.Div(
-                            new XHTML.Heading.H1("%s&nbsp;%s", AObjectVersionService.name, this.getNode().getObjectId()),
+                            new XHTML.Heading.H1("%s&nbsp;%s", AObjectVersionService.name, this.getNode().getNodeId()),
                             new XHTML.Preformatted(ohs.toString()));
                     return body;
                 }
@@ -772,7 +773,7 @@ public class AObjectVersionService extends AbstractObjectHandler implements AObj
                 new XHTML.Table.Body(new XHTML.Table.Row(new XHTML.Table.Data(new XHTML.Preformatted(new XML.Attr("class", "logfile")).add(logdata)))));
 
         XHTML.Div body = new XHTML.Div(
-                new XHTML.Heading.H1(AObjectVersionService.name + " " + this.getNode().getObjectId()),
+                new XHTML.Heading.H1(AObjectVersionService.name + " " + this.getNode().getNodeId()),
                 new XHTML.Div(configuration).setClass("section"),
                 new XHTML.Div(data).setClass("section"),
                 new XHTML.Div(logfile).setClass("section"));
@@ -783,7 +784,7 @@ public class AObjectVersionService extends AbstractObjectHandler implements AObj
      * Reset the local ObjectHistory for the given key.
      * @param objectId
      */
-    public void ResetLocalHistory(BeehiveObjectId objectId) {
+    public void ResetLocalHistory(TitanGuid objectId) {
         this.removeLocalObjectHistory(objectId);
     }
 
@@ -792,7 +793,7 @@ public class AObjectVersionService extends AbstractObjectHandler implements AObj
 //     *
 //     * @param objectId
 //     */
-//    public void TruncateLocalHistory(BeehiveObjectId objectId) {
+//    public void TruncateLocalHistory(TitanGuid objectId) {
 //        MutableObject.ObjectHistory oldHistory = this.getLocalObjectHistory(objectId);
 //        MutableObject.ObjectHistory newHistory =  new MutableObject.ObjectHistory(objectId, oldHistory.getServerObjectId());
 //
@@ -809,7 +810,7 @@ public class AObjectVersionService extends AbstractObjectHandler implements AObj
 
     public static void main(String args[]) throws Exception {
         try {
-            FSBFTObject l = new FSBFTObject(new MutableObject.ObjectHistory(), 10, new BeehiveObjectId("foo".getBytes()));
+            FSBFTObject l = new FSBFTObject(new MutableObject.ObjectHistory(), 10, new TitanGuidImpl("foo".getBytes()));
             ObjectOutputStream o = new ObjectOutputStream(new FileOutputStream("/tmp/deletethis"));
             o.writeObject(l);
         } catch (Exception e) {

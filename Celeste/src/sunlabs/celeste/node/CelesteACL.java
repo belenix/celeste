@@ -39,7 +39,7 @@ import java.util.Set;
 import sunlabs.celeste.node.services.object.VersionObject;
 import sunlabs.celeste.util.ACL;
 import sunlabs.celeste.util.CelesteEncoderDecoder;
-import sunlabs.titan.BeehiveObjectId;
+import sunlabs.titan.api.TitanGuid;
 
 import static sunlabs.celeste.util.ACL.Disposition.grant;
 
@@ -50,7 +50,7 @@ import static sunlabs.celeste.util.ACL.Disposition.grant;
  * classes that implement corresponding specializations of the nested classes
  * and interfaces defined in {@code ACL}.
  */
-public class CelesteACL extends ACL<CelesteACL.CelesteOps, BeehiveObjectId> {
+public class CelesteACL extends ACL<CelesteACL.CelesteOps,TitanGuid> {
     private static final long serialVersionUID = 4L;
 
     /**
@@ -88,13 +88,13 @@ public class CelesteACL extends ACL<CelesteACL.CelesteOps, BeehiveObjectId> {
     // implementing it are not expected to go across the wire.
     //
     public interface FileAttributeAccessor
-            extends ACL.ACLBearerAccessor<BeehiveObjectId> {
+            extends ACL.ACLBearerAccessor<TitanGuid> {
         //
         // If matchers for other file attributes are needed, methods for
         // grabbing the attributes go here.
         //
-        public BeehiveObjectId getOwner();
-        public BeehiveObjectId getGroup();
+        public TitanGuid getOwner();
+        public TitanGuid getGroup();
     }
 
     /**
@@ -110,11 +110,11 @@ public class CelesteACL extends ACL<CelesteACL.CelesteOps, BeehiveObjectId> {
             this.vObject = vObject;
         }
 
-        public BeehiveObjectId getOwner() {
+        public TitanGuid getOwner() {
             return vObject.getOwner();
         }
 
-        public BeehiveObjectId getGroup() {
+        public TitanGuid getGroup() {
             return vObject.getGroup();
         }
     }
@@ -123,8 +123,7 @@ public class CelesteACL extends ACL<CelesteACL.CelesteOps, BeehiveObjectId> {
      * An {@code OwnerMatcher} determines whether a given principal is a
      * file's owner.
      */
-    public static class OwnerMatcher
-            implements ACL.PrincipalMatcher<BeehiveObjectId> {
+    public static class OwnerMatcher implements ACL.PrincipalMatcher<TitanGuid> {
         private static final long serialVersionUID = 1L;
 
         /**
@@ -135,8 +134,7 @@ public class CelesteACL extends ACL<CelesteACL.CelesteOps, BeehiveObjectId> {
          *          accessor.getOwner()} retrieves is equal to {@code
          *          principal} and {@code false} otherwise
          */
-        public boolean matches(BeehiveObjectId principal,
-                ACL.ACLBearerAccessor<BeehiveObjectId> accessor) {
+        public boolean matches(TitanGuid principal, ACL.ACLBearerAccessor<TitanGuid> accessor) {
             //
             // Sigh... Must resort to a run-time check, since the type system
             // can't express what's needed here.
@@ -146,7 +144,7 @@ public class CelesteACL extends ACL<CelesteACL.CelesteOps, BeehiveObjectId> {
                     "accessor argument must be a FileAttributeAccessor");
             FileAttributeAccessor attrAccessor =
                 (FileAttributeAccessor)accessor;
-            BeehiveObjectId owner = attrAccessor.getOwner();
+            TitanGuid owner = attrAccessor.getOwner();
             return owner.equals(principal);
         }
 
@@ -160,8 +158,7 @@ public class CelesteACL extends ACL<CelesteACL.CelesteOps, BeehiveObjectId> {
      * A {@code GroupMatcher} determines whether a given principal is a
      * file's group.
      */
-    public static class GroupMatcher
-            implements ACL.PrincipalMatcher<BeehiveObjectId> {
+    public static class GroupMatcher implements ACL.PrincipalMatcher<TitanGuid> {
         private static final long serialVersionUID = 1L;
 
         /**
@@ -172,8 +169,7 @@ public class CelesteACL extends ACL<CelesteACL.CelesteOps, BeehiveObjectId> {
          *          accessor.getGroup()} retrieves is equal to {@code
          *          principal} and {@code false} otherwise
          */
-        public boolean matches(BeehiveObjectId principal,
-                ACL.ACLBearerAccessor<BeehiveObjectId> accessor) {
+        public boolean matches(TitanGuid principal, ACL.ACLBearerAccessor<TitanGuid> accessor) {
             //
             // Sigh... Must resort to a run-time check, since the type system
             // can't express what's needed here.
@@ -183,7 +179,7 @@ public class CelesteACL extends ACL<CelesteACL.CelesteOps, BeehiveObjectId> {
                     "accessor argument must be a FileAttributeAccessor");
             FileAttributeAccessor attrAccessor =
                 (FileAttributeAccessor)accessor;
-            BeehiveObjectId group = attrAccessor.getGroup();
+            TitanGuid group = attrAccessor.getGroup();
             //
             // XXX: This check isn't right.  We need to see whether principal
             //      is a member of group, not that ut is group.  (But that
@@ -210,21 +206,18 @@ public class CelesteACL extends ACL<CelesteACL.CelesteOps, BeehiveObjectId> {
     //      toString() method can look up the profile in the cache and then
     //      use its getName() method.
     //
-    public static class IndividualMatcher
-            implements ACL.PrincipalMatcher<BeehiveObjectId> {
+    public static class IndividualMatcher implements ACL.PrincipalMatcher<TitanGuid> {
         private static final long serialVersionUID = 1L;
 
-        private final BeehiveObjectId individualId;
+        private final TitanGuid individualId;
 
-        public IndividualMatcher(BeehiveObjectId individualId) {
+        public IndividualMatcher(TitanGuid individualId) {
             if (individualId == null)
-                throw new IllegalArgumentException(
-                    "individualId must be non-{@code null}");
+                throw new IllegalArgumentException("individualId must be non-{@code null}");
             this.individualId = individualId;
         }
 
-        public boolean matches(BeehiveObjectId principal,
-                ACL.ACLBearerAccessor<BeehiveObjectId> accessor) {
+        public boolean matches(TitanGuid principal, ACL.ACLBearerAccessor<TitanGuid> accessor) {
             return this.individualId.equals(principal);
         }
 
@@ -244,12 +237,10 @@ public class CelesteACL extends ACL<CelesteACL.CelesteOps, BeehiveObjectId> {
      * constructing <q>other</q> entries when emulating POSIX-style
      * permissions.
      */
-    public static class AllMatcher
-            implements ACL.PrincipalMatcher<BeehiveObjectId> {
+    public static class AllMatcher implements ACL.PrincipalMatcher<TitanGuid> {
         private static final long serialVersionUID = 1L;
 
-        public boolean matches(BeehiveObjectId principal,
-                ACL.ACLBearerAccessor<BeehiveObjectId> accessor) {
+        public boolean matches(TitanGuid principal, ACL.ACLBearerAccessor<TitanGuid> accessor) {
             return true;
         }
 
@@ -264,11 +255,10 @@ public class CelesteACL extends ACL<CelesteACL.CelesteOps, BeehiveObjectId> {
      * (as defined by {@link sunlabs.celeste.util.ACL.ACE ACE} to the
      * specifics of Celeste files and operations on them.
      */
-    public static class CelesteACE extends ACL.ACE<CelesteOps, BeehiveObjectId> {
+    public static class CelesteACE extends ACL.ACE<CelesteOps, TitanGuid> {
         private static final long serialVersionUID = 1L;
 
-        public CelesteACE(ACL.PrincipalMatcher<BeehiveObjectId> matcher,
-                Set<CelesteOps> privileges, ACL.Disposition disposition) {
+        public CelesteACE(ACL.PrincipalMatcher<TitanGuid> matcher, Set<CelesteOps> privileges, ACL.Disposition disposition) {
             super(matcher, privileges, disposition);
         }
     }
@@ -346,7 +336,7 @@ public class CelesteACL extends ACL<CelesteACL.CelesteOps, BeehiveObjectId> {
      */
     public List<CelesteACE> getCelesteACEs() {
         List<CelesteACE> celesteAces = new ArrayList<CelesteACE>();
-        for (ACE<CelesteOps, BeehiveObjectId> ace : this.getACEs()) {
+        for (ACE<CelesteOps, TitanGuid> ace : this.getACEs()) {
             //
             // I'm aware of no way to avoid this run-time check and therefore
             // of the need to construct a copy of the list of ACEs.

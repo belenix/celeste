@@ -30,12 +30,10 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.Serializable;
-
 import java.util.EnumSet;
 import java.util.Map;
 import java.util.SortedSet;
 import java.util.TreeMap;
-
 
 import sunlabs.celeste.FileIdentifier;
 import sunlabs.celeste.client.Profile_;
@@ -43,8 +41,9 @@ import sunlabs.celeste.client.filesystem.HierarchicalFileSystem;
 import sunlabs.celeste.node.CelesteACL;
 import sunlabs.celeste.util.ACL;
 import sunlabs.celeste.util.ACL.ACLException;
-import sunlabs.titan.BeehiveObjectId;
+import sunlabs.titan.TitanGuidImpl;
 import sunlabs.titan.api.Credential;
+import sunlabs.titan.api.TitanGuid;
 
 /**
  * Maintains an association between path names and references to corresponding
@@ -75,13 +74,13 @@ public class FileTreeMap extends TreeMap<PathName, FileTreeMap.OccupantInfo> {
          * Returns the object identifier of the owner of the associated file
          * system object.
          */
-        public BeehiveObjectId getOwner();
+        public TitanGuid getOwner();
 
         /**
          * Returns the object identifier of the group of the associated file
          * system object.
          */
-        public BeehiveObjectId getGroup();
+        public TitanGuid getGroup();
     }
 
     /**
@@ -95,7 +94,7 @@ public class FileTreeMap extends TreeMap<PathName, FileTreeMap.OccupantInfo> {
          *
          * @param owner the new owner id
          */
-        public void setOwner(BeehiveObjectId owner);
+        public void setOwner(TitanGuid owner);
 
         /**
          * Sets the object identifier that names the group of the associated
@@ -103,7 +102,7 @@ public class FileTreeMap extends TreeMap<PathName, FileTreeMap.OccupantInfo> {
          *
          * @param group the new group id
          */
-        public void setGroup(BeehiveObjectId group);
+        public void setGroup(TitanGuid group);
     }
 
     /**
@@ -154,10 +153,10 @@ public class FileTreeMap extends TreeMap<PathName, FileTreeMap.OccupantInfo> {
         //
         public CelesteACL.FileAttributeAccessor getFileAttributeAccessor() {
             return new CelesteACL.FileAttributeAccessor() {
-                public BeehiveObjectId getOwner() {
+                public TitanGuid getOwner() {
                     return null;
                 }
-                public BeehiveObjectId getGroup() {
+                public TitanGuid getGroup() {
                     return null;
                 }
             };
@@ -204,20 +203,20 @@ public class FileTreeMap extends TreeMap<PathName, FileTreeMap.OccupantInfo> {
         //
         private class DirectoryInfoAttributeAccessor implements
                 CelesteACL.FileAttributeAccessor {
-            public BeehiveObjectId getOwner() {
+            public TitanGuid getOwner() {
                 return DirectoryInfo.this.getOwner();
             }
-            public BeehiveObjectId getGroup() {
+            public TitanGuid getGroup() {
                 return DirectoryInfo.this.getGroup();
             }
         }
 
-        private BeehiveObjectId owner;
-        private BeehiveObjectId group;
+        private TitanGuid owner;
+        private TitanGuid group;
         private DirectoryACL acl;
 
         public DirectoryInfo(FileIdentifier fid, Lock lock,
-                BeehiveObjectId owner, BeehiveObjectId group,
+                TitanGuid owner, TitanGuid group,
                 DirectoryACL acl) {
             super(fid, lock);
             this.owner = owner;
@@ -225,19 +224,19 @@ public class FileTreeMap extends TreeMap<PathName, FileTreeMap.OccupantInfo> {
             this.acl = acl;
         }
 
-        public void setOwner(BeehiveObjectId owner) {
+        public void setOwner(TitanGuid owner) {
             this.owner = owner;
         }
 
-        public BeehiveObjectId getOwner() {
+        public TitanGuid getOwner() {
             return this.owner;
         }
 
-        public void setGroup(BeehiveObjectId group) {
+        public void setGroup(TitanGuid group) {
             this.group = group;
         }
 
-        public BeehiveObjectId getGroup() {
+        public TitanGuid getGroup() {
             return this.group;
         }
 
@@ -397,8 +396,7 @@ public class FileTreeMap extends TreeMap<PathName, FileTreeMap.OccupantInfo> {
                 //
                 DirectoryInfo dirInfo = (DirectoryInfo)info;
                 try {
-                    dirInfo.getACL().check(DirectoryACL.DirectoryOps.lookup,
-                        info.getFileAttributeAccessor(), cred.getObjectId());
+                    dirInfo.getACL().check(DirectoryACL.DirectoryOps.lookup, info.getFileAttributeAccessor(), cred.getObjectId());
                 } catch (ACLException e) {
                     throw new FSException.PermissionDenied(ancestorPath, e);
                 }
@@ -668,9 +666,9 @@ public class FileTreeMap extends TreeMap<PathName, FileTreeMap.OccupantInfo> {
     //
     // XXX: Testing/debugging code
     //
-    private final static BeehiveObjectId nameSpaceId = new BeehiveObjectId();
-    private final static BeehiveObjectId owner = new BeehiveObjectId();
-    private final static BeehiveObjectId group = new BeehiveObjectId();
+    private final static TitanGuid nameSpaceId = new TitanGuidImpl();
+    private final static TitanGuid owner = new TitanGuidImpl();
+    private final static TitanGuid group = new TitanGuidImpl();
     private final static DirectoryACL acl = new DirectoryACL(
         new DirectoryACL.DirectoryACE(new CelesteACL.AllMatcher(),
             EnumSet.allOf(DirectoryACL.DirectoryOps.class),
@@ -678,7 +676,7 @@ public class FileTreeMap extends TreeMap<PathName, FileTreeMap.OccupantInfo> {
     );
 
     private static FileIdentifier newFid() {
-        return new FileIdentifier(nameSpaceId, new BeehiveObjectId());
+        return new FileIdentifier(nameSpaceId, new TitanGuidImpl());
     }
 
     //
@@ -695,8 +693,7 @@ public class FileTreeMap extends TreeMap<PathName, FileTreeMap.OccupantInfo> {
         PathName abd = new PathName("/a/b/d");
         PathName abe = new PathName("/a/b/e");
         Lock abdLock = new Lock(cred.getObjectId(), Lock.Depth.ZERO, "a token");
-        Lock abeLock =
-            new Lock(new BeehiveObjectId(), Lock.Depth.ZERO, "a token");
+        Lock abeLock = new Lock(new TitanGuidImpl(), Lock.Depth.ZERO, "a token");
 
         fs.put(new PathName("/"),
             new DirectoryInfo(newFid(), null, owner, group, acl));

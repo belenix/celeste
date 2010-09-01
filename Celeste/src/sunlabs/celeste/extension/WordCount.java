@@ -25,9 +25,7 @@
 package sunlabs.celeste.extension;
 
 import java.io.Serializable;
-
 import java.nio.ByteBuffer;
-
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -40,22 +38,23 @@ import sunlabs.asdf.functional.AbstractMapFunction;
 import sunlabs.asdf.functional.AbstractReduceFunction;
 import sunlabs.asdf.functional.MapFunction;
 import sunlabs.celeste.client.operation.ExtensibleOperation;
-import sunlabs.celeste.node.CelesteNode;
+import sunlabs.celeste.extension.WordCount.BObjectExtension;
 import sunlabs.celeste.node.CelesteACL.CelesteOps;
+import sunlabs.celeste.node.CelesteNode;
 import sunlabs.celeste.node.object.ExtensibleObject;
 import sunlabs.celeste.node.services.AObjectVersionService;
 import sunlabs.celeste.node.services.api.AObjectVersionMapAPI;
 import sunlabs.celeste.node.services.object.AnchorObject;
-
 import sunlabs.celeste.node.services.object.AnchorObjectHandler;
 import sunlabs.celeste.node.services.object.BlockObject;
 import sunlabs.celeste.node.services.object.BlockObjectHandler;
 import sunlabs.celeste.node.services.object.VersionObject;
-import sunlabs.celeste.node.services.object.VersionObjectHandler;
 import sunlabs.celeste.node.services.object.VersionObject.BadManifestException;
-import sunlabs.titan.BeehiveObjectId;
+import sunlabs.celeste.node.services.object.VersionObjectHandler;
+import sunlabs.titan.TitanGuidImpl;
+import sunlabs.titan.api.TitanGuid;
+import sunlabs.titan.api.TitanNode;
 import sunlabs.titan.node.BeehiveMessage;
-import sunlabs.titan.node.BeehiveNode;
 import sunlabs.titan.node.BeehiveObjectStore;
 import sunlabs.titan.node.object.BeehiveObjectHandler;
 import sunlabs.titan.node.object.MutableObject;
@@ -85,7 +84,7 @@ import sunlabs.titan.util.ExtentBuffer;
 public class WordCount implements ExtensibleObject.Extension<HashMap<String,Long>> {
     private final static long serialVersionUID = 1L;
 
-    private BeehiveNode node;
+    private TitanNode node;
     private ExtensibleOperation operation;
     private ExtensibleObject.JarClassLoader classLoader;
 
@@ -114,7 +113,7 @@ public class WordCount implements ExtensibleObject.Extension<HashMap<String,Long
            BeehiveObjectStore.InvalidObjectException, MutableObject.InsufficientResourcesException, MutableObject.NotFoundException,
            MutableObject.ProtocolException, BeehiveMessage.RemoteException {
 
-        BeehiveObjectId vObjectId = this.operation.getVObjectId();
+        TitanGuid vObjectId = this.operation.getVObjectId();
         
         // An arbitrary array of Strings is in the ExtensionOperation instance.
         // This array is created by the original creator of the ExtensionOperation and can be used in here to do different things. 
@@ -128,7 +127,7 @@ public class WordCount implements ExtensibleObject.Extension<HashMap<String,Long
 
         // If the object-id of the VersionObject is not supplied (signaled by being null or all zeros),
         // we must fetch the current VersionObject object-id.
-        if (vObjectId == null || vObjectId.equals(BeehiveObjectId.ZERO)) {
+        if (vObjectId == null || vObjectId.equals(TitanGuidImpl.ZERO)) {
             AObjectVersionMapAPI aObjectVersionMap = this.node.getService(AObjectVersionService.class);
             VersionObject.Object.Reference vObjectReference =
                 aObjectVersionMap.getValue(aObject.getObjectId(), aObject.getAObjectVersionMapParams()).getReference();
@@ -148,11 +147,11 @@ public class WordCount implements ExtensibleObject.Extension<HashMap<String,Long
 
         private ExtensibleObject.JarClassLoader classLoader;
         private VersionObjectHandler handler;
-        private BeehiveObjectId objectId;
+        private TitanGuid objectId;
         private ExtensibleOperation operation;
         private ExecutorService threadPool;
 
-        public VObjectExtension(ExtensibleObject.JarClassLoader classLoader, ExtensibleOperation operation, BeehiveObjectId objectId, VersionObjectHandler handler) {
+        public VObjectExtension(ExtensibleObject.JarClassLoader classLoader, ExtensibleOperation operation, TitanGuidImpl objectId, VersionObjectHandler handler) {
             this.classLoader = classLoader;
             this.handler = handler;
             this.objectId = objectId;
@@ -238,12 +237,12 @@ public class WordCount implements ExtensibleObject.Extension<HashMap<String,Long
          * @see MapFunction
          */
         public static class WordCountMapFunction extends AbstractMapFunction<BlockObject.Object.Reference,BObjectExtension.BObjectResult> {
-            private BeehiveNode node;
+            private TitanNode node;
             private ExtensibleOperation operation;
             private BlockObject handler;
             private ExtensibleObject.JarClassLoader classLoader;
 
-            public WordCountMapFunction(ExtensibleObject.JarClassLoader classLoader, ExecutorService executor, BeehiveNode node, BlockObject blockObjectHandler, ExtensibleOperation operation) {
+            public WordCountMapFunction(ExtensibleObject.JarClassLoader classLoader, ExecutorService executor, TitanNode node, BlockObject blockObjectHandler, ExtensibleOperation operation) {
                 super(executor);
                 this.node = node;
                 this.handler = blockObjectHandler;
@@ -272,7 +271,7 @@ public class WordCount implements ExtensibleObject.Extension<HashMap<String,Long
 
                 @Override
                 public BObjectExtension.BObjectResult function(BlockObject.Object.Reference bObjectReference) throws Exception {
-                    BeehiveObjectId objectId = bObjectReference.getObjectId();
+                    TitanGuid objectId = bObjectReference.getObjectId();
                     ExtensibleObject.Operation.Request request = new ExtensibleObject.Operation.Request(WordCount.BObjectExtension.class, this.classLoader, operation);
                     return this.handler.extension(BObjectExtension.BObjectResult.class, objectId, request);
                 }
@@ -307,12 +306,12 @@ public class WordCount implements ExtensibleObject.Extension<HashMap<String,Long
         }
 
         private ExtensibleObject.JarClassLoader classLoader;
-        private BeehiveObjectId objectId;
+        private TitanGuid objectId;
         private BeehiveObjectHandler handler;
         @SuppressWarnings("unused")
         private ExtensibleOperation operation;
 
-        public BObjectExtension(ExtensibleObject.JarClassLoader classLoader, ExtensibleOperation operation, BeehiveObjectId objectId, BlockObjectHandler handler) {
+        public BObjectExtension(ExtensibleObject.JarClassLoader classLoader, ExtensibleOperation operation, TitanGuidImpl objectId, BlockObjectHandler handler) {
             this.classLoader = classLoader;
             this.operation = operation;
             this.objectId = objectId;

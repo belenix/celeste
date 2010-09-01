@@ -32,13 +32,14 @@ import javax.management.MBeanRegistrationException;
 import javax.management.MalformedObjectNameException;
 import javax.management.NotCompliantMBeanException;
 
-import sunlabs.titan.BeehiveObjectId;
 import sunlabs.titan.api.BeehiveObject;
+import sunlabs.titan.api.TitanGuid;
 import sunlabs.titan.node.BeehiveNode;
 import sunlabs.titan.node.NodeAddress;
 import sunlabs.titan.node.Publishers;
 import sunlabs.titan.node.services.BeehiveService;
 import sunlabs.titan.node.services.PublishDaemon;
+import sunlabs.titan.node.services.api.Publish;
 
 /**
  * The base class for all Beehive object-handler implementations.
@@ -71,7 +72,7 @@ public abstract class AbstractObjectHandler extends BeehiveService implements Be
      */
     public static void publishObjectBackup(AbstractObjectHandler handler, PublishDaemon.PublishObject.Request publishRequest) throws ClassNotFoundException {
     	if (publishRequest.isBackup()) {
-    		for (Map.Entry<BeehiveObjectId,BeehiveObject.Metadata> entry : publishRequest.getObjectsToPublish().entrySet()) {
+    		for (Map.Entry<TitanGuid,BeehiveObject.Metadata> entry : publishRequest.getObjectsToPublish().entrySet()) {
     			if (handler.getLogger().isLoggable(Level.FINEST)) {
     				handler.getLogger().finest("backup backpointer %s -> %s", entry.getKey(), publishRequest.getPublisherAddress().getObjectId());
     			}
@@ -86,7 +87,7 @@ public abstract class AbstractObjectHandler extends BeehiveService implements Be
     		successorSet.toArray(nodes);
     		publishRequest.setBackup(true);
     		for (int i = 0; i < nodes.length && i < 2; i++) {
-    			if (!nodes[i].getObjectId().equals(handler.getNode().getObjectId())) {
+    			if (!nodes[i].getObjectId().equals(handler.getNode().getNodeId())) {
         			if (handler.getLogger().isLoggable(Level.FINEST)) {
         				handler.getLogger().finest("publish backup to %s", nodes[i].getObjectId());
         			}

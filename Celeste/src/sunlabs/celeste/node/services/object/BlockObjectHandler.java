@@ -54,15 +54,17 @@ import sunlabs.asdf.web.http.HTTP;
 import sunlabs.asdf.web.http.HttpMessage;
 import sunlabs.celeste.client.ReplicationParameters;
 import sunlabs.celeste.node.object.ExtensibleObject;
-import sunlabs.titan.BeehiveObjectId;
+import sunlabs.titan.TitanGuidImpl;
 import sunlabs.titan.api.BeehiveObject;
 import sunlabs.titan.api.ObjectStore;
+import sunlabs.titan.api.TitanGuid;
+import sunlabs.titan.api.TitanNodeId;
 import sunlabs.titan.node.AbstractBeehiveObject;
 import sunlabs.titan.node.BeehiveMessage;
+import sunlabs.titan.node.BeehiveMessage.RemoteException;
 import sunlabs.titan.node.BeehiveNode;
 import sunlabs.titan.node.BeehiveObjectPool;
 import sunlabs.titan.node.BeehiveObjectStore;
-import sunlabs.titan.node.BeehiveMessage.RemoteException;
 import sunlabs.titan.node.BeehiveObjectStore.DeletedObjectException;
 import sunlabs.titan.node.BeehiveObjectStore.NoSpaceException;
 import sunlabs.titan.node.BeehiveObjectStore.NotFoundException;
@@ -108,9 +110,9 @@ public final class BlockObjectHandler extends AbstractObjectHandler implements B
             private final static long serialVersionUID = 1L;
 
             private final BufferableExtent extent;
-            private final BeehiveObjectId objectId;
+            private final TitanGuid objectId;
 
-            private Reference(BlockObject.Object bObject, long offset, BeehiveObjectId objectId) {
+            private Reference(BlockObject.Object bObject, long offset, TitanGuid objectId) {
                 this.extent = new BufferableExtentImpl(offset, bObject.getBounds().getLength());
                 this.objectId = objectId;
             }
@@ -125,7 +127,7 @@ public final class BlockObjectHandler extends AbstractObjectHandler implements B
             public Reference(String reference) {
                 String[] tokens = reference.split("/");
                 this.extent = new BufferableExtentImpl(Long.parseLong(tokens[0]), Integer.parseInt(tokens[1]));
-                this.objectId = new BeehiveObjectId(tokens[2]);
+                this.objectId = new TitanGuidImpl(tokens[2]);
             }
 
             //
@@ -158,7 +160,7 @@ public final class BlockObjectHandler extends AbstractObjectHandler implements B
                 return this.toString().hashCode();
             }
 
-            public BeehiveObjectId getObjectId() {
+            public TitanGuid getObjectId() {
                 return this.objectId;
             }
 
@@ -259,7 +261,7 @@ public final class BlockObjectHandler extends AbstractObjectHandler implements B
         // Package visibility, so that unit tests can access it.
         //
         BObject(BufferableExtent bounds, ExtentBufferMap data,
-                BeehiveObject.Metadata metadata, BeehiveObjectId deleteTokenId, long timeToLive, ReplicationParameters replicationParams) {
+                BeehiveObject.Metadata metadata, TitanGuid deleteTokenId, long timeToLive, ReplicationParameters replicationParams) {
             this(new BObject.BObjectContents(bounds, data), metadata, deleteTokenId, timeToLive);
             this.replicationMinimum = replicationParams.getAsInteger(BlockObject.Object.REPLICATIONPARAM_MIN_NAME, BlockObjectHandler.replicationStore);
             this.replicationCache = replicationParams.getAsInteger(BlockObject.Object.REPLICATIONPARAM_LOWWATER_NAME, BlockObjectHandler.replicationCache);
@@ -267,12 +269,12 @@ public final class BlockObjectHandler extends AbstractObjectHandler implements B
             this.setProperty(ObjectStore.METADATA_REPLICATION_LOWWATER, this.replicationCache);
         }
 
-        private BObject(BObjectContents contents, BeehiveObject.Metadata metadata, BeehiveObjectId deleteTokenId, long timeToLive) {
+        private BObject(BObjectContents contents, BeehiveObject.Metadata metadata, TitanGuid deleteTokenId, long timeToLive) {
             super(BlockObjectHandler.class, deleteTokenId, timeToLive);
             this.contents = contents;
         }
 
-        public BlockObject.Object.Reference makeReference(long offset, BeehiveObjectId objectId) {
+        public BlockObject.Object.Reference makeReference(long offset, TitanGuid objectId) {
             return new BlockObjectHandler.BObject.Reference(this, offset, objectId);
         }
 
@@ -285,14 +287,14 @@ public final class BlockObjectHandler extends AbstractObjectHandler implements B
         }
 
         @Override
-        public BeehiveObjectId getDataId() {
+        public TitanGuid getDataId() {
             //
             // To avoid confusing two block objects for the same file that
             // have identical contents, but that appear in different places
             // within the file, the id generated here must include the
             // starting offset.
             //
-            BeehiveObjectId id = new BeehiveObjectId("".getBytes());
+            TitanGuid id = new TitanGuidImpl("".getBytes());
             id = id.add(this.getBounds().getStartOffset());
             for (ByteBuffer c : this.contents.data.getBuffers()) {
                 id = id.add(c);
@@ -320,7 +322,7 @@ public final class BlockObjectHandler extends AbstractObjectHandler implements B
             return result;
         }
 
-        public void delete(BeehiveObjectId profferedDeleteToken, long timeToLive) throws BeehiveObjectStore.DeleteTokenException {
+        public void delete(TitanGuid profferedDeleteToken, long timeToLive) throws BeehiveObjectStore.DeleteTokenException {
             this.contents = new BObject.BObjectContents(new BufferableExtentImpl(0L, 0), new ExtentBufferMap());
 
             DeleteableObject.ObjectDeleteHelper(this, profferedDeleteToken, timeToLive);
@@ -330,10 +332,10 @@ public final class BlockObjectHandler extends AbstractObjectHandler implements B
     }
 
     // This is a lock signaling that a published object is undergoing the delete process.
-    private final ObjectLock<BeehiveObjectId> publishObjectDeleteLocks;
+    private final ObjectLock<TitanGuid> publishObjectDeleteLocks;
 
     // This is a lock signaling that the deleteLocalObject() method is already deleting the specified object.
-    private final ObjectLock<BeehiveObjectId> deleteLocalObjectLocks;
+    private final ObjectLock<TitanGuid> deleteLocalObjectLocks;
 
     public BlockObjectHandler(BeehiveNode node) throws
             MalformedObjectNameException,
@@ -341,8 +343,8 @@ public final class BlockObjectHandler extends AbstractObjectHandler implements B
             InstanceAlreadyExistsException,
             MBeanRegistrationException {
         super(node, BlockObjectHandler.name, "Celeste Block Object Handler");
-        this.publishObjectDeleteLocks = new ObjectLock<BeehiveObjectId>();
-        this.deleteLocalObjectLocks = new ObjectLock<BeehiveObjectId>();
+        this.publishObjectDeleteLocks = new ObjectLock<TitanGuid>();
+        this.deleteLocalObjectLocks = new ObjectLock<TitanGuid>();
     }
 
     @Override
@@ -365,7 +367,7 @@ public final class BlockObjectHandler extends AbstractObjectHandler implements B
         DeleteableObject.publishObjectHelper(this, publishRequest);
         AbstractObjectHandler.publishObjectBackup(this, publishRequest);
 
-        return message.composeReply(this.node.getNodeAddress(), new PublishDaemon.PublishObject.Response(new HashSet<BeehiveObjectId>(publishRequest.getObjectsToPublish().keySet())));
+        return message.composeReply(this.node.getNodeAddress(), new PublishDaemon.PublishObject.Response(new HashSet<TitanGuid>(publishRequest.getObjectsToPublish().keySet())));
     }
 
     public BeehiveMessage unpublishObject(BeehiveMessage message) throws ClassCastException, RemoteException, ClassNotFoundException {
@@ -420,7 +422,7 @@ public final class BlockObjectHandler extends AbstractObjectHandler implements B
                 ));
 
         XHTML.Div body = new XHTML.Div(
-                new XHTML.Heading.H1(BlockObjectHandler.name + " " + this.node.getObjectId()),
+                new XHTML.Heading.H1(BlockObjectHandler.name + " " + this.node.getNodeId()),
                 new XHTML.Div(controls).setClass("section"),
                 new XHTML.Div(logfile).setClass("section"));
 
@@ -446,7 +448,7 @@ public final class BlockObjectHandler extends AbstractObjectHandler implements B
     }
 
     public BlockObject.Object create(BufferableExtent bounds,
-            ExtentBufferMap data, BeehiveObject.Metadata metadata, BeehiveObjectId deleteTokenId, long timeToLive, ReplicationParameters replicationParams) {
+            ExtentBufferMap data, BeehiveObject.Metadata metadata, TitanGuid deleteTokenId, long timeToLive, ReplicationParameters replicationParams) {
         return new BObject(bounds, data, metadata, deleteTokenId, timeToLive, replicationParams);
     }
 
@@ -586,6 +588,7 @@ public final class BlockObjectHandler extends AbstractObjectHandler implements B
             }
         }
     }
+    
     public BeehiveMessage replicateObject(BeehiveMessage message) throws ClassNotFoundException, ClassCastException, BeehiveMessage.RemoteException {
         try {
             ReplicatableObject.Replicate.Request request = message.getPayload(ReplicatableObject.Replicate.Request.class, this.node);
@@ -595,8 +598,8 @@ public final class BlockObjectHandler extends AbstractObjectHandler implements B
             BlockObject.Object aObject = this.retrieve(request.getObjectId());
 
             // XXX It would be good to have the Request contain a Map and not a Set, and then just use keySet().
-            Set<BeehiveObjectId> excludeNodes = new HashSet<BeehiveObjectId>();
-            for (BeehiveObjectId publisher : request.getExcludedNodes()) {
+            Set<TitanNodeId> excludeNodes = new HashSet<TitanNodeId>();
+            for (TitanNodeId publisher : request.getExcludedNodes()) {
                 excludeNodes.add(publisher);                
             }
             if (this.log.isLoggable(Level.FINE)) {
@@ -629,7 +632,7 @@ public final class BlockObjectHandler extends AbstractObjectHandler implements B
         }
     }
 
-    public BlockObject.Object retrieve(BeehiveObjectId objectId)
+    public BlockObject.Object retrieve(TitanGuid objectId)
     throws BeehiveObjectStore.NotFoundException, BeehiveObjectStore.DeletedObjectException {
 
         return RetrievableObject.retrieve(this, BlockObject.Object .class, objectId);
@@ -651,11 +654,11 @@ public final class BlockObjectHandler extends AbstractObjectHandler implements B
         return message.composeReply(this.node.getNodeAddress());
     }
 
-    public ObjectLock<BeehiveObjectId> getPublishObjectDeleteLocks() {
+    public ObjectLock<TitanGuid> getPublishObjectDeleteLocks() {
         return publishObjectDeleteLocks;
     }
 
-    public DOLRStatus deleteObject(BeehiveObjectId objectId, BeehiveObjectId profferedDeletionToken, long timeToLive) throws BeehiveObjectStore.NoSpaceException {
+    public DOLRStatus deleteObject(TitanGuid objectId, TitanGuid profferedDeletionToken, long timeToLive) throws BeehiveObjectStore.NoSpaceException {
         DeleteableObject.Request request = new DeleteableObject.Request(objectId, profferedDeletionToken, timeToLive);
         BeehiveMessage reply = this.node.sendToObject(objectId, this.getName(), "deleteLocalObject", request);
         return reply.getStatus();
@@ -670,7 +673,7 @@ public final class BlockObjectHandler extends AbstractObjectHandler implements B
      * @throws BeehiveObjectStore.NoSpaceException
      * @throws BeehiveObjectStore.DeleteTokenException
      */
-    public BeehiveObject createAntiObject(DeleteableObject.Handler.Object object, BeehiveObjectId profferedDeleteToken, long timeToLive)
+    public BeehiveObject createAntiObject(DeleteableObject.Handler.Object object, TitanGuid profferedDeleteToken, long timeToLive)
     throws IOException, BeehiveObjectStore.NoSpaceException, BeehiveObjectStore.DeleteTokenException {
         BlockObject.Object bObject = BlockObject.Object.class.cast(object);
         bObject.delete(profferedDeleteToken, timeToLive);
@@ -681,7 +684,7 @@ public final class BlockObjectHandler extends AbstractObjectHandler implements B
         return ExtensibleObject.extensibleOperation(this, message);
     }
 
-    public <C> C extension(Class<? extends C> klasse, BeehiveObjectId objectId, ExtensibleObject.Operation.Request op) throws ClassCastException, ClassNotFoundException, RemoteException {
+    public <C> C extension(Class<? extends C> klasse, TitanGuid objectId, ExtensibleObject.Operation.Request op) throws ClassCastException, ClassNotFoundException, RemoteException {
         return ExtensibleObject.extension(this, klasse, objectId, op);
     }
 }

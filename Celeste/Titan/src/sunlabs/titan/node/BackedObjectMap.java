@@ -38,7 +38,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
-import sunlabs.titan.BeehiveObjectId;
+import sunlabs.titan.TitanGuidImpl;
 
 /**
  * An implementation of a map of objects that is maintained in the
@@ -97,7 +97,7 @@ public class BackedObjectMap<K,V> implements Serializable {
     	key.append(path.substring(6,10));
     	key.append(path.substring(12));
     	@SuppressWarnings("unchecked")
-    	K keyId = (K) new BeehiveObjectId(key.toString());
+    	K keyId = (K) new TitanGuidImpl(key.toString());
     	return keyId;
     }
 
@@ -179,7 +179,7 @@ public class BackedObjectMap<K,V> implements Serializable {
     /* (non-Javadoc)
      * @see java.util.Map#containsKey(java.lang.Object)
      */
-    public boolean containsKey(BeehiveObjectId key) {
+    public boolean containsKey(TitanGuidImpl key) {
         return new File(this.makePath(key)).exists();
     }
 
@@ -328,11 +328,11 @@ public class BackedObjectMap<K,V> implements Serializable {
      */
     public V get(Object arg0) throws ClassCastException, SecurityException {
 
-        assert arg0 instanceof BeehiveObjectId;
-        if (!(arg0 instanceof BeehiveObjectId)) {
+        assert arg0 instanceof TitanGuidImpl;
+        if (!(arg0 instanceof TitanGuidImpl)) {
             return null;
         }
-        BeehiveObjectId key = (BeehiveObjectId) arg0;
+        TitanGuidImpl key = (TitanGuidImpl) arg0;
         String k = this.makePath(key);
 //        try {
             File file = new File(k);
@@ -442,11 +442,11 @@ public class BackedObjectMap<K,V> implements Serializable {
      * @see java.util.Map#remove(java.lang.Object)
      */
     public V remove(Object arg0) {
-        assert arg0 instanceof BeehiveObjectId;
-        if (!(arg0 instanceof BeehiveObjectId)) {
+        assert arg0 instanceof TitanGuidImpl;
+        if (!(arg0 instanceof TitanGuidImpl)) {
             return null;
         }
-        BeehiveObjectId key = (BeehiveObjectId) arg0;
+        TitanGuidImpl key = (TitanGuidImpl) arg0;
         V previousValue = this.get(key);
         if (previousValue != null) {
             File file = new File(this.makePath(key));
@@ -483,13 +483,13 @@ public class BackedObjectMap<K,V> implements Serializable {
         return collection;
     }
 
-    private static BeehiveObjectId key(String s) {
-        return new BeehiveObjectId(s.getBytes());
+    private static TitanGuidImpl key(String s) {
+        return new TitanGuidImpl(s.getBytes());
     }
 
     public static void main(String[] args) {
         try {
-            BackedObjectMap<BeehiveObjectId,String> map = new BackedObjectMap<BeehiveObjectId,String>("/tmp/map", true);
+            BackedObjectMap<TitanGuidImpl,String> map = new BackedObjectMap<TitanGuidImpl,String>("/tmp/map", true);
 
             map.put(key("1234/"), "A");
             map.put(key("12345+"), "A");
@@ -500,29 +500,29 @@ public class BackedObjectMap<K,V> implements Serializable {
 
             System.out.println("created " + map.size() + " entries.");
 
-            for (Map.Entry<BeehiveObjectId, String> entry : map.entrySet()) {
+            for (Map.Entry<TitanGuidImpl, String> entry : map.entrySet()) {
                 System.out.println(
                     " " + entry.getKey() + "=" + entry.getValue());
             }
 
             System.out.println("Test entrySet");
 
-            Set<Map.Entry<BeehiveObjectId,String>> set = map.entrySet();
-            for (Map.Entry<BeehiveObjectId,String> entry: set) {
+            Set<Map.Entry<TitanGuidImpl,String>> set = map.entrySet();
+            for (Map.Entry<TitanGuidImpl,String> entry: set) {
                 System.out.println(
                     " key: " + entry.getKey() + "=" + entry.getValue());
                 entry.setValue(entry.getKey().toString());
             }
 
             System.out.println("Test keySet");
-            for (Map.Entry<BeehiveObjectId, String> entry : map.entrySet()) {
+            for (Map.Entry<TitanGuidImpl, String> entry : map.entrySet()) {
                 System.out.println(
                     "key: " + entry.getKey() + "=" + entry.getValue());
             }
 
             System.out.println("remove 12");
             set.remove(key("12"));
-            for (Map.Entry<BeehiveObjectId, String> entry : map.entrySet()) {
+            for (Map.Entry<TitanGuidImpl, String> entry : map.entrySet()) {
                 System.out.println(
                     "key: " + entry.getKey() + "=" + entry.getValue());
             }
@@ -532,7 +532,7 @@ public class BackedObjectMap<K,V> implements Serializable {
 
             //map.clear();
 
-            for (BeehiveObjectId file: map.keySet()) {
+            for (TitanGuidImpl file: map.keySet()) {
                 System.out.println("key: " + file);
             }
         } catch (BackedObjectMap.AccessException e) {

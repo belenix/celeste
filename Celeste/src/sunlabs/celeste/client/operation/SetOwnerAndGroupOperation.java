@@ -33,22 +33,23 @@ import sunlabs.celeste.FileIdentifier;
 import sunlabs.celeste.client.ClientMetaData;
 import sunlabs.celeste.node.CelesteACL;
 import sunlabs.celeste.node.services.CelesteClientDaemon;
-import sunlabs.titan.BeehiveObjectId;
+import sunlabs.titan.api.Credential;
+import sunlabs.titan.api.TitanGuid;
 
 public class SetOwnerAndGroupOperation extends UpdateOperation {
     private static final long serialVersionUID = 1L;
 
     public static final String name = "set-user-and-group";
 
-    private final BeehiveObjectId ownerId;
-    private final BeehiveObjectId groupId;
+    private final TitanGuid ownerId;
+    private final TitanGuid groupId;
 
     /**
      * Creates a {@code SetUserAndGroupOperation} object encapsulating the
      * fields given as arguments.
      *
      * @param fileIdentifier    The {@link FileIdentifier} of the file to set owner and group information.
-     * @param clientId              the {@link BeehiveObjectId} of the {@link Credential} authorising the operation
+     * @param clientId              the {@link TitanGuid} of the {@link Credential} authorising the operation
      * @param predicatedVObjectId   the object-id of the version of
      *                              the file this operation is predicated upon
      * @param clientMetaData        client-supplied metadata to be attached to
@@ -60,27 +61,27 @@ public class SetOwnerAndGroupOperation extends UpdateOperation {
      */
     public SetOwnerAndGroupOperation(
             FileIdentifier fileIdentifier,
-            BeehiveObjectId clientId,
-            BeehiveObjectId predicatedVObjectId,
+            TitanGuid clientId,
+            TitanGuid predicatedVObjectId,
             ClientMetaData clientMetaData,
-            BeehiveObjectId ownerId,
-            BeehiveObjectId groupId) {
+            TitanGuid ownerId,
+            TitanGuid groupId) {
         super(SetOwnerAndGroupOperation.name, fileIdentifier, clientId, predicatedVObjectId, clientMetaData);
         this.ownerId = ownerId;
         this.groupId = groupId;
     }
 
-    public BeehiveObjectId getOwnerId() {
+    public TitanGuid getOwnerId() {
         return this.ownerId;
     }
 
-    public BeehiveObjectId getGroupId() {
+    public TitanGuid getGroupId() {
         return this.groupId;
     }
 
     @Override
-    public BeehiveObjectId getId() {
-        BeehiveObjectId id = super.getId()
+    public TitanGuid getId() {
+        TitanGuid id = super.getId()
         .add(this.getOwnerId())
         .add(this.getGroupId());
         return id;

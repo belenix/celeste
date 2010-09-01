@@ -52,7 +52,9 @@ import javax.management.ReflectionException;
 import sunlabs.asdf.web.XML.XHTML;
 import sunlabs.asdf.web.XML.XML;
 import sunlabs.asdf.web.http.HTTP;
-import sunlabs.titan.BeehiveObjectId;
+import sunlabs.titan.TitanGuidImpl;
+import sunlabs.titan.api.TitanGuid;
+import sunlabs.titan.api.TitanNodeId;
 import sunlabs.titan.node.services.WebDAVDaemon;
 import sunlabs.titan.node.services.xml.TitanXML;
 import sunlabs.titan.node.services.xml.TitanXML.XMLRoute;
@@ -189,7 +191,7 @@ public final class NeighbourMap {
             NotCompliantMBeanException,
             MBeanRegistrationException,
             MalformedObjectNameException {
-        this.n_tables = BeehiveObjectId.n_digits;
+        this.n_tables = TitanGuidImpl.n_digits;
 
         this.node = node;
 
@@ -210,13 +212,13 @@ public final class NeighbourMap {
         // Hence the dancing around with annotations.
         //
         @SuppressWarnings(value="unchecked")
-            SortedSet<NodeAddress>[][] r2 = new TreeSet[BeehiveObjectId.n_digits][];
+            SortedSet<NodeAddress>[][] r2 = new TreeSet[TitanGuidImpl.n_digits][];
         this.routes = r2;
-        for (int level = 0; level < BeehiveObjectId.n_digits; level++) {
+        for (int level = 0; level < TitanGuidImpl.n_digits; level++) {
             @SuppressWarnings(value="unchecked")
-                SortedSet<NodeAddress>[] r1 = new TreeSet[BeehiveObjectId.radix];
+                SortedSet<NodeAddress>[] r1 = new TreeSet[TitanGuidImpl.radix];
             this.routes[level] = r1;
-            for (int digit = 0; digit < BeehiveObjectId.radix; digit++) {
+            for (int digit = 0; digit < TitanGuidImpl.radix; digit++) {
                 this.routes[level][digit] = new TreeSet<NodeAddress>(this.comparator);
             }
         }
@@ -240,7 +242,7 @@ public final class NeighbourMap {
     //
     private void addSelf() {
         NodeAddress address = this.node.getNodeAddress();
-        for (int level = 0; level < BeehiveObjectId.n_digits; level++) {
+        for (int level = 0; level < TitanGuidImpl.n_digits; level++) {
             int digit = address.getObjectId().digit(level);
             SortedSet<NodeAddress> set =
                 new TreeSet<NodeAddress>(this.comparator);
@@ -271,7 +273,7 @@ public final class NeighbourMap {
         if (address.equals(this.node.getNodeAddress()))
             return true;
 
-        int level = this.node.getObjectId().sharedPrefix(address.getObjectId());
+        int level = this.node.getNodeId().sharedPrefix(address.getObjectId());
         int digit = address.getObjectId().digit(level);
 
         //
@@ -327,8 +329,8 @@ public final class NeighbourMap {
         Set<NodeAddress> set = new HashSet<NodeAddress>();
 
         synchronized (this.routes) {
-            for (int level = 0; level < BeehiveObjectId.n_digits; level++) {
-                for (int digit = 0; digit < BeehiveObjectId.radix; digit++) {
+            for (int level = 0; level < TitanGuidImpl.n_digits; level++) {
+                for (int digit = 0; digit < TitanGuidImpl.radix; digit++) {
                     set.addAll(this.routes[level][digit]);
                 }
             }
@@ -356,10 +358,10 @@ public final class NeighbourMap {
      */
     public SortedSet<NodeAddress> successorSet() {
 
-        SortedSet<NodeAddress> successors = new TreeSet<NodeAddress>(new RouteSuccession(NeighbourMap.this.node.getObjectId()));
+        SortedSet<NodeAddress> successors = new TreeSet<NodeAddress>(new RouteSuccession(NeighbourMap.this.node.getNodeId()));
         synchronized (this.routes) {
-            for (int level = 0; level < BeehiveObjectId.n_digits; level++) {
-                for (int digit = 0; digit < BeehiveObjectId.radix; digit++) {
+            for (int level = 0; level < TitanGuidImpl.n_digits; level++) {
+                for (int digit = 0; digit < TitanGuidImpl.radix; digit++) {
                     successors.addAll(this.routes[level][digit]);
                 }
             }
@@ -390,7 +392,7 @@ public final class NeighbourMap {
         if (address.equals(this.node.getNodeAddress()))
             return;
 
-        int level = this.node.getObjectId().sharedPrefix(address.getObjectId());
+        int level = this.node.getNodeId().sharedPrefix(address.getObjectId());
         int digit = address.getObjectId().digit(level);
 
         SortedSet<NodeAddress> newSet = new TreeSet<NodeAddress>(this.comparator);
@@ -403,8 +405,8 @@ public final class NeighbourMap {
         }
     }
 
-    private NodeAddress newGetRoute(BeehiveObjectId destination, int hopCount) {
-        if (hopCount >= (BeehiveObjectId.n_digits - 1)) {
+    private NodeAddress newGetRoute(TitanGuid destination, int hopCount) {
+        if (hopCount >= (TitanGuidImpl.n_digits - 1)) {
             return null;
         }
 
@@ -419,7 +421,7 @@ public final class NeighbourMap {
         // surrogate for the nonexistent, but desired entry.)
         //
         while (e.size() == 0) {
-            d = (d + 1) % BeehiveObjectId.radix;
+            d = (d + 1) % TitanGuidImpl.radix;
             e = R_n[d];
         }
 
@@ -449,19 +451,20 @@ public final class NeighbourMap {
         return null;
     }
 
-    public NodeAddress getRoute(BeehiveObjectId objectId) {
+    public NodeAddress getRoute(TitanNodeId objectId) {
         return this.newGetRoute(objectId, 0);
     }
 
     /**
      * <p>
-     * Return {@code true} if this {@code NeighbourMap} is the root of the given {@link BeehiveObjectId} {@code objectId}.
+     * Return {@code true} if this {@code NeighbourMap} is the root of the given {@link TitanGuidImpl} {@code objectId}.
      * </p>
      * @param objectId
      * @return true if this neighbour map cannot route the given {@code BeehiveObjectId} to a neighbour.
      */
-    public boolean isRoot(BeehiveObjectId objectId) {
-        return this.getRoute(objectId) == null;
+    public boolean isRoot(TitanGuid objectId) {
+        return this.newGetRoute(objectId, 0) == null;
+        //return this.getRoute(objectId) == null;
     }
     
     /**
@@ -475,8 +478,8 @@ public final class NeighbourMap {
         XMLRoutingTable table = xml.newXMLRoutingTable(this.node.getNodeAddress().getObjectId(), 0, 64);
         table.bindNameSpace();
 
-        for (int digit = 0; digit < BeehiveObjectId.radix; digit++) {
-            for (int level = 0; level < BeehiveObjectId.n_digits; level++) {
+        for (int digit = 0; digit < TitanGuidImpl.radix; digit++) {
+            for (int level = 0; level < TitanGuidImpl.n_digits; level++) {
                 if (this.routes[level][digit].size() == 0) {
 
                 } else {
@@ -499,7 +502,7 @@ public final class NeighbourMap {
 
     	XHTML.Table.Row row = new XHTML.Table.Row(new XHTML.Table.Heading(""));
         
-        for (int i = 0; i < BeehiveObjectId.n_digits; i++) {
+        for (int i = 0; i < TitanGuidImpl.n_digits; i++) {
         	row.add(new XHTML.Table.Heading(String.format("%02X", i)));
         }
         XHTML.Table.Head thead = new XHTML.Table.Head(row);
@@ -508,9 +511,9 @@ public final class NeighbourMap {
 
         boolean useDojo = true;
 
-        for (int digit = 0; digit < BeehiveObjectId.radix; digit++) {
+        for (int digit = 0; digit < TitanGuidImpl.radix; digit++) {
             row = new XHTML.Table.Row(new XHTML.Table.Data().add(Integer.toHexString(digit).toUpperCase()));
-            for (int level = 0; level < BeehiveObjectId.n_digits; level++) {
+            for (int level = 0; level < TitanGuidImpl.n_digits; level++) {
                 String cellId = String.format("n%01x%02x", digit, level);
                 XHTML.Table.Data cell = new XHTML.Table.Data();
                 if (this.routes[level][digit].size() == 0) {
@@ -587,7 +590,7 @@ public final class NeighbourMap {
             return value.toString();
         }
         if (attribute.compareTo("objectId") == 0)
-            return new BeehiveObjectId();
+            return new TitanGuidImpl();
         System.out.println("getAttribute: AttributeNotFoundException");
         throw new AttributeNotFoundException("No such property: " + attribute);
     }
@@ -656,15 +659,15 @@ public final class NeighbourMap {
     }
 
     /**
-     * Given a {@link BeehiveObjectId} {@code root} as the central node, compare successive {@code BeehiveObjectId}
+     * Given a {@link TitanGuidImpl} {@code root} as the central node, compare successive {@code BeehiveObjectId}
      * instances ordering them as which would be the next in routing succession to replace the central node.
      * Note that this is determined from information in the local neighbor-map, not perfect global information.
      */
     public static class RouteSuccession implements Comparator<NodeAddress>, Serializable {
         private static final long serialVersionUID = 1L;
-        private BeehiveObjectId root;
+        private TitanGuid root;
 
-        public RouteSuccession(BeehiveObjectId root) {
+        public RouteSuccession(TitanGuid root) {
             this.root = root;
         }
         /**
@@ -699,8 +702,8 @@ public final class NeighbourMap {
    9FA065D1DC129FDA5299A6B878F34C5CD00E2DCA361C00DAA6B0AD777B7864EF:12000:12001:10.0.1.7
    D51346EB45D040E32685EC3400E99051E599719C1A9740BDF38E9A35C98E02DE:12014:12015:10.0.1.7
          */
-        BeehiveObjectId myId = new BeehiveObjectId("9A6C4BD1E00857CBB450B68D3A12FE2E2A45F1AF9DE3FBAC544B1DB5D75876BE");
-        BeehiveObjectId otherId = new BeehiveObjectId("937E905EF46E7130C7DAE38E4B825B89E0D7060E958939B35114933E18EB0BCB");
+        TitanGuidImpl myId = new TitanGuidImpl("9A6C4BD1E00857CBB450B68D3A12FE2E2A45F1AF9DE3FBAC544B1DB5D75876BE");
+        TitanGuidImpl otherId = new TitanGuidImpl("937E905EF46E7130C7DAE38E4B825B89E0D7060E958939B35114933E18EB0BCB");
 
         Set<NodeAddress> nodes = new HashSet<NodeAddress>();
         nodes.add(new NodeAddress("026137909DF5DCA874AB6746D3E03B50A020E72D586E2CDD62706E801FE991C7:12018:12019:10.0.1.7"));

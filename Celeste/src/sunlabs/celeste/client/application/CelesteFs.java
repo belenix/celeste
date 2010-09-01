@@ -69,9 +69,10 @@ import sunlabs.celeste.client.filesystem.PathName;
 import sunlabs.celeste.client.operation.ExtensibleOperation;
 import sunlabs.celeste.client.operation.NewCredentialOperation;
 import sunlabs.celeste.client.operation.ReadProfileOperation;
-import sunlabs.titan.BeehiveObjectId;
+import sunlabs.titan.api.TitanGuid;
 import sunlabs.titan.Copyright;
 import sunlabs.titan.Release;
+import sunlabs.titan.TitanGuidImpl;
 import sunlabs.titan.api.Credential;
 import sunlabs.titan.util.OrderedProperties;
 
@@ -137,7 +138,7 @@ public class CelesteFs {
         
         Credential credential = new Profile_(name, password.toCharArray());
 
-        NewCredentialOperation operation = new NewCredentialOperation(credential.getObjectId(), BeehiveObjectId.ZERO, replicationParams);
+        NewCredentialOperation operation = new NewCredentialOperation(credential.getObjectId(), TitanGuidImpl.ZERO, replicationParams);
         Credential.Signature signature = credential.sign(password.toCharArray(), operation.getId());
 
         CelesteAPI proxy = null;
@@ -534,7 +535,7 @@ public class CelesteFs {
         if (credentialFlag) {
             // Test for a credential
             String credentialName = options.pop();
-            ReadProfileOperation operation = new ReadProfileOperation(new BeehiveObjectId(credentialName.getBytes()));
+            ReadProfileOperation operation = new ReadProfileOperation(new TitanGuidImpl(credentialName.getBytes()));
 
             CelesteAPI proxy = null;
             try {
@@ -978,9 +979,9 @@ public class CelesteFs {
 
                 FileIdentifier fid = file.getFileIdentifier();
 
-                BeehiveObjectId credentialId = BeehiveObjectId.IsValid(this.factory.getCredentialName()) ?
-                        new BeehiveObjectId(this.factory.getCredentialName()) :
-                            new BeehiveObjectId(this.factory.getCredentialName().getBytes());
+                TitanGuid credentialId = TitanGuidImpl.IsValid(this.factory.getCredentialName()) ?
+                        new TitanGuidImpl(this.factory.getCredentialName()) :
+                            new TitanGuidImpl(this.factory.getCredentialName().getBytes());
 
                         CelesteAPI proxy = proxyCache.getAndRemove(celeste);
                         try {

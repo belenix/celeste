@@ -40,12 +40,12 @@ import sunlabs.celeste.client.operation.CreateFileOperation;
 import sunlabs.celeste.node.CelesteACL;
 import sunlabs.celeste.node.object.AccessControlledObject;
 import sunlabs.celeste.node.object.ExtensibleObject;
-import sunlabs.titan.BeehiveObjectId;
 import sunlabs.titan.api.BeehiveObject;
 import sunlabs.titan.api.Credential;
+import sunlabs.titan.api.TitanGuid;
 import sunlabs.titan.exception.BeehiveException;
-import sunlabs.titan.node.BeehiveObjectStore;
 import sunlabs.titan.node.BeehiveMessage.RemoteException;
+import sunlabs.titan.node.BeehiveObjectStore;
 import sunlabs.titan.node.object.DeleteableObject;
 import sunlabs.titan.node.object.InspectableObject;
 import sunlabs.titan.node.object.ReplicatableObject;
@@ -145,7 +145,7 @@ public interface VersionObject extends
 //        public final static String CLIENTMETADATA_NAME = "VObject.ClientMetaData";
 
         public interface Reference extends Serializable {
-            public BeehiveObjectId getObjectId();
+            public TitanGuid getObjectId();
 
             public AnchorObject.Object.Version getVersion();
             
@@ -260,7 +260,7 @@ public interface VersionObject extends
          */
         public void setClientMetaData(ClientMetaData context);
 
-        public BeehiveObjectId getAnchorObjectId();
+        public TitanGuid getAnchorObjectId();
         
         /**
          * Get the replication parameters that represents how this
@@ -273,22 +273,22 @@ public interface VersionObject extends
         /**
          * Get the {@link BeehiveObjectId} of this version's owner's {@link Credential}.
          */
-        public BeehiveObjectId getOwner();
+        public TitanGuid getOwner();
 
         /**
          * Set the {@link BeehiveObjectId} of this version's owner {@link Credential}.
          */
-        public void setOwner(BeehiveObjectId owner);
+        public void setOwner(TitanGuid owner);
 
         /**
          * Get the {@link BeehiveObjectId} of this version's group {@link Credential}.
          */
-        public BeehiveObjectId getGroup();
+        public TitanGuid getGroup();
 
         /**
          * Set the {@link BeehiveObjectId} of this version's group {@link Credential}.
          */
-        public void setGroup(BeehiveObjectId group);
+        public void setGroup(TitanGuid group);
 
         /**
          * Return the access control list recorded in this version.
@@ -320,7 +320,7 @@ public interface VersionObject extends
      * @param clientMetaData The {@link ClientMetaData} associated with this version of the file.
      * @param signature The client signature of the operation.
      */
-    public VersionObject.Object create(BeehiveObjectId anchorObjectId,
+    public VersionObject.Object create(TitanGuid anchorObjectId,
             ReplicationParameters replicationParams,
             CreateFileOperation createOperation,
             ClientMetaData clientMetaData,
@@ -339,6 +339,6 @@ public interface VersionObject extends
      * @throws BeehiveObjectStore.NotFoundException
      * @throws RemoteException 
      */
-    public Manifest getManifest(BeehiveObjectId objectId, long offset, long length)
+    public Manifest getManifest(TitanGuid objectId, long offset, long length)
     throws VersionObject.BadManifestException, ClassCastException, BeehiveObjectStore.DeletedObjectException, BeehiveObjectStore.NotFoundException, RemoteException;
 }

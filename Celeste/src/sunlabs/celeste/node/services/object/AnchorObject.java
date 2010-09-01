@@ -30,11 +30,11 @@ import java.io.Serializable;
 import sunlabs.celeste.FileIdentifier;
 import sunlabs.celeste.client.ReplicationParameters;
 import sunlabs.celeste.node.services.api.AObjectVersionMapAPI;
-import sunlabs.titan.BeehiveObjectId;
 import sunlabs.titan.api.BeehiveObject;
+import sunlabs.titan.api.TitanGuid;
 import sunlabs.titan.api.XHTMLInspectable;
-import sunlabs.titan.node.BeehiveObjectStore;
 import sunlabs.titan.node.BeehiveMessage.RemoteException;
+import sunlabs.titan.node.BeehiveObjectStore;
 import sunlabs.titan.node.object.DeleteableObject;
 import sunlabs.titan.node.object.InspectableObject;
 import sunlabs.titan.node.object.ReplicatableObject;
@@ -80,7 +80,7 @@ public interface AnchorObject extends
          * evolutions of a file, and the serial number is a simple, monotonically increasing number.
          */
         public interface Version extends XHTMLInspectable, Serializable {
-            public BeehiveObjectId getGeneration();
+            public TitanGuid getGeneration();
 
             public long getSerialNumber();
         }
@@ -96,9 +96,9 @@ public interface AnchorObject extends
         public int getBObjectSize();
 
         /**
-         * Get the {@link BeehiveObjectId} of this object's delete-token.
+         * Get the {@link TitanGuid} of this object's delete-token.
          */
-        public BeehiveObjectId getDeleteTokenId();
+        public TitanGuid getDeleteTokenId();
 
         /**
          * Return true if modifications to the file represented by this {@link AnchorObject}
@@ -119,16 +119,16 @@ public interface AnchorObject extends
         public AObjectVersionMapAPI.Parameters getAObjectVersionMapParams();
     }
 
-    public AnchorObject.Object.Version makeVersion(BeehiveObjectId generationId, long serialNumber);
+    public AnchorObject.Object.Version makeVersion(TitanGuid generationId, long serialNumber);
 
     public AnchorObject.Object create(FileIdentifier fileIdentifier,
             ReplicationParameters replicationParams,
-            BeehiveObjectId deleteTokenHash,
+            TitanGuid deleteTokenHash,
             long timeToLive,
             int bObjectSize,
             boolean signWrites);
     
-    public DOLRStatus delete(FileIdentifier fileIdentifier, BeehiveObjectId deletionToken, long timeToLive) throws IOException, BeehiveObjectStore.NoSpaceException;
+    public DOLRStatus delete(FileIdentifier fileIdentifier, TitanGuid deletionToken, long timeToLive) throws IOException, BeehiveObjectStore.NoSpaceException;
 
     /**
      * Retrieve the {@link AnchorObject} given the Celeste {@link FileIdentifier}.

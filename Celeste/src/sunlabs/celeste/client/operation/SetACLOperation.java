@@ -33,7 +33,8 @@ import sunlabs.celeste.FileIdentifier;
 import sunlabs.celeste.client.ClientMetaData;
 import sunlabs.celeste.node.CelesteACL;
 import sunlabs.celeste.node.services.CelesteClientDaemon;
-import sunlabs.titan.BeehiveObjectId;
+import sunlabs.titan.api.Credential;
+import sunlabs.titan.api.TitanGuid;
 
 public class SetACLOperation  extends UpdateOperation{
     private static final long serialVersionUID = 1L;
@@ -47,7 +48,7 @@ public class SetACLOperation  extends UpdateOperation{
      * given as arguments.
      *
      * @param fileIdentifier    The {@link FileIdentifier} of the file to set ACL information.
-     * @param clientId              the {@link BeehiveObjectId} of the {@link Credential} authorising the operation
+     * @param clientId              the {@link TitanGuid} of the {@link Credential} authorising the operation
      * @param predicatedVObjectId   the object-id of the version of
      *                              the file this operation is predicated upon
      * @param clientMetaData        client-supplied metadata to be attached to
@@ -55,7 +56,7 @@ public class SetACLOperation  extends UpdateOperation{
      * @param acl                   the new {@code CelesteACL} instance that
      *                              is to replace the existing one
      */
-    public SetACLOperation(FileIdentifier fileIdentifier, BeehiveObjectId clientId, BeehiveObjectId predicatedVObjectId, ClientMetaData clientMetaData, CelesteACL acl) {
+    public SetACLOperation(FileIdentifier fileIdentifier, TitanGuid clientId, TitanGuid predicatedVObjectId, ClientMetaData clientMetaData, CelesteACL acl) {
         super(SetACLOperation.name, fileIdentifier, clientId, predicatedVObjectId, clientMetaData);
         this.acl = acl;
     }
@@ -65,8 +66,8 @@ public class SetACLOperation  extends UpdateOperation{
     }
 
     @Override
-    public BeehiveObjectId getId() {
-        BeehiveObjectId id = super.getId()
+    public TitanGuid getId() {
+        TitanGuid id = super.getId()
         .add(this.getACL().toByteArray());
         return id;
     }

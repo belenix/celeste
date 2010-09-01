@@ -1,5 +1,5 @@
 /*
- * Copyright 2007-2008 Sun Microsystems, Inc. All Rights Reserved.
+ * Copyright 2007-2010 Oracle. All Rights Reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER
  *
  * This code is free software; you can redistribute it and/or modify
@@ -17,9 +17,9 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
  * 02110-1301 USA
  *
- * Please contact Sun Microsystems, Inc., 16 Network Circle, Menlo
- * Park, CA 94025 or visit www.sun.com if you need additional
- * information or have any questions.
+ * Please contact Oracle Corporation, 500 Oracle Parkway, Redwood Shores, CA 94065
+ * or visit www.oracle.com if you need additional information or
+ * have any questions.
  */
 package sunlabs.celeste.client;
 
@@ -27,8 +27,9 @@ import java.io.Serializable;
 
 import sunlabs.celeste.node.ProfileCache;
 import sunlabs.celeste.util.CelesteEncoderDecoder;
-import sunlabs.titan.BeehiveObjectId;
+import sunlabs.titan.TitanGuidImpl;
 import sunlabs.titan.api.Credential;
+import sunlabs.titan.api.TitanGuid;
 
 //
 // Contains information recording an attestation of one principal by another.
@@ -38,8 +39,8 @@ import sunlabs.titan.api.Credential;
 public class PrincipalAttestation implements Serializable {
     private final static long serialVersionUID = 1L;
     
-    private final BeehiveObjectId attesteeId;
-    private final BeehiveObjectId attestingId;
+    private final TitanGuid attesteeId;
+    private final TitanGuid attestingId;
     //
     // XXX: Need method that returns a profile's current version.
     //
@@ -54,7 +55,7 @@ public class PrincipalAttestation implements Serializable {
     //      head on with the locked/unlocked state information a profile
     //      maintains.)
     //
-    private BeehiveObjectId attestingVersionId = null;
+    private TitanGuid attestingVersionId = null;
     private final Credential.Signature signature;
 
     //
@@ -62,7 +63,7 @@ public class PrincipalAttestation implements Serializable {
     // denoted by attestingProfile attests to the principal denoted by
     // attesteeId.
     //
-    public PrincipalAttestation(BeehiveObjectId attesteeId,
+    public PrincipalAttestation(TitanGuid attesteeId,
             Profile_ attestingProfile, char[] attestingPassword)
 	throws Credential.Exception {
 
@@ -83,10 +84,10 @@ public class PrincipalAttestation implements Serializable {
     // denoted by attestingProfile (at version attestingVersionid) attests to
     // the principal denoted by attesteeId.
     //
-    public PrincipalAttestation(BeehiveObjectId attesteeId,
+    public PrincipalAttestation(TitanGuid attesteeId,
 				Profile_ attestingProfile,
 				char[] attestingPassword,
-				BeehiveObjectId attestingVersionId)
+				TitanGuid attestingVersionId)
 	throws Credential.Exception {
 
         this.attesteeId = attesteeId;
@@ -107,13 +108,13 @@ public class PrincipalAttestation implements Serializable {
         if (encodedFields.length != 6)
             throw new IllegalArgumentException(
                 "incorrectly encoded argument");
-        this.attesteeId = new BeehiveObjectId(encodedFields[0]);
-        this.attestingId = new BeehiveObjectId(encodedFields[1]);
+        this.attesteeId = new TitanGuidImpl(encodedFields[0]);
+        this.attestingId = new TitanGuidImpl(encodedFields[1]);
         if (encodedFields[2].equals(""))
             this.attestingVersionId = null;
         else
-            this.attestingVersionId = new BeehiveObjectId(encodedFields[2]);
-        BeehiveObjectId signatureProfileId = new BeehiveObjectId(encodedFields[3]);
+            this.attestingVersionId = new TitanGuidImpl(encodedFields[2]);
+        TitanGuid signatureProfileId = new TitanGuidImpl(encodedFields[3]);
         String algorithm = encodedFields[4];
         byte[] signatureBytes =
             CelesteEncoderDecoder.fromHexString(encodedFields[5]);
@@ -126,7 +127,7 @@ public class PrincipalAttestation implements Serializable {
      *
      * @return the attestee's object id
      */
-    public BeehiveObjectId getAttesteeId() {
+    public TitanGuid getAttesteeId() {
         return this.attesteeId;
     }
 
@@ -135,7 +136,7 @@ public class PrincipalAttestation implements Serializable {
      *
      * @return the attestor's object id
      */
-    public BeehiveObjectId getAttestorId() {
+    public TitanGuid getAttestorId() {
         return this.attestingId;
     }
 
@@ -150,7 +151,7 @@ public class PrincipalAttestation implements Serializable {
     // Return true if this token represents a valid historical attestation
     // (taking the specified version into account).
     //
-    public boolean verifyVersion(ProfileCache cache, BeehiveObjectId versionId)
+    public boolean verifyVersion(ProfileCache cache, TitanGuid versionId)
 	throws Exception, Credential.Exception {
 
         Credential attestingProfile = cache.get(this.attestingId, this.attestingVersionId);

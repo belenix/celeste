@@ -1,5 +1,5 @@
 /*
- * Copyright 2007-2008 Sun Microsystems, Inc. All Rights Reserved.
+ * Copyright 2007-2010 Oracle. All Rights Reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER
  *
  * This code is free software; you can redistribute it and/or modify
@@ -17,9 +17,9 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
  * 02110-1301 USA
  *
- * Please contact Sun Microsystems, Inc., 16 Network Circle, Menlo
- * Park, CA 94025 or visit www.sun.com if you need additional
- * information or have any questions.
+ * Please contact Oracle Corporation, 500 Oracle Parkway, Redwood Shores, CA 94065
+ * or visit www.oracle.com if you need additional information or
+ * have any questions.
  */
 package sunlabs.titan.node.object;
 
@@ -33,9 +33,11 @@ import java.util.Set;
 import java.util.logging.Level;
 
 import sunlabs.asdf.util.ObjectLock;
-import sunlabs.titan.BeehiveObjectId;
+import sunlabs.titan.TitanGuidImpl;
 import sunlabs.titan.api.BeehiveObject;
 import sunlabs.titan.api.ObjectStore;
+import sunlabs.titan.api.TitanGuid;
+import sunlabs.titan.api.TitanNode;
 import sunlabs.titan.node.BeehiveMessage;
 import sunlabs.titan.node.BeehiveNode;
 import sunlabs.titan.node.BeehiveObjectStore;
@@ -66,14 +68,14 @@ public final class DeleteableObject {
              * Delete this object.
              * <p>
              * Implementations of this method are responsible for setting the fields in this object suitable for deleteing.
-             * (See {@link DeleteableObject#MakeDeletable(BeehiveObject, BeehiveObjectId)}, and {@link DeleteableObject.Handler.createAntiObject}.
+             * (See {@link DeleteableObject#MakeDeletable(BeehiveObject, TitanGuid)}, and {@link DeleteableObject.Handler.createAntiObject}.
              * </p>
-             * @param profferedDeleteToken The {@link BeehiveObjectId} of the delete-token for this object.
+             * @param profferedDeleteToken The {@link TitanGuid} of the delete-token for this object.
              * @param timeToLive The number of seconds for this object to continue to exist in the anti-object form.
              * @throws BeehiveObjectStore.DeleteTokenException if {@code profferedDeleteToken} does not match
              *          the objects' {@link ObjectStore#METADATA_DELETETOKENID}
              */
-            public void delete(BeehiveObjectId profferedDeleteToken, long timeToLive) throws BeehiveObjectStore.DeleteTokenException;
+            public void delete(TitanGuid profferedDeleteToken, long timeToLive) throws BeehiveObjectStore.DeleteTokenException;
         }
 
         /**
@@ -119,7 +121,7 @@ public final class DeleteableObject {
          * </ul>
          * </p>
          */
-        public DOLRStatus deleteObject(BeehiveObjectId objectId, BeehiveObjectId deletionToken, long timeToLive)
+        public DOLRStatus deleteObject(TitanGuid objectId, TitanGuid deletionToken, long timeToLive)
         throws IOException, BeehiveObjectStore.NoSpaceException;
 
         /**
@@ -137,7 +139,7 @@ public final class DeleteableObject {
          * Every {@link DeleteableObject.Handler#publishObject(BeehiveMessage)} implementation must have a per-object lock
          * to protect against modification by simultaneous reception of deletion PublishObjectMessage messages.
          */
-        public ObjectLock<BeehiveObjectId> getPublishObjectDeleteLocks();
+        public ObjectLock<TitanGuid> getPublishObjectDeleteLocks();
 
         /**
          * <p>
@@ -154,16 +156,16 @@ public final class DeleteableObject {
          * @return The anti-object form of the orignal {@link BeehiveObject}
          * @throws IOException
          */
-        public BeehiveObject createAntiObject(DeleteableObject.Handler.Object object, BeehiveObjectId profferedDeleteToken, long timeToLive)
+        public BeehiveObject createAntiObject(DeleteableObject.Handler.Object object, TitanGuid profferedDeleteToken, long timeToLive)
         throws IOException, BeehiveObjectStore.NoSpaceException, BeehiveObjectStore.DeleteTokenException;
     }
 
-    public static void ObjectDeleteHelper(DeleteableObject.Handler.Object object, BeehiveObjectId deleteToken, long timeToLive) {
+    public static void ObjectDeleteHelper(DeleteableObject.Handler.Object object, TitanGuid deleteToken, long timeToLive) {
         object.setTimeToLive(timeToLive);
         object.setProperty(ObjectStore.METADATA_DELETETOKEN, deleteToken);
     }
 
-    public static BeehiveObject MakeDeletable(DeleteableObject.Handler.Object object, BeehiveObjectId deleteTokenId) {
+    public static BeehiveObject MakeDeletable(DeleteableObject.Handler.Object object, TitanGuid deleteTokenId) {
         object.setDeleteTokenId(deleteTokenId);
         return object;
     }
@@ -185,35 +187,35 @@ public final class DeleteableObject {
      * @param deleteTokenId
      * @return true if the delete-token and the delete-token-id match.
      */
-    public static boolean deleteTokenIsValid(BeehiveObjectId deleteToken, BeehiveObjectId deleteTokenId) {
-        return deleteToken != null && deleteTokenId != null && deleteTokenId.equals(deleteToken.getObjectId());
+    public static boolean deleteTokenIsValid(TitanGuid deleteToken, TitanGuid deleteTokenId) {
+        return deleteToken != null && deleteTokenId != null && deleteTokenId.equals(deleteToken.getGuid());
     }
 
     public static class Request implements Serializable {
         private final static long serialVersionUID = 1L;
 
-        private BeehiveObjectId objectId;
-        private BeehiveObjectId deleteToken;
+        private TitanGuid objectId;
+        private TitanGuid deleteToken;
         private long timeToLive;
 
         /**
          * Construct a Request to delete a particular object in the object pool.
          * 
-         * @param objectId The {@link BeehiveObjectId} of the object to delete.
+         * @param objectId The {@link TitanGuid} of the object to delete.
          * @param deleteToken The exposed delete-token.
          * @param timeToLive The number of seconds the anti-object form must exist.
          */
-        public Request(BeehiveObjectId objectId, BeehiveObjectId deleteToken, long timeToLive) {
+        public Request(TitanGuid objectId, TitanGuid deleteToken, long timeToLive) {
             this.objectId = objectId;
             this.deleteToken = deleteToken;
             this.timeToLive = timeToLive;
         }
 
-        public BeehiveObjectId getObjectId() {
+        public TitanGuid getObjectId() {
             return objectId;
         }
 
-        public BeehiveObjectId getDeleteToken() {
+        public TitanGuid getDeleteToken() {
             return deleteToken;
         }
 
@@ -234,8 +236,8 @@ public final class DeleteableObject {
      * @return true if the delete-token and the delete-token-id in the metaData match signifying that the object is the anti-object form.
      */
     public static boolean deleteTokenIsValid(BeehiveObject.Metadata metaData) {
-        BeehiveObjectId deleteToken = metaData.getPropertyAsObjectId(ObjectStore.METADATA_DELETETOKEN, null);
-        BeehiveObjectId deleteTokenId = metaData.getPropertyAsObjectId(ObjectStore.METADATA_DELETETOKENID, null);
+        TitanGuid deleteToken = metaData.getPropertyAsObjectId(ObjectStore.METADATA_DELETETOKEN, null);
+        TitanGuid deleteTokenId = metaData.getPropertyAsObjectId(ObjectStore.METADATA_DELETETOKENID, null);
         return DeleteableObject.deleteTokenIsValid(deleteToken, deleteTokenId);
     }
 
@@ -254,7 +256,7 @@ public final class DeleteableObject {
 
     	List<DOLRStatus> result = new LinkedList<DOLRStatus>();
     	
-        for (Map.Entry<BeehiveObjectId,BeehiveObject.Metadata> entry : publishRequest.getObjectsToPublish().entrySet()) {
+        for (Map.Entry<TitanGuid,BeehiveObject.Metadata> entry : publishRequest.getObjectsToPublish().entrySet()) {
             if (DeleteableObject.deleteTokenIsValid(entry.getValue())) {
             	result.add(publishObjectHelper(handler, entry.getKey(), publishRequest.getPublisherAddress().getObjectId(), entry.getValue()));
             }
@@ -267,7 +269,7 @@ public final class DeleteableObject {
      * invoke {@link DeleteableObject.deleteBackPointers2} with the given {@code handler},
      * {@code objectId}, {@code publisherNodeId} and {@link metaData}.
      */
-    private static DOLRStatus publishObjectHelper(DeleteableObject.Handler<? extends DeleteableObject.Handler.Object> handler, BeehiveObjectId objectId, BeehiveObjectId publisherNodeId, BeehiveObject.Metadata metaData) {
+    private static DOLRStatus publishObjectHelper(DeleteableObject.Handler<? extends DeleteableObject.Handler.Object> handler, TitanGuid objectId, TitanGuid publisherNodeId, BeehiveObject.Metadata metaData) {
         // this.log.info("anti-object %s from %s", message.subjectId, message.getSource().getObjectId());
         // We get here because some node has published a valid anti-object.
         if (handler.getPublishObjectDeleteLocks().trylock(objectId)) {
@@ -301,15 +303,15 @@ public final class DeleteableObject {
      * <li>DOLRStatus.GONE The DOLRObject already has an exposed delete-token and it is the same as the given delete-token.</li>
      * </ul>
      */
-    public static DOLRStatus objectIsDeleteable(BeehiveObject.Metadata metaData, BeehiveObjectId profferedDeleteToken) {
-        BeehiveObjectId objectDeleteTokenId = metaData.getPropertyAsObjectId(ObjectStore.METADATA_DELETETOKENID, null);
+    public static DOLRStatus objectIsDeleteable(BeehiveObject.Metadata metaData, TitanGuid profferedDeleteToken) {
+        TitanGuid objectDeleteTokenId = metaData.getPropertyAsObjectId(ObjectStore.METADATA_DELETETOKENID, null);
 
         if (objectDeleteTokenId == null) {
             // Cannot delete an object that doesn't have a delete-token-id
             return DOLRStatus.FORBIDDEN;
         }
 
-        BeehiveObjectId objectDeleteToken = metaData.getPropertyAsObjectId(ObjectStore.METADATA_DELETETOKEN, null);
+        TitanGuid objectDeleteToken = metaData.getPropertyAsObjectId(ObjectStore.METADATA_DELETETOKEN, null);
         if (objectDeleteToken != null && objectDeleteToken.equals(profferedDeleteToken)) {
             // If there is already a delete-token specified in this object, and
             // it is the same as the one we are trying to set, then we have
@@ -317,7 +319,7 @@ public final class DeleteableObject {
             return DOLRStatus.GONE;
         }
 
-        BeehiveObjectId profferedDeleteTokenId = profferedDeleteToken.getObjectId();
+        TitanGuid profferedDeleteTokenId = profferedDeleteToken.getGuid();
 
         if (!objectDeleteTokenId.equals(profferedDeleteTokenId)) {
             // Proffered delete-token-object-id does not match object's delete-token-object-id
@@ -342,8 +344,8 @@ public final class DeleteableObject {
      * @throws BeehiveObjectStore.DeleteTokenException The delete-token in the given metadata fails the validation test (see {@link DeleteableObject#deleteTokenIsValid}).
      */
     public static void deleteBackPointers2(DeleteableObject.Handler<? extends DeleteableObject.Handler.Object> objectType,
-            BeehiveObjectId objectId,
-            BeehiveObjectId excludedPublisherId,
+            TitanGuid objectId,
+            TitanGuid excludedPublisherId,
             BeehiveObject.Metadata metaData)
     throws BeehiveObjectStore.DeleteTokenException {
         //objectType.getLogger().info(objectType.getName() + " " + objectId.toString() + " excluding " + excludedPublisherId);
@@ -352,8 +354,8 @@ public final class DeleteableObject {
             throw new BeehiveObjectStore.DeleteTokenException("Invalid delete token");
         }
 
-        BeehiveObjectId profferedDeleteToken = metaData.getPropertyAsObjectId(ObjectStore.METADATA_DELETETOKEN, null);
-        BeehiveNode node = objectType.getNode();
+        TitanGuid profferedDeleteToken = metaData.getPropertyAsObjectId(ObjectStore.METADATA_DELETETOKEN, null);
+        TitanNode node = objectType.getNode();
 
         // Delete all copies of this object that the given DOLRNode has backpointers.
         // Do not send deleteLocalObject messages to the local node (which is unnecessary as it's already deleting this object),
@@ -368,7 +370,7 @@ public final class DeleteableObject {
 
         if (publishers != null) {
             for (Publishers.PublishRecord publisher : publishers) {
-                if (!publisher.getNodeId().equals(node.getObjectId())) {
+                if (!publisher.getNodeId().equals(node.getNodeId())) {
                     if (!publisher.getNodeId().equals(excludedPublisherId)) { // not the excludedPublisher node
                         if (publisher.getDeleteToken() == null || !publisher.getDeleteToken().equals(profferedDeleteToken.toString())) {  // not aleady deleted.
                             node.sendToNode(publisher.getNodeId(), objectId, objectType.getName(),  "deleteLocalObject", request);
@@ -421,11 +423,11 @@ public final class DeleteableObject {
 //              metaData.getProperty(DOLRObjectStore.METADATA_SECONDSTOLIVE),
 //              message.getSource().toString());
 
-      BeehiveObjectId profferedDeleteToken = request.getDeleteToken();
-      BeehiveObjectId objectId = message.subjectId;
+      TitanGuid profferedDeleteToken = request.getDeleteToken();
+      TitanGuid objectId = message.subjectId;
       DOLRStatus status;
       
-      if (objectId.equals(objectType.getNode().getObjectId())) {
+      if (objectId.equals(objectType.getNode().getNodeId())) {
           System.out.printf("object id is node id%n");
           System.out.printf("%s%n", message.traceReport());
           System.out.printf("%s%n", message.toString());

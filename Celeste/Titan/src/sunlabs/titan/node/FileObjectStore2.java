@@ -24,7 +24,7 @@ import java.util.Stack;
 import sunlabs.asdf.util.ObjectLock;
 import sunlabs.asdf.util.TimeProfiler;
 import sunlabs.asdf.util.Units;
-import sunlabs.titan.BeehiveObjectId;
+import sunlabs.titan.TitanGuidImpl;
 
 //
 // This is like a Map BeehiveObjectId->File
@@ -133,7 +133,7 @@ public class FileObjectStore2<K/* extends FileObjectStore2.Key*/,V extends Seria
 	
 	@SuppressWarnings("unchecked")
 	public K nameToKey(String path) {
-		return (K) new BeehiveObjectId(path);		
+		return (K) new TitanGuidImpl(path);		
 	}
 
 	/**
@@ -476,7 +476,7 @@ public class FileObjectStore2<K/* extends FileObjectStore2.Key*/,V extends Seria
     private static class BeehiveObjectIdFilter implements FilenameFilter {
         // XXX Only include file names that are really objects.
         public boolean accept(File dir, String name) {
-            return BeehiveObjectId.IsValid(name);
+            return TitanGuidImpl.IsValid(name);
         }
     }
     
@@ -484,25 +484,25 @@ public class FileObjectStore2<K/* extends FileObjectStore2.Key*/,V extends Seria
     	System.setProperty("enableProfiling", "true");
 
     	TimeProfiler profiler = new TimeProfiler();
-    	FileObjectStore2<BeehiveObjectId,BeehiveObjectId> os = new FileObjectStore2<BeehiveObjectId,BeehiveObjectId>(new File("/var/tmp/test/"), "10M");
+    	FileObjectStore2<TitanGuidImpl,TitanGuidImpl> os = new FileObjectStore2<TitanGuidImpl,TitanGuidImpl>(new File("/var/tmp/test/"), "10M");
     	profiler.stamp("fini");
     	System.out.printf("%s%n", profiler.toString());
 
-    	BeehiveObjectId id;
+    	TitanGuidImpl id;
 
-    	id = new BeehiveObjectId("1111111111111111111111111111111111111111111111111111111111111111");
+    	id = new TitanGuidImpl("1111111111111111111111111111111111111111111111111111111111111111");
     	os.put(id, id);
-    	id = new BeehiveObjectId("1111111111111111111111111111111111111111111111111111111111111112");
+    	id = new TitanGuidImpl("1111111111111111111111111111111111111111111111111111111111111112");
     	os.put(id, id);
     	os.remove(id);
 
 
-    	id = new BeehiveObjectId();
+    	id = new TitanGuidImpl();
     	profiler = new TimeProfiler();
     	for (int i = 0; i < 10; i++) {
     		for (int j = 0; j < 10; j++) {
     			os.put(id, id);
-    			id = new BeehiveObjectId();
+    			id = new TitanGuidImpl();
     		}
     		profiler.stamp("%d", i);
     	}
@@ -510,7 +510,7 @@ public class FileObjectStore2<K/* extends FileObjectStore2.Key*/,V extends Seria
 
     	int count = 0;
     	profiler = new TimeProfiler();
-    	for (BeehiveObjectId key : os) {
+    	for (TitanGuidImpl key : os) {
     		id = os.get(key);
     		count++;
     		//			System.out.printf("%s %s %s%n", file.getName(), file.getAbsolutePath(), id);
@@ -520,7 +520,7 @@ public class FileObjectStore2<K/* extends FileObjectStore2.Key*/,V extends Seria
 
 
     	profiler = new TimeProfiler();
-    	for (BeehiveObjectId key : os) {
+    	for (TitanGuidImpl key : os) {
     		os.remove(key);
     	}
     	profiler.stamp("fini");

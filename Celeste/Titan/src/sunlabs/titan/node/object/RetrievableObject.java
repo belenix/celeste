@@ -25,12 +25,12 @@ package sunlabs.titan.node.object;
 
 import java.io.IOException;
 
-import sunlabs.titan.BeehiveObjectId;
 import sunlabs.titan.api.BeehiveObject;
+import sunlabs.titan.api.TitanGuid;
+import sunlabs.titan.api.TitanNode;
 import sunlabs.titan.node.BeehiveMessage;
-import sunlabs.titan.node.BeehiveNode;
-import sunlabs.titan.node.BeehiveObjectStore;
 import sunlabs.titan.node.BeehiveMessage.RemoteException;
+import sunlabs.titan.node.BeehiveObjectStore;
 import sunlabs.titan.util.DOLRStatus;
 
 /**
@@ -65,7 +65,7 @@ public class RetrievableObject {
          * @throws RemoteException 
          * @throws ClassCastException 
          */
-        public T retrieve(BeehiveObjectId objectId)
+        public T retrieve(TitanGuid objectId)
         throws BeehiveObjectStore.DeletedObjectException, BeehiveObjectStore.NotFoundException, ClassCastException;
 
         /**
@@ -94,7 +94,7 @@ public class RetrievableObject {
      * </p>
      */
     public static BeehiveMessage retrieveLocalObject(BeehiveObjectHandler handler, BeehiveMessage message) {
-        BeehiveNode node = handler.getNode();
+        TitanNode node = handler.getNode();
 
         try {
             BeehiveObject object = node.getObjectStore().get(BeehiveObject.class, message.subjectId);
@@ -119,7 +119,7 @@ public class RetrievableObject {
      */
     public static <C extends BeehiveObject> C retrieve(RetrievableObject.Handler<? extends RetrievableObject.Handler.Object> handler,
             Class<? extends C> klasse,
-            BeehiveObjectId objectId)
+            TitanGuid objectId)
     throws ClassCastException, BeehiveObjectStore.NotFoundException, BeehiveObjectStore.DeletedObjectException {
 
         BeehiveMessage reply = handler.getNode().sendToObject(objectId, handler.getName(), "retrieveLocalObject", objectId);

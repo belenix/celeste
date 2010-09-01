@@ -42,9 +42,10 @@ import sunlabs.asdf.util.Units;
 import sunlabs.asdf.util.AbstractStoredMap.OutOfSpace;
 import sunlabs.asdf.web.XML.XHTML;
 import sunlabs.asdf.web.http.HTTP;
-import sunlabs.titan.BeehiveObjectId;
+import sunlabs.titan.TitanGuidImpl;
 import sunlabs.titan.api.BeehiveObject;
 import sunlabs.titan.api.ObjectStore;
+import sunlabs.titan.api.TitanGuid;
 import sunlabs.titan.exception.BeehiveException;
 import sunlabs.titan.node.services.PublishDaemon;
 import sunlabs.titan.node.services.WebDAVDaemon;
@@ -318,11 +319,11 @@ public final class BeehiveObjectStore implements ObjectStore {
 
 
     //private final ObjectLock<BeehiveObjectId> locks;
-    private final ObjectLock<BeehiveObjectId> locks;
+    private final ObjectLock<TitanGuid> locks;
 
     private final BeehiveNode node;
 
-    public static class FileObjectStore3 extends AbstractStoredMap<BeehiveObjectId,BeehiveObject> {
+    public static class FileObjectStore3 extends AbstractStoredMap<TitanGuid,BeehiveObject> {
 
         /**
          * Construct a new FileObjectStore3 instance with the specified capacity.
@@ -336,15 +337,15 @@ public final class BeehiveObjectStore implements ObjectStore {
     		super(root, capacity.compareTo("unlimited") == 0 ? AbstractStoredMap.CAPACITY_UNLIMITED : Units.parseByte(capacity));
     	}
 
-    	public File keyToFile(File root, BeehiveObjectId key) {
+    	public File keyToFile(File root, TitanGuid key) {
     		String s = key.toString();
     		StringBuilder result = new StringBuilder();
     		result.append(s.substring(0, 5)).append(File.separatorChar).append(s);
     		return new File(root, result.toString());
     	}	
 
-    	public BeehiveObjectId fileToKey(File file) {
-    		return new BeehiveObjectId(file.getName());		
+    	public TitanGuid fileToKey(File file) {
+    		return new TitanGuidImpl(file.getName());		
     	}
     }
     
@@ -359,14 +360,14 @@ public final class BeehiveObjectStore implements ObjectStore {
         this.node = node;
         this.fileStore = new FileObjectStore3(new File(node.getSpoolDirectory() + File.separator + "object-store" + File.separator + "object"), objectStoreCapacity);
 
-        this.locks = new ObjectLock<BeehiveObjectId>();
+        this.locks = new ObjectLock<TitanGuid>();
     }
 
-    public boolean containsObject(final BeehiveObjectId objectId) {
+    public boolean containsObject(final TitanGuid objectId) {
         return this.fileStore.contains(objectId);
     }
 
-    public <C extends BeehiveObject> C tryGetAndLock(final Class<? extends C> klasse, final BeehiveObjectId objectId)
+    public <C extends BeehiveObject> C tryGetAndLock(final Class<? extends C> klasse, final TitanGuid objectId)
     throws ClassCastException, BeehiveObjectStore.NotFoundException {
         synchronized (this.locks) {
             if (this.locks.trylock(objectId)) {
@@ -376,16 +377,16 @@ public final class BeehiveObjectStore implements ObjectStore {
         return null;
     }
     
-    public <C extends BeehiveObject> C get(final Class<? extends C> klasse, final BeehiveObjectId objectId)
+    public <C extends BeehiveObject> C get(final Class<? extends C> klasse, final TitanGuid objectId)
     throws ClassCastException, BeehiveObjectStore.NotFoundException {
         try {
-            if (objectId.equals(this.node.getObjectId())) {
+            if (objectId.equals(this.node.getNodeId())) {
                 this.node.getLogger().warning("Why am I fetching my own node objectid?");
                 new Throwable().printStackTrace();
             }
             BeehiveObject object = this.fileStore.get(objectId);
 
-            BeehiveObjectId computedObjectId = BeehiveObjectStore.ObjectId(object);
+            TitanGuid computedObjectId = BeehiveObjectStore.ObjectId(object);
             if (computedObjectId.equals(objectId)) {
                 return klasse.cast(object);
             }
@@ -428,7 +429,7 @@ public final class BeehiveObjectStore implements ObjectStore {
         throw new BeehiveObjectStore.NotFoundException("Object %s (%s) not found.", objectId, klasse.getName());
     }
     
-    public <C extends BeehiveObject> C getAndLock(final Class<? extends C> klasse, final BeehiveObjectId objectId)
+    public <C extends BeehiveObject> C getAndLock(final Class<? extends C> klasse, final TitanGuid objectId)
     throws ClassCastException, BeehiveObjectStore.NotFoundException {
         synchronized (this.locks) {
             this.lock(objectId);
@@ -444,21 +445,21 @@ public final class BeehiveObjectStore implements ObjectStore {
         }
     }
 
-    private SortedSet<BeehiveObjectId> sortedKeySet() {
-        SortedSet<BeehiveObjectId> set = new TreeSet<BeehiveObjectId>(new BeehiveObjectId.IdComparator());
-        for (BeehiveObjectId objectId : this) {
+    private SortedSet<TitanGuid> sortedKeySet() {
+        SortedSet<TitanGuid> set = new TreeSet<TitanGuid>(new TitanGuidImpl.IdComparator());
+        for (TitanGuid objectId : this) {
             set.add(objectId);
         }
 
         return set;
     }
 
-    public BeehiveObjectId create(BeehiveObject object)
+    public TitanGuid create(BeehiveObject object)
     throws InvalidObjectException, ObjectExistenceException, NoSpaceException, UnacceptableObjectException {
 
         try {
             // Set the object's object-id by force, to ensure that it is correct.
-            BeehiveObjectId computedObjectId = BeehiveObjectStore.ObjectId(object);
+            TitanGuid computedObjectId = BeehiveObjectStore.ObjectId(object);
             object.setObjectId(computedObjectId);
 
             boolean needToPublish = false;
@@ -497,9 +498,9 @@ public final class BeehiveObjectStore implements ObjectStore {
         }
     }
 
-    public BeehiveObjectId update(BeehiveObject object) throws InvalidObjectException, ObjectExistenceException, NoSpaceException, UnacceptableObjectException {
+    public TitanGuid update(BeehiveObject object) throws InvalidObjectException, ObjectExistenceException, NoSpaceException, UnacceptableObjectException {
         try {
-            BeehiveObjectId actualObjectId = BeehiveObjectStore.ObjectId(object);
+            TitanGuid actualObjectId = BeehiveObjectStore.ObjectId(object);
             object.setObjectId(actualObjectId);
 
             this.locks.assertLock(actualObjectId);
@@ -519,7 +520,7 @@ public final class BeehiveObjectStore implements ObjectStore {
 
     /**
      * Store the given {@link BeehiveObject} in the local store.
-     * The object's {@link BeehiveObjectId} is computed and set in the given object.
+     * The object's {@link TitanGuid} is computed and set in the given object.
      * <p>
      * There is no locking.
      * </p>
@@ -554,11 +555,11 @@ public final class BeehiveObjectStore implements ObjectStore {
      * will be permitted to remain because the object's root handler will not have the necessary information to reject this object.
      * 
      */
-    public BeehiveObjectId store(BeehiveObject object)
+    public TitanGuid store(BeehiveObject object)
     throws BeehiveObjectStore.InvalidObjectException, BeehiveObjectStore.NoSpaceException, BeehiveObjectStore.UnacceptableObjectException {
 
         try {
-            BeehiveObjectId actualObjectId = BeehiveObjectStore.ObjectId(object);
+            TitanGuid actualObjectId = BeehiveObjectStore.ObjectId(object);
             object.setObjectId(actualObjectId);
 
             this.locks.assertLock(actualObjectId);
@@ -577,7 +578,7 @@ public final class BeehiveObjectStore implements ObjectStore {
         return this.remove(object.getObjectId());
     }
 
-    public boolean remove(BeehiveObjectId objectId) {
+    public boolean remove(TitanGuid objectId) {
         this.locks.assertLock(objectId);
 		//        if (this.locks.lockerId(objectId) != Thread.currentThread().getId()) {
 		//            throw new IllegalStateException("Object must be locked");
@@ -600,12 +601,12 @@ public final class BeehiveObjectStore implements ObjectStore {
      * set.
      * </p>
      */
-    public static BeehiveObject CreateSignatureVerifiedObject(BeehiveObjectId objectId, BeehiveObject object) throws BeehiveObjectStore.DeleteTokenException {
+    public static BeehiveObject CreateSignatureVerifiedObject(TitanGuid objectId, BeehiveObject object) throws BeehiveObjectStore.DeleteTokenException {
         String deleteTokenId = object.getDeleteTokenId().toString();
 
-        BeehiveObjectId dataHash = object.getDataId();
+        TitanGuid dataHash = object.getDataId();
 
-        BeehiveObjectId voucher = new BeehiveObjectId(deleteTokenId)
+        TitanGuid voucher = new TitanGuidImpl(deleteTokenId)
         .add(objectId)
         .add(dataHash);
 
@@ -621,7 +622,7 @@ public final class BeehiveObjectStore implements ObjectStore {
     }
 
     /**
-     * Calculate the {@link BeehiveObjectId} for the given {@link BeehiveObject} in accordance
+     * Calculate the {@link TitanGuid} for the given {@link BeehiveObject} in accordance
      * with the description of object verification in the documentation
      * for the {@code BeehiveObject} interface.
      * 
@@ -637,12 +638,12 @@ public final class BeehiveObjectStore implements ObjectStore {
      *         by the {@code ObjectStore#METADATA_DELETETOKENID} property
      *         in the meta-data) does not match the Delete Token Hash
      */
-    public static BeehiveObjectId ObjectId(BeehiveObject object) throws BeehiveObjectStore.InvalidObjectIdException, BeehiveObjectStore.DeleteTokenException {
-        BeehiveObjectId dataHash = object.getDataId();
-        BeehiveObjectId deleteTokenId = object.getDeleteTokenId();
+    public static TitanGuid ObjectId(BeehiveObject object) throws BeehiveObjectStore.InvalidObjectIdException, BeehiveObjectStore.DeleteTokenException {
+        TitanGuid dataHash = object.getDataId();
+        TitanGuid deleteTokenId = object.getDeleteTokenId();
 
-        BeehiveObjectId voucher = object.getPropertyAsObjectId(ObjectStore.METADATA_VOUCHER, null);
-        BeehiveObjectId deleteToken = object.getPropertyAsObjectId(ObjectStore.METADATA_DELETETOKEN, null);
+        TitanGuid voucher = object.getPropertyAsObjectId(ObjectStore.METADATA_VOUCHER, null);
+        TitanGuid deleteToken = object.getPropertyAsObjectId(ObjectStore.METADATA_DELETETOKEN, null);
 
         //
         // If a voucher is present in the meta-data, then this object is either
@@ -654,7 +655,7 @@ public final class BeehiveObjectStore implements ObjectStore {
         //
         // XXX Signatures are incompletely implemented.
         //
-        BeehiveObjectId objectId;
+        TitanGuid objectId;
         if (voucher != null) {
             objectId = object.getPropertyAsObjectId(ObjectStore.METADATA_OBJECTID, null);
             if (objectId == null) {
@@ -663,7 +664,7 @@ public final class BeehiveObjectStore implements ObjectStore {
             if (deleteTokenId.add(objectId).add(dataHash).equals(voucher)) {
                 // If the delete token is exposed, check for the correct conditions for a Delete Token verifiable object.
                 if (deleteToken != null) {
-                    if (!deleteTokenId.equals(deleteToken.getObjectId())) {
+                    if (!deleteTokenId.equals(deleteToken.getGuid())) {
                         System.err.printf("%s deleteTokenId=%s, deleteToken=%s\n", object.getObjectType(), deleteTokenId, deleteToken);
                         throw new BeehiveObjectStore.DeleteTokenException("Delete-token does not match delete-token-object-id");
                     }
@@ -687,7 +688,7 @@ public final class BeehiveObjectStore implements ObjectStore {
      * @param objectId
      * @return
      */
-    private boolean trylock(BeehiveObjectId objectId) {
+    private boolean trylock(TitanGuid objectId) {
         return this.locks.trylock(objectId);
     }
 
@@ -700,16 +701,16 @@ public final class BeehiveObjectStore implements ObjectStore {
      * then simply return. Otherwise, queue for the lock to be released by a
      * call to unlock() with this object-id.
      */
-    public void lock(BeehiveObjectId objectId) {
+    public void lock(TitanGuid objectId) {
         this.lock(objectId, false);
     }
 
-    private void lock(BeehiveObjectId objectId, boolean trace) {
+    private void lock(TitanGuid objectId, boolean trace) {
         this.locks.lock(objectId, trace);
     }
 
     /**
-     * Release a lock on the given {@link BeehiveObjectId}.
+     * Release a lock on the given {@link TitanGuidImpl}.
      * No assumption is made about whether or not {@code objectId} actually
      * corresponds to a real object in the object store.
      * <p>
@@ -718,11 +719,11 @@ public final class BeehiveObjectStore implements ObjectStore {
      * {@link BeehiveObjectStore#unlock(BeehiveObject) unlock(BeehiveObject)}
      * </p>
      */
-    public void unlock(BeehiveObjectId objectId) {
+    public void unlock(TitanGuid objectId) {
         this.unlock(objectId, false);
     }
 
-    public void unlock(BeehiveObjectId objectId, boolean trace) {
+    public void unlock(TitanGuid objectId, boolean trace) {
         this.locks.unlock(objectId, trace);
     }
 
@@ -806,7 +807,7 @@ public final class BeehiveObjectStore implements ObjectStore {
     }
 
     /**
-     * Unpublish the given {@link BeehiveObject}, returning the reply {@link BeehiveMessage} from the root of the object's {@link BeehiveObjectId}.
+     * Unpublish the given {@link BeehiveObject}, returning the reply {@link BeehiveMessage} from the root of the object's {@link TitanGuid}.
      * 
      * @param object
      * @param type
@@ -826,7 +827,7 @@ public final class BeehiveObjectStore implements ObjectStore {
     /**
      * Produce an iterator for all objects in the Object Store.
      */
-    public Iterator<BeehiveObjectId> iterator() {
+    public Iterator<TitanGuid> iterator() {
         return this.fileStore.iterator();
     }
     
@@ -834,9 +835,9 @@ public final class BeehiveObjectStore implements ObjectStore {
         TitanXML xml = new TitanXML();
 
         long currentTimeSeconds = Time.currentTimeInSeconds();
-        Set<BeehiveObjectId> objects = this.sortedKeySet();
+        Set<TitanGuid> objects = this.sortedKeySet();
         XMLObjectStore result = xml.newXMLObjectStore();
-        for (BeehiveObjectId objectId : objects) {
+        for (TitanGuid objectId : objects) {
             try {
                 BeehiveObject object = this.fileStore.get(objectId);
 
@@ -868,7 +869,7 @@ public final class BeehiveObjectStore implements ObjectStore {
     }
 
     public XHTML.EFlow toXHTML(URI uri, Map<String,HTTP.Message> props) {
-        Set<BeehiveObjectId> objects = this.sortedKeySet();
+        Set<TitanGuid> objects = this.sortedKeySet();
 
         XHTML.Table.Row header = new XHTML.Table.Row();
 
@@ -893,7 +894,7 @@ public final class BeehiveObjectStore implements ObjectStore {
 
         // The actions specified here are handled in the WebDAVDaemon.java client interface.
 
-        for (BeehiveObjectId objectId : objects) {
+        for (TitanGuid objectId : objects) {
             try {
                 BeehiveObject dolrObject = this.fileStore.get(objectId);
 

@@ -40,9 +40,11 @@ import sunlabs.asdf.util.ObjectLock;
 import sunlabs.asdf.util.Time;
 import sunlabs.asdf.web.XML.XHTML;
 import sunlabs.asdf.web.http.HTTP;
-import sunlabs.titan.BeehiveObjectId;
+import sunlabs.titan.TitanGuidImpl;
 import sunlabs.titan.api.BeehiveObject;
 import sunlabs.titan.api.ObjectStore;
+import sunlabs.titan.api.TitanGuid;
+import sunlabs.titan.api.TitanNodeId;
 import sunlabs.titan.node.object.DeleteableObject;
 import sunlabs.titan.node.services.WebDAVDaemon;
 
@@ -56,7 +58,7 @@ import sunlabs.titan.node.services.WebDAVDaemon;
  * not necessary for each node along the route to store the mapping, but it is necessary for
  * the root node of each object to store the mapping.
  * The message ultimately arrives on a node that cannot route the PublishObjectMessage further.
- * That node is the <em>root</em> node of the published object's {@link BeehiveObjectId}, <em>O<sub>r</sub></em>.
+ * That node is the <em>root</em> node of the published object's {@link TitanGuidImpl}, <em>O<sub>r</sub></em>.
  * </p>
  * <p>
  * Sending a message to an object is broken into two parts: A {@link BeehiveMessage.Type#RouteToNode}
@@ -79,10 +81,10 @@ public class Publishers {
 
     public final static String METADATA_PUBLISHERTTL = "Publishers.PublisherTimeToLive";
 
-    private ObjectLock<BeehiveObjectId> locks;
+    private ObjectLock<TitanGuid> locks;
 
-    private BackedObjectMap<BeehiveObjectId,Set<Publishers.PublishRecord>> publishers;
-    private Map<BeehiveObjectId, Set<Publishers.PublishRecord>> byObjectId;
+    private BackedObjectMap<TitanGuid,Set<Publishers.PublishRecord>> publishers;
+    private Map<TitanGuid,Set<Publishers.PublishRecord>> byObjectId;
     private BeehiveNode node;
 
     /**
@@ -110,22 +112,22 @@ public class Publishers {
         	return result;            
         }
         
-        private BeehiveObjectId objectId;
+        private TitanGuid objectId;
         private NodeAddress publisher;
         private BeehiveObject.Metadata metaData;
         /** The absolute time (in seconds) when this record must be removed (expires) */
         private long expireTimeSeconds;
 
         /**
-         * Construct a PublishRecord instance binding the given {@link BeehiveObjectId} of an object
+         * Construct a PublishRecord instance binding the given {@link TitanGuidImpl} of an object
          * to the given {@link NodeAddress} of a node advertising its availability.
          *
-         * @param objectId the {@link BeehiveObjectId} of the {@link BeehiveObject}
+         * @param objectId the {@link TitanGuidImpl} of the {@link BeehiveObject}
          * @param publisher the {@link NodeAddress} of the publishing {@link BeehiveNode}
          * @param metaData the complete {@link BeehiveObject.Metadata} of the published {@code BeehiveObject}
          * @param  recordSecondsToLive The system time, in seconds, when this record must be removed.
          */
-        public PublishRecord(BeehiveObjectId objectId, NodeAddress publisher, BeehiveObject.Metadata metaData, long recordSecondsToLive) {
+        public PublishRecord(TitanGuid objectId, NodeAddress publisher, BeehiveObject.Metadata metaData, long recordSecondsToLive) {
             this.objectId = objectId;
             this.publisher = publisher;
             this.metaData = metaData;
@@ -152,16 +154,16 @@ public class Publishers {
         }
 
         /**
-         * Get the {@link BeehiveObjectId} of the published object.
+         * Get the {@link TitanGuid} of the published object.
          */
-        public BeehiveObjectId getObjectId() {
+        public TitanGuid getObjectId() {
             return this.objectId;
         }
 
         /**
-         * Get the {@link BeehiveObjectId} of the publishing node.
+         * Get the {@link TitanGuidImpl} of the publishing node.
          */
-        public BeehiveObjectId getNodeId() {
+        public TitanNodeId getNodeId() {
             return this.publisher.getObjectId();
         }
 
@@ -237,22 +239,22 @@ public class Publishers {
     public Publishers(BeehiveNode node, String spoolDirectory) throws IOException {
         this.node = node;
 
-        this.byObjectId = Collections.synchronizedMap(new HashMap<BeehiveObjectId,Set<Publishers.PublishRecord>>());
+        this.byObjectId = Collections.synchronizedMap(new HashMap<TitanGuid,Set<Publishers.PublishRecord>>());
 
         // Load from the backed map.
-        this.publishers = new BackedObjectMap<BeehiveObjectId,Set<Publishers.PublishRecord>>(spoolDirectory + File.separatorChar + "object-publishers", true);
+        this.publishers = new BackedObjectMap<TitanGuid,Set<Publishers.PublishRecord>>(spoolDirectory + File.separatorChar + "object-publishers", true);
         
-        for (BeehiveObjectId objectId : this.publishers.keySet()) {
+        for (TitanGuid objectId : this.publishers.keySet()) {
             Set<Publishers.PublishRecord> publishers = this.getPublishersAndLock(objectId);
             this.byObjectId.put(objectId, publishers);
         }
 
-        this.locks = new ObjectLock<BeehiveObjectId>();
+        this.locks = new ObjectLock<TitanGuid>();
     }
 
     /**
      * <p>
-     * Get the {@link Set} of {@link Map<BeehiveObjectId,Publishers.Publisher>} instances (NodeId&rarr;PublishRecord) for the given {@link BeehiveObjectId}.
+     * Get the {@link Set} of {@link Map<BeehiveObjectId,Publishers.Publisher>} instances (NodeId&rarr;PublishRecord) for the given {@link TitanGuid}.
      * <em>There result is NOT locked.</em>
      * </p>
      * <p>
@@ -264,7 +266,7 @@ public class Publishers {
      * @return  a {@code Set} consisting of all the {@code Publishers.Publisher}
      * instances for the given {@code BeehiveObjectId}.
      */
-    public Set<Publishers.PublishRecord> getPublishers(BeehiveObjectId objectId) {
+    public Set<Publishers.PublishRecord> getPublishers(TitanGuid objectId) {
         Set<Publishers.PublishRecord> set = this.getPublishersAndLock(objectId);
         try {
             return set;
@@ -275,7 +277,7 @@ public class Publishers {
 
     /**
      * <p>
-     * Get the {@link Set} of {@link Publishers.PublishRecord} instances of the given {@link BeehiveObjectId}.
+     * Get the {@link Set} of {@link Publishers.PublishRecord} instances of the given {@link TitanGuid}.
      * <em>There result is locked and MUST be unlocked when the caller has finished manipulating.</em>
      * </p>
      * <p>
@@ -287,7 +289,7 @@ public class Publishers {
      *
      * @throws IllegalStateException if an attempt to lock a {@code BeehiveObjectId}} more than once.
      */
-    public Set<Publishers.PublishRecord> getPublishersAndLock(BeehiveObjectId objectId) throws IllegalStateException {
+    public Set<Publishers.PublishRecord> getPublishersAndLock(TitanGuid objectId) throws IllegalStateException {
         this.locks.lock(objectId);
         try {
             Set<Publishers.PublishRecord> set = this.byObjectId.get(objectId);
@@ -302,11 +304,11 @@ public class Publishers {
     }
 
     /**
-     * Unlock the given {@link BeehiveObjectId}.
+     * Unlock the given {@link TitanGuid}.
      * The {@code objectId} must already be locked by the current {@link Thread}.
      * @throws IllegalStateException if the {@code objectId} is not locked.
      */
-    public boolean unlock(BeehiveObjectId objectId) {
+    public boolean unlock(TitanGuid objectId) {
         return this.locks.unlock(objectId);
     }
 
@@ -321,11 +323,11 @@ public class Publishers {
      * If the given {@code set} is empty, the Publisher information for {@code objectId} is removed (rather than storing the empty set).
      * </p>
      *
-     * @param objectId the {@link BeehiveObjectId} of the object.
+     * @param objectId the {@link TitanGuid} of the object.
      * @param set the {@link Set} containing all of the publishers of {@code objectId}.
      * @throws IllegalStateException if the {@code objectId} is not locked.
      */
-    public void put(BeehiveObjectId objectId, Set<Publishers.PublishRecord> set) {
+    public void put(TitanGuid objectId, Set<Publishers.PublishRecord> set) {
         synchronized (this.locks) {
             this.locks.assertLock(objectId);
 
@@ -340,12 +342,12 @@ public class Publishers {
     }
 
     /**
-     * Return a new {@link Set} containing the {@link BeehiveObjectId}s of the objects that this node has seen advertised.
+     * Return a new {@link Set} containing the {@link TitanGuid}s of the objects that this node has seen advertised.
      *  The returned {@code Set} is unique and not subject to {@link ConcurrentModificationException} from an updated publisher record.
      */
-    public Set<BeehiveObjectId> keySet() {
+    public Set<TitanGuid> keySet() {
         synchronized (this.byObjectId) {
-            Set<BeehiveObjectId> set = new HashSet<BeehiveObjectId>(this.byObjectId.keySet());
+            Set<TitanGuid> set = new HashSet<TitanGuid>(this.byObjectId.keySet());
             return set;
         }
     }
@@ -371,7 +373,7 @@ public class Publishers {
         }
     }
     
-    public void update(BeehiveObjectId objectId, Publishers.PublishRecord record) {
+    public void update(TitanGuid objectId, Publishers.PublishRecord record) {
     	// XXX Should ensure that objectId is the same as record.getObjectId()
     	this.update(record);
     }
@@ -386,7 +388,7 @@ public class Publishers {
      * @param objectId
      * @param publisherSet
      */
-    public void update(BeehiveObjectId objectId, Set<Publishers.PublishRecord> publisherSet) {
+    public void update(TitanGuid objectId, Set<Publishers.PublishRecord> publisherSet) {
         Set<Publishers.PublishRecord> set = this.getPublishersAndLock(objectId);
         try {
             if (set.addAll(publisherSet)) {
@@ -405,7 +407,7 @@ public class Publishers {
      * @param objectId
      * @param publisherId
      */
-    public void remove(BeehiveObjectId objectId, BeehiveObjectId publisherId) {
+    public void remove(TitanGuid objectId, TitanGuid publisherId) {
         Set<Publishers.PublishRecord> newSet = new HashSet<Publishers.PublishRecord>();
         Set<Publishers.PublishRecord> set = this.getPublishersAndLock(objectId);
         try {
@@ -421,7 +423,7 @@ public class Publishers {
     }
 
     public XHTML.EFlow toXHTML(URI uri, Map<String,HTTP.Message> props) {
-        SortedSet<BeehiveObjectId> objectIds = new TreeSet<BeehiveObjectId>();
+        SortedSet<TitanGuid> objectIds = new TreeSet<TitanGuid>();
         objectIds.addAll(this.keySet());
 
         XHTML.Table.Data emptyCell = new XHTML.Table.Data();
@@ -430,7 +432,7 @@ public class Publishers {
         thead.add(new XHTML.Table.Row(new XHTML.Table.Heading("Object Identifier")).add(PublishRecord.toXHTMLTableHeading()));
         
         XHTML.Table.Body tbody = new XHTML.Table.Body();
-        for (BeehiveObjectId objectId : objectIds) {
+        for (TitanGuid objectId : objectIds) {
             Set<Publishers.PublishRecord> publisherSet = this.getPublishers(objectId);
 
             XHTML.Anchor inspectButton = WebDAVDaemon.inspectObjectXHTML(objectId);

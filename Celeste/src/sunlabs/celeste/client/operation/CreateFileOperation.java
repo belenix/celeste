@@ -34,8 +34,8 @@ import sunlabs.celeste.client.ClientMetaData;
 import sunlabs.celeste.client.ReplicationParameters;
 import sunlabs.celeste.node.CelesteACL;
 import sunlabs.celeste.node.services.CelesteClientDaemon;
-import sunlabs.titan.BeehiveObjectId;
 import sunlabs.titan.api.Credential;
+import sunlabs.titan.api.TitanGuid;
 
 /**
  * Create a Celeste file.
@@ -82,15 +82,15 @@ public class CreateFileOperation extends UpdateOperation {
     /**
      * The default {@link BeehiveObjectId} of the {@link Credential} representing the group ownership of a created file.
      */
-    public static BeehiveObjectId defaultGroupId = null;
+    public static TitanGuid defaultGroupId = null;
     /**
      * The default {@link CelesteACL} of a created file.
      */
     public static CelesteACL defaultAccessControl = null;
 
-    private BeehiveObjectId deleteTokenId;
-    private final BeehiveObjectId ownerId;
-    private final BeehiveObjectId groupId;
+    private TitanGuid deleteTokenId;
+    private final TitanGuid ownerId;
+    private final TitanGuid groupId;
     private final int blockObjectSize;
     private final ReplicationParameters replicationParameters;
     private CelesteACL acl;
@@ -116,15 +116,15 @@ public class CreateFileOperation extends UpdateOperation {
      * @see ReplicationParameters
      * @see CelesteACL
      */
-    public CreateFileOperation(BeehiveObjectId requestorId,
+    public CreateFileOperation(TitanGuid requestorId,
             FileIdentifier fileIdentifier,
-            BeehiveObjectId deleteTokenId,
+            TitanGuid deleteTokenId,
             long timeToLive,
             int blockObjectSize,
             String replicationParams,
             ClientMetaData clientMetaData,
-            BeehiveObjectId ownerId,
-            BeehiveObjectId groupId,
+            TitanGuid ownerId,
+            TitanGuid groupId,
             CelesteACL acl,
             boolean signWrites) {
 
@@ -153,15 +153,15 @@ public class CreateFileOperation extends UpdateOperation {
      * @see ReplicationParameters
      * @see CelesteACL
      */
-    public CreateFileOperation(BeehiveObjectId requestorId,
+    public CreateFileOperation(TitanGuid requestorId,
             FileIdentifier fileIdentifier,
-            BeehiveObjectId deleteTokenId,
+            TitanGuid deleteTokenId,
             long timeToLive,
             int blockObjectSize,
             ReplicationParameters replicationParams,
             ClientMetaData clientMetaData,
-            BeehiveObjectId ownerId,
-            BeehiveObjectId groupId,
+            TitanGuid ownerId,
+            TitanGuid groupId,
             CelesteACL acl,
             boolean signWrites) {
         super(CreateFileOperation.name, fileIdentifier, requestorId, null, clientMetaData);
@@ -177,8 +177,8 @@ public class CreateFileOperation extends UpdateOperation {
     }
 
     @Override
-    public BeehiveObjectId getId() {
-        BeehiveObjectId id = super.getId()
+    public TitanGuid getId() {
+        TitanGuid id = super.getId()
         .add(this.deleteTokenId)
         .add(this.replicationParameters.toByteArray())
         .add(this.getOwnerId())
@@ -212,22 +212,22 @@ public class CreateFileOperation extends UpdateOperation {
                                 (this.acl != null) ? this.acl.toString() : "[null]");
     }
 
-    public BeehiveObjectId getDeleteTokenId() {
+    public TitanGuid getDeleteTokenId() {
         return this.deleteTokenId;
     }
 
-    public void setDeleteTokenId(BeehiveObjectId deleteTokenId) {
+    public void setDeleteTokenId(TitanGuid deleteTokenId) {
         this.deleteTokenId = deleteTokenId;
     }
 
     public ReplicationParameters getReplicationParams() {
         return replicationParameters;
     }
-    public BeehiveObjectId getOwnerId() {
+    public TitanGuid getOwnerId() {
         return this.ownerId;
     }
 
-    public BeehiveObjectId getGroupId() {
+    public TitanGuid getGroupId() {
         return this.groupId;
     }
 

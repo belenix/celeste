@@ -23,17 +23,22 @@
  */
 package sunlabs.celeste.client.application;
 
+import static sunlabs.celeste.client.filesystem.FileAttributes.Names.ACL_NAME;
+import static sunlabs.celeste.client.filesystem.FileAttributes.Names.BLOCK_SIZE_NAME;
+import static sunlabs.celeste.client.filesystem.FileAttributes.Names.CONTENT_TYPE_NAME;
+import static sunlabs.celeste.client.filesystem.FileAttributes.Names.DELETION_TIME_TO_LIVE_NAME;
+import static sunlabs.celeste.client.filesystem.FileAttributes.Names.REPLICATION_PARAMETERS_NAME;
+import static sunlabs.celeste.client.filesystem.FileAttributes.Names.SIGN_MODIFICATIONS_NAME;
+import static sunlabs.celeste.client.filesystem.FileAttributes.Names.TIME_TO_LIVE_NAME;
+
 import java.io.BufferedReader;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
-
 import java.lang.management.ManagementFactory;
 import java.lang.management.OperatingSystemMXBean;
-
 import java.net.InetSocketAddress;
-
 import java.util.ArrayDeque;
 import java.util.Collections;
 import java.util.Deque;
@@ -55,10 +60,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.ThreadPoolExecutor;
 
 import sunlabs.asdf.util.Time;
-
-
 import sunlabs.celeste.CelesteException;
-import sunlabs.celeste.ResponseMessage;
 import sunlabs.celeste.api.CelesteAPI;
 import sunlabs.celeste.client.CelesteProxy;
 import sunlabs.celeste.client.Profile_;
@@ -70,12 +72,11 @@ import sunlabs.celeste.client.operation.NewNameSpaceOperation;
 import sunlabs.celeste.client.operation.ReadProfileOperation;
 import sunlabs.celeste.node.CelesteACL;
 import sunlabs.celeste.util.ACL;
-import sunlabs.titan.BeehiveObjectId;
 import sunlabs.titan.Release;
+import sunlabs.titan.TitanGuidImpl;
 import sunlabs.titan.api.Credential;
+import sunlabs.titan.api.TitanGuid;
 import sunlabs.titan.util.OrderedProperties;
-
-import static sunlabs.celeste.client.filesystem.FileAttributes.Names.*;
 
 /**
  * <p>
@@ -719,7 +720,7 @@ public class CelesteFsProfiler {
         CelesteException.CredentialException, CelesteException.RuntimeException, CelesteException.AlreadyExistsException, CelesteException.NoSpaceException, CelesteException.VerificationException {
             try {
                 long startTime = System.currentTimeMillis();
-                BeehiveObjectId credentialId = new BeehiveObjectId(client.getName().getBytes());
+                TitanGuid credentialId = new TitanGuidImpl(client.getName().getBytes());
 
                 CelesteAPI proxy = null;
                 try {
@@ -729,7 +730,7 @@ public class CelesteFsProfiler {
                     client.setCredential((Profile_) proxy.readCredential(operation));
                 } catch (CelesteException.NotFoundException notFound) {
                     client.setCredential(new Profile_(client.getName(), client.credentialPassword.toCharArray()));
-                    NewCredentialOperation operation = new NewCredentialOperation(client.getCredential().getObjectId(), BeehiveObjectId.ZERO, this.replicationParams);
+                    NewCredentialOperation operation = new NewCredentialOperation(client.getCredential().getObjectId(), TitanGuidImpl.ZERO, this.replicationParams);
                     Credential.Signature signature = client.getCredential().sign(client.credentialPassword.toCharArray(), operation.getId());
                     try {
                         proxy.newCredential(operation, signature, client.getCredential());
@@ -786,7 +787,7 @@ public class CelesteFsProfiler {
 //            long operationTime;
 //            long cummulativeTime = 0;
 //
-//            BeehiveObjectId vObjectId = null;
+//            TitanGuid vObjectId = null;
 //
 //            CelesteAPI proxy = null;
 //            try {
@@ -794,10 +795,10 @@ public class CelesteFsProfiler {
 //                long startTime = System.currentTimeMillis();
 //
 //                for (int i = 0; i < this.nOperations; i++) {
-//                    BeehiveObjectId fileId = new BeehiveObjectId(Integer.toString(this.batch).getBytes()).add(Integer.toString(i).getBytes());
+//                    TitanGuid fileId = new TitanGuid(Integer.toString(this.batch).getBytes()).add(Integer.toString(i).getBytes());
 //
 //                    operation = new InspectFileOperation(
-//                        new FileIdentifier(this.client.nameSpaces.get(0), fileId), (vObjectId == null) ? BeehiveObjectId.ZERO : vObjectId);
+//                        new FileIdentifier(this.client.nameSpaces.get(0), fileId), (vObjectId == null) ? TitanGuid.ZERO : vObjectId);
 //                    operationTime = System.currentTimeMillis();
 //
 //                    ResponseMessage reply = proxy.inspectFile(operation);
@@ -894,7 +895,7 @@ public class CelesteFsProfiler {
 //            long operationTime;
 //            long cummulativeTime = 0;
 //
-//            BeehiveObjectId fileId = new BeehiveObjectId(Integer.toString(this.batch).getBytes()).add(Integer.toString(0).getBytes());
+//            TitanGuid fileId = new TitanGuid(Integer.toString(this.batch).getBytes()).add(Integer.toString(0).getBytes());
 //            FileIdentifier fileIdentifier = new FileIdentifier(this.client.nameSpaces.get(0), fileId);
 //
 //            operationTime = System.currentTimeMillis();
@@ -962,11 +963,11 @@ public class CelesteFsProfiler {
 //
 //            ClientMetaData clientMetaData = new ClientMetaData();
 //
-//            BeehiveObjectId fileId = new BeehiveObjectId(Integer.toString(this.batch).getBytes()).add(Integer.toString(0).getBytes());
+//            TitanGuid fileId = new TitanGuid(Integer.toString(this.batch).getBytes()).add(Integer.toString(0).getBytes());
 //
-//            BeehiveObjectId vObjectId = null;
+//            TitanGuid vObjectId = null;
 //            InspectFileOperation inspectOperation = new InspectFileOperation(
-//                new FileIdentifier(this.client.nameSpaces.get(0), fileId), (vObjectId == null) ? BeehiveObjectId.ZERO : vObjectId);
+//                new FileIdentifier(this.client.nameSpaces.get(0), fileId), (vObjectId == null) ? TitanGuid.ZERO : vObjectId);
 //            operationTime = System.currentTimeMillis();
 //
 //            CelesteAPI proxy = null;
@@ -1027,7 +1028,7 @@ public class CelesteFsProfiler {
         // Each client knows about a collection of name spaces and can
         // furthermore gain access to file systems based on those name spaces.
         //
-        public final List<BeehiveObjectId> nameSpaces;
+        public final List<TitanGuid> nameSpaces;
         public final Map<String, CelesteFileSystem> fileSystems =
             new HashMap<String, CelesteFileSystem>();
         //
@@ -1046,7 +1047,7 @@ public class CelesteFsProfiler {
             this.credentialPassword = password;
             this.address = address;
             this.proxyCache = proxyCache;
-            this.nameSpaces = new LinkedList<BeehiveObjectId>();
+            this.nameSpaces = new LinkedList<TitanGuid>();
         }
 
         public Profile_ getCredential() {
@@ -1627,7 +1628,7 @@ public class CelesteFsProfiler {
             nameSpaceNames.add(name);
             indexedNameSpaceNames.put(i, name);
         }
-        Map<String, BeehiveObjectId> nameSpaceMap = this.nameSpaces(nameSpaceNames);
+        Map<String, TitanGuid> nameSpaceMap = this.nameSpaces(nameSpaceNames);
 
         //
         // Create the clients and augment each of them with the name spaces
@@ -1636,7 +1637,7 @@ public class CelesteFsProfiler {
         this.ensureSufficientClients(nClients);
         this.credentials(nClients);
         for (Client client : this.clients.values()) {
-            for (Map.Entry<String, BeehiveObjectId> entry : nameSpaceMap.entrySet()) {
+            for (Map.Entry<String, TitanGuid> entry : nameSpaceMap.entrySet()) {
                 //
                 // XXX:  Shouldn't need both nameSpaces and fileSystems.  Clean
                 //      this up!
@@ -1835,11 +1836,11 @@ public class CelesteFsProfiler {
     //
     // XXX: Do this asynchronously using futures.
     //
-    public Map<String, BeehiveObjectId> nameSpaces(Set<String> nameSpaceNames)
+    public Map<String, TitanGuid> nameSpaces(Set<String> nameSpaceNames)
             throws FileException.CredentialProblem{
-        Map<String, BeehiveObjectId> result = new HashMap<String, BeehiveObjectId>();
+        Map<String, TitanGuid> result = new HashMap<String, TitanGuid>();
         for (String name : nameSpaceNames) {
-            BeehiveObjectId id = this.ensureNameSpace(this.proxyCache,
+            TitanGuid id = this.ensureNameSpace(this.proxyCache,
                 this.address, name, "passphrase", this.replicationParams);
             result.put(name, id);
         }
@@ -1946,7 +1947,7 @@ public class CelesteFsProfiler {
 //        return result;
 //    }
 
-    private BeehiveObjectId ensureNameSpace(CelesteProxy.Cache cache,
+    private TitanGuid ensureNameSpace(CelesteProxy.Cache cache,
             InetSocketAddress addr, String name, String password,
             String replicationParameters)
         throws
@@ -1959,7 +1960,7 @@ public class CelesteFsProfiler {
             //      use them to replace the ones I added to Client.)
             //
             proxy = cache.getAndRemove(addr);
-            BeehiveObjectId nameSpaceId = new BeehiveObjectId(name.getBytes());
+            TitanGuid nameSpaceId = new TitanGuidImpl(name.getBytes());
             ReadProfileOperation operation = new ReadProfileOperation(nameSpaceId);
             proxy.readCredential(operation);
             return nameSpaceId;
@@ -1968,13 +1969,9 @@ public class CelesteFsProfiler {
             // The name space doesn't yet exist and must be created.
             //
             try {
-                Profile_ nameSpaceCredential = new Profile_(
-                    name, password.toCharArray());
-                NewNameSpaceOperation operation = new NewNameSpaceOperation(
-                    nameSpaceCredential.getObjectId(), BeehiveObjectId.ZERO,
-                    replicationParameters);
-                Credential.Signature signature = nameSpaceCredential.sign(
-                    password.toCharArray(), operation.getId());
+                Profile_ nameSpaceCredential = new Profile_(name, password.toCharArray());
+                NewNameSpaceOperation operation = new NewNameSpaceOperation(nameSpaceCredential.getObjectId(), TitanGuidImpl.ZERO, replicationParameters);
+                Credential.Signature signature = nameSpaceCredential.sign(password.toCharArray(), operation.getId());
                 proxy.newNameSpace(operation, signature, nameSpaceCredential);
                 return nameSpaceCredential.getObjectId();
             } catch (Exception e) {
@@ -2010,11 +2007,8 @@ public class CelesteFsProfiler {
     //      isn't tied to a specific client.  (The name spaces for the
     //      create-tree file systems aren't tied to specific clients.)
     //
-    private void ensureNameSpace(Client client, String name, String password,
-            String replicationParameters) throws FileException.CredentialProblem {
-        BeehiveObjectId id = this.ensureNameSpace(
-            client.getProxyCache(), client.getAddress(), name, password,
-            replicationParameters);
+    private void ensureNameSpace(Client client, String name, String password, String replicationParameters) throws FileException.CredentialProblem {
+        TitanGuid id = this.ensureNameSpace(client.getProxyCache(), client.getAddress(), name, password, replicationParameters);
         synchronized (client.fileSystems) {
             //
             // XXX: Error checking to see whether or not these entries

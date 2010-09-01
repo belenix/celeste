@@ -33,7 +33,7 @@ public interface Beehive {
 
     /**
      * The String representation of the
-     * {@link sunlabs.titan.BeehiveObjectId} of the entire Titan system.
+     * {@link sunlabs.titan.TitanGuidImpl} of the entire Titan system.
      */
     public static final String BEEHIVE_OBJECTID = "Beehive.SystemObjectId";
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2007-2010 Oracle. All Rights Reserved.
+ * Copyright 2010 Oracle. All Rights Reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER
  *
  * This code is free software; you can redistribute it and/or modify
@@ -21,10 +21,8 @@
  * or visit www.oracle.com if you need additional information or
  * have any questions.
  */
-package sunlabs.titan;
+package sunlabs.titan.api;
 
-import java.io.Serializable;
-
-public interface TitanGuid extends Comparable<BeehiveObjectId>, Serializable {
+public interface TitanObjectId extends TitanGuid {
 
 }

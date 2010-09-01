@@ -26,7 +26,7 @@ package sunlabs.celeste.client.operation;
 
 import sunlabs.celeste.FileIdentifier;
 import sunlabs.celeste.client.ClientMetaData;
-import sunlabs.titan.BeehiveObjectId;
+import sunlabs.titan.api.TitanGuid;
 
 /**
  * {@code UpdateOperation} is the base class for all operations that update or
@@ -46,8 +46,8 @@ public abstract class UpdateOperation extends AbstractCelesteOperation {
     public UpdateOperation(
             String operationName,
             FileIdentifier fileIdentifier,
-            BeehiveObjectId clientId,
-            BeehiveObjectId predicatedVersionId,
+            TitanGuid clientId,
+            TitanGuid predicatedVersionId,
             ClientMetaData clientMetaData) {
         super(operationName, fileIdentifier, clientId, predicatedVersionId);
         this.clientMetaData = clientMetaData;
@@ -58,7 +58,7 @@ public abstract class UpdateOperation extends AbstractCelesteOperation {
     }
 
     @Override
-    public BeehiveObjectId getId() {
+    public TitanGuid getId() {
         return super.getId().add(this.clientMetaData.getId());
     }
 }

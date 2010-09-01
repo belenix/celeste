@@ -107,7 +107,7 @@ public interface Service extends Serializable {
     /**
      * Get the {@link BeehiveNode} of this {@code Service}.
      */
-    public BeehiveNode getNode();
+    public TitanNode getNode();
 
     /**
      * Get the {@link DOLRLogger} instance for this {@code Service}.

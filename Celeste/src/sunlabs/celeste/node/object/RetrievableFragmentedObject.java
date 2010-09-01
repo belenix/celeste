@@ -30,11 +30,11 @@ import java.io.ObjectInputStream;
 import sunlabs.celeste.node.CelesteNode;
 import sunlabs.celeste.node.erasurecode.ErasureCode;
 import sunlabs.celeste.node.services.object.FObjectType;
-import sunlabs.titan.BeehiveObjectId;
 import sunlabs.titan.api.BeehiveObject;
+import sunlabs.titan.api.TitanGuid;
 import sunlabs.titan.node.BeehiveMessage;
-import sunlabs.titan.node.BeehiveObjectStore;
 import sunlabs.titan.node.BeehiveMessage.RemoteException;
+import sunlabs.titan.node.BeehiveObjectStore;
 import sunlabs.titan.node.object.BeehiveObjectHandler;
 import sunlabs.titan.node.object.DeleteableObject;
 
@@ -77,7 +77,7 @@ public final class RetrievableFragmentedObject {
      * If the DOLRObject is successfully retrieved but has a valid,
      * exposed delete-token, a DOLRObjectStore.DeletedException is thrown.
      */
-    public static BeehiveObject retrieveRemoteObject(RetrievableFragmentedObject.Handler<? extends RetrievableFragmentedObject.Handler.Object> objectType, BeehiveObjectId objectId)
+    public static BeehiveObject retrieveRemoteObject(RetrievableFragmentedObject.Handler<? extends RetrievableFragmentedObject.Handler.Object> objectType, TitanGuid objectId)
     throws BeehiveObjectStore.DeletedObjectException {
         BeehiveMessage reply = objectType.getNode().sendToObject(objectId, objectType.getName(), "retrieveLocalObject", objectId);
 
@@ -116,7 +116,7 @@ public final class RetrievableFragmentedObject {
 
         // Failure to retrieve the DOLRObject directly means we need to reconstruct it from fragments
 
-        BeehiveObjectId[] frags = map.getFragments();
+        TitanGuid[] frags = map.getFragments();
         ErasureCode erasureCoder = map.getErasureCoder();
         objectType.getNode().getLogger().info("retrieveRemoteObject: reconstructing " + map.getObjectId() + " using " + erasureCoder);
 
@@ -131,7 +131,7 @@ public final class RetrievableFragmentedObject {
         FObjectType.FObject fObject;
 
         int goodFragmentCount = 0;
-        for (BeehiveObjectId fragmentObjectId : frags) {
+        for (TitanGuid fragmentObjectId : frags) {
             fObject = fragmentObjectHandler.retrieve(fragmentObjectId);
             if ((fObjects[goodFragmentCount] = fObject) == null) {
                 objectType.getNode().getLogger().info("Fragment fetch failed: " + fragmentObjectId);

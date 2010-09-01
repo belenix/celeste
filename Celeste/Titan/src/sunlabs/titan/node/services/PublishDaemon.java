@@ -1,5 +1,5 @@
 /*
- * Copyright 2007-2009 Sun Microsystems, Inc. All Rights Reserved.
+ * Copyright 2007-2010 Oracle. All Rights Reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER
  *
  * This code is free software; you can redistribute it and/or modify
@@ -17,9 +17,9 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
  * 02110-1301 USA
  *
- * Please contact Sun Microsystems, Inc., 16 Network Circle, Menlo
- * Park, CA 94025 or visit www.sun.com if you need additional
- * information or have any questions.
+ * Please contact Oracle Corporation, 500 Oracle Parkway, Redwood Shores, CA 94065
+ * or visit www.oracle.com if you need additional information or
+ * have any questions.
  */
 package sunlabs.titan.node.services;
 
@@ -48,17 +48,18 @@ import sunlabs.asdf.util.Time;
 import sunlabs.asdf.web.XML.XHTML;
 import sunlabs.asdf.web.http.HTTP;
 import sunlabs.asdf.web.http.HttpMessage;
-import sunlabs.titan.BeehiveObjectId;
 import sunlabs.titan.api.BeehiveObject;
 import sunlabs.titan.api.ObjectStore;
+import sunlabs.titan.api.TitanGuid;
 import sunlabs.titan.node.BeehiveMessage;
+import sunlabs.titan.node.BeehiveMessage.RemoteException;
 import sunlabs.titan.node.BeehiveNode;
 import sunlabs.titan.node.BeehiveObjectStore;
 import sunlabs.titan.node.NodeAddress;
 import sunlabs.titan.node.PublishObjectMessage;
 import sunlabs.titan.node.Publishers;
+import sunlabs.titan.node.TitanNodeIdImpl;
 import sunlabs.titan.node.UnpublishObjectMessage;
-import sunlabs.titan.node.BeehiveMessage.RemoteException;
 import sunlabs.titan.node.object.AbstractObjectHandler;
 import sunlabs.titan.node.services.api.Publish;
 
@@ -155,7 +156,7 @@ public final class PublishDaemon extends BeehiveService implements Publish, Publ
         this.expireDaemon = new ExpireBackpointerDaemon();
         this.publishDaemon = new PublishLocalObjectDaemon();
 
-        this.threadPool = new ScheduledThreadPoolExecutor(2, new SimpleThreadFactory(PublishDaemon.this.node.getThreadGroup(), PublishDaemon.this.node.getObjectId() + "." + PublishDaemon.this.getName()));
+        this.threadPool = new ScheduledThreadPoolExecutor(2, new SimpleThreadFactory(PublishDaemon.this.node.getThreadGroup(), PublishDaemon.this.node.getNodeId() + "." + PublishDaemon.this.getName()));
     }
     
     /**
@@ -210,7 +211,7 @@ public final class PublishDaemon extends BeehiveService implements Publish, Publ
         		// time-to-live is zero or negative, remove that publisher from the list of
         		// publishers.
         		long count = 0;
-        		for (BeehiveObjectId objectId : PublishDaemon.this.node.getObjectPublishers().keySet()) {
+        		for (TitanGuid objectId : PublishDaemon.this.node.getObjectPublishers().keySet()) {
         			Set<Publishers.PublishRecord> publishers = PublishDaemon.this.node.getObjectPublishers().getPublishersAndLock(objectId);
         			try {
                         if (PublishDaemon.this.log.isLoggable(Level.FINEST)) {
@@ -301,7 +302,7 @@ public final class PublishDaemon extends BeehiveService implements Publish, Publ
         	if (PublishDaemon.this.log.isLoggable(Level.FINE)) {
         		PublishDaemon.this.log.fine("publishing w/inter-object sleep %dms", publishObjectInterstitialSleepTime);
         	}
-        	for (BeehiveObjectId objectId : objectStore) {
+        	for (TitanGuid objectId : objectStore) {
         		if (objectId == null) {
         			PublishDaemon.this.log.warning("Got a null object-id from ObjectStore.iterator()");
         			continue;
@@ -358,7 +359,7 @@ public final class PublishDaemon extends BeehiveService implements Publish, Publ
 
         	this.elapsedMillis = (System.currentTimeMillis() - startTime);
 
-        	publishObjectInterstitialSleepTime = PublishDaemon.this.node.configuration.asLong(PublishDaemon.PublishObjectInterstitialSleepMillis);
+        	publishObjectInterstitialSleepTime = PublishDaemon.this.node.getConfiguration().asLong(PublishDaemon.PublishObjectInterstitialSleepMillis);
 
         	this.publishIteration++;
         	if (PublishDaemon.this.log.isLoggable(Level.FINE)) {
@@ -379,40 +380,40 @@ public final class PublishDaemon extends BeehiveService implements Publish, Publ
     private long getPublishRecordSecondsToLive() {
     	// If the PublishPeriodSeconds less than 1, then the publish task will not run automatically.
     	// Since this is typically for debugging, I arbitrarily claim that records should live for 5 minutes.
-    	if (PublishDaemon.this.node.configuration.asLong(PublishDaemon.PublishPeriodSeconds) < 1) {
+    	if (PublishDaemon.this.node.getConfiguration().asLong(PublishDaemon.PublishPeriodSeconds) < 1) {
     		return Time.minutesInSeconds(5);
     	}
-    	return PublishDaemon.this.node.configuration.asLong(PublishDaemon.PublishPeriodSeconds) * 2;
+    	return PublishDaemon.this.node.getConfiguration().asLong(PublishDaemon.PublishPeriodSeconds) * 2;
     }
     
     @Override
     public synchronized void start() {
     	this.setStatus("initializing");
 
-    	if (this.node.configuration.asInt(PublishDaemon.ExpirePeriodSeconds) > 0) {
+    	if (this.node.getConfiguration().asInt(PublishDaemon.ExpirePeriodSeconds) > 0) {
     		this.expireDaemonFuture = this.threadPool.scheduleWithFixedDelay(
     				this.expireDaemon,
-    				node.configuration.asInt(PublishDaemon.ExpirePeriodSeconds),
-    				node.configuration.asInt(PublishDaemon.ExpirePeriodSeconds),
+    				node.getConfiguration().asInt(PublishDaemon.ExpirePeriodSeconds),
+    				node.getConfiguration().asInt(PublishDaemon.ExpirePeriodSeconds),
     				TimeUnit.SECONDS
     		);
     	} else {
     		this.log.warning("%s is %d, expiration must be done manually.",
     				PublishDaemon.ExpirePeriodSeconds,
-    				this.node.configuration.asInt(PublishDaemon.ExpirePeriodSeconds));
+    				this.node.getConfiguration().asInt(PublishDaemon.ExpirePeriodSeconds));
     	}
 
-        if (this.node.configuration.asInt(PublishDaemon.PublishPeriodSeconds) > 0) {
+        if (this.node.getConfiguration().asInt(PublishDaemon.PublishPeriodSeconds) > 0) {
                 this.publishDaemonFuture = this.threadPool.scheduleWithFixedDelay(
                                 this.publishDaemon,
-                                node.configuration.asInt(PublishDaemon.PublishPeriodSeconds),
-                                node.configuration.asInt(PublishDaemon.PublishPeriodSeconds),
+                                node.getConfiguration().asInt(PublishDaemon.PublishPeriodSeconds),
+                                node.getConfiguration().asInt(PublishDaemon.PublishPeriodSeconds),
                                 TimeUnit.SECONDS
                 );
         } else {
                 this.log.warning("%s is %d, publishing must be done manually.",
                                 PublishDaemon.PublishPeriodSeconds,
-                                this.node.configuration.asInt(PublishDaemon.PublishPeriodSeconds));             
+                                this.node.getConfiguration().asInt(PublishDaemon.PublishPeriodSeconds));             
         }
 
         // There was an idea here to not return from this method until all of the objects in this nodes object store were published.
@@ -445,7 +446,7 @@ public final class PublishDaemon extends BeehiveService implements Publish, Publ
         // that a socket to out neighbour(s) remains valid.  If it is
         // longer, then the socket may be closed and new sockets will
         // have to be created to handle the publishing.
-        this.node.configuration.set(PublishDaemon.PublishObjectInterstitialSleepMillis, time);
+        this.node.getConfiguration().set(PublishDaemon.PublishObjectInterstitialSleepMillis, time);
 //
 //        if (PublishDaemon.this.jmxObjectNameRoot != null) {
 //            this.sendJMXNotification("publishPeriod", oldValue, time);
@@ -453,18 +454,18 @@ public final class PublishDaemon extends BeehiveService implements Publish, Publ
     }
 
     public long jmxGetPublishObjectInterstitialSleepTime() {
-        return this.node.configuration.asLong(PublishDaemon.PublishObjectInterstitialSleepMillis);
+        return this.node.getConfiguration().asLong(PublishDaemon.PublishObjectInterstitialSleepMillis);
     }
 
     public synchronized void jmxSetExpirePeriod(long periodMillis) {
-        this.node.configuration.set(PublishDaemon.PublishObjectInterstitialSleepMillis, periodMillis);
+        this.node.getConfiguration().set(PublishDaemon.PublishObjectInterstitialSleepMillis, periodMillis);
         if (PublishDaemon.this.jmxObjectNameRoot != null) {
 //            this.sendJMXNotification("expirePeriod", oldValue, period);
         }
     }
 
     public long jmxGetExpirePeriodSeconds() {
-        return this.node.configuration.asLong(PublishDaemon.ExpirePeriodSeconds);
+        return this.node.getConfiguration().asLong(PublishDaemon.ExpirePeriodSeconds);
     }
 
     public void jmxPublishNow() {
@@ -502,7 +503,7 @@ public final class PublishDaemon extends BeehiveService implements Publish, Publ
         return reply;
     }
     
-    public BeehiveMessage unpublish(BeehiveObjectId objectId, UnpublishObject.Type type) {
+    public BeehiveMessage unpublish(TitanGuid objectId, UnpublishObject.Type type) {
     	PublishDaemon.UnpublishObject.Request request = new PublishDaemon.UnpublishObject.Request(objectId, type);
     	if (this.log.isLoggable(Level.FINEST)) {
     		this.log.finest("%s", objectId);
@@ -532,13 +533,13 @@ public final class PublishDaemon extends BeehiveService implements Publish, Publ
 		public static class Request /*extends AbstractBeehiveObjectHandler.Request*/ implements Serializable {
 			private static final long serialVersionUID = 1L;
 
-			private BeehiveObjectId objectId;
+			private TitanGuid objectId;
 			
-			public Request(BeehiveObjectId objectId) {
+			public Request(TitanGuid objectId) {
 				this.objectId = objectId;
 			}
 
-			public BeehiveObjectId getObjectId() {
+			public TitanGuid getObjectId() {
 				return objectId;
 			}
     	}
@@ -565,10 +566,11 @@ public final class PublishDaemon extends BeehiveService implements Publish, Publ
         return message.composeReply(this.node.getNodeAddress(), new GetPublishers.Response(publishers)); 
     }
 	
-    public Set<Publishers.PublishRecord> getPublishers(BeehiveObjectId objectId) throws ClassNotFoundException, ClassCastException {
+    public Set<Publishers.PublishRecord> getPublishers(TitanGuid objectId) throws ClassNotFoundException, ClassCastException {
 		GetPublishers.Request request = new GetPublishers.Request(objectId);
 
-        BeehiveMessage reply = PublishDaemon.this.node.sendToNode(objectId, PublishDaemon.this.getName(), "getPublishers", request);
+		// Send a message to the root node -- the node closest to the given object id.
+        BeehiveMessage reply = PublishDaemon.this.node.sendToNode(new TitanNodeIdImpl(objectId), PublishDaemon.this.getName(), "getPublishers", request);
 
         GetPublishers.Response response;
 		try {
@@ -607,9 +609,9 @@ public final class PublishDaemon extends BeehiveService implements Publish, Publ
     	.setName("action").setValue("publishNow").setTitle("Publish local object-store now");
 
     	XHTML.Table.Body tbody = new XHTML.Table.Body();
-    	for (String name : this.node.configuration.keySet()) {
+    	for (String name : this.node.getConfiguration().keySet()) {
     		if (name.startsWith(PublishDaemon.class.getCanonicalName())) {
-    			tbody.add(new XHTML.Table.Row(new XHTML.Table.Data(name), new XHTML.Table.Data(String.valueOf(this.node.configuration.get(name).getValue()))));
+    			tbody.add(new XHTML.Table.Row(new XHTML.Table.Data(name), new XHTML.Table.Data(String.valueOf(this.node.getConfiguration().get(name).getValue()))));
     		}
     	}
     	XHTML.Table configurationTable = new XHTML.Table(new XHTML.Table.Caption("Configuration Values"), tbody).addClass("striped");
@@ -678,13 +680,13 @@ public final class PublishDaemon extends BeehiveService implements Publish, Publ
         public static class Request implements sunlabs.titan.node.services.api.Publish.Request {
             private static final long serialVersionUID = 1L;
             
-            private Map<BeehiveObjectId,BeehiveObject.Metadata> objects;
+            private Map<TitanGuid,BeehiveObject.Metadata> objects;
             private NodeAddress publisher;
             private long secondsToLive;
 
             /**
              * If {@code true} this Publish is a backup for the root of the object's
-             * {@link BeehiveObjectId} and signals the helper method
+             * {@link TitanGuid} and signals the helper method
              * {@link AbstractObjectHandler#publishObjectBackup(AbstractObjectHandler, Request)}
              * to not continue making backup back-pointers.
              */
@@ -698,7 +700,7 @@ public final class PublishDaemon extends BeehiveService implements Publish, Publ
              * @param object One or more {@link BeehiveObject} instances to publish.
              */
             public Request(NodeAddress publisher, long secondsToLive, BeehiveObject...object) {
-            	this.objects = new HashMap<BeehiveObjectId,BeehiveObject.Metadata>();
+            	this.objects = new HashMap<TitanGuid,BeehiveObject.Metadata>();
             	for (BeehiveObject o : object) {
             		this.objects.put(o.getObjectId(), o.getMetadata());
             	}
@@ -709,7 +711,7 @@ public final class PublishDaemon extends BeehiveService implements Publish, Publ
 
             /**
              * If {@code true} this Publish is a backup for the root of the object's
-             * {@link BeehiveObjectId} and signals the helper method
+             * {@link TitanGuid} and signals the helper method
              * {@link AbstractObjectHandler#publishObjectBackup(AbstractObjectHandler, Request)}
              * to <b>not</b> continue making backup back-pointers.
              */
@@ -735,7 +737,7 @@ public final class PublishDaemon extends BeehiveService implements Publish, Publ
             /**
              * Get the map of {@link BeehiveObject}s in this Request.
              */
-            public Map<BeehiveObjectId,BeehiveObject.Metadata> getObjectsToPublish() {
+            public Map<TitanGuid,BeehiveObject.Metadata> getObjectsToPublish() {
             	return this.objects;
             }
 
@@ -749,17 +751,17 @@ public final class PublishDaemon extends BeehiveService implements Publish, Publ
 
         public static class Response implements sunlabs.titan.node.services.api.Publish.Response, Serializable {
             private static final long serialVersionUID = 1L;
-            private Set<BeehiveObjectId> objectIds;
+            private Set<TitanGuid> objectIds;
 
             public Response() {
-                this.objectIds = new HashSet<BeehiveObjectId>();
+                this.objectIds = new HashSet<TitanGuid>();
             }
 
-            public Response(Set<BeehiveObjectId> objectIds) {
+            public Response(Set<TitanGuid> objectIds) {
                 this.objectIds = objectIds;
             }
             
-            public Set<BeehiveObjectId> getObjectIds() {
+            public Set<TitanGuid> getObjectIds() {
                 return this.objectIds;
             }
         }
@@ -778,11 +780,11 @@ public final class PublishDaemon extends BeehiveService implements Publish, Publ
     		private final static long serialVersionUID = 1L;
 
     		private UnpublishObject.Type type;
-    		private Collection<BeehiveObjectId> objectIds;
+    		private Collection<TitanGuid> objectIds;
     		
-    		public Request(BeehiveObjectId objectId, UnpublishObject.Type type) {
+    		public Request(TitanGuid objectId, UnpublishObject.Type type) {
     		    this.type = type;
-    			this.objectIds = new LinkedList<BeehiveObjectId>();
+    			this.objectIds = new LinkedList<TitanGuid>();
     			this.objectIds.add(objectId);
     		}
     		
@@ -790,7 +792,7 @@ public final class PublishDaemon extends BeehiveService implements Publish, Publ
     		    return this.type;
     		}
     		
-    		public Collection<BeehiveObjectId> getObjectIds() {
+    		public Collection<TitanGuid> getObjectIds() {
     			return this.objectIds;
     		}
     	}

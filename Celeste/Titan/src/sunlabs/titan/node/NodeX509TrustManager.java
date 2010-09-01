@@ -27,7 +27,7 @@
  *
  * This code allows us to use SSL without established certificate authorities.
  * Certificate authenticity is instead validated after connection
- * establishment, when the actual {@link BeehiveObjectId} of the peer node can be
+ * establishment, when the actual {@link TitanGuidImpl} of the peer node can be
  * retrieved and compared to the hash of the provided X509 SSL certificate.
  */
 package sunlabs.titan.node;

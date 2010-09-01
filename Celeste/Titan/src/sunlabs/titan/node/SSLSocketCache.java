@@ -37,7 +37,7 @@ import javax.net.ssl.SSLSocket;
 import javax.net.ssl.TrustManager;
 
 import sunlabs.asdf.web.XML.XHTML;
-import sunlabs.titan.BeehiveObjectId;
+import sunlabs.titan.TitanGuidImpl;
 import sunlabs.titan.node.util.DOLRLogFormatter;
 
 /**
@@ -83,7 +83,7 @@ public final class SSLSocketCache extends SocketCache {
                 // Only the first certificate is the peer certificate.
                 // The rest are certificate authorities. See the javadoc for getPeerCertificate().
 
-                BeehiveObjectId peerNodeId = new BeehiveObjectId(certificates[0].getPublicKey());
+                TitanGuidImpl peerNodeId = new TitanGuidImpl(certificates[0].getPublicKey());
                 if (!key.address.getObjectId().equals(peerNodeId)) {
                     PublicKey publicKey = certificates[0].getPublicKey();
                     StringBuilder logMessage = new StringBuilder("Warning: Node object-id does not validate from SSL public-key: expected ")
@@ -190,7 +190,7 @@ public final class SSLSocketCache extends SocketCache {
             
             SSLSocketCache cache = new SSLSocketCache(sslContext, 5000);
 
-            Socket socket = cache.getAndRemove(new NodeAddress(new BeehiveObjectId(), "127.0.0.1", 8084, 9999));
+            Socket socket = cache.getAndRemove(new NodeAddress(new TitanNodeIdImpl(), "127.0.0.1", 8084, 9999));
             
             byte[] message = "Hello World".getBytes();
             socket.getOutputStream().write(message, 0, message.length);

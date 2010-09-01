@@ -33,9 +33,10 @@ import java.util.TreeSet;
 
 import sunlabs.asdf.web.XML.XHTML;
 import sunlabs.asdf.web.http.HTTP;
-import sunlabs.titan.BeehiveObjectId;
+import sunlabs.titan.TitanGuidImpl;
 import sunlabs.titan.api.BeehiveObject;
 import sunlabs.titan.api.ObjectStore;
+import sunlabs.titan.api.TitanGuid;
 import sunlabs.titan.node.object.AbstractObjectHandler;
 import sunlabs.titan.node.object.DeleteableObject;
 import sunlabs.titan.util.OrderedProperties;
@@ -53,7 +54,7 @@ import sunlabs.titan.util.OrderedProperties;
  * Provisional Comments
  * </p>
  * <p>
- * All objects have an {@link BeehiveObjectId} object identifier that names the object (see {@link #getObjectId()})
+ * All objects have an {@link TitanGuid} object identifier that names the object (see {@link #getObjectId()})
  * An object's identifier is derived in one of three mutually exclusive ways:
  * </p>
  * <ol>
@@ -147,7 +148,7 @@ public abstract class AbstractBeehiveObject implements BeehiveObject {
     }
 
 
-    protected BeehiveObjectId objectId;
+    protected TitanGuid objectId;
 
     private BeehiveObject.Metadata metaData;
 
@@ -157,8 +158,8 @@ public abstract class AbstractBeehiveObject implements BeehiveObject {
      * @param deleteTokenId
      * @param timeToLive
      */
-    public AbstractBeehiveObject(Class <? extends AbstractObjectHandler> handler, BeehiveObjectId deleteTokenId, long timeToLive) {
-        this.objectId = BeehiveObjectId.ANY;
+    public AbstractBeehiveObject(Class <? extends AbstractObjectHandler> handler, TitanGuid deleteTokenId, long timeToLive) {
+        this.objectId = TitanGuidImpl.ANY;
 
         this.metaData = new AbstractBeehiveObject.Metadata();
         this.setProperty(ObjectStore.METADATA_TYPE, handler.getName());
@@ -170,15 +171,15 @@ public abstract class AbstractBeehiveObject implements BeehiveObject {
         this.setTimeToLive(timeToLive);
     }
 
-    public synchronized BeehiveObjectId getObjectId() {
+    public synchronized TitanGuid getObjectId() {
         return this.objectId;
     }
 
-    public synchronized void setObjectId(BeehiveObjectId id) {
+    public synchronized void setObjectId(TitanGuid id) {
         this.objectId = id;
     }
 
-    abstract public BeehiveObjectId getDataId();
+    abstract public TitanGuid getDataId();
 
     public void setTimeToLive(long timeToLive) {
         this.getMetadata().setProperty(ObjectStore.METADATA_SECONDSTOLIVE, timeToLive);
@@ -199,13 +200,13 @@ public abstract class AbstractBeehiveObject implements BeehiveObject {
     	return BeehiveObject.INFINITE_TIME_TO_LIVE;
     }
 
-    public void setDeleteTokenId(BeehiveObjectId deleteTokenId) {
+    public void setDeleteTokenId(TitanGuid deleteTokenId) {
         if (deleteTokenId == null)
             throw new IllegalArgumentException("deleteTokenId is null");
         this.setProperty(ObjectStore.METADATA_DELETETOKENID, deleteTokenId);
     }
 
-    public BeehiveObjectId getDeleteTokenId() {
+    public TitanGuid getDeleteTokenId() {
         return this.getPropertyAsObjectId(ObjectStore.METADATA_DELETETOKENID, null);
     }
 
@@ -225,9 +226,9 @@ public abstract class AbstractBeehiveObject implements BeehiveObject {
         return this.metaData.getProperty(name);
     }
 
-    public BeehiveObjectId getPropertyAsObjectId(String name, BeehiveObjectId defaultValue) {
+    public TitanGuid getPropertyAsObjectId(String name, TitanGuid defaultValue) {
         String value = this.getProperty(name, defaultValue);
-        return (value == null) ? null : new BeehiveObjectId(value);
+        return (value == null) ? null : new TitanGuidImpl(value);
     }
 
     public long getPropertyAsLong(String name, long defaultValue) {
@@ -250,7 +251,7 @@ public abstract class AbstractBeehiveObject implements BeehiveObject {
     }
 
     /**
-     * Equality is based only on the equality of the {@link BeehiveObjectId}s of the two objects.
+     * Equality is based only on the equality of the {@link TitanGuid}s of the two objects.
      */
     @Override
     public synchronized boolean equals(Object other) {

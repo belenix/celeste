@@ -40,7 +40,10 @@ import java.util.Map;
 import sunlabs.asdf.web.XML.XHTML;
 import sunlabs.asdf.web.XML.XML;
 import sunlabs.asdf.web.http.HTTP;
-import sunlabs.titan.BeehiveObjectId;
+import sunlabs.titan.TitanGuidImpl;
+import sunlabs.titan.api.TitanGuid;
+import sunlabs.titan.api.TitanNode;
+import sunlabs.titan.api.TitanNodeId;
 import sunlabs.titan.api.XHTMLInspectable;
 import sunlabs.titan.exception.BeehiveException;
 import sunlabs.titan.node.util.DOLRLogFormatter;
@@ -139,13 +142,13 @@ public class BeehiveMessage implements XHTMLInspectable {
     private DOLRStatus status;
 
     /** The unique message is for this message */
-    private BeehiveObjectId messageId;
+    private TitanGuid messageId;
 
     /** The {@link NodeAddress} of the {@link BeehiveNode} node generating this message. */
     private NodeAddress source;
 
-    /** The destination {@link BeehiveObjectId}. */
-    private BeehiveObjectId destinationNodeId;
+    /** The destination {@link TitanGuidImpl}. */
+    private TitanNodeId destinationNodeId;
 
     /**
      * The current hop count for this BeehiveMessage.
@@ -174,10 +177,10 @@ public class BeehiveMessage implements XHTMLInspectable {
      * The object-id of the subject of this message.
      * <p>
      * This is typically the same as the destination, but in the cases of object location, where the destination of a message
-     * is modified by intermediate node backpointers, this preserves the actual target {@link BeehiveObjectId} of the object.
+     * is modified by intermediate node backpointers, this preserves the actual target {@link TitanGuidImpl} of the object.
      * </p>
      */
-    public BeehiveObjectId subjectId;
+    public TitanGuid subjectId;
 
     /** The name of the target object-type for this BeehiveMessage. */
     private String subjectClass;
@@ -219,8 +222,8 @@ public class BeehiveMessage implements XHTMLInspectable {
 
     public BeehiveMessage(BeehiveMessage.Type type,
             NodeAddress source,
-            BeehiveObjectId destination,
-            BeehiveObjectId subjectId,
+            TitanNodeId destination,
+            TitanGuid subjectId,
             String subjectClass,
             String subjectClassMethod,
             boolean isMulticast,
@@ -231,7 +234,7 @@ public class BeehiveMessage implements XHTMLInspectable {
         this.timeToLive = 0;
 
         this.source = source;
-        this.messageId = new BeehiveObjectId();
+        this.messageId = new TitanGuidImpl();
 
         this.destinationNodeId = destination;
 
@@ -264,16 +267,16 @@ public class BeehiveMessage implements XHTMLInspectable {
         
         this.trace = ois.readBoolean();
         this.status = (DOLRStatus) ois.readObject();
-        this.messageId = (BeehiveObjectId) ois.readObject();
+        this.messageId = (TitanGuidImpl) ois.readObject();
         this.source = (NodeAddress) ois.readObject();
-        this.destinationNodeId = (BeehiveObjectId) ois.readObject();
+        this.destinationNodeId = (TitanNodeId) ois.readObject();
         this.timeToLive = ois.readShort();
         this.timestamp = ois.readLong();
         this.isMulticast = ois.readBoolean();
         this.isExactRouting = ois.readBoolean();
         this.subjectClass = (String) ois.readObject();
         this.subjectClassMethod = (String) ois.readObject();
-        this.subjectId = (BeehiveObjectId) ois.readObject();        
+        this.subjectId = (TitanGuidImpl) ois.readObject();        
 
         this.payload = payload;        
     }
@@ -389,7 +392,7 @@ public class BeehiveMessage implements XHTMLInspectable {
      * @throws ClassNotFoundException if the class {@code klasse} cannot be found by the class loader provided by {@code node}.
      * @throws BeehiveMessage.RemoteException if they payload contains an exception as the payload.
      */
-    public <C> C getPayload(Class<? extends C> resultClass, BeehiveNode node) throws ClassCastException, ClassNotFoundException, BeehiveMessage.RemoteException {
+    public <C> C getPayload(Class<? extends C> resultClass, TitanNode node) throws ClassCastException, ClassNotFoundException, BeehiveMessage.RemoteException {
         try {
             if (this.status.equals(DOLRStatus.THROWABLE)) {
                 this.loadPayloadObject(Exception.class.getClassLoader(), node);
@@ -478,7 +481,7 @@ public class BeehiveMessage implements XHTMLInspectable {
         }
     }
 
-    private synchronized void loadPayloadObject(ClassLoader classLoader, BeehiveNode node) throws ClassCastException, ClassNotFoundException {
+    private synchronized void loadPayloadObject(ClassLoader classLoader, TitanNode node) throws ClassCastException, ClassNotFoundException {
         if (this.dataObject == null) {
             //
             // Give the ApplicationFramework active on the Node hosting
@@ -555,7 +558,7 @@ public class BeehiveMessage implements XHTMLInspectable {
         BeehiveMessage message = new BeehiveMessage(BeehiveMessage.Type.Reply,
                 source,
                 this.source.getObjectId(),
-                BeehiveObjectId.ANY,
+                TitanGuidImpl.ANY,
                 this.subjectClass,
                 this.subjectClassMethod,
                 this.isMulticast,
@@ -577,7 +580,7 @@ public class BeehiveMessage implements XHTMLInspectable {
         BeehiveMessage message = new BeehiveMessage(BeehiveMessage.Type.Reply,
                 source,
                 this.source.getObjectId(),
-                BeehiveObjectId.ANY,
+                TitanGuidImpl.ANY,
                 this.subjectClass,
                 this.subjectClassMethod,
                 this.isMulticast,
@@ -608,7 +611,7 @@ public class BeehiveMessage implements XHTMLInspectable {
     /**
      * Get this message's message identifier.
      */
-    public BeehiveObjectId getMessageId() {
+    public TitanGuid getMessageId() {
         return this.messageId;
     }
 
@@ -680,7 +683,7 @@ public class BeehiveMessage implements XHTMLInspectable {
     /**
      * Get the routing behaviour for this message.
      * <p>
-     * If {@code true}, then this message is destined for the node with the {@link BeehiveObjectId}
+     * If {@code true}, then this message is destined for the node with the {@link TitanGuidImpl}
      * exactly equal to the value in this message's {@link #destinationNodeId}.
      * </p>
      * <p>
@@ -700,30 +703,30 @@ public class BeehiveMessage implements XHTMLInspectable {
     }
 
     /**
-     * Get the {@link BeehiveObjectId} of the destination node for this message.
+     * Get the {@link TitanGuidImpl} of the destination node for this message.
      */
-    public BeehiveObjectId getDestinationNodeId() {
+    public TitanNodeId getDestinationNodeId() {
         return this.destinationNodeId;
     }
 
     /**
-     * Set the {@link BeehiveObjectId} of the destination node for this message.
+     * Set the {@link TitanGuidImpl} of the destination node for this message.
      */
-    public void setDestinationNodeId(BeehiveObjectId nodeId) {
+    public void setDestinationNodeId(TitanNodeId nodeId) {
         this.destinationNodeId = nodeId;
     }
 
     /**
-     * Get the {@link BeehiveObjectId} of this message's "subject."
+     * Get the {@link TitanGuidImpl} of this message's "subject."
      */
-    public BeehiveObjectId getObjectId() {
+    public TitanGuid getObjectId() {
         return this.subjectId;
     }
 
     /**
-     * Set the {@link BeehiveObjectId} of this message's "subject."
+     * Set the {@link TitanGuidImpl} of this message's "subject."
      */
-    public void setObjectId(BeehiveObjectId id) {
+    public void setObjectId(TitanGuidImpl id) {
         this.subjectId = id;
     }
 

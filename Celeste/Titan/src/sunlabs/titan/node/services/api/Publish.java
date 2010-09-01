@@ -27,9 +27,10 @@ import java.io.Serializable;
 import java.util.Map;
 import java.util.Set;
 
-import sunlabs.titan.BeehiveObjectId;
+import sunlabs.titan.TitanGuidImpl;
 import sunlabs.titan.api.BeehiveObject;
 import sunlabs.titan.api.ObjectStore;
+import sunlabs.titan.api.TitanGuid;
 import sunlabs.titan.node.BeehiveMessage;
 import sunlabs.titan.node.NodeAddress;
 import sunlabs.titan.node.PublishObjectMessage;
@@ -49,7 +50,7 @@ public interface Publish {
     public interface Request extends Serializable {
         /**
          * If {@code true} this Publish is a backup for the root of the object's
-         * {@link BeehiveObjectId} and signals the helper method
+         * {@link TitanGuid} and signals the helper method
          * {@link AbstractObjectHandler#publishObjectBackup(AbstractObjectHandler, Request)}
          * to <b>not</b> continue making backup back-pointers.
          */
@@ -61,7 +62,7 @@ public interface Publish {
          * Return a {@link Map<BeehiveObjectId,BeehiveObject.Metadata>} indexed by the object identifier
          * of the object to publish and the corresponding object metadata as the value.
          */
-        public Map<BeehiveObjectId,BeehiveObject.Metadata> getObjectsToPublish();
+        public Map<TitanGuid,BeehiveObject.Metadata> getObjectsToPublish();
 
         public long getSecondsToLive();
     }
@@ -73,10 +74,10 @@ public interface Publish {
     /**
      * Publish a {@link BeehiveObject}.
      * <p>
-     * This transmits a single {@link PublishObjectMessage} to the root of the {@link BeehiveObjectId} of the object being published.
+     * This transmits a single {@link PublishObjectMessage} to the root of the {@link TitanGuid} of the object being published.
      * </p>
      * <p>
-     * The message travels across the network until it reaches the root of the object's {@link BeehiveObjectId}.
+     * The message travels across the network until it reaches the root of the object's {@link TitanGuid}.
      * When the root receives the message, the {@link AbstractObjectHandler} specified by name in the
      * meta-data accompanying the {@link PublishObjectMessage} (using the meta-data name
      * {@link ObjectStore#METADATA_TYPE}).
@@ -95,7 +96,7 @@ public interface Publish {
     public BeehiveMessage publish(BeehiveObject object);
 
     /**
-     * Transmit a {@link BeehiveMessage} to "unpublish" a {@link BeehiveObjectId}.
+     * Transmit a {@link BeehiveMessage} to "unpublish" a {@link TitanGuid}.
      * <p>
      * This unpublish of an object-id <em>does not contain the object-type of the object</em>.
      * </p>
@@ -106,7 +107,7 @@ public interface Publish {
      * @param objectId the object identifiers of the object to be unpublished
      * @return the reply {@link BeehiveMessage} from the root of object identifier
      */
-    public BeehiveMessage unpublish(BeehiveObjectId objectId, UnpublishObject.Type type);
+    public BeehiveMessage unpublish(TitanGuid objectId, UnpublishObject.Type type);
     
     /**
      * Transmit a {@link BeehiveMessage} to "unpublish" a {@link BeehiveObject}.
@@ -140,7 +141,7 @@ public interface Publish {
      * @throws ClassNotFoundException
      * @throws RemoteException
      */
-    public Set<Publishers.PublishRecord> getPublishers(BeehiveObjectId objectId) throws ClassNotFoundException, ClassCastException;
+    public Set<Publishers.PublishRecord> getPublishers(TitanGuid objectId) throws ClassNotFoundException, ClassCastException;
 
 //    /**
 //     * Maintain the persistence of an object given a PublishObject message that supplies the persistency information.

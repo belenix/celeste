@@ -28,7 +28,7 @@ import java.io.Serializable;
 import sunlabs.celeste.client.operation.LockFileOperation;
 import sunlabs.celeste.node.services.object.AnchorObject;
 import sunlabs.celeste.node.services.object.VersionObject;
-import sunlabs.titan.BeehiveObjectId;
+import sunlabs.titan.api.TitanGuid;
 import sunlabs.titan.node.object.BeehiveObjectHandler;
 import sunlabs.titan.node.object.InspectableObject;
 import sunlabs.titan.node.object.MutableObject;
@@ -43,8 +43,8 @@ import sunlabs.titan.node.object.MutableObject;
  * </p>
  * <p>
  * The {@code AnchorObject} to {@code VersionObject} map maintains the current file version such
- * that given the {@link BeehiveObjectId} of the {@link AnchorObject}, the AObjectVersionMap
- * produces the {@link BeehiveObjectId} of the current {@code VersionObject}.
+ * that given the {@link TitanGuid} of the {@link AnchorObject}, the AObjectVersionMap
+ * produces the {@link TitanGuid} of the current {@code VersionObject}.
  * </p>
  * @author Glenn Scott - Sun Microsystems Laboratories
  */
@@ -56,9 +56,9 @@ public interface AObjectVersionMapAPI extends MutableObject.Handler<MutableObjec
     
     public interface Lock extends Serializable {        
         /**
-         * Return the {@link BeehiveObjectId} locker-id in this value.
+         * Return the {@link TitanGuid} locker-id in this value.
          */
-        public BeehiveObjectId getLockerObjectId();
+        public TitanGuid getLockerObjectId();
 
         /**
          * Return the recursive lock count for this value.
@@ -131,7 +131,7 @@ public interface AObjectVersionMapAPI extends MutableObject.Handler<MutableObjec
      *          insufficient resources in the system to create the variable.
      * @throws MutableObject.ExistenceException if the variable already exists.
      */
-    public void createValue(BeehiveObjectId objectId, BeehiveObjectId deleteTokenId, AObjectVersionMapAPI.Parameters params, long timeToLive)
+    public void createValue(TitanGuid objectId, TitanGuid deleteTokenId, AObjectVersionMapAPI.Parameters params, long timeToLive)
     throws MutableObject.InsufficientResourcesException, MutableObject.ExistenceException, MutableObject.ProtocolException;
 
     /**
@@ -146,7 +146,7 @@ public interface AObjectVersionMapAPI extends MutableObject.Handler<MutableObjec
      *          insufficient resources in the system to create the variable.
      * @throws MutableObject.ExistenceException if the variable already exists.
      */
-    public void deleteValue(BeehiveObjectId objectId, BeehiveObjectId deleteToken, AObjectVersionMapAPI.Parameters params, long timeToLive)
+    public void deleteValue(TitanGuid objectId, TitanGuid deleteToken, AObjectVersionMapAPI.Parameters params, long timeToLive)
     throws MutableObject.InsufficientResourcesException, MutableObject.ExistenceException, MutableObject.ProtocolException, MutableObject.NotFoundException, 
     MutableObject.PredicatedValueException, MutableObject.ObjectHistory.ValidationException, MutableObject.DeletedException;
 
@@ -155,7 +155,7 @@ public interface AObjectVersionMapAPI extends MutableObject.Handler<MutableObjec
      * If {@code predicatedValue} is non-null, the current value of the variable
      * <em>must</em> be equal to {@code predicatedValue}
      *
-     * @param objectId the {@link BeehiveObjectId} of the variable to set
+     * @param objectId the {@link TitanGuid} of the variable to set
      * @param predicatedValue the current required value of the variable, not {@code null}
      * @param value the new value to set
      * @param params the parameters controlling the backing store for the variable.
@@ -167,7 +167,7 @@ public interface AObjectVersionMapAPI extends MutableObject.Handler<MutableObjec
      * @throws MutableObject.ObjectHistory.ValidationException if the current state
      *          of the variable is invalid and cannot (currently) be repaired.
      */
-    public Value setValue(BeehiveObjectId objectId, Value predicatedValue, Value value, AObjectVersionMapAPI.Parameters params)
+    public Value setValue(TitanGuid objectId, Value predicatedValue, Value value, AObjectVersionMapAPI.Parameters params)
     throws MutableObject.PredicatedValueException, MutableObject.InsufficientResourcesException,
     MutableObject.ObjectHistory.ValidationException, MutableObject.ProtocolException, MutableObject.DeletedException;
 
@@ -182,6 +182,6 @@ public interface AObjectVersionMapAPI extends MutableObject.Handler<MutableObjec
      *          insufficient resources in the system to construct the authoritative value of {@code objectId}.
      * @throws MutableObject.NotFoundException if the mutable object was not found.
      */
-    public AObjectVersionMapAPI.Value getValue(BeehiveObjectId objectId, AObjectVersionMapAPI.Parameters params)
+    public AObjectVersionMapAPI.Value getValue(TitanGuid objectId, AObjectVersionMapAPI.Parameters params)
     throws MutableObject.InsufficientResourcesException, MutableObject.NotFoundException, MutableObject.ProtocolException;
 }

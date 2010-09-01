@@ -5,13 +5,13 @@ import java.io.Serializable;
 
 import sunlabs.celeste.node.CelesteACL;
 import sunlabs.celeste.node.services.CelesteClientDaemon;
-import sunlabs.titan.BeehiveObjectId;
+import sunlabs.titan.api.TitanGuid;
 
 public interface CelesteOperation extends Serializable {
 
     public String getOperationName();
 
-    public BeehiveObjectId getClientId();
+    public TitanGuid getClientId();
 
     /**
      * Get the {@link BeehiveObjectId} of the {@link VersionObject} of the file that this operation applies to.
@@ -21,9 +21,9 @@ public interface CelesteOperation extends Serializable {
      * </p>
      * @return
      */
-    public BeehiveObjectId getVObjectId();
+    public TitanGuid getVObjectId();
     
-    public BeehiveObjectId getId();
+    public TitanGuid getId();
 
     /**
      * Return the access control privilege required to invoke this operation.

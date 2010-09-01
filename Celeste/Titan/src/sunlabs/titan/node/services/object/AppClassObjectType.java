@@ -38,14 +38,15 @@ import javax.management.NotCompliantMBeanException;
 
 import sunlabs.asdf.web.XML.XHTML;
 import sunlabs.asdf.web.http.HTTP;
-import sunlabs.titan.BeehiveObjectId;
+import sunlabs.titan.TitanGuidImpl;
 import sunlabs.titan.api.ObjectStore;
+import sunlabs.titan.api.TitanGuid;
 import sunlabs.titan.node.AbstractBeehiveObject;
 import sunlabs.titan.node.BeehiveMessage;
+import sunlabs.titan.node.BeehiveMessage.RemoteException;
 import sunlabs.titan.node.BeehiveNode;
 import sunlabs.titan.node.BeehiveObjectPool;
 import sunlabs.titan.node.BeehiveObjectStore;
-import sunlabs.titan.node.BeehiveMessage.RemoteException;
 import sunlabs.titan.node.object.AbstractObjectHandler;
 import sunlabs.titan.node.object.RetrievableObject;
 import sunlabs.titan.node.object.StorableObject;
@@ -145,8 +146,8 @@ public class AppClassObjectType extends AbstractObjectHandler implements AppClas
 
         private AppClass.AppClassObject.InfoList infoList;
 
-        public AppClassObject(BeehiveObjectId objectId, AppClass.AppClassObject.InfoList infoList) {
-            super(AppClassObjectType.class, BeehiveObjectId.ZERO, Long.MAX_VALUE);
+        public AppClassObject(TitanGuid objectId, AppClass.AppClassObject.InfoList infoList) {
+            super(AppClassObjectType.class, TitanGuidImpl.ZERO, Long.MAX_VALUE);
             this.setProperty(ObjectStore.METADATA_REPLICATION_STORE, 1);
             this.infoList = infoList;
             try {
@@ -158,8 +159,8 @@ public class AppClassObjectType extends AbstractObjectHandler implements AppClas
         }
 
         @Override
-        public BeehiveObjectId getDataId() {
-            BeehiveObjectId objectId = new BeehiveObjectId("".getBytes());
+        public TitanGuid getDataId() {
+            TitanGuid objectId = new TitanGuidImpl("".getBytes());
             for (AppClass.AppClassObject.InfoList.AppClassLoadingInfo i : this.infoList) {
                 objectId = objectId.add(i.getClassBytes());
             }
@@ -176,7 +177,7 @@ public class AppClassObjectType extends AbstractObjectHandler implements AppClas
         super(node, AppClassObjectType.name, "AppClass Application");
     }
 
-    public AppClass.AppClassObject create(BeehiveObjectId objectId, AppClass.AppClassObject.InfoList infoList) {
+    public AppClass.AppClassObject create(TitanGuid objectId, AppClass.AppClassObject.InfoList infoList) {
         AppClass.AppClassObject object = new AppClassObject(objectId, infoList);
 
         return object;
@@ -194,7 +195,7 @@ public class AppClassObjectType extends AbstractObjectHandler implements AppClas
         return RetrievableObject.retrieveLocalObject(this, message);
     }
 
-    public AppClassObjectType.AppClassObject retrieve(BeehiveObjectId objectId)
+    public AppClassObjectType.AppClassObject retrieve(TitanGuid objectId)
     throws BeehiveObjectStore.NotFoundException, BeehiveObjectStore.DeletedObjectException {
         AppClassObjectType.AppClassObject object = RetrievableObject.retrieve(this, AppClassObjectType.AppClassObject.class, objectId);
         return object;

@@ -1,3 +1,26 @@
+/*
+ * Copyright 2007-2010 Oracle. All Rights Reserved.
+ * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER
+ *
+ * This code is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2
+ * only, as published by the Free Software Foundation.
+ *
+ * This code is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ * General Public License version 2 for more details (a copy is
+ * included in the LICENSE file that accompanied this code).
+ *
+ * You should have received a copy of the GNU General Public License
+ * version 2 along with this work; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
+ * 02110-1301 USA
+ *
+ * Please contact Oracle Corporation, 500 Oracle Parkway, Redwood Shores, CA 94065
+ * or visit www.oracle.com if you need additional information or
+ * have any questions.
+ */
 package sunlabs.titan.node.object;
 
 import java.io.Serializable;
@@ -5,11 +28,14 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.logging.Level;
 
-import sunlabs.titan.BeehiveObjectId;
+import sunlabs.titan.api.BeehiveObject;
+import sunlabs.titan.api.TitanGuid;
+import sunlabs.titan.api.TitanNodeId;
 import sunlabs.titan.node.BeehiveMessage;
+import sunlabs.titan.node.BeehiveMessage.RemoteException;
 import sunlabs.titan.node.BeehiveNode;
 import sunlabs.titan.node.Publishers;
-import sunlabs.titan.node.BeehiveMessage.RemoteException;
+import sunlabs.titan.node.TitanNodeIdImpl;
 import sunlabs.titan.node.services.BeehiveService;
 import sunlabs.titan.node.services.PublishDaemon;
 
@@ -58,33 +84,33 @@ public class ReplicatableObject {
 	    public static class Request implements Serializable {
             private static final long serialVersionUID = 1;
                 
-            private BeehiveObjectId objectId;
-            private Set<BeehiveObjectId> excludedNodes;
+            private TitanGuid objectId;
+            private Set<TitanNodeId> excludedNodes;
             
             /**
              * Construct a request to replicate the object identified by {@code objectId} which is currently
              * being published by the nodes specified in the {@link Set} {@code publishers}.
              */
-	        public Request(BeehiveObjectId objectId, Set<BeehiveObjectId> excludedNodes) {
+	        public Request(TitanGuid objectId, Set<TitanNodeId> excludedNodes) {
 	            this.objectId = objectId;
 	            this.excludedNodes = excludedNodes;
 	        }
 	        
 	        /**
-	         * Get the {@link Set} of {@link BeehiveObjectId} instances of the nodes to not use when replicating the object.
+	         * Get the {@link Set} of {@link TitanGuid} instances of the nodes to not use when replicating the object.
 	         * <p>
 	         * Typically this consists of the nodes currently publishing the object, as they are already contributin a replica.
 	         *  </p>
 	         * (See {@link #getObjectId()).
 	         */
-	        public Set<BeehiveObjectId> getExcludedNodes() {
+	        public Set<TitanNodeId> getExcludedNodes() {
 	            return this.excludedNodes;
 	        }
 
             /**
-             * Get the {@link BeehiveObjectId} of the object specified in this request.
+             * Get the {@link TitanGuid} of the object specified in this request.
              */
-	        public BeehiveObjectId getObjectId() {
+	        public TitanGuid getObjectId() {
 	            return this.objectId;
 	        }
 	    }
@@ -109,7 +135,7 @@ public class ReplicatableObject {
 	    try {
 	        PublishDaemon.UnpublishObject.Request request = message.getPayload(PublishDaemon.UnpublishObject.Request.class, handler.getNode());
 
-	        for (BeehiveObjectId objectId : request.getObjectIds()) {
+	        for (TitanGuid objectId : request.getObjectIds()) {
 	            Set<Publishers.PublishRecord> publishers = handler.getNode().getObjectPublishers().getPublishers(objectId);
 	            Publishers.PublishRecord bestPublisher = null;
 
@@ -119,7 +145,7 @@ public class ReplicatableObject {
 
 	            // Compose the set of node that already have a copy of the object.
 	            // Include the node that is unpublishing the object, as we cannot ask it to replicate it.
-	            Set<BeehiveObjectId> publisherSet = new HashSet<BeehiveObjectId>();
+	            Set<TitanNodeId> publisherSet = new HashSet<TitanNodeId>();
 	            publisherSet.add(message.getSource().getObjectId());
 
 	            for (Publishers.PublishRecord publisher : publishers) {

@@ -50,8 +50,8 @@ import sunlabs.titan.api.ObjectStore;
 import sunlabs.titan.api.TitanGuid;
 import sunlabs.titan.api.TitanObject;
 import sunlabs.titan.node.AbstractBeehiveObject;
-import sunlabs.titan.node.BeehiveMessage;
-import sunlabs.titan.node.BeehiveMessage.RemoteException;
+import sunlabs.titan.node.TitanMessage;
+import sunlabs.titan.node.TitanMessage.RemoteException;
 import sunlabs.titan.node.BeehiveNode;
 import sunlabs.titan.node.BeehiveObjectStore;
 import sunlabs.titan.node.BeehiveObjectStore.InvalidObjectException;
@@ -374,7 +374,7 @@ public class AObjectVersionService extends AbstractObjectHandler implements AObj
      *
      * @param message
      */
-    public BeehiveMessage createObjectHistory(BeehiveMessage message) {
+    public TitanMessage createObjectHistory(TitanMessage message) {
         try {
             // The message contains a CreateOperation.Request as the payload.
             MutableObject.CreateOperation.Request request = message.getPayload(MutableObject.CreateOperation.Request.class, this.node);
@@ -460,7 +460,7 @@ public class AObjectVersionService extends AbstractObjectHandler implements AObj
      * replica to be created (because some previous replica became unavailable).
      * </p>
      */
-    public BeehiveMessage getObjectHistory(BeehiveMessage message) {
+    public TitanMessage getObjectHistory(TitanMessage message) {
         try {
             MutableObject.GetOperation.Request request = message.getPayload(MutableObject.GetOperation.Request.class, this.node);
             try {
@@ -498,7 +498,7 @@ public class AObjectVersionService extends AbstractObjectHandler implements AObj
 //        this.linearizedObjects.remove(objectId.toString());
     }
 
-    public BeehiveMessage setObjectHistory(BeehiveMessage message) {
+    public TitanMessage setObjectHistory(TitanMessage message) {
         try {
             MutableObject.SetOperation.Request request = message.getPayload(MutableObject.SetOperation.Request.class, this.node);
             //this.log.info("Update: %s ohsId=%s %s", message.subjectId, request.getObjectHistorySet().getHash(), request.getObjectHistorySet().state);
@@ -595,7 +595,7 @@ public class AObjectVersionService extends AbstractObjectHandler implements AObj
      * is obligated to not publish the object again, and all intermediate nodes are obligated
      * to remove any back-pointer to this object.
      */
-    public BeehiveMessage publishObject(BeehiveMessage message) {
+    public TitanMessage publishObject(TitanMessage message) {
     	try {
     		PublishDaemon.PublishObject.Request publishRequest = message.getPayload(PublishDaemon.PublishObject.Request.class, this.node);;
     		
@@ -644,7 +644,7 @@ public class AObjectVersionService extends AbstractObjectHandler implements AObj
         return message.composeReply(this.getNode().getNodeAddress());
     }
 
-    public BeehiveMessage unpublishObject(BeehiveMessage message) {
+    public TitanMessage unpublishObject(TitanMessage message) {
         return message.composeReply(this.getNode().getNodeAddress(), DOLRStatus.BAD_REQUEST);
     }
 

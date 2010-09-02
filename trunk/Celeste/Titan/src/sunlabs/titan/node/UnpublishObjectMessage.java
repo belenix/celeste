@@ -35,7 +35,7 @@ import sunlabs.titan.api.TitanGuid;
  * Like PublishObject messages, UnpublishObject messages are always multicast messages.
  * </p>
  */
-public final class UnpublishObjectMessage extends BeehiveMessage {
+public final class UnpublishObjectMessage extends TitanMessage {
     private final static long serialVersionUID = 1L;
     
     public UnpublishObjectMessage(
@@ -44,14 +44,14 @@ public final class UnpublishObjectMessage extends BeehiveMessage {
             String subjectClass,
             String subjectClassMethod,
             Serializable dataObject) {
-        super(BeehiveMessage.Type.UnpublishObject,
+        super(TitanMessage.Type.UnpublishObject,
                 source,
                 new TitanNodeIdImpl(destination),
                 destination,
                 subjectClass,
                 subjectClassMethod,
-                BeehiveMessage.Transmission.MULTICAST,
-                BeehiveMessage.Route.LOOSELY,
+                TitanMessage.Transmission.MULTICAST,
+                TitanMessage.Route.LOOSELY,
                 dataObject);
     }
 }

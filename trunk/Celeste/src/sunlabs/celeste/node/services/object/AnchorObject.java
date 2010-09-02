@@ -32,7 +32,7 @@ import sunlabs.celeste.client.ReplicationParameters;
 import sunlabs.celeste.node.services.api.AObjectVersionMapAPI;
 import sunlabs.titan.api.TitanGuid;
 import sunlabs.titan.api.XHTMLInspectable;
-import sunlabs.titan.node.BeehiveMessage.RemoteException;
+import sunlabs.titan.node.TitanMessage.RemoteException;
 import sunlabs.titan.node.BeehiveObjectStore;
 import sunlabs.titan.node.object.DeleteableObject;
 import sunlabs.titan.node.object.InspectableObject;

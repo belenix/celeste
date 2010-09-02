@@ -1,5 +1,5 @@
 /*
- * Copyright 2007-2009 Sun Microsystems, Inc. All Rights Reserved.
+ * Copyright 2007-2010 Oracle. All Rights Reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER
  *
  * This code is free software; you can redistribute it and/or modify
@@ -17,9 +17,9 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
  * 02110-1301 USA
  *
- * Please contact Sun Microsystems, Inc., 16 Network Circle, Menlo
- * Park, CA 94025 or visit www.sun.com if you need additional
- * information or have any questions.
+ * Please contact Oracle Corporation, 500 Oracle Parkway, Redwood Shores, CA 94065
+ * or visit www.oracle.com if you need additional information or
+ * have any questions.
  */
 package sunlabs.titan.node.object;
 
@@ -27,26 +27,28 @@ import java.io.Serializable;
 
 import sunlabs.titan.api.TitanObject;
 import sunlabs.titan.api.TitanService;
-import sunlabs.titan.node.BeehiveMessage;
+import sunlabs.titan.node.BeehiveObjectPool;
+import sunlabs.titan.node.BeehiveObjectStore;
 import sunlabs.titan.node.PublishObjectMessage;
+import sunlabs.titan.node.TitanMessage;
+import sunlabs.titan.node.TitanMessage.RemoteException;
 import sunlabs.titan.node.UnpublishObjectMessage;
-import sunlabs.titan.node.BeehiveMessage.RemoteException;
 
 /**
- * Objects in the Beehive object pool have data (the state of the object) and
+ * Objects in the Titan object pool have data (the state of the object) and
  * behaviour (operations that get, set, or otherwise modify the state of the object).
  * <p>
- * Every {@code BeehiveObject} is an instantiated Java object that implements
- * the {@code BeehiveObject} interface.
+ * Every {@code TitanObject} is an instantiated Java object that implements
+ * the {@code TitanObject} interface.
  * These Java objects may store the state in the object itself or act as a
  * proxy to some external object outside of the Beehive object store.
- * Each {@code BeehiveObject} implementation controls the access to its data
+ * Each {@code TitanObject} implementation controls the access to its data
  * through explicit access methods devised by the designer of the class
- * implementing the {@code BeehiveObject} interface.
+ * implementing the {@code TitanObject} interface.
  * </p>
  * <p>
- * {@code BeehiveObject} designers must also implement an "object handler"
- * which implements high-level manipulation of whole {@code BeehiveObject} through the object pool.
+ * {@code TitanObject} designers must also implement an "object handler"
+ * which implements high-level manipulation of whole {@code TitanObject} through the object pool.
  * Examples of typical responsibilities of an object handler is
  * the creation of the object in the object pool,
  * maintaining the required replication of an object in the object pool,
@@ -54,12 +56,12 @@ import sunlabs.titan.node.BeehiveMessage.RemoteException;
  * All interactions with {@code BeehiveObject}s in the object pool are conducted
  * through {@code BeehiveObjectHandler} classes.
  * Each handler provides the specific functions to be applied to their corresponding
- * {@code BeehiveObject} instances.
+ * {@code TitanObject} instances.
  * </p>
  * <p>
  * The relationship between {@code BeehiveObjectHandler}s and {@code BeehiveObject}s are typically
  * one-to-one (and probably the most orderly approach), but it is possible to compose
- * a {@code BeehiveObjectHandler} for a set of different {@code BeehiveObject} implementations.
+ * a {@code BeehiveObjectHandler} for a set of different {@code TitanObject} implementations.
  * </p>
  * <p>
  * </p>
@@ -95,11 +97,9 @@ public interface BeehiveObjectHandler/*<T extends BeehiveObjectHandler.ObjectAPI
     /**
      * Receive and process a {@link PublishObjectMessage} for a {@link BeehiveObjectHandler.ObjectAPI} instance.
      * <p>
-     * If the status of the resultant reply BeehiveMessage does <em>NOT</em>
-     * indicate success, the publishing BeehiveNode and all inter-hop nodes
-     * are obligated to <em>NOT</em> store backpointers and the storing node
-     * <em>MUST NOT</em> store the object, and silently remove the object if it
-     * has already been stored on the publishing node.
+     * If the status of the resultant reply {@link TitanMessage} does <em>NOT</em> indicate success, the publishing {@link TitanNode} and all inter-hop nodes
+     * are obligated to <em>NOT</em> store backpointers and the storing node <em>MUST NOT</em> store the object.
+     * Furthermore, if the object is already stored on the publishing node, it must be removed.
      * </p>
      * <p>
      * Note: Implementors of this method must be mindful that the object being
@@ -109,12 +109,14 @@ public interface BeehiveObjectHandler/*<T extends BeehiveObjectHandler.ObjectAPI
      * method will result in deadlock if there is only one object in the system.
      * </p>
      * @param message
-     * @return The reply {@link BeehiveMessage}
+     * @return The reply {@link TitanMessage}
      * @throws RemoteException 
      * @throws ClassCastException 
      * @throws ClassNotFoundException 
+     * @throws BeehiveObjectPool.Exception
+     * @throws BeehiveObjectStore.Exception
      */
-    public BeehiveMessage publishObject(BeehiveMessage message) throws ClassNotFoundException, ClassCastException, RemoteException;
+    public Serializable publishObject(TitanMessage message) throws ClassNotFoundException, ClassCastException, RemoteException, BeehiveObjectPool.Exception, BeehiveObjectStore.Exception;
 
     /**
      * Receive and process a {@link UnpublishObjectMessage} for a
@@ -126,10 +128,10 @@ public interface BeehiveObjectHandler/*<T extends BeehiveObjectHandler.ObjectAPI
      * </p>
      *
      * @param message
-     * @return The reply {@link BeehiveMessage}
-     * @throws BeehiveMessage.RemoteException 
+     * @return The reply {@link TitanMessage}
+     * @throws TitanMessage.RemoteException 
      * @throws ClassCastException 
      * @throws ClassNotFoundException 
      */
-    public BeehiveMessage unpublishObject(BeehiveMessage message) throws ClassNotFoundException, ClassCastException, BeehiveMessage.RemoteException;
+    public TitanMessage unpublishObject(TitanMessage message) throws ClassNotFoundException, ClassCastException, TitanMessage.RemoteException;
 }

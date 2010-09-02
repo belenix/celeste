@@ -35,8 +35,8 @@ import sunlabs.asdf.web.http.HTTP;
 import sunlabs.titan.TitanGuidImpl;
 import sunlabs.titan.api.TitanObject;
 import sunlabs.titan.api.TitanGuid;
-import sunlabs.titan.node.BeehiveMessage;
-import sunlabs.titan.node.BeehiveMessage.RemoteException;
+import sunlabs.titan.node.TitanMessage;
+import sunlabs.titan.node.TitanMessage.RemoteException;
 import sunlabs.titan.node.BeehiveNode;
 import sunlabs.titan.node.BeehiveObjectStore;
 import sunlabs.titan.node.Publishers.PublishRecord;
@@ -52,7 +52,7 @@ public final class ReflectionService extends AbstractTitanService implements Ref
         super(node, ReflectionService.name, "Beehive Reflection service");
     }
 
-    public BeehiveMessage retrieveObject(BeehiveMessage message) throws ClassCastException, ClassNotFoundException {
+    public TitanMessage retrieveObject(TitanMessage message) throws ClassCastException, ClassNotFoundException {
         try {
             TitanObject dolrData = this.node.getObjectStore().get(TitanObject.class, message.subjectId);
             return message.composeReply(this.node.getNodeAddress(), dolrData);
@@ -62,7 +62,7 @@ public final class ReflectionService extends AbstractTitanService implements Ref
     }
 
     public TitanObject retrieveObject(final TitanGuid objectId) throws RemoteException {
-        BeehiveMessage reply = ReflectionService.this.node.sendToObject(objectId, ReflectionService.name, "retrieveObject", objectId);
+        TitanMessage reply = ReflectionService.this.node.sendToObject(objectId, ReflectionService.name, "retrieveObject", objectId);
         if (!reply.getStatus().isSuccessful())
             return null;
 
@@ -74,7 +74,7 @@ public final class ReflectionService extends AbstractTitanService implements Ref
         }
     }
 
-    public BeehiveMessage inspectObject(BeehiveMessage message) throws ClassCastException, ClassNotFoundException, BeehiveMessage.RemoteException {
+    public TitanMessage inspectObject(TitanMessage message) throws ClassCastException, ClassNotFoundException, TitanMessage.RemoteException {
         Reflection.ObjectInspect.Request request = message.getPayload(Reflection.ObjectInspect.Request.class, this.node);
 
         Publish publish = this.node.getService(PublishDaemon.class);
@@ -110,7 +110,7 @@ public final class ReflectionService extends AbstractTitanService implements Ref
     	if (this.log.isLoggable(Level.FINE)) {
     		this.log.fine("%s", uri);
     	}
-    	BeehiveMessage reply = ReflectionService.this.node.sendToObject(objectId, ReflectionService.name, "inspectObject", request);
+    	TitanMessage reply = ReflectionService.this.node.sendToObject(objectId, ReflectionService.name, "inspectObject", request);
 
     	Reflection.ObjectInspect.Response response;
     	try {
@@ -127,7 +127,7 @@ public final class ReflectionService extends AbstractTitanService implements Ref
     			tbody.add(new XHTML.Table.Row(p.toXHTMLTableData()));
     		}
     		return new XHTML.Div(new XHTML.Table(new XHTML.Table.Caption("Publishers"), tbody).setClass("Publishers"), response.getXhtml()).setClass("section");
-    	} catch (BeehiveMessage.RemoteException e) {
+    	} catch (TitanMessage.RemoteException e) {
     		if (e.getCause() instanceof BeehiveObjectStore.NotFoundException) {
     			throw new BeehiveObjectStore.NotFoundException(e);
     		}
@@ -140,12 +140,12 @@ public final class ReflectionService extends AbstractTitanService implements Ref
     }
 
     private ObjectType.Response getObjectType(ObjectType.Request request) throws ClassCastException, ClassNotFoundException, RemoteException {
-        BeehiveMessage reply = this.node.sendToObject(request.getObjectId(), ReflectionService.name, "getObjectType", request);
+        TitanMessage reply = this.node.sendToObject(request.getObjectId(), ReflectionService.name, "getObjectType", request);
 
         return reply.getPayload(ObjectType.Response.class, node);
     }
 
-    public BeehiveMessage getObjectType(BeehiveMessage message) throws ClassCastException, ClassNotFoundException, BeehiveObjectStore.NotFoundException, BeehiveMessage.RemoteException {
+    public TitanMessage getObjectType(TitanMessage message) throws ClassCastException, ClassNotFoundException, BeehiveObjectStore.NotFoundException, TitanMessage.RemoteException {
             Reflection.ObjectType.Request request = message.getPayload(Reflection.ObjectType.Request.class, node);
             TitanGuid objectId = request.getObjectId();
             TitanObject object = this.node.getObjectStore().get(TitanObject.class, objectId);

@@ -1,5 +1,5 @@
 /*
- * Copyright 2007-2009 Sun Microsystems, Inc. All Rights Reserved.
+ * Copyright 2007-2010 Oracle. All Rights Reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER
  *
  * This code is free software; you can redistribute it and/or modify
@@ -17,9 +17,9 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
  * 02110-1301 USA
  *
- * Please contact Sun Microsystems, Inc., 16 Network Circle, Menlo
- * Park, CA 94025 or visit www.sun.com if you need additional
- * information or have any questions.
+ * Please contact Oracle Corporation, 500 Oracle Parkway, Redwood Shores, CA 94065
+ * or visit www.oracle.com if you need additional information or
+ * have any questions.
  */
 package sunlabs.titan.node;
 
@@ -57,7 +57,7 @@ import sunlabs.titan.node.services.xml.TitanXML.XMLObjectStore;
 
 /**
  * <p>
- * This class represents the Beehive object store.
+ * This class represents the Titan object store.
  * </p>
  * <p>
  * The ObjectStore does three things:
@@ -734,7 +734,7 @@ public final class BeehiveObjectStore implements ObjectStore {
      * If the object is NOT in the local store transmit an Unpublish Object message.
      * </p>
      */
-    public BeehiveMessage unlock(TitanObject object) {
+    public TitanMessage unlock(TitanObject object) {
         // The object must be locked by the invoking thread.
         this.locks.assertLock(object.getObjectId());
 
@@ -765,7 +765,7 @@ public final class BeehiveObjectStore implements ObjectStore {
      * corresponding AbstractObjectType implementation implements the
      * {link BeehiveMessage#publishObject(BeehiveObject message) publichObject} method.
      * </p><p>
-     * The {@link BeehiveMessage} returned from the {@code publishObject} method is
+     * The {@link TitanMessage} returned from the {@code publishObject} method is
      * propagated back as a reply to the original node publishing the object.
      * </p><p>
      * If the status encoded in the BeehiveMessage reply is any of the codes
@@ -776,7 +776,7 @@ public final class BeehiveObjectStore implements ObjectStore {
      * a backpointer to the object on the publishing node.
      * </p>
      */
-    private BeehiveMessage unlockAndPublish(TitanObject object) {
+    private TitanMessage unlockAndPublish(TitanObject object) {
         return this.unlockAndPublish(object, false);
     }
 
@@ -786,11 +786,11 @@ public final class BeehiveObjectStore implements ObjectStore {
      * @param trace
      * @return
      */
-    private BeehiveMessage unlockAndPublish(TitanObject object, boolean trace) {
+    private TitanMessage unlockAndPublish(TitanObject object, boolean trace) {
     	try {
     		Publish publish = (Publish) this.node.getService("sunlabs.titan.node.services.PublishDaemon");
 
-    		BeehiveMessage result = publish.publish(object);
+    		TitanMessage result = publish.publish(object);
 
     		if (!result.getStatus().isSuccessful()) {
     			// This publish was *not* successful we must not store the
@@ -807,17 +807,17 @@ public final class BeehiveObjectStore implements ObjectStore {
     }
 
     /**
-     * Unpublish the given {@link TitanObject}, returning the reply {@link BeehiveMessage} from the root of the object's {@link TitanGuid}.
+     * Unpublish the given {@link TitanObject}, returning the reply {@link TitanMessage} from the root of the object's {@link TitanGuid}.
      * 
      * @param object
      * @param type
      * @param trace
      * @return
      */
-    private BeehiveMessage unlockAndUnpublish(TitanObject object, UnpublishObject.Type type, boolean trace) {
+    private TitanMessage unlockAndUnpublish(TitanObject object, UnpublishObject.Type type, boolean trace) {
     	try {
     		Publish publisher = (Publish) this.node.getService(PublishDaemon.class.getName());
-    		BeehiveMessage result = publisher.unpublish(object, type);
+    		TitanMessage result = publisher.unpublish(object, type);
     		return result;
     	} finally {
     		this.unlock(object.getObjectId());

@@ -24,7 +24,7 @@
 package sunlabs.celeste.node.object;
 
 import sunlabs.titan.api.TitanObject;
-import sunlabs.titan.node.BeehiveMessage;
+import sunlabs.titan.node.TitanMessage;
 import sunlabs.titan.node.object.BeehiveObjectHandler;
 
 /**
@@ -43,6 +43,6 @@ public class Countable {
          * @param message
          * @return The reply BeehiveMessage containing the entire result of the operation.
          */
-        public BeehiveMessage extension(BeehiveMessage message);
+        public TitanMessage extension(TitanMessage message);
     }
 }

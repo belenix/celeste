@@ -28,8 +28,8 @@ import java.io.IOException;
 import sunlabs.titan.api.TitanObject;
 import sunlabs.titan.api.TitanGuid;
 import sunlabs.titan.api.TitanNode;
-import sunlabs.titan.node.BeehiveMessage;
-import sunlabs.titan.node.BeehiveMessage.RemoteException;
+import sunlabs.titan.node.TitanMessage;
+import sunlabs.titan.node.TitanMessage.RemoteException;
 import sunlabs.titan.node.BeehiveObjectStore;
 import sunlabs.titan.util.DOLRStatus;
 
@@ -78,7 +78,7 @@ public class RetrievableObject {
          * The check for a deleted object is to be checked on the client side.
          * </p>
          */
-        public BeehiveMessage retrieveLocalObject(BeehiveMessage message)
+        public TitanMessage retrieveLocalObject(TitanMessage message)
         throws IOException;
     }
 
@@ -93,7 +93,7 @@ public class RetrievableObject {
      * The check for a deleted object is to be performed on the client side.
      * </p>
      */
-    public static BeehiveMessage retrieveLocalObject(BeehiveObjectHandler handler, BeehiveMessage message) {
+    public static TitanMessage retrieveLocalObject(BeehiveObjectHandler handler, TitanMessage message) {
         TitanNode node = handler.getNode();
 
         try {
@@ -122,7 +122,7 @@ public class RetrievableObject {
             TitanGuid objectId)
     throws ClassCastException, BeehiveObjectStore.NotFoundException, BeehiveObjectStore.DeletedObjectException {
 
-        BeehiveMessage reply = handler.getNode().sendToObject(objectId, handler.getName(), "retrieveLocalObject", objectId);
+        TitanMessage reply = handler.getNode().sendToObject(objectId, handler.getName(), "retrieveLocalObject", objectId);
         if (reply.getStatus().equals(DOLRStatus.NOT_FOUND)) {
             throw new BeehiveObjectStore.NotFoundException("Object %s not found", objectId);
         }

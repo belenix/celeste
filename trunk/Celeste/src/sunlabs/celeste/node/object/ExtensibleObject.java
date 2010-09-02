@@ -36,8 +36,7 @@ import java.util.zip.ZipException;
 
 import sunlabs.celeste.client.operation.ExtensibleOperation;
 import sunlabs.titan.api.TitanGuid;
-import sunlabs.titan.node.BeehiveMessage;
-import sunlabs.titan.node.BeehiveMessage.RemoteException;
+import sunlabs.titan.node.TitanMessage;
 import sunlabs.titan.node.object.BeehiveObjectHandler;
 import sunlabs.titan.util.DOLRStatus;
 
@@ -66,7 +65,7 @@ public class ExtensibleObject {
          * @return The reply {@link sunlabs.titan.node.BeehiveMessage BeehiveMessage} containing the entire result of the operation.
          * @see ExtensibleObject#extensibleOperation(BeehiveObjectHandler, BeehiveMessage)
          */
-        public BeehiveMessage extensibleOperation(BeehiveMessage message);
+        public TitanMessage extensibleOperation(TitanMessage message);
 
         /**
          * Top-half {@link BeehiveObjectHandler} method to invoke to start an extension.
@@ -78,10 +77,10 @@ public class ExtensibleObject {
          *
          * @throws ClassCastException
          * @throws ClassNotFoundException
-         * @throws RemoteException 
+         * @throws TitanMessage 
          * @see ExtensibleObject#extension(Handler, Class, TitanGuid, ExtensibleObject.Operation.Request)
          */
-        public <C> C extension(Class<? extends C> resultClass, TitanGuid objectId, ExtensibleObject.Operation.Request operation) throws ClassCastException, ClassNotFoundException, RemoteException;
+        public <C> C extension(Class<? extends C> resultClass, TitanGuid objectId, ExtensibleObject.Operation.Request operation) throws ClassCastException, ClassNotFoundException, TitanMessage.RemoteException;
     }
 
     /**
@@ -282,7 +281,7 @@ public class ExtensibleObject {
      * an extension on an {@link ExtensibleObject.Handler.Object}.
      *
      */
-    public static BeehiveMessage extensibleOperation(BeehiveObjectHandler handler, BeehiveMessage message) {
+    public static TitanMessage extensibleOperation(BeehiveObjectHandler handler, TitanMessage message) {
         try {
             ExtensibleObject.Operation.Request request = message.getPayload(ExtensibleObject.Operation.Request.class, handler.getNode());
             ExtensibleOperation operation = request.operation;
@@ -311,14 +310,14 @@ public class ExtensibleObject {
      * @return
      * @throws ClassCastException
      * @throws ClassNotFoundException
-     * @throws RemoteException 
+     * @throws TitanMessage 
      */
     public static <C> C extension(ExtensibleObject.Handler<? extends ExtensibleObject.Handler.Object> handler,
             Class<? extends C> resultClass,
             TitanGuid objectId,
             ExtensibleObject.Operation.Request request)
-    throws ClassCastException, ClassNotFoundException, RemoteException {
-        BeehiveMessage reply = handler.getNode().sendToObject(objectId, handler.getName(), "extensibleOperation", request);
+    throws ClassCastException, ClassNotFoundException, TitanMessage.RemoteException {
+        TitanMessage reply = handler.getNode().sendToObject(objectId, handler.getName(), "extensibleOperation", request);
         if (reply.getStatus().isSuccessful()) {
             return reply.getPayload(resultClass, handler.getNode());
         }

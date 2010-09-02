@@ -28,8 +28,8 @@ import java.util.Set;
 
 import sunlabs.titan.api.TitanGuid;
 import sunlabs.titan.api.TitanNodeId;
-import sunlabs.titan.node.BeehiveMessage;
-import sunlabs.titan.node.BeehiveMessage.RemoteException;
+import sunlabs.titan.node.TitanMessage;
+import sunlabs.titan.node.TitanMessage.RemoteException;
 import sunlabs.titan.node.NodeAddress;
 import sunlabs.titan.node.TitanNodeIdImpl;
 import sunlabs.titan.util.OrderedProperties;
@@ -41,7 +41,7 @@ import sunlabs.titan.util.OrderedProperties;
  * </p>
  * <p>
  * All nodes in the system periodically advertise their availability by
- * transmitting a {@link BeehiveMessage} {@code RouteToNode} {@link BeehiveMessage}
+ * transmitting a {@link TitanMessage} {@code RouteToNode} {@link TitanMessage}
  * to the node {@link TitanGuid} identified by {@link Census#CensusKeeper}.
  * The message contains an instance of {@link OrderedProperties} listing the properties the
  * node is willing to share with subsequent queries and is used for matching queries to the

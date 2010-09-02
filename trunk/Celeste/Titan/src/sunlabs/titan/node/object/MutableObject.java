@@ -59,8 +59,8 @@ import sunlabs.titan.TitanGuidImpl;
 import sunlabs.titan.api.TitanGuid;
 import sunlabs.titan.api.TitanNodeId;
 import sunlabs.titan.api.XHTMLInspectable;
-import sunlabs.titan.node.BeehiveMessage;
-import sunlabs.titan.node.BeehiveMessage.RemoteException;
+import sunlabs.titan.node.TitanMessage;
+import sunlabs.titan.node.TitanMessage.RemoteException;
 import sunlabs.titan.node.BeehiveNode;
 import sunlabs.titan.node.object.MutableObject.ObjectHistory;
 import sunlabs.titan.node.services.CensusDaemon;
@@ -86,14 +86,14 @@ public class MutableObject {
         /**
          * Set this node's object history for the specified object.
          */
-        public BeehiveMessage setObjectHistory(BeehiveMessage message);
+        public TitanMessage setObjectHistory(TitanMessage message);
 
         /**
          * Get this node's object history for the specified object.
          *
          * @param message
          */
-        public BeehiveMessage getObjectHistory(BeehiveMessage message);
+        public TitanMessage getObjectHistory(TitanMessage message);
     }
 
     /**
@@ -1436,7 +1436,7 @@ public class MutableObject {
                 if (handler.getLogger().isLoggable(Level.FINE)) {
                     handler.getLogger().fine("replica %s: %s", this.replicaId, request.toString());
                 }
-                BeehiveMessage reply = handler.getNode().sendToObject(replicaId, handler.getName(), "setObjectHistory", request);
+                TitanMessage reply = handler.getNode().sendToObject(replicaId, handler.getName(), "setObjectHistory", request);
 
                 if (reply != null && reply.getStatus().isSuccessful()) {
                     MutableObject.SetOperation.Response response = reply.getPayload(MutableObject.SetOperation.Response.class, handler.getNode());
@@ -1666,7 +1666,7 @@ public class MutableObject {
 
         public MutableObject.ObjectHistory call() throws ObjectHistory.ValidationException {
             try {
-                BeehiveMessage reply = this.handler.getNode().sendToObject(replicaId, this.handler.getName(), "getObjectHistory", new MutableObject.GetOperation.Request(replicaId));
+                TitanMessage reply = this.handler.getNode().sendToObject(replicaId, this.handler.getName(), "getObjectHistory", new MutableObject.GetOperation.Request(replicaId));
 
                 if (reply != null) {
                     if (reply.getStatus().isSuccessful()) {
@@ -1815,7 +1815,7 @@ public class MutableObject {
 //                    }
 //                }
 
-                BeehiveMessage reply = handler.getNode().sendToNodeExactly(this.destinationNodeId, handler.getName(), "createObjectHistory",
+                TitanMessage reply = handler.getNode().sendToNodeExactly(this.destinationNodeId, handler.getName(), "createObjectHistory",
                     new CreateOperation.Request(this.objectId, this.replicaId, this.deleteTokenId, this.timeToLive));
 
                 if (reply != null) {
@@ -2077,7 +2077,7 @@ public class MutableObject {
             @Override
             public MutableObject.ObjectHistory function(TitanGuid item) throws ObjectHistory.ValidationException/*, Exception*/ {
                 try {
-                    BeehiveMessage reply = this.handler.getNode().sendToObject(item, this.handler.getName(), "getObjectHistory", new MutableObject.GetOperation.Request(item));
+                    TitanMessage reply = this.handler.getNode().sendToObject(item, this.handler.getName(), "getObjectHistory", new MutableObject.GetOperation.Request(item));
 
                     if (reply != null) {
                         if (reply.getStatus().isSuccessful()) {

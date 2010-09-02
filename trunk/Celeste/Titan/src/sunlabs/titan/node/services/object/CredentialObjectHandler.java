@@ -37,8 +37,9 @@ import sunlabs.asdf.web.http.HTTP;
 import sunlabs.titan.api.TitanObject.Metadata;
 import sunlabs.titan.api.Credential;
 import sunlabs.titan.api.TitanGuid;
-import sunlabs.titan.node.BeehiveMessage;
-import sunlabs.titan.node.BeehiveMessage.RemoteException;
+import sunlabs.titan.node.BeehiveObjectPool.DisallowedDuplicateException;
+import sunlabs.titan.node.TitanMessage;
+import sunlabs.titan.node.TitanMessage.RemoteException;
 import sunlabs.titan.node.BeehiveNode;
 import sunlabs.titan.node.BeehiveObjectPool;
 import sunlabs.titan.node.BeehiveObjectStore;
@@ -66,12 +67,38 @@ public final class CredentialObjectHandler extends AbstractObjectHandler impleme
     }
 
     //
-    // Methods from BeehiveObjectHandler
+    // Methods from TitanObjectHandler
     //
     //
     // This method is executed by the credential's root node.
     //
-    public BeehiveMessage publishObject(BeehiveMessage msg) {
+
+    public PublishDaemon.PublishObject.Response publishObject(TitanMessage msg) throws DisallowedDuplicateException, ClassCastException, RemoteException, ClassNotFoundException {
+        PublishDaemon.PublishObject.Request publishRequest = msg.getPayload(PublishDaemon.PublishObject.Request.class, this.node);
+        if (this.log.isLoggable(Level.FINE)) {
+            this.log.fine("node %s publishing %s", publishRequest.getPublisherAddress().getObjectId(), publishRequest.getObjectsToPublish());
+        }
+
+        // Don't add a new object if it differs from the objects we already have with this object-id.
+        for (Map.Entry<TitanGuid, Metadata> object : publishRequest.getObjectsToPublish().entrySet()) {
+            Set<PublishRecord> alreadyPublishedObjects = this.node.getObjectPublishers().getPublishers(object.getKey());
+            if (alreadyPublishedObjects.size() > 0) {
+                for (PublishRecord record : alreadyPublishedObjects) {
+                    String dataHash = record.getMetadataProperty(BeehiveObjectStore.METADATA_DATAHASH, "error");
+                    if (dataHash.compareTo(object.getValue().getProperty(BeehiveObjectStore.METADATA_DATAHASH)) != 0) {
+                        throw new BeehiveObjectPool.DisallowedDuplicateException("Credential already exists");
+                    }
+                    break;
+                }
+            }
+        }
+
+        AbstractObjectHandler.publishObjectBackup(this, publishRequest);
+        // Dup the getObjectsToPublish set as it's backed by a Map and is not serializable.
+        return new PublishDaemon.PublishObject.Response(new HashSet<TitanGuid>(publishRequest.getObjectsToPublish().keySet()));
+    }
+    
+    public TitanMessage _publishObject(TitanMessage msg) throws DisallowedDuplicateException {
         try {
             PublishDaemon.PublishObject.Request publishRequest = msg.getPayload(PublishDaemon.PublishObject.Request.class, this.node);
             if (this.log.isLoggable(Level.FINE)) {
@@ -85,7 +112,7 @@ public final class CredentialObjectHandler extends AbstractObjectHandler impleme
                     for (PublishRecord record : alreadyPublishedObjects) {
                         String dataHash = record.getMetadataProperty(BeehiveObjectStore.METADATA_DATAHASH, "error");
                         if (dataHash.compareTo(object.getValue().getProperty(BeehiveObjectStore.METADATA_DATAHASH)) != 0) {
-                            return msg.composeReply(this.node.getNodeAddress(), new BeehiveObjectPool.DisallowedDuplicateException("Credential already exists"));
+                            throw new BeehiveObjectPool.DisallowedDuplicateException("Credential already exists");
                         }
                         break;
                     }
@@ -104,7 +131,7 @@ public final class CredentialObjectHandler extends AbstractObjectHandler impleme
         }
     }
 
-    public BeehiveMessage unpublishObject(BeehiveMessage msg) {
+    public TitanMessage unpublishObject(TitanMessage msg) {
         return msg.composeReply(this.node.getNodeAddress());
     }
 
@@ -130,7 +157,7 @@ public final class CredentialObjectHandler extends AbstractObjectHandler impleme
         return credential;
     }
 
-    public BeehiveMessage retrieveLocalObject(BeehiveMessage message) {
+    public TitanMessage retrieveLocalObject(TitanMessage message) {
         return RetrievableObject.retrieveLocalObject(this, message);
     }
 
@@ -138,13 +165,13 @@ public final class CredentialObjectHandler extends AbstractObjectHandler impleme
     // Methods from CredentialObject's StorableObjectType super-interface
     //
 
-    public BeehiveMessage storeLocalObject(BeehiveMessage message) {
+    public TitanMessage storeLocalObject(TitanMessage message) {
         if (this.log.isLoggable(Level.FINER)) {
             this.log.finest("%s", message.traceReport());
         }
         try {
             Credential credential = message.getPayload(Credential.class, this.node);
-            BeehiveMessage reply = StorableObject.storeLocalObject(this, credential, message);
+            TitanMessage reply = StorableObject.storeLocalObject(this, credential, message);
             return reply;
         } catch (ClassNotFoundException e) {
             return message.composeReply(node.getNodeAddress(), e);

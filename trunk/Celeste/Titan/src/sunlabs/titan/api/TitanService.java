@@ -29,7 +29,7 @@ import java.util.Map;
 
 import sunlabs.asdf.web.XML.XHTML;
 import sunlabs.asdf.web.http.HTTP;
-import sunlabs.titan.node.BeehiveMessage;
+import sunlabs.titan.node.TitanMessage;
 import sunlabs.titan.node.BeehiveNode;
 import sunlabs.titan.node.util.DOLRLogger;
 
@@ -41,7 +41,7 @@ import sunlabs.titan.node.util.DOLRLogger;
  * Methods in a class implementing this interface that have the parameter
  * signature of
  * <code><i>method</i>(BeehiveMessage message)</code>
- * are invoked by a {@link BeehiveMessage}.
+ * are invoked by a {@link TitanMessage}.
  * <p>
  * There are (currently) three kinds of services.
  * <ul>
@@ -83,11 +83,11 @@ public interface TitanService extends Serializable {
     /**
      * Invoke the specified method in this Service.
      * 
-     * @param methodName the name of the method to invoke (See also {@link BeehiveMessage#getSubjectClassMethod()}.
-     * @param request the inbound {@link BeehiveMessage} that induced this invocation.
-     * @return a well-formed {@link BeehiveMessage} reply.
+     * @param methodName the name of the method to invoke (See also {@link TitanMessage#getSubjectClassMethod()}.
+     * @param request the inbound {@link TitanMessage} that induced this invocation.
+     * @return a well-formed {@link TitanMessage} reply.
      */
-    public BeehiveMessage invokeMethod(String methodName, BeehiveMessage request);
+    public TitanMessage invokeMethod(String methodName, TitanMessage request);
 
     /**
      * Get the human readable description of the service's status.

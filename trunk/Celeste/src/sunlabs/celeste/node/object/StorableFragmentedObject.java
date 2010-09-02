@@ -47,8 +47,8 @@ import sunlabs.titan.api.TitanNode;
 import sunlabs.titan.api.TitanNodeId;
 import sunlabs.titan.api.TitanService;
 import sunlabs.titan.api.XHTMLInspectable;
-import sunlabs.titan.node.BeehiveMessage;
-import sunlabs.titan.node.BeehiveMessage.RemoteException;
+import sunlabs.titan.node.TitanMessage;
+import sunlabs.titan.node.TitanMessage.RemoteException;
 import sunlabs.titan.node.BeehiveNode;
 import sunlabs.titan.node.BeehiveObjectPool;
 import sunlabs.titan.node.BeehiveObjectStore;
@@ -85,7 +85,7 @@ public final class StorableFragmentedObject {
          * @param destination
          * @param erasureCodeName
          * @param object
-         * @return The {@link BeehiveMessage} response from the destination selected to store the object.
+         * @return The {@link TitanMessage} response from the destination selected to store the object.
          * @throws BeehiveObjectStore.NoSpaceException
          * @throws BeehiveNode.NoSuchNodeException
          * @throws ErasureCode.UnsupportedAlgorithmException
@@ -106,7 +106,7 @@ public final class StorableFragmentedObject {
          * </pre>
          * @param erasureCodeName
          * @param object
-         * @return The {@link BeehiveMessage} response from the destination selected to store the object.
+         * @return The {@link TitanMessage} response from the destination selected to store the object.
          * @throws BeehiveObjectStore.NoSpaceException<
          * @throws BeehiveNode.NoSuchNodeException
          * @throws ErasureCode.UnsupportedAlgorithmException
@@ -122,9 +122,9 @@ public final class StorableFragmentedObject {
          * The return message contains the FragmentMap of the resulting stored object and its fragments.
          * </p>
          * @param message
-         * @return The {@link BeehiveMessage} to use as the response.
+         * @return The {@link TitanMessage} to use as the response.
          */
-        public BeehiveMessage storeLocalObject(BeehiveMessage message)
+        public TitanMessage storeLocalObject(TitanMessage message)
         throws BeehiveObjectStore.NoSpaceException;
     }
 
@@ -273,7 +273,7 @@ public final class StorableFragmentedObject {
     }
 
     /**
-     * See also {@link StorableFragmentedObject#storeObjectLocally(Handler, BeehiveObject, BeehiveMessage)}.
+     * See also {@link StorableFragmentedObject#storeObjectLocally(Handler, BeehiveObject, TitanMessage)}.
      * 
      * @param objectType
      * @param destination
@@ -296,7 +296,7 @@ public final class StorableFragmentedObject {
         }
 
         try {
-            BeehiveMessage reply = objectType.getNode().sendToNodeExactly(destination, objectType.getName(), "storeLocalObject", object);
+            TitanMessage reply = objectType.getNode().sendToNodeExactly(destination, objectType.getName(), "storeLocalObject", object);
 
             object.setObjectId(reply.subjectId);
             return reply.getPayload(StorableFragmentedObject.FragmentMap.class, objectType.getNode());
@@ -306,7 +306,7 @@ public final class StorableFragmentedObject {
         } catch (ClassCastException e) {
             e.printStackTrace();
             return null;
-        } catch (BeehiveMessage.RemoteException e) {
+        } catch (TitanMessage.RemoteException e) {
             e.printStackTrace();
             return null;
         }
@@ -322,7 +322,7 @@ public final class StorableFragmentedObject {
         object.setProperty(StorableFragmentedObject.Handler.ERASURECODER, erasureCode).setProperty(ObjectStore.METADATA_TYPE, objectType.getName());
 
         for (int attempt = 0; attempt < maxAttempts; attempt++) {
-            BeehiveMessage reply = objectType.getNode().sendToNode(new TitanNodeIdImpl(), objectType.getName(), "storeLocalObject", object);
+            TitanMessage reply = objectType.getNode().sendToNode(new TitanNodeIdImpl(), objectType.getName(), "storeLocalObject", object);
             if (reply.getStatus().isSuccessful()) {
                 object.setObjectId(reply.subjectId);
                 try {
@@ -351,9 +351,9 @@ public final class StorableFragmentedObject {
      * object and its fragments.
      * </p>
      * @param message
-     * @return The {@link BeehiveMessage} to use as the response.
+     * @return The {@link TitanMessage} to use as the response.
      */
-    public static BeehiveMessage storeObjectLocally(StorableFragmentedObject.Handler<StorableFragmentedObject.Handler.Object> objectType, TitanObject object, BeehiveMessage message)
+    public static TitanMessage storeObjectLocally(StorableFragmentedObject.Handler<StorableFragmentedObject.Handler.Object> objectType, TitanObject object, TitanMessage message)
     throws BeehiveObjectStore.NoSpaceException, BeehiveObjectStore.DeleteTokenException {
         TitanNode node = objectType.getNode();
 
@@ -369,11 +369,11 @@ public final class StorableFragmentedObject {
             node.getObjectStore().store(object);
         } catch (InvalidObjectException e) {
             // Could not store the Object.  Inform the sender so they can adapt.
-            BeehiveMessage reply = message.composeReply(node.getNodeAddress(), e);
+            TitanMessage reply = message.composeReply(node.getNodeAddress(), e);
             return reply;
         } catch (UnacceptableObjectException e) {
             // Could not store the Object.  Inform the sender so they can adapt.
-            BeehiveMessage reply = message.composeReply(node.getNodeAddress(), e);
+            TitanMessage reply = message.composeReply(node.getNodeAddress(), e);
             return reply;        
         }
         
@@ -388,7 +388,7 @@ public final class StorableFragmentedObject {
                 node.getObjectStore().unlock(object);
             }
 
-//            BeehiveMessage result = message.composeReply(node.getNodeAddress(), DOLRStatus.CREATED, object.getObjectId());
+//            TitanMessage result = message.composeReply(node.getNodeAddress(), DOLRStatus.CREATED, object.getObjectId());
 //            result.subjectId = object.getObjectId(); // XXX Should be encoded in the return value.
 //            return result;
         } catch (BeehiveObjectStore.UnacceptableObjectException e) {
@@ -432,7 +432,7 @@ public final class StorableFragmentedObject {
                 }
                 StorableFragmentedObject.FragmentMap map = new StorableFragmentedObject.FragmentMap(objectId, erasureCoder, fObjectId);
 
-                BeehiveMessage reply = message.composeReply(node.getNodeAddress(), map);
+                TitanMessage reply = message.composeReply(node.getNodeAddress(), map);
 
                 return reply;
             } catch (IOException e) {
@@ -445,10 +445,10 @@ public final class StorableFragmentedObject {
                 node.getLogger().severe(e.toString());
             }
 
-            BeehiveMessage reply = message.composeReply(node.getNodeAddress(), DOLRStatus.NOT_ACCEPTABLE);
+            TitanMessage reply = message.composeReply(node.getNodeAddress(), DOLRStatus.NOT_ACCEPTABLE);
             return reply;
         } else {
-            BeehiveMessage reply = message.composeReply(node.getNodeAddress(), DOLRStatus.INTERNAL_SERVER_ERROR);
+            TitanMessage reply = message.composeReply(node.getNodeAddress(), DOLRStatus.INTERNAL_SERVER_ERROR);
             return reply;
         }
     }

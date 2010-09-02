@@ -31,11 +31,11 @@ import sunlabs.titan.TitanGuidImpl;
 import sunlabs.titan.api.TitanObject;
 import sunlabs.titan.api.ObjectStore;
 import sunlabs.titan.api.TitanGuid;
-import sunlabs.titan.node.BeehiveMessage;
+import sunlabs.titan.node.TitanMessage;
 import sunlabs.titan.node.NodeAddress;
 import sunlabs.titan.node.PublishObjectMessage;
 import sunlabs.titan.node.Publishers;
-import sunlabs.titan.node.BeehiveMessage.RemoteException;
+import sunlabs.titan.node.TitanMessage.RemoteException;
 import sunlabs.titan.node.object.AbstractObjectHandler;
 import sunlabs.titan.node.services.AbstractTitanService;
 import sunlabs.titan.node.services.PublishDaemon.GetPublishers;
@@ -83,20 +83,20 @@ public interface Publish {
      * {@link ObjectStore#METADATA_TYPE}).
      * </p>
      * <p>
-     * The {@link BeehiveMessage} returned from the {@link AbstractObjectHandler#publishObject} method is propagated back as a reply to the original
+     * The {@link TitanMessage} returned from the {@link AbstractObjectHandler#publishObject} method is propagated back as a reply to the original
      * node publishing the object.
      * </p>
      * <p>
-     * If the status encoded in the {@link BeehiveMessage} reply is any of the codes representing success, each node propagating the
+     * If the status encoded in the {@link TitanMessage} reply is any of the codes representing success, each node propagating the
      * reply is free to record a back-pointer to the object on the publishing node.
-     * If the status encoded in the {@link BeehiveMessage} reply is NOT any of the codes representing success, each node propagating the
+     * If the status encoded in the {@link TitanMessage} reply is NOT any of the codes representing success, each node propagating the
      * reply must not record a back-pointer to the object on the publishing node.
      * </p>
      */
-    public BeehiveMessage publish(TitanObject object);
+    public TitanMessage publish(TitanObject object);
 
     /**
-     * Transmit a {@link BeehiveMessage} to "unpublish" a {@link TitanGuid}.
+     * Transmit a {@link TitanMessage} to "unpublish" a {@link TitanGuid}.
      * <p>
      * This unpublish of an object-id <em>does not contain the object-type of the object</em>.
      * </p>
@@ -105,12 +105,12 @@ public interface Publish {
      * of the system to remove any spurious back-pointers for the object that point to this node.
      * </p>
      * @param objectId the object identifiers of the object to be unpublished
-     * @return the reply {@link BeehiveMessage} from the root of object identifier
+     * @return the reply {@link TitanMessage} from the root of object identifier
      */
-    public BeehiveMessage unpublish(TitanGuid objectId, UnpublishObject.Type type);
+    public TitanMessage unpublish(TitanGuid objectId, UnpublishObject.Type type);
     
     /**
-     * Transmit a {@link BeehiveMessage} to "unpublish" a {@link TitanObject}.
+     * Transmit a {@link TitanMessage} to "unpublish" a {@link TitanObject}.
      * <p>
      * This unpublish of an object <em>does contain the object-type of the object</em>.
      * </p>
@@ -119,19 +119,19 @@ public interface Publish {
      * of the system to remove any spurious back-pointers for the object that point to this node.
      * </p>
      * @param objectId the object identifiers of the object to be unpublished
-     * @return the reply {@link BeehiveMessage} from the root of object identifier
+     * @return the reply {@link TitanMessage} from the root of object identifier
      */
-    public BeehiveMessage unpublish(TitanObject object, UnpublishObject.Type type);
+    public TitanMessage unpublish(TitanObject object, UnpublishObject.Type type);
 
     /**
      * Get the set of publishers of a specified {@link TitanObject}.
      * @param message
-     * @return {@link BeehiveMessage} containing an instance of {@link GetPublishers.Response} as payload.
+     * @return {@link TitanMessage} containing an instance of {@link GetPublishers.Response} as payload.
      * @throws ClassCastException
      * @throws ClassNotFoundException
      * @throws RemoteException
      */
-	public BeehiveMessage getPublishers(BeehiveMessage message) throws ClassCastException, ClassNotFoundException, RemoteException;
+	public TitanMessage getPublishers(TitanMessage message) throws ClassCastException, ClassNotFoundException, RemoteException;
 	
     /**
      * Get the set of publishers of a specified {@link TitanObject}.

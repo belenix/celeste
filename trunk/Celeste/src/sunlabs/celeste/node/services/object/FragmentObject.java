@@ -39,8 +39,8 @@ import sunlabs.titan.api.ObjectStore;
 import sunlabs.titan.api.TitanGuid;
 import sunlabs.titan.api.TitanObject;
 import sunlabs.titan.node.AbstractBeehiveObject;
-import sunlabs.titan.node.BeehiveMessage;
-import sunlabs.titan.node.BeehiveMessage.RemoteException;
+import sunlabs.titan.node.TitanMessage;
+import sunlabs.titan.node.TitanMessage.RemoteException;
 import sunlabs.titan.node.BeehiveNode;
 import sunlabs.titan.node.BeehiveObjectPool;
 import sunlabs.titan.node.BeehiveObjectStore;
@@ -137,13 +137,13 @@ public final class FragmentObject extends AbstractObjectHandler implements FObje
         this.storeAttempts = count;
     }
 
-    public BeehiveMessage storeLocalObject(BeehiveMessage message) throws ClassCastException, BeehiveMessage.RemoteException, ClassNotFoundException {
+    public TitanMessage storeLocalObject(TitanMessage message) throws ClassCastException, TitanMessage.RemoteException, ClassNotFoundException {
         FObjectType.FObject fObject = message.getPayload(FObjectType.FObject.class, this.node);
-        BeehiveMessage reply = StorableObject.storeLocalObject(this, fObject, message);
+        TitanMessage reply = StorableObject.storeLocalObject(this, fObject, message);
         return reply;
     }
 
-    public BeehiveMessage retrieveLocalObject(BeehiveMessage message) {
+    public TitanMessage retrieveLocalObject(TitanMessage message) {
         return RetrievableObject.retrieveLocalObject(this, message);
     }
 
@@ -161,7 +161,7 @@ public final class FragmentObject extends AbstractObjectHandler implements FObje
         return object;
     }
 
-    public BeehiveMessage publishObject(BeehiveMessage message) throws ClassCastException, BeehiveMessage.RemoteException, ClassNotFoundException {
+    public TitanMessage publishObject(TitanMessage message) throws ClassCastException, TitanMessage.RemoteException, ClassNotFoundException {
         PublishDaemon.PublishObject.Request publishRequest = message.getPayload(PublishDaemon.PublishObject.Request.class, this.node);
 
         //
@@ -174,7 +174,7 @@ public final class FragmentObject extends AbstractObjectHandler implements FObje
         return message.composeReply(this.node.getNodeAddress(), new PublishDaemon.PublishObject.Response());
     }
 
-    public BeehiveMessage unpublishObject(BeehiveMessage message) {
+    public TitanMessage unpublishObject(TitanMessage message) {
         return message.composeReply(this.node.getNodeAddress());
     }
 
@@ -195,12 +195,12 @@ public final class FragmentObject extends AbstractObjectHandler implements FObje
 
     /**
      * This method is invoked as the result of receiving a deleteLocalObject
-     * {@link BeehiveMessage} or the receipt of a {@link PublishObjectMessage} containing valid
+     * {@link TitanMessage} or the receipt of a {@link PublishObjectMessage} containing valid
      * delete information.
-     * @throws BeehiveMessage.RemoteException 
+     * @throws TitanMessage.RemoteException 
      * @throws ClassCastException 
      */
-    public BeehiveMessage deleteLocalObject(BeehiveMessage message) throws ClassNotFoundException, ClassCastException, BeehiveMessage.RemoteException {
+    public TitanMessage deleteLocalObject(TitanMessage message) throws ClassNotFoundException, ClassCastException, TitanMessage.RemoteException {
         if (this.deleteLocalObjectLocks.trylock(message.subjectId)) {
             if (this.log.isLoggable(Level.FINE)) {
                 this.log.fine("%s", message.subjectId);
@@ -218,7 +218,7 @@ public final class FragmentObject extends AbstractObjectHandler implements FObje
     public DOLRStatus deleteObject(TitanGuid objectId, TitanGuid profferedDeletionToken, long timeToLive)
     throws BeehiveObjectStore.NoSpaceException, IOException {
         DeleteableObject.Request request = new DeleteableObject.Request(objectId, profferedDeletionToken, timeToLive);
-        BeehiveMessage reply = this.node.sendToObject(objectId, this.getName(), "deleteLocalObject", request);
+        TitanMessage reply = this.node.sendToObject(objectId, this.getName(), "deleteLocalObject", request);
         return reply.getStatus();
     }
 

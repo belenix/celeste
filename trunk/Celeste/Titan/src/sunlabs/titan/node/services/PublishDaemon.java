@@ -48,8 +48,8 @@ import sunlabs.asdf.web.http.HttpMessage;
 import sunlabs.titan.api.TitanObject;
 import sunlabs.titan.api.ObjectStore;
 import sunlabs.titan.api.TitanGuid;
-import sunlabs.titan.node.BeehiveMessage;
-import sunlabs.titan.node.BeehiveMessage.RemoteException;
+import sunlabs.titan.node.TitanMessage;
+import sunlabs.titan.node.TitanMessage.RemoteException;
 import sunlabs.titan.node.BeehiveNode;
 import sunlabs.titan.node.BeehiveObjectStore;
 import sunlabs.titan.node.NodeAddress;
@@ -160,13 +160,13 @@ public final class PublishDaemon extends AbstractTitanService implements Publish
      * object was not found and the node transmits a remedial unpublish message to the rest
      * of the system to remove any spurious back-pointers for the object that point to this node.
      */
-    public BeehiveMessage unpublishObject(BeehiveMessage message) throws ClassCastException, ClassNotFoundException, BeehiveMessage.RemoteException {
+    public TitanMessage unpublishObject(TitanMessage message) throws ClassCastException, ClassNotFoundException, TitanMessage.RemoteException {
         PublishDaemon.UnpublishObject.Request request = message.getPayload(PublishDaemon.UnpublishObject.Request.class, this.getNode());
         if (this.log.isLoggable(Level.FINEST)) {                
             this.log.finest("%s", request.getObjectIds());
         }
 
-        BeehiveMessage response = message.composeReply(this.node.getNodeAddress());
+        TitanMessage response = message.composeReply(this.node.getNodeAddress());
         return response;
     }
     
@@ -476,10 +476,10 @@ public final class PublishDaemon extends AbstractTitanService implements Publish
      * Publish the availability of the given {@link TitanObject}.
      * <p>
      * A {@link PublishObjectMessage} is composed and routed through the local node to the node that is the root of the object's identifier.
-     * The reply {@link BeehiveMessage} is returned.
+     * The reply {@link TitanMessage} is returned.
      * </p>
      */
-    public BeehiveMessage publish(TitanObject object) {
+    public TitanMessage publish(TitanObject object) {
     	long publishRecordSecondsToLive = Math.min(this.getPublishRecordSecondsToLive(), object.getRemainingSecondsToLive(Time.currentTimeInSeconds()));
 
     	if (this.log.isLoggable(Level.FINEST)) {
@@ -494,30 +494,30 @@ public final class PublishDaemon extends AbstractTitanService implements Publish
         //      new AbstractBeehiveObject(BeehiveObjectId.ANY, metaData));
         PublishObjectMessage message = new PublishObjectMessage(this.node.getNodeAddress(), object.getObjectId(), object.getObjectType(), "publishObject", publishRequest);
 
-        BeehiveMessage reply = this.node.receive(message);
+        TitanMessage reply = this.node.receive(message);
 
         return reply;
     }
     
-    public BeehiveMessage unpublish(TitanGuid objectId, UnpublishObject.Type type) {
+    public TitanMessage unpublish(TitanGuid objectId, UnpublishObject.Type type) {
     	PublishDaemon.UnpublishObject.Request request = new PublishDaemon.UnpublishObject.Request(objectId, type);
     	if (this.log.isLoggable(Level.FINEST)) {
     		this.log.finest("%s", objectId);
     	}
     	
-        BeehiveMessage message = new UnpublishObjectMessage(this.node.getNodeAddress(), objectId, PublishDaemon.name, "unpublishObject", request);
+        TitanMessage message = new UnpublishObjectMessage(this.node.getNodeAddress(), objectId, PublishDaemon.name, "unpublishObject", request);
         message.setTraced(true);
 
         return this.node.receive(message);
     }
 
-    public BeehiveMessage unpublish(TitanObject object, UnpublishObject.Type type) {
+    public TitanMessage unpublish(TitanObject object, UnpublishObject.Type type) {
         PublishDaemon.UnpublishObject.Request request = new PublishDaemon.UnpublishObject.Request(object.getObjectId(), type);
         if (this.log.isLoggable(Level.FINEST)) {
             this.log.finest("%s %s", object.getObjectId(), object.getObjectType());
         }
         
-        BeehiveMessage message = new UnpublishObjectMessage(this.node.getNodeAddress(), object.getObjectId(), object.getObjectType(), "unpublishObject", request);
+        TitanMessage message = new UnpublishObjectMessage(this.node.getNodeAddress(), object.getObjectId(), object.getObjectType(), "unpublishObject", request);
         message.setTraced(true);
 
         return this.node.receive(message);
@@ -554,7 +554,7 @@ public final class PublishDaemon extends AbstractTitanService implements Publish
     	}
     }
 
-    public BeehiveMessage getPublishers(BeehiveMessage message) throws ClassCastException, ClassNotFoundException, RemoteException {
+    public TitanMessage getPublishers(TitanMessage message) throws ClassCastException, ClassNotFoundException, RemoteException {
         GetPublishers.Request request = message.getPayload(GetPublishers.Request.class, this.node);
 
         Set<Publishers.PublishRecord> publishers = PublishDaemon.this.node.getObjectPublishers().getPublishers(request.getObjectId());
@@ -566,7 +566,7 @@ public final class PublishDaemon extends AbstractTitanService implements Publish
 		GetPublishers.Request request = new GetPublishers.Request(objectId);
 
 		// Send a message to the root node -- the node closest to the given object id.
-        BeehiveMessage reply = PublishDaemon.this.node.sendToNode(new TitanNodeIdImpl(objectId), PublishDaemon.this.getName(), "getPublishers", request);
+        TitanMessage reply = PublishDaemon.this.node.sendToNode(new TitanNodeIdImpl(objectId), PublishDaemon.this.getName(), "getPublishers", request);
 
         GetPublishers.Response response;
 		try {

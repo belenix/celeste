@@ -904,13 +904,13 @@ public final class ApplicationFramework implements XHTMLInspectable {
     }
 
     /**
-     * Call the server side method for the {@link AbstractTitanService} specified in a {@link BeehiveMessage}.
+     * Call the server side method for the {@link AbstractTitanService} specified in a {@link TitanMessage}.
      *
      * @param request the message being sent to an application
      * @return the reply message from the BeehiveService, or a message with a {@code DOLRStatus} of {@code INTERNAL_SERVER_ERROR}
      *         if the BeehiveService returns no message, or {@code METHOD_NOT_ALLOWED} if the BeehiveService cannot be found.
      */
-    public BeehiveMessage sendMessageToApp(BeehiveMessage request) {
+    public TitanMessage sendMessageToApp(TitanMessage request) {
         String subjectClass = request.getSubjectClass();
 
         String subjectMethod = request.getSubjectClassMethod();

@@ -114,6 +114,16 @@ public abstract class BeehiveService extends NotificationBroadcasterSupport impl
 
     protected final DOLRLogger log;
 
+    /**
+     * 
+     * @param node
+     * @param applicationName
+     * @param description
+     * @throws MalformedObjectNameException
+     * @throws NotCompliantMBeanException
+     * @throws InstanceAlreadyExistsException
+     * @throws MBeanRegistrationException
+     */
     public BeehiveService(TitanNode node, String applicationName, String description)
     throws MalformedObjectNameException, NotCompliantMBeanException, InstanceAlreadyExistsException, MBeanRegistrationException {
         if (applicationName == null || applicationName.matches("\\s"))

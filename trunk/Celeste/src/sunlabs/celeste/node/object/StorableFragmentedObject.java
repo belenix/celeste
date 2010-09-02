@@ -285,10 +285,7 @@ public final class StorableFragmentedObject {
      * @throws BeehiveNode.NoSuchNodeException
      * @throws ErasureCode.UnsupportedAlgorithmException
      */
-    public static FragmentMap storeObjectRemotely(
-            BeehiveObjectHandler objectType,
-            TitanNodeId destination,
-            ErasureCode erasureCode,
+    public static FragmentMap storeObjectRemotely(BeehiveObjectHandler objectType, TitanNodeId destination, ErasureCode erasureCode,
             StorableFragmentedObject.Handler.Object object,
             int maxAttempts)
     throws BeehiveObjectStore.NoSpaceException, BeehiveNode.NoSuchNodeException, ErasureCode.UnsupportedAlgorithmException {
@@ -298,10 +295,10 @@ public final class StorableFragmentedObject {
             return StorableFragmentedObject.storeObjectRemotely(objectType, erasureCode, object, maxAttempts);
         }
 
-        BeehiveMessage reply = objectType.getNode().sendToNodeExactly(destination, objectType.getName(), "storeLocalObject", object);
-
-        object.setObjectId(reply.subjectId);
         try {
+            BeehiveMessage reply = objectType.getNode().sendToNodeExactly(destination, objectType.getName(), "storeLocalObject", object);
+
+            object.setObjectId(reply.subjectId);
             return reply.getPayload(StorableFragmentedObject.FragmentMap.class, objectType.getNode());
         } catch (ClassNotFoundException e) {
             e.printStackTrace();
@@ -309,7 +306,7 @@ public final class StorableFragmentedObject {
         } catch (ClassCastException e) {
             e.printStackTrace();
             return null;
-        } catch (RemoteException e) {
+        } catch (BeehiveMessage.RemoteException e) {
             e.printStackTrace();
             return null;
         }

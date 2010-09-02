@@ -349,7 +349,7 @@ public final class StorableObject {
                 this.object = object;
             }
 
-            public BeehiveMessage call() throws BeehiveNode.NoSuchNodeException {
+            public BeehiveMessage call() throws BeehiveNode.NoSuchNodeException, ClassCastException, ClassNotFoundException, BeehiveMessage.RemoteException {
                 try {
                     BeehiveMessage reply = this.handler.getNode().sendToNodeExactly(this.destination, this.handler.getName(), "storeLocalObject", this.object);
               

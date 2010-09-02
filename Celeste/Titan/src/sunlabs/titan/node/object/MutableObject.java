@@ -1839,6 +1839,10 @@ public class MutableObject {
                 throw new ObjectHistory.ValidationException("Node %s replied with null.", this.destinationNodeId);
             } catch (ClassNotFoundException e) {
                 throw new ObjectHistory.ValidationException(e);
+            } catch (ClassCastException e) {
+                throw new ObjectHistory.ValidationException(e);
+            } catch (RemoteException e) {
+                throw new ObjectHistory.ValidationException(e);
             } finally {
                 if (this.countDown != null)
                     this.countDown.countDown();

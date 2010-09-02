@@ -112,7 +112,7 @@ public final class RoutingDaemon extends BeehiveService implements RoutingDaemon
         }
 
         public long getIntroductionRate() {
-            return RoutingDaemon.this.node.getConfiguration().asLong(RoutingDaemon.IntroductionRateMillis);
+            return RoutingDaemon.this.node.getConfiguration().asLong(RoutingDaemon.IntroductionRateSeconds);
         }
 
         public String getLastRunDuration() {
@@ -192,13 +192,13 @@ public final class RoutingDaemon extends BeehiveService implements RoutingDaemon
                         }
                     }
 
-                    long introductionRate = RoutingDaemon.this.node.getConfiguration().asLong(RoutingDaemon.IntroductionRateMillis);
+                    long introductionRateMillis = Time.secondsInMilliseconds(RoutingDaemon.this.node.getConfiguration().asLong(RoutingDaemon.IntroductionRateSeconds));;
 
-                    if (this.currentIntroductionRate < introductionRate) {
+                    if (this.currentIntroductionRate < introductionRateMillis) {
                         this.currentIntroductionRate *= 2;
                     }
-                    if (this.currentIntroductionRate > introductionRate) {
-                        this.currentIntroductionRate = introductionRate;
+                    if (this.currentIntroductionRate > introductionRateMillis) {
+                        this.currentIntroductionRate = introductionRateMillis;
                     }
 
                     long currentTime = System.currentTimeMillis();
@@ -207,14 +207,12 @@ public final class RoutingDaemon extends BeehiveService implements RoutingDaemon
                     long sleepTime = Math.max(this.currentIntroductionRate - this.lastRunDuration, 0);
                     this.wakeUpTime = currentTime + sleepTime;
 
-                    RoutingDaemon.this.setStatus("Wakeup "
-                            + DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT).format(new Date(this.wakeUpTime))
-                            );
+                    RoutingDaemon.this.setStatus("Wakeup " + DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT).format(new Date(this.wakeUpTime)));
 
                     RoutingDaemon.this.setStatus(String.format("Wakeup %1$td/%1$tm/%1$ty %1$tH:%1$tM:%1$tS", new Date(this.wakeUpTime)));
 
-                    RoutingDaemon.this.log.fine(String.format("Desired introductionRate=%sms currentIntroductionRate=%dms elasped time=%dms, sleepTime=%dms",
-                            RoutingDaemon.this.node.getConfiguration().asLong(RoutingDaemon.IntroductionRateMillis),
+                    RoutingDaemon.this.log.fine(String.format("Desired introductionRate=%ss currentIntroductionRate=%dms elasped time=%dms, sleepTime=%dms",
+                            RoutingDaemon.this.node.getConfiguration().asLong(RoutingDaemon.IntroductionRateSeconds),
                             this.currentIntroductionRate, this.lastRunDuration, sleepTime));
 
                     if (sleepTime < 0) {
@@ -244,8 +242,8 @@ public final class RoutingDaemon extends BeehiveService implements RoutingDaemon
             return;
         }
 
-        public void setIntroductionRate(long refreshRate) {
-            RoutingDaemon.this.node.getConfiguration().set(RoutingDaemon.IntroductionRateMillis, refreshRate);
+        public void setIntroductionRate(long seconds) {
+            RoutingDaemon.this.node.getConfiguration().set(RoutingDaemon.IntroductionRateSeconds, seconds);
         }
 
         public void wakeup() {
@@ -396,7 +394,7 @@ public final class RoutingDaemon extends BeehiveService implements RoutingDaemon
         }
 
         public long getReunionRate() {
-            return RoutingDaemon.this.node.getConfiguration().asLong(RoutingDaemon.ReunionRateMillis);
+            return RoutingDaemon.this.node.getConfiguration().asLong(RoutingDaemon.ReunionRateSeconds);
         }
 
         @Override
@@ -484,8 +482,8 @@ public final class RoutingDaemon extends BeehiveService implements RoutingDaemon
             return;
         }
 
-        public void setReunionRate(long milliSeconds) {
-           RoutingDaemon.this.node.getConfiguration().set(RoutingDaemon.ReunionRateMillis, milliSeconds);
+        public void setReunionRate(long seconds) {
+           RoutingDaemon.this.node.getConfiguration().set(RoutingDaemon.ReunionRateSeconds, seconds);
         }
 
         public void wakeup() {
@@ -506,15 +504,15 @@ public final class RoutingDaemon extends BeehiveService implements RoutingDaemon
 
     private final static String name = BeehiveService.makeName(RoutingDaemon.class, RoutingDaemon.serialVersionUID);
 
-    /** The number of milliseconds between iterations of the neighbour map introduction */
-    private final static Attributes.Prototype IntroductionRateMillis = new Attributes.Prototype(RoutingDaemon.class, "IntroductionRateMillis",
-            Time.minutesInMilliseconds(10),
-            "The number of milliseconds between iterations of the neighbour map introduction.");
+    /** The number of seconds between iterations of the neighbour map introduction */
+    private final static Attributes.Prototype IntroductionRateSeconds = new Attributes.Prototype(RoutingDaemon.class, "IntroductionRateSeconds",
+            Time.minutesInSeconds(10),
+            "The number of seconds between iterations of the neighbour map introduction.");
 
     /** The number of  milliseconds between iterations of the neighbour map reunion */
-    private final static Attributes.Prototype ReunionRateMillis = new Attributes.Prototype(RoutingDaemon.class, "ReunionRateMillis",
-                Time.hoursToMilliseconds(1),
-                "The number of  milliseconds between iterations of the neighbour map reunion.");
+    private final static Attributes.Prototype ReunionRateSeconds = new Attributes.Prototype(RoutingDaemon.class, "ReunionRateSeconds",
+                Time.hoursInSeconds(1),
+                "The number of seconds between iterations of the neighbour map reunion.");
 
     /**
      * The number of milliseconds until a {@link Dossier.Entry} becomes
@@ -531,10 +529,10 @@ public final class RoutingDaemon extends BeehiveService implements RoutingDaemon
     public RoutingDaemon(final BeehiveNode node)
     throws MalformedObjectNameException, NotCompliantMBeanException, InstanceAlreadyExistsException, MBeanRegistrationException {
         super(node, RoutingDaemon.name, "Maintain routing table.");
-
-        node.configuration.add(RoutingDaemon.IntroductionRateMillis);
+        
+        node.configuration.add(RoutingDaemon.IntroductionRateSeconds);
         node.configuration.add(RoutingDaemon.DossierTimeToLive);
-        node.configuration.add(RoutingDaemon.ReunionRateMillis);
+        node.configuration.add(RoutingDaemon.ReunionRateSeconds);
 
         Map<String,Integer> mapReputationRequirements = Reputation.newCoefficients();
         mapReputationRequirements.put(Dossier.LATENCY, new Integer(50));
@@ -542,9 +540,16 @@ public final class RoutingDaemon extends BeehiveService implements RoutingDaemon
         mapReputationRequirements.put(Dossier.ROUTING, new Integer(25));
 
         if (this.log.isLoggable(Level.CONFIG)) {
-            this.log.config("%s", this.node.getConfiguration().get(RoutingDaemon.IntroductionRateMillis));
-            this.log.config("%s", this.node.getConfiguration().get(RoutingDaemon.ReunionRateMillis));
+            this.log.config("%s", this.node.getConfiguration().get(RoutingDaemon.IntroductionRateSeconds));
+            this.log.config("%s", this.node.getConfiguration().get(RoutingDaemon.ReunionRateSeconds));
             this.log.config("%s", this.node.getConfiguration().get(RoutingDaemon.DossierTimeToLive));
+            if (this.node.getConfiguration().get(BeehiveNode.ClientTimeoutSeconds).asLong() < this.node.getConfiguration().get(RoutingDaemon.IntroductionRateSeconds).asLong()
+                    || this.node.getConfiguration().get(BeehiveNode.ClientTimeoutSeconds).asLong() < this.node.getConfiguration().get(RoutingDaemon.ReunionRateSeconds).asLong()) {
+                this.log.config("Warning %s is less than either %s or %s and will result in unnecessary close and reopen of connections.",
+                        BeehiveNode.ClientTimeoutSeconds,
+                        RoutingDaemon.IntroductionRateSeconds,
+                        RoutingDaemon.ReunionRateSeconds);
+            }
         }
     }
 
@@ -824,7 +829,8 @@ public final class RoutingDaemon extends BeehiveService implements RoutingDaemon
                 new XHTML.Table.Body(
                         new XHTML.Table.Row(new XHTML.Table.Data(""), new XHTML.Table.Data(controlButton)),
                         new XHTML.Table.Row(new XHTML.Table.Data("Logging Level"), new XHTML.Table.Data(Xxhtml.selectJavaUtilLoggingLevel("LoggerLevel", this.log.getEffectiveLevel()))),
-                        new XHTML.Table.Row(new XHTML.Table.Data("Refresh Rate"), new XHTML.Table.Data(Xxhtml.inputUnboundedInteger("refreshRate", this.node.getConfiguration().asLong(RoutingDaemon.IntroductionRateMillis)))),
+                        new XHTML.Table.Row(new XHTML.Table.Data(RoutingDaemon.IntroductionRateSeconds.getName()),
+                                new XHTML.Table.Data(Xxhtml.inputUnboundedInteger(RoutingDaemon.IntroductionRateSeconds.getName(), this.node.getConfiguration().asLong(RoutingDaemon.IntroductionRateSeconds)))),
                         new XHTML.Table.Row(new XHTML.Table.Data(""), new XHTML.Table.Data(set)),
                         new XHTML.Table.Row(new XHTML.Table.Data(""), new XHTML.Table.Data(go))
                 )).setClass("controls"));

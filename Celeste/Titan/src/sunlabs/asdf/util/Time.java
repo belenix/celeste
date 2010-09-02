@@ -63,6 +63,11 @@ public class Time {
         return hours * HOURS_IN_MILLISECONDS;
     }
 
+    /** return the number of seconds in the given number of hours. */
+    public static long hoursInSeconds(int hours) {
+        return hours * HOURS_IN_SECONDS;
+    }
+
     public static long millisecondsToHours(long milliseconds) {
         return milliseconds / Time.HOURS_IN_MILLISECONDS;
     }

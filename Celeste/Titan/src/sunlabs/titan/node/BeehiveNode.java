@@ -245,14 +245,14 @@ public class BeehiveNode implements TitanNode, NodeMBean {
                 // So we setup a timeout on our side such that if the timeout expires, we simply terminate this connection.
                 // The client will figure that out once it tries to reuse this connection and it is closed and must setup a new connection.
 
-                if (this.node.log.isLoggable(Level.FINE)) {
-                    this.node.log.fine("Request: %s", request);
+                if (this.node.log.isLoggable(Level.FINEST)) {
+                    this.node.log.finest("Request: %s", request);
                 }
                 
                 BeehiveMessage myResponse = this.node.receive(this.request);
                 
-                if (this.node.log.isLoggable(Level.FINE)) {
-                    this.node.log.fine("Response: %s", request);
+                if (this.node.log.isLoggable(Level.FINEST)) {
+                    this.node.log.finest("Response: %s", myResponse);
                 }
 
                 ByteArrayOutputStream bos = new ByteArrayOutputStream();
@@ -1235,17 +1235,18 @@ public class BeehiveNode implements TitanNode, NodeMBean {
      * @return - The answering {@link BeehiveMessage} in response.
      */
     public BeehiveMessage receive(BeehiveMessage request) {
+        BeehiveNode.this.log.finest("%s", request.toString());
         try {
             TitanNodeId destinationNodeId = request.getDestinationNodeId();
 
             if (destinationNodeId == null) {
-                System.out.printf("destination node is null%n");
+                throw new RuntimeException("destination node is null%n");
             }
 
             if (destinationNodeId.equals(this.getNodeId())) {
                 // Any message other than route-to-node or route-to-object would indicate an ObjectId collision.
                 if (request.isTraced()) {
-                    BeehiveNode.this.log.info("recv1(%s)", request.traceReport());
+                    BeehiveNode.this.log.finest("recv1(%s)", request.traceReport());
                 }
                 return this.services.sendMessageToApp(request);
             }
@@ -1267,7 +1268,7 @@ public class BeehiveNode implements TitanNode, NodeMBean {
             // The message is a RouteToNode message.
 
             if (request.isTraced()) {
-                BeehiveNode.this.log.info("recv: %s", request.traceReport());
+                BeehiveNode.this.log.finest("recv: %s", request.traceReport());
             }
             if (this.map.getRoute(destinationNodeId) == null) {
                 // This node is the root of the destinationNodeId then we
@@ -1275,12 +1276,14 @@ public class BeehiveNode implements TitanNode, NodeMBean {
                 // If so, and we are NOT that node, return a reply indicating failure.
                 // Otherwise, accept the message.
                 if (request.isExactRouting() && !destinationNodeId.equals(this.getNodeId())) {
+                    BeehiveNode.this.log.finest("routed to nonexistent node %s%n", destinationNodeId);
+                    
                     return request.composeReply(this.address, new BeehiveNode.NoSuchNodeException("%s", destinationNodeId.toString()));
                 }
                 BeehiveMessage result = this.services.sendMessageToApp(request);
 
                 if (request.isTraced()) {
-                    BeehiveNode.this.log.info("reply(%s)", result.traceReport());
+                    BeehiveNode.this.log.finest("reply(%s)", result.traceReport());
                 }
                 return result;
             }
@@ -1652,7 +1655,7 @@ public class BeehiveNode implements TitanNode, NodeMBean {
         return reply;
     }
 
-    public BeehiveMessage sendToNodeExactly(TitanNodeId nodeId, String objectClass, String method, Serializable data) throws NoSuchNodeException {
+    public BeehiveMessage sendToNodeExactly(TitanNodeId nodeId, String objectClass, String method, Serializable data) throws NoSuchNodeException, ClassCastException, RemoteException, ClassNotFoundException {
         BeehiveMessage msg = new BeehiveMessage(BeehiveMessage.Type.RouteToNode,
                 this.getNodeAddress(),
                 nodeId,
@@ -1664,8 +1667,19 @@ public class BeehiveNode implements TitanNode, NodeMBean {
                 data);
 
         BeehiveMessage reply = this.receive(msg);
+        
+        if (reply.getStatus().equals(DOLRStatus.THROWABLE)) {
+            try {
+                reply.getPayload(Serializable.class, this);
+            } catch (RemoteException e) {
+                if (e.getCause() instanceof BeehiveNode.NoSuchNodeException) {
+                    throw (BeehiveNode.NoSuchNodeException) e.getCause();
+                }
+                throw e;
+            }            
+        }
         if (reply.getStatus().equals(DOLRStatus.SERVICE_UNAVAILABLE)) {
-            this.getLogger().info("NoSuchNode: %5.5s...", nodeId);
+            this.getLogger().info("NoSuchNodeException: %5.5s...", nodeId);
             throw new BeehiveNode.NoSuchNodeException("%s %s", nodeId, reply.getStatus());
         }
         return reply;

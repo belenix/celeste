@@ -36,10 +36,9 @@ import sunlabs.asdf.util.Attributes;
 import sunlabs.asdf.web.XML.XHTML;
 import sunlabs.asdf.web.XML.XML;
 import sunlabs.asdf.web.http.HTTP;
-import sunlabs.titan.TitanGuidImpl;
 import sunlabs.titan.node.ApplicationFramework;
 import sunlabs.titan.node.BeehiveMessage;
-import sunlabs.titan.node.BeehiveNode;
+import sunlabs.titan.node.BeehiveMessage.RemoteException;
 import sunlabs.titan.node.BeehiveNode.NoSuchNodeException;
 import sunlabs.titan.node.BeehiveObjectStore;
 import sunlabs.titan.node.NeighbourMap;
@@ -67,9 +66,8 @@ public interface TitanNode {
     public NodeAddress getNodeAddress();
     
     /**
-     * Send the given {@link Serializable} {@code data} via a
-     * {@link BeehiveMessage.Type#RouteToNode} to the {@link BeehiveNode}
-     * that is the root of the {@link TitanGuidImpl} {@code objectId}.
+     * Send the given {@link Serializable} {@code data} via a {@link BeehiveMessage.Type#RouteToNode} to the {@link TitanNode}
+     * that is the root of the {@link TitanNodeId} {@code nodeId}.
      *
      * @param klasse The name of the {@link BeehiveService} to handle the reception of this message.
      * @param method The name of the method to invoke in {@code klasse} on the receiving node.
@@ -89,13 +87,16 @@ public interface TitanNode {
      * Transmit a {@link BeehiveMessage.Type#RouteToNode}
      * message to the specified node object-id.
      *
-     * @param nodeId the {@link TitanGuidImpl} of the destination node.
+     * @param nodeId the {@link TitanNodeId} of the destination node.
      * @param objectClass the {@link String} name of the destination object handler class.
      * @param method the {@link String} name of the method to invoke.
      * @param payload the payload of this message.
-     * @throws NoSuchNodeException if the receiver cannot route the message further and is not the specified destination object-id.
+     * @throws NoSuchNodeException if the receiver cannot route the message further and is not the specified destination nodeId.
+     * @throws ClassNotFoundException 
+     * @throws RemoteException 
+     * @throws ClassCastException 
      */
-    public BeehiveMessage sendToNodeExactly(TitanNodeId nodeId, String klasse, String method, Serializable payload) throws NoSuchNodeException;
+    public BeehiveMessage sendToNodeExactly(TitanNodeId nodeId, String klasse, String method, Serializable payload) throws NoSuchNodeException, ClassCastException, RemoteException, ClassNotFoundException;
 
     /**
      * Send the given {@link Serializable} {@code data} to the {@link BeehiveObject}

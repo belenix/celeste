@@ -41,9 +41,9 @@ import javax.crypto.spec.PBEParameterSpec;
 import sunlabs.asdf.web.XML.XHTML;
 import sunlabs.asdf.web.http.HTTP;
 import sunlabs.titan.TitanGuidImpl;
-import sunlabs.titan.api.BeehiveObject;
 import sunlabs.titan.api.Credential;
 import sunlabs.titan.api.TitanGuid;
+import sunlabs.titan.api.TitanObject;
 import sunlabs.titan.node.AbstractBeehiveObject;
 import sunlabs.titan.node.services.object.CredentialObjectHandler;
 
@@ -117,7 +117,7 @@ public class Profile_ extends AbstractBeehiveObject implements Credential {
         // here will never be used (and thus there's no need to record its
         // value).
         //
-        super(CredentialObjectHandler.class, new TitanGuidImpl(), BeehiveObject.INFINITE_TIME_TO_LIVE);
+        super(CredentialObjectHandler.class, new TitanGuidImpl(), TitanObject.INFINITE_TIME_TO_LIVE);
         this.name = name;
         this.limited = false;
 
@@ -146,7 +146,7 @@ public class Profile_ extends AbstractBeehiveObject implements Credential {
         // here will never be used (and thus there's no need to record its
         // value).
         //
-        super(CredentialObjectHandler.class, new TitanGuidImpl(), BeehiveObject.INFINITE_TIME_TO_LIVE);
+        super(CredentialObjectHandler.class, new TitanGuidImpl(), TitanObject.INFINITE_TIME_TO_LIVE);
         this.name = name;
         this.limited = true;
         this.publicKey = publicKey;

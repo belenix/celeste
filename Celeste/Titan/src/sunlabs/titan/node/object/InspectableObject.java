@@ -5,10 +5,10 @@ import java.util.Map;
 
 import sunlabs.asdf.web.XML.XHTML;
 import sunlabs.asdf.web.http.HTTP;
-import sunlabs.titan.api.BeehiveObject;
+import sunlabs.titan.api.TitanObject;
 
 /**
- * {@link BeehiveObject} and {@link BeehiveObjectHandler} classes implementing the interfaces specified
+ * {@link TitanObject} and {@link BeehiveObjectHandler} classes implementing the interfaces specified
  * in this class implement the capability of objects in the object pool to be
  * inspected.
  * 

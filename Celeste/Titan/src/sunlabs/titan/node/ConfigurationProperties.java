@@ -1,5 +1,5 @@
 /*
- * Copyright 2007-2008 Sun Microsystems, Inc. All Rights Reserved.
+ * Copyright 2007-2010 Oracle. All Rights Reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER
  *
  * This code is free software; you can redistribute it and/or modify
@@ -17,9 +17,9 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
  * 02110-1301 USA
  *
- * Please contact Sun Microsystems, Inc., 16 Network Circle, Menlo
- * Park, CA 94025 or visit www.sun.com if you need additional
- * information or have any questions.
+ * Please contact Oracle Corporation, 500 Oracle Parkway, Redwood Shores, CA 94065
+ * or visit www.oracle.com if you need additional information or
+ * have any questions.
  */
 package sunlabs.titan.node;
 
@@ -34,11 +34,8 @@ import java.util.Hashtable;
 import java.util.Map;
 import java.util.Properties;
 
-import javax.management.InstanceAlreadyExistsException;
-import javax.management.MBeanRegistrationException;
 import javax.management.MBeanServer;
-import javax.management.MalformedObjectNameException;
-import javax.management.NotCompliantMBeanException;
+import javax.management.JMException;
 
 import sunlabs.asdf.jmx.JMX;
 import sunlabs.asdf.web.XML.XHTML;
@@ -78,15 +75,8 @@ public class ConfigurationProperties implements Serializable {
             this.defaultValue = defaultValue;
             this.configuration.setVariable(this, defaultValue);
             try {
-                this.configuration.mbs.registerMBean(this,
-                        JMX.objectName(configuration.jmxDomain, this.configuration.jmxPrefix, variableName));
-            } catch (MalformedObjectNameException e) {
-                e.printStackTrace();
-            } catch (NotCompliantMBeanException e) {
-                e.printStackTrace();
-            } catch (InstanceAlreadyExistsException e) {
-                //e.printStackTrace();
-            } catch (MBeanRegistrationException e) {
+                this.configuration.mbs.registerMBean(this, JMX.objectName(configuration.jmxDomain, this.configuration.jmxPrefix, variableName));
+            } catch (JMException e) {
                 e.printStackTrace();
             }
         }

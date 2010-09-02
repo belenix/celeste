@@ -71,7 +71,7 @@ import sunlabs.titan.node.util.DOLRLogger;
  * </p>
  * @author Glenn Scott - Sun Microsystems Laboratories
  */
-public interface Service extends Serializable {
+public interface TitanService extends Serializable {
 
     /**
      * The configuration parameter name controlling the logging level of

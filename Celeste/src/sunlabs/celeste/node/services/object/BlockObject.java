@@ -1,5 +1,5 @@
 /*
- * Copyright 2007-2008 Sun Microsystems, Inc. All Rights Reserved.
+ * Copyright 2007-2010 Oracle. All Rights Reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER
  *
  * This code is free software; you can redistribute it and/or modify
@@ -17,11 +17,10 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
  * 02110-1301 USA
  *
- * Please contact Sun Microsystems, Inc., 16 Network Circle, Menlo
- * Park, CA 94025 or visit www.sun.com if you need additional
- * information or have any questions.
+ * Please contact Oracle Corporation, 500 Oracle Parkway, Redwood Shores, CA 94065
+ * or visit www.oracle.com if you need additional information or
+ * have any questions.
  */
-
 package sunlabs.celeste.node.services.object;
 
 import java.io.Serializable;
@@ -32,8 +31,8 @@ import java.util.concurrent.FutureTask;
 import sunlabs.asdf.functional.MapFunction;
 import sunlabs.celeste.client.ReplicationParameters;
 import sunlabs.celeste.node.object.ExtensibleObject;
-import sunlabs.titan.api.BeehiveObject;
 import sunlabs.titan.api.TitanGuid;
+import sunlabs.titan.api.TitanObject;
 import sunlabs.titan.node.object.DeleteableObject;
 import sunlabs.titan.node.object.InspectableObject;
 import sunlabs.titan.node.object.ReplicatableObject;
@@ -114,7 +113,7 @@ public interface BlockObject extends
     }
 
     public BlockObject.Object create(BufferableExtent bounds,
-            ExtentBufferMap data, BeehiveObject.Metadata metadata, TitanGuid deleteTokenId, long timeToLive, ReplicationParameters replicationParams);
+            ExtentBufferMap data, TitanObject.Metadata metadata, TitanGuid deleteTokenId, long timeToLive, ReplicationParameters replicationParams);
 
     /**
      * Construct a {@link FutureTask} instance that will fetch and return the {@code BlockObject}

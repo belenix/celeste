@@ -23,7 +23,7 @@
  */
 package sunlabs.titan.api.management;
 
-public interface BeehiveServiceMBean {
+public interface TitanServiceMBean {
 
     public String getName();
 

@@ -23,9 +23,9 @@
  */
 package sunlabs.titan.node.services;
 
-import sunlabs.titan.api.management.BeehiveServiceMBean;
+import sunlabs.titan.api.management.TitanServiceMBean;
 
-public interface PublishDaemonMBean extends BeehiveServiceMBean {    
+public interface PublishDaemonMBean extends TitanServiceMBean {    
     public void jmxSetPublishObjectInterstitialSleepTime(long seconds);
     public long jmxGetPublishObjectInterstitialSleepTime();
     

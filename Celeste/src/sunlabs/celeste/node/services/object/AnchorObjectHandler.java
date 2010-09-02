@@ -30,10 +30,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.logging.Level;
 
-import javax.management.InstanceAlreadyExistsException;
-import javax.management.MBeanRegistrationException;
-import javax.management.MalformedObjectNameException;
-import javax.management.NotCompliantMBeanException;
+import javax.management.JMException;
 
 import sunlabs.asdf.util.ObjectLock;
 import sunlabs.asdf.util.Time;
@@ -44,10 +41,10 @@ import sunlabs.celeste.client.ReplicationParameters;
 import sunlabs.celeste.node.services.AObjectVersionService;
 import sunlabs.celeste.node.services.api.AObjectVersionMapAPI;
 import sunlabs.titan.TitanGuidImpl;
-import sunlabs.titan.api.BeehiveObject;
 import sunlabs.titan.api.ObjectStore;
 import sunlabs.titan.api.TitanGuid;
 import sunlabs.titan.api.TitanNodeId;
+import sunlabs.titan.api.TitanObject;
 import sunlabs.titan.node.AbstractBeehiveObject;
 import sunlabs.titan.node.BeehiveMessage;
 import sunlabs.titan.node.BeehiveMessage.RemoteException;
@@ -64,13 +61,13 @@ import sunlabs.titan.node.object.MutableObject;
 import sunlabs.titan.node.object.ReplicatableObject;
 import sunlabs.titan.node.object.RetrievableObject;
 import sunlabs.titan.node.object.StorableObject;
-import sunlabs.titan.node.services.BeehiveService;
+import sunlabs.titan.node.services.AbstractTitanService;
 import sunlabs.titan.node.services.PublishDaemon;
 import sunlabs.titan.util.DOLRStatus;
 
 public final class AnchorObjectHandler extends AbstractObjectHandler implements AnchorObject {
     private final static long serialVersionUID = 1L;
-    private final static String name = BeehiveService.makeName(AnchorObjectHandler.class, AnchorObjectHandler.serialVersionUID);
+    private final static String name = AbstractTitanService.makeName(AnchorObjectHandler.class, AnchorObjectHandler.serialVersionUID);
 
     private final static int defaultReplicationStore = 3;
     private final static int defaultReplicationLowWater = 3;
@@ -251,8 +248,7 @@ public final class AnchorObjectHandler extends AbstractObjectHandler implements 
     // This is a lock signaling that the deleteLocalObject() method is already deleting the specified object.
     private ObjectLock<TitanGuid> deleteLocalObjectLocks;
 
-    public AnchorObjectHandler(BeehiveNode node)
-    throws MalformedObjectNameException, NotCompliantMBeanException, InstanceAlreadyExistsException, MBeanRegistrationException {
+    public AnchorObjectHandler(BeehiveNode node) throws JMException {
         super(node, AnchorObjectHandler.name, "Celeste Anchor Object Handler");
         this.publishObjectDeleteLocks = new ObjectLock<TitanGuid>();
         this.deleteLocalObjectLocks = new ObjectLock<TitanGuid>();
@@ -384,7 +380,7 @@ public final class AnchorObjectHandler extends AbstractObjectHandler implements 
         return reply.getStatus();
     }
 
-    public BeehiveObject createAntiObject(DeleteableObject.Handler.Object object, TitanGuid profferedDeleteToken, long timeToLive)
+    public TitanObject createAntiObject(DeleteableObject.Handler.Object object, TitanGuid profferedDeleteToken, long timeToLive)
     throws IOException, ClassCastException, BeehiveObjectStore.NoSpaceException, BeehiveObjectStore.DeleteTokenException {
 
         AnchorObject.Object aObject = AnchorObject.Object.class.cast(object);

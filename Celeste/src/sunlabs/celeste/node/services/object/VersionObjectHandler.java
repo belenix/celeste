@@ -1,5 +1,5 @@
 /*
- * Copyright 2007-2009 Sun Microsystems, Inc. All Rights Reserved.
+ * Copyright 2007-2010 Oracle. All Rights Reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER
  *
  * This code is free software; you can redistribute it and/or modify
@@ -17,11 +17,10 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
  * 02110-1301 USA
  *
- * Please contact Sun Microsystems, Inc., 16 Network Circle, Menlo
- * Park, CA 94025 or visit www.sun.com if you need additional
- * information or have any questions.
+ * Please contact Oracle Corporation, 500 Oracle Parkway, Redwood Shores, CA 94065
+ * or visit www.oracle.com if you need additional information or
+ * have any questions.
  */
-
 package sunlabs.celeste.node.services.object;
 
 import java.io.IOException;
@@ -36,10 +35,7 @@ import java.util.SortedMap;
 import java.util.TreeMap;
 import java.util.logging.Level;
 
-import javax.management.InstanceAlreadyExistsException;
-import javax.management.MBeanRegistrationException;
-import javax.management.MalformedObjectNameException;
-import javax.management.NotCompliantMBeanException;
+import javax.management.JMException;
 
 import sunlabs.asdf.util.ObjectLock;
 import sunlabs.asdf.util.Time;
@@ -55,11 +51,11 @@ import sunlabs.celeste.node.CelesteACL;
 import sunlabs.celeste.node.object.ExtensibleObject;
 import sunlabs.celeste.util.ACL;
 import sunlabs.titan.TitanGuidImpl;
-import sunlabs.titan.api.BeehiveObject;
 import sunlabs.titan.api.Credential;
 import sunlabs.titan.api.ObjectStore;
 import sunlabs.titan.api.TitanGuid;
 import sunlabs.titan.api.TitanNodeId;
+import sunlabs.titan.api.TitanObject;
 import sunlabs.titan.node.AbstractBeehiveObject;
 import sunlabs.titan.node.BeehiveMessage;
 import sunlabs.titan.node.BeehiveMessage.RemoteException;
@@ -74,14 +70,14 @@ import sunlabs.titan.node.object.DeleteableObject;
 import sunlabs.titan.node.object.ReplicatableObject;
 import sunlabs.titan.node.object.RetrievableObject;
 import sunlabs.titan.node.object.StorableObject;
-import sunlabs.titan.node.services.BeehiveService;
+import sunlabs.titan.node.services.AbstractTitanService;
 import sunlabs.titan.node.services.PublishDaemon;
 import sunlabs.titan.node.services.WebDAVDaemon;
 import sunlabs.titan.util.DOLRStatus;
 
 public final class VersionObjectHandler extends AbstractObjectHandler implements VersionObject {
     private final static long serialVersionUID = 1L;
-    private final static String name = BeehiveService.makeName(VersionObjectHandler.class, VersionObjectHandler.serialVersionUID);
+    private final static String name = AbstractTitanService.makeName(VersionObjectHandler.class, VersionObjectHandler.serialVersionUID);
 
     private final static int replicationStore = 2;
     private final static int replicationCache = 2;
@@ -751,11 +747,7 @@ public final class VersionObjectHandler extends AbstractObjectHandler implements
     // This is a lock signaling that the deleteLocalObject() method is already deleting the specified object.
     private ObjectLock<TitanGuid> deleteLocalObjectLocks;
 
-    public VersionObjectHandler(BeehiveNode node) throws
-            MalformedObjectNameException,
-            NotCompliantMBeanException,
-            InstanceAlreadyExistsException,
-            MBeanRegistrationException {
+    public VersionObjectHandler(BeehiveNode node) throws JMException {
         super(node, VersionObjectHandler.name, "Celeste Version Object Handler");
 
         this.publishObjectDeleteLocks = new ObjectLock<TitanGuid>();
@@ -926,7 +918,7 @@ public final class VersionObjectHandler extends AbstractObjectHandler implements
         return reply.getStatus();
     }
 
-    public BeehiveObject createAntiObject(DeleteableObject.Handler.Object object, TitanGuid profferedDeleteToken, long timeToLive)
+    public TitanObject createAntiObject(DeleteableObject.Handler.Object object, TitanGuid profferedDeleteToken, long timeToLive)
     throws IOException, ClassCastException, BeehiveObjectStore.NoSpaceException, BeehiveObjectStore.DeleteTokenException {
 
         //this.log.info("%s", object.getObjectId());

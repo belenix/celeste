@@ -39,10 +39,7 @@ import java.util.SortedMap;
 import java.util.TreeMap;
 import java.util.logging.Level;
 
-import javax.management.InstanceAlreadyExistsException;
-import javax.management.MBeanRegistrationException;
-import javax.management.MalformedObjectNameException;
-import javax.management.NotCompliantMBeanException;
+import javax.management.JMException;
 
 import sunlabs.asdf.jmx.JMX;
 import sunlabs.asdf.jmx.ThreadMBean;
@@ -54,8 +51,8 @@ import sunlabs.asdf.web.XML.XML;
 import sunlabs.asdf.web.XML.Xxhtml;
 import sunlabs.asdf.web.http.HTTP;
 import sunlabs.asdf.web.http.HttpMessage;
-import sunlabs.titan.TitanGuidImpl;
 import sunlabs.titan.Release;
+import sunlabs.titan.TitanGuidImpl;
 import sunlabs.titan.api.TitanGuid;
 import sunlabs.titan.api.TitanNodeId;
 import sunlabs.titan.node.BeehiveMessage;
@@ -77,9 +74,9 @@ import sunlabs.titan.util.OrderedProperties;
  * received node information.
  * </p>
  */
-public final class CensusDaemon extends BeehiveService implements Census, CensusDaemonMBean {
+public final class CensusDaemon extends AbstractTitanService implements Census, CensusDaemonMBean {
     private final static long serialVersionUID = 1L;
-    private final static String name = BeehiveService.makeName(CensusDaemon.class, CensusDaemon.serialVersionUID);
+    private final static String name = AbstractTitanService.makeName(CensusDaemon.class, CensusDaemon.serialVersionUID);
 
     public final static Attributes.Prototype ReportRateMillis = new Attributes.Prototype(CensusDaemon.class,
             "ReportRateMillis",
@@ -287,8 +284,7 @@ public final class CensusDaemon extends BeehiveService implements Census, Census
         return result;
     }
 
-    public CensusDaemon(BeehiveNode node)
-    throws MalformedObjectNameException, NotCompliantMBeanException, InstanceAlreadyExistsException, MBeanRegistrationException {
+    public CensusDaemon(BeehiveNode node) throws JMException {
         super(node, CensusDaemon.name, "Catalogue all Nodes");
 
         node.configuration.add(CensusDaemon.ReportRateMillis);
@@ -312,7 +308,6 @@ public final class CensusDaemon extends BeehiveService implements Census, Census
      * </p>
      * @param message
      */
-    
     public Report.Response report(BeehiveMessage message) throws ClassCastException, ClassNotFoundException, BeehiveMessage.RemoteException {
         if (message.isTraced()) {
             this.log.info(message.traceReport());
@@ -378,14 +373,13 @@ public final class CensusDaemon extends BeehiveService implements Census, Census
         private long lastReportTime;
         private long lastReportDuration;
 
-        protected ReportDaemon()
-        throws MalformedObjectNameException, MBeanRegistrationException, NotCompliantMBeanException, InstanceAlreadyExistsException {
+        protected ReportDaemon() throws JMException {
             super(CensusDaemon.this.node.getThreadGroup(), CensusDaemon.this.node.getNodeId() + ":" + CensusDaemon.this.getName() + ".daemon");
             this.setPriority(Thread.MIN_PRIORITY);
 
             this.myProperties = new OrderedProperties();
 
-            BeehiveService.registrar.registerMBean(JMX.objectName(CensusDaemon.this.jmxObjectNameRoot, "daemon"), this, ReportDaemonMBean.class);
+            AbstractTitanService.registrar.registerMBean(JMX.objectName(CensusDaemon.this.jmxObjectNameRoot, "daemon"), this, ReportDaemonMBean.class);
         }
 
         @Override
@@ -482,13 +476,7 @@ public final class CensusDaemon extends BeehiveService implements Census, Census
         if (this.daemon == null) {
             try {
                 this.daemon = new ReportDaemon();
-            } catch (MalformedObjectNameException e) {
-                e.printStackTrace();
-            } catch(MBeanRegistrationException e) {
-                e.printStackTrace();
-            } catch (NotCompliantMBeanException e) {
-                e.printStackTrace();
-            } catch (InstanceAlreadyExistsException e) {
+            } catch (JMException e) {
                 e.printStackTrace();
             }
             this.daemon.start();

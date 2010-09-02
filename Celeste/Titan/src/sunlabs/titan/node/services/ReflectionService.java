@@ -28,15 +28,12 @@ import java.util.Map;
 import java.util.Set;
 import java.util.logging.Level;
 
-import javax.management.InstanceAlreadyExistsException;
-import javax.management.MBeanRegistrationException;
-import javax.management.MalformedObjectNameException;
-import javax.management.NotCompliantMBeanException;
+import javax.management.JMException;
 
 import sunlabs.asdf.web.XML.XHTML;
 import sunlabs.asdf.web.http.HTTP;
 import sunlabs.titan.TitanGuidImpl;
-import sunlabs.titan.api.BeehiveObject;
+import sunlabs.titan.api.TitanObject;
 import sunlabs.titan.api.TitanGuid;
 import sunlabs.titan.node.BeehiveMessage;
 import sunlabs.titan.node.BeehiveMessage.RemoteException;
@@ -47,31 +44,30 @@ import sunlabs.titan.node.object.InspectableObject;
 import sunlabs.titan.node.services.api.Publish;
 import sunlabs.titan.node.services.api.Reflection;
 
-public final class ReflectionService extends BeehiveService implements Reflection, ReflectionServiceMBean {
+public final class ReflectionService extends AbstractTitanService implements Reflection, ReflectionServiceMBean {
     private final static long serialVersionUID = 1L;
-    public final static String name = BeehiveService.makeName(ReflectionService.class, ReflectionService.serialVersionUID);
+    public final static String name = AbstractTitanService.makeName(ReflectionService.class, ReflectionService.serialVersionUID);
 
-    public ReflectionService(BeehiveNode node)
-    throws MalformedObjectNameException, NotCompliantMBeanException, InstanceAlreadyExistsException, MBeanRegistrationException {
+    public ReflectionService(BeehiveNode node) throws JMException {
         super(node, ReflectionService.name, "Beehive Reflection service");
     }
 
     public BeehiveMessage retrieveObject(BeehiveMessage message) throws ClassCastException, ClassNotFoundException {
         try {
-            BeehiveObject dolrData = this.node.getObjectStore().get(BeehiveObject.class, message.subjectId);
+            TitanObject dolrData = this.node.getObjectStore().get(TitanObject.class, message.subjectId);
             return message.composeReply(this.node.getNodeAddress(), dolrData);
         } catch (BeehiveObjectStore.NotFoundException e) {
             return message.composeReply(this.node.getNodeAddress(), e);
         }
     }
 
-    public BeehiveObject retrieveObject(final TitanGuid objectId) throws RemoteException {
+    public TitanObject retrieveObject(final TitanGuid objectId) throws RemoteException {
         BeehiveMessage reply = ReflectionService.this.node.sendToObject(objectId, ReflectionService.name, "retrieveObject", objectId);
         if (!reply.getStatus().isSuccessful())
             return null;
 
         try {
-            return reply.getPayload(BeehiveObject.class, this.node);
+            return reply.getPayload(TitanObject.class, this.node);
         } catch (ClassNotFoundException e) {
             e.printStackTrace();
             throw new RuntimeException(e);
@@ -85,7 +81,7 @@ public final class ReflectionService extends BeehiveService implements Reflectio
         Set<PublishRecord> publishers = publish.getPublishers(message.subjectId);
 
         try {
-            InspectableObject.Handler.Object object = (InspectableObject.Handler.Object) this.node.getObjectStore().get(BeehiveObject.class, message.subjectId);
+            InspectableObject.Handler.Object object = (InspectableObject.Handler.Object) this.node.getObjectStore().get(TitanObject.class, message.subjectId);
             if (this.log.isLoggable(Level.FINE)) {
                 this.log.fine("%s %s", object.getObjectId(), object.getObjectType());
             }
@@ -152,7 +148,7 @@ public final class ReflectionService extends BeehiveService implements Reflectio
     public BeehiveMessage getObjectType(BeehiveMessage message) throws ClassCastException, ClassNotFoundException, BeehiveObjectStore.NotFoundException, BeehiveMessage.RemoteException {
             Reflection.ObjectType.Request request = message.getPayload(Reflection.ObjectType.Request.class, node);
             TitanGuid objectId = request.getObjectId();
-            BeehiveObject object = this.node.getObjectStore().get(BeehiveObject.class, objectId);
+            TitanObject object = this.node.getObjectStore().get(TitanObject.class, objectId);
 
             Reflection.ObjectType.Response response = new Reflection.ObjectType.Response(object.getObjectType());
 

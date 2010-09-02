@@ -25,7 +25,7 @@ package sunlabs.titan.node.object;
 
 import java.io.IOException;
 
-import sunlabs.titan.api.BeehiveObject;
+import sunlabs.titan.api.TitanObject;
 import sunlabs.titan.api.TitanGuid;
 import sunlabs.titan.api.TitanNode;
 import sunlabs.titan.node.BeehiveMessage;
@@ -34,7 +34,7 @@ import sunlabs.titan.node.BeehiveObjectStore;
 import sunlabs.titan.util.DOLRStatus;
 
 /**
- * {@link BeehiveObject} and {@link BeehiveObjectHander} classes implementing the interfaces specified
+ * {@link TitanObject} and {@link BeehiveObjectHander} classes implementing the interfaces specified
  * in this class implement the capability of objects to be
  * retrieved from the Beehive object pool.
  * 
@@ -44,7 +44,7 @@ public class RetrievableObject {
 
     /**
      * Every class that extends {@link AbstractObjectHandler} that implements this interface
-     * will retrieve objects of this {@link BeehiveObject} type.
+     * will retrieve objects of this {@link TitanObject} type.
      *
      * @param <T>
      */
@@ -54,7 +54,7 @@ public class RetrievableObject {
         }
 
         /**
-         * Retrieve the {@link BeehiveObject} named {@code objectId} from the Beehive object pool.
+         * Retrieve the {@link TitanObject} named {@code objectId} from the Beehive object pool.
          * <p>
          * Classes implementing this method may or may not,
          * depending upon the semantics of the object and the object's retrieval,
@@ -97,7 +97,7 @@ public class RetrievableObject {
         TitanNode node = handler.getNode();
 
         try {
-            BeehiveObject object = node.getObjectStore().get(BeehiveObject.class, message.subjectId);
+            TitanObject object = node.getObjectStore().get(TitanObject.class, message.subjectId);
             return message.composeReply(node.getNodeAddress(), object);
         } catch (BeehiveObjectStore.NotFoundException e) {
             return message.composeReply(node.getNodeAddress(), DOLRStatus.NOT_FOUND, e);
@@ -105,9 +105,9 @@ public class RetrievableObject {
     }
 
     /**
-     * Retrieve the specified {@link BeehiveObject} from the Beehive object pool.
+     * Retrieve the specified {@link TitanObject} from the Beehive object pool.
      * The result is the object if successfully found, cast to the given {@link Class} {@code klasse}
-     * (which must be an extension of the {@link BeehiveObject} class).
+     * (which must be an extension of the {@link TitanObject} class).
      * Otherwise, {@link BeehiveObjectStore.NotFoundException} is thrown.
      * If the object is successfully retrieved but has a valid,
      * exposed delete-token, a {@link BeehiveObjectStore.DeletedObjectException} is thrown.
@@ -117,7 +117,7 @@ public class RetrievableObject {
      * @throws BeehiveObjectStore.DeletedObjectException if the object was found but has a valid delete-token in the metadata.
      * @throws RemoteException 
      */
-    public static <C extends BeehiveObject> C retrieve(RetrievableObject.Handler<? extends RetrievableObject.Handler.Object> handler,
+    public static <C extends TitanObject> C retrieve(RetrievableObject.Handler<? extends RetrievableObject.Handler.Object> handler,
             Class<? extends C> klasse,
             TitanGuid objectId)
     throws ClassCastException, BeehiveObjectStore.NotFoundException, BeehiveObjectStore.DeletedObjectException {

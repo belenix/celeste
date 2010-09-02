@@ -24,8 +24,8 @@
 package sunlabs.titan.node.services.api;
 
 import sunlabs.titan.TitanGuidImpl;
-import sunlabs.titan.api.BeehiveObject;
+import sunlabs.titan.api.TitanObject;
 
 public interface RetrieveObject {
-    public BeehiveObject retrieveObject(final TitanGuidImpl objectId);
+    public TitanObject retrieveObject(final TitanGuidImpl objectId);
 }

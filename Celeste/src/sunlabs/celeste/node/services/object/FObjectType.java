@@ -24,8 +24,8 @@
 package sunlabs.celeste.node.services.object;
 
 import sunlabs.celeste.client.ReplicationParameters;
-import sunlabs.titan.api.BeehiveObject;
 import sunlabs.titan.api.TitanGuid;
+import sunlabs.titan.api.TitanObject;
 import sunlabs.titan.node.BeehiveObjectStore;
 import sunlabs.titan.node.object.DeleteableObject;
 import sunlabs.titan.node.object.RetrievableObject;
@@ -51,5 +51,5 @@ public interface FObjectType extends
         public int getReplicationCache();
     }
 
-    public FObjectType.FObject create(TitanGuid deleteTokenId, long timeToLive, ReplicationParameters replicationParams, BeehiveObject.Metadata metaData, byte[] data);
+    public FObjectType.FObject create(TitanGuid deleteTokenId, long timeToLive, ReplicationParameters replicationParams, TitanObject.Metadata metaData, byte[] data);
 }

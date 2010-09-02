@@ -30,7 +30,6 @@ import java.io.Serializable;
 import sunlabs.celeste.FileIdentifier;
 import sunlabs.celeste.client.ReplicationParameters;
 import sunlabs.celeste.node.services.api.AObjectVersionMapAPI;
-import sunlabs.titan.api.BeehiveObject;
 import sunlabs.titan.api.TitanGuid;
 import sunlabs.titan.api.XHTMLInspectable;
 import sunlabs.titan.node.BeehiveMessage.RemoteException;

@@ -28,7 +28,7 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.logging.Level;
 
-import sunlabs.titan.api.BeehiveObject;
+import sunlabs.titan.api.TitanObject;
 import sunlabs.titan.api.TitanGuid;
 import sunlabs.titan.api.TitanNodeId;
 import sunlabs.titan.node.BeehiveMessage;
@@ -36,7 +36,7 @@ import sunlabs.titan.node.BeehiveMessage.RemoteException;
 import sunlabs.titan.node.BeehiveNode;
 import sunlabs.titan.node.Publishers;
 import sunlabs.titan.node.TitanNodeIdImpl;
-import sunlabs.titan.node.services.BeehiveService;
+import sunlabs.titan.node.services.AbstractTitanService;
 import sunlabs.titan.node.services.PublishDaemon;
 
 /**
@@ -48,7 +48,7 @@ import sunlabs.titan.node.services.PublishDaemon;
 public class ReplicatableObject {
 	public interface Handler<T extends ReplicatableObject.Handler.Object> extends StorableObject.Handler<T> {
 	    /**
-	     * Replicate a {@link BeehiveObject} that implements the {@link ReplicatableObject.Handler.Object}
+	     * Replicate a {@link TitanObject} that implements the {@link ReplicatableObject.Handler.Object}
 	     * interface.
 	     * <p>
 	     * Implementations of this method are expected to cause an additional copy of the specified
@@ -70,7 +70,7 @@ public class ReplicatableObject {
 	    public BeehiveMessage replicateObject(BeehiveMessage message) throws ClassNotFoundException, ClassCastException, BeehiveMessage.RemoteException;
 	    
 	    /**
-	     * Specifies the specific behaviours of instances of {@link BeehiveObject} that implement {@link ReplicatableObject.Handler.Object}.
+	     * Specifies the specific behaviours of instances of {@link TitanObject} that implement {@link ReplicatableObject.Handler.Object}.
 	     */
 		public interface Object extends StorableObject.Handler.Object {
 
@@ -131,7 +131,7 @@ public class ReplicatableObject {
 	 * Must only be called by the root of the object id.
 	 * </p>
 	 */
-	public static void unpublishObjectRootHelper(BeehiveService handler, BeehiveMessage message) {
+	public static void unpublishObjectRootHelper(AbstractTitanService handler, BeehiveMessage message) {
 	    try {
 	        PublishDaemon.UnpublishObject.Request request = message.getPayload(PublishDaemon.UnpublishObject.Request.class, handler.getNode());
 

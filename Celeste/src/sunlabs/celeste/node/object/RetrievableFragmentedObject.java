@@ -30,8 +30,8 @@ import java.io.ObjectInputStream;
 import sunlabs.celeste.node.CelesteNode;
 import sunlabs.celeste.node.erasurecode.ErasureCode;
 import sunlabs.celeste.node.services.object.FObjectType;
-import sunlabs.titan.api.BeehiveObject;
 import sunlabs.titan.api.TitanGuid;
+import sunlabs.titan.api.TitanObject;
 import sunlabs.titan.node.BeehiveMessage;
 import sunlabs.titan.node.BeehiveMessage.RemoteException;
 import sunlabs.titan.node.BeehiveObjectStore;
@@ -39,7 +39,7 @@ import sunlabs.titan.node.object.BeehiveObjectHandler;
 import sunlabs.titan.node.object.DeleteableObject;
 
 public final class RetrievableFragmentedObject {
-    public interface Handler<T extends BeehiveObject> extends BeehiveObjectHandler {
+    public interface Handler<T extends TitanObject> extends BeehiveObjectHandler {
         public interface Object extends BeehiveObjectHandler.ObjectAPI {
 
         }
@@ -77,7 +77,7 @@ public final class RetrievableFragmentedObject {
      * If the DOLRObject is successfully retrieved but has a valid,
      * exposed delete-token, a DOLRObjectStore.DeletedException is thrown.
      */
-    public static BeehiveObject retrieveRemoteObject(RetrievableFragmentedObject.Handler<? extends RetrievableFragmentedObject.Handler.Object> objectType, TitanGuid objectId)
+    public static TitanObject retrieveRemoteObject(RetrievableFragmentedObject.Handler<? extends RetrievableFragmentedObject.Handler.Object> objectType, TitanGuid objectId)
     throws BeehiveObjectStore.DeletedObjectException {
         BeehiveMessage reply = objectType.getNode().sendToObject(objectId, objectType.getName(), "retrieveLocalObject", objectId);
 
@@ -85,7 +85,7 @@ public final class RetrievableFragmentedObject {
             return null;
         }
         try {
-            BeehiveObject object = reply.getPayload(BeehiveObject.class, objectType.getNode());
+            TitanObject object = reply.getPayload(TitanObject.class, objectType.getNode());
             if (object != null) {
                 if (!DeleteableObject.deleteTokenIsValid(object.getMetadata())) {
                     return object;
@@ -104,9 +104,9 @@ public final class RetrievableFragmentedObject {
         return null;
     }
 
-    public static BeehiveObject retrieveRemoteObject(RetrievableFragmentedObject.Handler<? extends RetrievableFragmentedObject.Handler.Object> objectType, StorableFragmentedObject.FragmentMap map)
+    public static TitanObject retrieveRemoteObject(RetrievableFragmentedObject.Handler<? extends RetrievableFragmentedObject.Handler.Object> objectType, StorableFragmentedObject.FragmentMap map)
       throws ErasureCode.UnsupportedAlgorithmException, ErasureCode.NotRecoverableException, BeehiveObjectStore.DeletedObjectException, BeehiveObjectStore.NotFoundException {
-        BeehiveObject object = retrieveRemoteObject(objectType, map.getObjectId());
+        TitanObject object = retrieveRemoteObject(objectType, map.getObjectId());
         if (object != null) {
             if (DeleteableObject.deleteTokenIsValid(object.getMetadata())) {
                 return null;
@@ -157,7 +157,7 @@ public final class RetrievableFragmentedObject {
                 byte[] data = erasureCoder.decodeData(fragments);
                 ByteArrayInputStream bis = new ByteArrayInputStream(data);
                 ObjectInputStream ois = new ObjectInputStream(bis);
-                BeehiveObject o = (BeehiveObject) ois.readObject();
+                TitanObject o = (TitanObject) ois.readObject();
                 return o;
             } catch (ClassCastException e) {
                 e.printStackTrace();

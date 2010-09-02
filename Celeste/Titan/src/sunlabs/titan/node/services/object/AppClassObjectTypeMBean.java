@@ -23,8 +23,8 @@
  */
 package sunlabs.titan.node.services.object;
 
-import sunlabs.titan.api.management.BeehiveServiceMBean;
+import sunlabs.titan.api.management.TitanServiceMBean;
 
-public interface AppClassObjectTypeMBean extends BeehiveServiceMBean {
+public interface AppClassObjectTypeMBean extends TitanServiceMBean {
 
 }

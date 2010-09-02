@@ -1,5 +1,5 @@
 /*
- * Copyright 2007-2008 Sun Microsystems, Inc. All Rights Reserved.
+ * Copyright 2007-2010 Oracle. All Rights Reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER
  *
  * This code is free software; you can redistribute it and/or modify
@@ -17,42 +17,38 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
  * 02110-1301 USA
  *
- * Please contact Sun Microsystems, Inc., 16 Network Circle, Menlo
- * Park, CA 94025 or visit www.sun.com if you need additional
- * information or have any questions.
+ * Please contact Oracle Corporation, 500 Oracle Parkway, Redwood Shores, CA 94065
+ * or visit www.oracle.com if you need additional information or
+ * have any questions.
  */
 package sunlabs.titan.node.services;
 
 import java.net.URI;
 import java.util.Map;
 
-import javax.management.InstanceAlreadyExistsException;
-import javax.management.MBeanRegistrationException;
-import javax.management.MalformedObjectNameException;
-import javax.management.NotCompliantMBeanException;
+import javax.management.JMException;
 
 import sunlabs.asdf.web.XML.XHTML;
 import sunlabs.asdf.web.http.HTTP;
 import sunlabs.titan.TitanGuidImpl;
-import sunlabs.titan.api.BeehiveObject;
+import sunlabs.titan.api.TitanObject;
 import sunlabs.titan.node.BeehiveMessage;
+import sunlabs.titan.node.BeehiveMessage.RemoteException;
 import sunlabs.titan.node.BeehiveNode;
 import sunlabs.titan.node.BeehiveObjectStore;
-import sunlabs.titan.node.BeehiveMessage.RemoteException;
 import sunlabs.titan.node.services.api.RetrieveObject;
 
-public final class RetrieveObjectService extends BeehiveService implements RetrieveObject, RetrieveObjectServiceMBean {
+public final class RetrieveObjectService extends AbstractTitanService implements RetrieveObject, RetrieveObjectServiceMBean {
     private final static long serialVersionUID = 1L;
-    public final static String name = BeehiveService.makeName(RetrieveObjectService.class, RetrieveObjectService.serialVersionUID);
+    public final static String name = AbstractTitanService.makeName(RetrieveObjectService.class, RetrieveObjectService.serialVersionUID);
 
-    public RetrieveObjectService(BeehiveNode node)
-    throws MalformedObjectNameException, NotCompliantMBeanException, InstanceAlreadyExistsException, MBeanRegistrationException {
+    public RetrieveObjectService(BeehiveNode node) throws JMException {
         super(node, RetrieveObjectService.name, "Retrieve objects from the object pool");
     }
 
     public BeehiveMessage retrieveLocalObject(BeehiveMessage message) {
         try {
-            BeehiveObject dolrData = this.node.getObjectStore().get(BeehiveObject.class, message.subjectId);
+            TitanObject dolrData = this.node.getObjectStore().get(TitanObject.class, message.subjectId);
             return message.composeReply(this.node.getNodeAddress(), dolrData);
 
 //        // For some reason, we failed to get the object that we've been asked
@@ -67,13 +63,13 @@ public final class RetrieveObjectService extends BeehiveService implements Retri
         }
     }
 
-    public BeehiveObject retrieveObject(final TitanGuidImpl objectId) {
+    public TitanObject retrieveObject(final TitanGuidImpl objectId) {
         BeehiveMessage reply = RetrieveObjectService.this.node.sendToObject(objectId, RetrieveObjectService.name, "retrieveLocalObject", objectId);
         if (!reply.getStatus().isSuccessful())
             return null;
 
         try {
-            return reply.getPayload(BeehiveObject.class, this.node);
+            return reply.getPayload(TitanObject.class, this.node);
         } catch (ClassNotFoundException e) {
             e.printStackTrace();
             throw new RuntimeException(e);

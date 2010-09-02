@@ -1,5 +1,5 @@
 /*
- * Copyright 2007-2009 Sun Microsystems, Inc. All Rights Reserved.
+ * Copyright 2007-2010 Oracle. All Rights Reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER
  *
  * This code is free software; you can redistribute it and/or modify
@@ -17,11 +17,10 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
  * 02110-1301 USA
  *
- * Please contact Sun Microsystems, Inc., 16 Network Circle, Menlo
- * Park, CA 94025 or visit www.sun.com if you need additional
- * information or have any questions.
+ * Please contact Oracle Corporation, 500 Oracle Parkway, Redwood Shores, CA 94065
+ * or visit www.oracle.com if you need additional information or
+ * have any questions.
  */
-
 package sunlabs.celeste.client;
 
 import java.io.BufferedOutputStream;
@@ -56,9 +55,9 @@ import sunlabs.celeste.client.operation.UnlockFileOperation;
 import sunlabs.celeste.client.operation.WriteFileOperation;
 import sunlabs.celeste.util.CelesteIO;
 import sunlabs.titan.TitanGuidImpl;
-import sunlabs.titan.api.BeehiveObject;
 import sunlabs.titan.api.Credential;
 import sunlabs.titan.api.TitanGuid;
+import sunlabs.titan.api.TitanObject;
 import sunlabs.titan.util.LRUCache;
 import sunlabs.titan.util.OrderedProperties;
 
@@ -575,7 +574,7 @@ public class CelesteProxy implements CelesteAPI {
         return (Credential) reply;
     }
 
-    public BeehiveObject.Metadata newCredential(NewCredentialOperation operation, Credential.Signature signature, Credential profile)
+    public TitanObject.Metadata newCredential(NewCredentialOperation operation, Credential.Signature signature, Credential profile)
     throws IOException, ClassNotFoundException,
         CelesteException.RuntimeException, CelesteException.AlreadyExistsException,
         CelesteException.NoSpaceException, CelesteException.VerificationException, CelesteException.CredentialException {
@@ -606,10 +605,10 @@ public class CelesteProxy implements CelesteAPI {
             return null;
         }
 
-        return (BeehiveObject.Metadata) reply;
+        return (TitanObject.Metadata) reply;
     }
 
-    public BeehiveObject.Metadata newNameSpace(NewNameSpaceOperation operation, Credential.Signature signature, Credential profile)
+    public TitanObject.Metadata newNameSpace(NewNameSpaceOperation operation, Credential.Signature signature, Credential profile)
     throws IOException, ClassNotFoundException,
         CelesteException.RuntimeException, CelesteException.AlreadyExistsException,
         CelesteException.NoSpaceException, CelesteException.VerificationException, CelesteException.CredentialException {
@@ -637,7 +636,7 @@ public class CelesteProxy implements CelesteAPI {
             return null;
         }
 
-        return (BeehiveObject.Metadata) reply;
+        return (TitanObject.Metadata) reply;
     }
 
     public OrderedProperties setOwnerAndGroup(SetOwnerAndGroupOperation operation, Credential.Signature signature)

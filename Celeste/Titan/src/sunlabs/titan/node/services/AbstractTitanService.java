@@ -31,11 +31,8 @@ import java.net.URI;
 import java.util.Map;
 
 import javax.management.AttributeChangeNotification;
-import javax.management.InstanceAlreadyExistsException;
+import javax.management.JMException;
 import javax.management.MBeanNotificationInfo;
-import javax.management.MBeanRegistrationException;
-import javax.management.MalformedObjectNameException;
-import javax.management.NotCompliantMBeanException;
 import javax.management.NotificationBroadcasterSupport;
 import javax.management.ObjectName;
 
@@ -43,11 +40,11 @@ import sunlabs.asdf.jmx.JMX;
 import sunlabs.asdf.util.Attributes;
 import sunlabs.asdf.web.XML.XHTML;
 import sunlabs.asdf.web.http.HTTP;
-import sunlabs.titan.api.Service;
 import sunlabs.titan.api.TitanNode;
-import sunlabs.titan.api.management.BeehiveServiceMBean;
+import sunlabs.titan.api.TitanService;
+import sunlabs.titan.api.management.TitanServiceMBean;
 import sunlabs.titan.node.BeehiveMessage;
-//import sunlabs.titan.node.BeehiveNode;
+import sunlabs.titan.node.BeehiveNode;
 import sunlabs.titan.node.util.DOLRLogger;
 import sunlabs.titan.node.util.DOLRLoggerMBean;
 import sunlabs.titan.util.WeakMBeanRegistrar;
@@ -81,18 +78,17 @@ import sunlabs.titan.util.WeakMBeanRegistrar;
  * reseting runtime parameters, and to display portions of the log file(s).
  * </p>
  */
-public abstract class BeehiveService extends NotificationBroadcasterSupport implements Service, BeehiveServiceMBean {
+public abstract class AbstractTitanService extends NotificationBroadcasterSupport implements TitanService, TitanServiceMBean {
     private final static long serialVersionUID = 1L;
 
     //
     // Arrange to use weak references for registrations with the MBean server.
     //
-    protected final static WeakMBeanRegistrar registrar =
-        new WeakMBeanRegistrar(ManagementFactory.getPlatformMBeanServer());
+    protected final static WeakMBeanRegistrar registrar = new WeakMBeanRegistrar(ManagementFactory.getPlatformMBeanServer());
 
-    public final static Attributes.Prototype LogFileSize = new Attributes.Prototype(BeehiveService.class, "LogFileSize", 8*1024*1024,
+    public final static Attributes.Prototype LogFileSize = new Attributes.Prototype(AbstractTitanService.class, "LogFileSize", 8*1024*1024,
             "The maximum number of bytes to allow a log file to grow before it is turned over");
-    public final static Attributes.Prototype LogFileCount = new Attributes.Prototype(BeehiveService.class, "LogFileCount", 10,
+    public final static Attributes.Prototype LogFileCount = new Attributes.Prototype(AbstractTitanService.class, "LogFileCount", 10,
             "The maximum number log files to keep.");
 
     /** The {@code Node} instance that this Application belongs to. */
@@ -119,18 +115,14 @@ public abstract class BeehiveService extends NotificationBroadcasterSupport impl
      * @param node
      * @param applicationName
      * @param description
-     * @throws MalformedObjectNameException
-     * @throws NotCompliantMBeanException
-     * @throws InstanceAlreadyExistsException
-     * @throws MBeanRegistrationException
+     * @throws JMException
      */
-    public BeehiveService(TitanNode node, String applicationName, String description)
-    throws MalformedObjectNameException, NotCompliantMBeanException, InstanceAlreadyExistsException, MBeanRegistrationException {
+    public AbstractTitanService(TitanNode node, String applicationName, String description) throws JMException {
         if (applicationName == null || applicationName.matches("\\s"))
             throw new IllegalArgumentException("applicationName must be non-null and cannot contain white space");
 
-        node.getConfiguration().add(BeehiveService.LogFileSize);
-        node.getConfiguration().add(BeehiveService.LogFileCount);
+        node.getConfiguration().add(AbstractTitanService.LogFileSize);
+        node.getConfiguration().add(AbstractTitanService.LogFileCount);
 
         this.name = applicationName;
         this.node = node;
@@ -142,18 +134,14 @@ public abstract class BeehiveService extends NotificationBroadcasterSupport impl
         new File(this.getSpoolDirectory()).mkdirs();
 
         this.log = new DOLRLogger(applicationName, node.getNodeId(), this.getSpoolDirectory(),
-                node.getConfiguration().asInt(BeehiveService.LogFileSize), node.getConfiguration().asInt(BeehiveService.LogFileCount));
+                node.getConfiguration().asInt(AbstractTitanService.LogFileSize), node.getConfiguration().asInt(AbstractTitanService.LogFileCount));
         //this.log.load();
 
         if (node.getJMXObjectName() != null) {
-            try {
-                this.jmxObjectNameRoot = JMX.objectName(node.getJMXObjectName(), applicationName);
+            this.jmxObjectNameRoot = JMX.objectName(node.getJMXObjectName(), applicationName);
 
-                BeehiveService.registrar.registerMBean(this.jmxObjectNameRoot, this, BeehiveServiceMBean.class);
-                BeehiveService.registrar.registerMBean(JMX.objectName(this.jmxObjectNameRoot, "log"), this.log, DOLRLoggerMBean.class);
-            } catch (InstanceAlreadyExistsException e) {
-                throw e;
-            }
+            AbstractTitanService.registrar.registerMBean(this.jmxObjectNameRoot, this, TitanServiceMBean.class);
+            AbstractTitanService.registrar.registerMBean(JMX.objectName(this.jmxObjectNameRoot, "log"), this.log, DOLRLoggerMBean.class);
         } else {
             this.jmxObjectNameRoot = null;
         }
@@ -255,7 +243,7 @@ public abstract class BeehiveService extends NotificationBroadcasterSupport impl
 
     /**
      * Get the path-name of the associated directory that is used to
-     * store or cache data for this {@link Service}.
+     * store or cache data for this {@link TitanService}.
      */
     public String getSpoolDirectory() {
         return this.node.getSpoolDirectory() + File.separator + "applications" + File.separator + this.name + File.separator;
@@ -365,8 +353,8 @@ public abstract class BeehiveService extends NotificationBroadcasterSupport impl
         this.setStatus("stopped");
     }
 
-    public static String makeName(Class<? extends Service> c, long version) {
-        return BeehiveService.makeName(c.getCanonicalName(), version);
+    public static String makeName(Class<? extends TitanService> c, long version) {
+        return AbstractTitanService.makeName(c.getCanonicalName(), version);
     }
 
     public static String makeName(String canonicalClassName, long version) {
@@ -378,7 +366,7 @@ public abstract class BeehiveService extends NotificationBroadcasterSupport impl
     }
 
     /**
-     * Given a name created by {@link BeehiveService#makeName(Class, long)},
+     * Given a name created by {@link AbstractTitanService#makeName(Class, long)},
      * extract two String tokens representing the original class name
      * and version.
      * <p>

@@ -50,9 +50,9 @@ import sunlabs.celeste.client.operation.WriteFileOperation;
 import sunlabs.celeste.node.services.object.AnchorObject;
 import sunlabs.celeste.node.services.object.BlockObject;
 import sunlabs.celeste.node.services.object.VersionObject;
-import sunlabs.titan.api.BeehiveObject;
 import sunlabs.titan.api.Credential;
 import sunlabs.titan.api.TitanGuid;
+import sunlabs.titan.api.TitanObject;
 import sunlabs.titan.util.OrderedProperties;
 
 /**
@@ -279,7 +279,7 @@ public interface CelesteAPI extends Closeable {
      * @throws CelesteException.NoSpaceException
      * @throws CelesteException.VerificationException
      */
-    public BeehiveObject.Metadata newCredential(NewCredentialOperation operation, Credential.Signature signature, Credential credential)
+    public TitanObject.Metadata newCredential(NewCredentialOperation operation, Credential.Signature signature, Credential credential)
     throws IOException, ClassNotFoundException,
            CelesteException.RuntimeException, CelesteException.AlreadyExistsException,
            CelesteException.NoSpaceException, CelesteException.VerificationException, CelesteException.CredentialException;
@@ -301,7 +301,7 @@ public interface CelesteAPI extends Closeable {
      * @throws CelesteException.VerificationException
      * @throws CelesteException.CredentialException
      */
-    public BeehiveObject.Metadata newNameSpace(NewNameSpaceOperation operation, Credential.Signature signature, Credential credential)
+    public TitanObject.Metadata newNameSpace(NewNameSpaceOperation operation, Credential.Signature signature, Credential credential)
     throws IOException, ClassNotFoundException,
            CelesteException.RuntimeException, CelesteException.AlreadyExistsException,
            CelesteException.NoSpaceException, CelesteException.VerificationException, CelesteException.CredentialException;

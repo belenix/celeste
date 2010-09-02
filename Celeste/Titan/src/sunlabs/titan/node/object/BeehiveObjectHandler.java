@@ -25,8 +25,8 @@ package sunlabs.titan.node.object;
 
 import java.io.Serializable;
 
-import sunlabs.titan.api.BeehiveObject;
-import sunlabs.titan.api.Service;
+import sunlabs.titan.api.TitanObject;
+import sunlabs.titan.api.TitanService;
 import sunlabs.titan.node.BeehiveMessage;
 import sunlabs.titan.node.PublishObjectMessage;
 import sunlabs.titan.node.UnpublishObjectMessage;
@@ -64,15 +64,15 @@ import sunlabs.titan.node.BeehiveMessage.RemoteException;
  * <p>
  * </p>
  *
- * @see BeehiveObject
- * @see Service
+ * @see TitanObject
+ * @see TitanService
  */
-public interface BeehiveObjectHandler/*<T extends BeehiveObjectHandler.ObjectAPI>*/ extends Service {
+public interface BeehiveObjectHandler/*<T extends BeehiveObjectHandler.ObjectAPI>*/ extends TitanService {
     /**
      * Every Beehive object handled by instances of {@code BeehiveObjectHandler}
      * must implement this interface.
      */
-    public interface ObjectAPI extends BeehiveObject {
+    public interface ObjectAPI extends TitanObject {
 
     }
     
@@ -121,7 +121,7 @@ public interface BeehiveObjectHandler/*<T extends BeehiveObjectHandler.ObjectAPI
      * {@link BeehiveObjectHandler.ObjectAPI} instance.
      * <p>
      * Every node that receives this message which also has a back-pointer
-     * to the specified {@link BeehiveObject} <em>MUST</em> delete that
+     * to the specified {@link TitanObject} <em>MUST</em> delete that
      * back-pointer and forward this message along the routing path.
      * </p>
      *

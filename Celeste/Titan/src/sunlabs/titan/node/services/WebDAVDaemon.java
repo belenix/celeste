@@ -52,10 +52,7 @@ import java.util.Map;
 import java.util.TreeSet;
 import java.util.logging.Level;
 
-import javax.management.InstanceAlreadyExistsException;
-import javax.management.MBeanRegistrationException;
-import javax.management.MalformedObjectNameException;
-import javax.management.NotCompliantMBeanException;
+import javax.management.JMException;
 import javax.xml.transform.Source;
 import javax.xml.transform.Templates;
 import javax.xml.transform.Transformer;
@@ -90,7 +87,7 @@ import sunlabs.asdf.web.http.WebDAVServerMain;
 import sunlabs.titan.Copyright;
 import sunlabs.titan.Release;
 import sunlabs.titan.TitanGuidImpl;
-import sunlabs.titan.api.BeehiveObject;
+import sunlabs.titan.api.TitanObject;
 import sunlabs.titan.api.TitanGuid;
 import sunlabs.titan.api.TitanNodeId;
 import sunlabs.titan.node.BeehiveNode;
@@ -107,7 +104,7 @@ import sunlabs.titan.util.OrderedProperties;
  * </p>
  *
  */
-public final class WebDAVDaemon extends BeehiveService implements WebDAVDaemonMBean {
+public final class WebDAVDaemon extends AbstractTitanService implements WebDAVDaemonMBean {
     private final static long serialVersionUID = 1L;
 
     private class Daemon extends Thread  {
@@ -310,7 +307,7 @@ public final class WebDAVDaemon extends BeehiveService implements WebDAVDaemonMB
 
     /**
      * Produce an {@link XHTML.Anchor} element that links to a XHTML document that
-     * inspects the {@link BeehiveObject} identified by the given {@link TitanGuidImpl}.
+     * inspects the {@link TitanObject} identified by the given {@link TitanGuidImpl}.
      * 
      * See {@link WebDAVDaemon} for the dispatch of the HTTP request the link induces.
      */
@@ -362,9 +359,8 @@ public final class WebDAVDaemon extends BeehiveService implements WebDAVDaemonMB
     
     transient private Daemon daemon;
 
-    public WebDAVDaemon(final BeehiveNode node)
-    throws MalformedURLException, MalformedObjectNameException, NotCompliantMBeanException, InstanceAlreadyExistsException, MBeanRegistrationException {
-        super(node, BeehiveService.makeName(WebDAVDaemon.class, WebDAVDaemon.serialVersionUID), "Beehive WebDAV Interface");
+    public WebDAVDaemon(final BeehiveNode node) throws JMException {
+        super(node, AbstractTitanService.makeName(WebDAVDaemon.class, WebDAVDaemon.serialVersionUID), "Beehive WebDAV Interface");
 
         node.configuration.add(WebDAVDaemon.Port);
         node.configuration.add(WebDAVDaemon.ServerRoot);

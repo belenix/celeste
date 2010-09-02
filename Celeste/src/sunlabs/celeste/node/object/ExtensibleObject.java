@@ -36,7 +36,6 @@ import java.util.zip.ZipException;
 
 import sunlabs.celeste.client.operation.ExtensibleOperation;
 import sunlabs.titan.api.TitanGuid;
-import sunlabs.titan.api.BeehiveObject;
 import sunlabs.titan.node.BeehiveMessage;
 import sunlabs.titan.node.BeehiveMessage.RemoteException;
 import sunlabs.titan.node.object.BeehiveObjectHandler;

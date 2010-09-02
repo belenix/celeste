@@ -1,5 +1,5 @@
 /*
- * Copyright 2007-2008 Sun Microsystems, Inc. All Rights Reserved.
+ * Copyright 2007-2010 Oracle. All Rights Reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER
  *
  * This code is free software; you can redistribute it and/or modify
@@ -17,9 +17,9 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
  * 02110-1301 USA
  *
- * Please contact Sun Microsystems, Inc., 16 Network Circle, Menlo
- * Park, CA 94025 or visit www.sun.com if you need additional
- * information or have any questions.
+ * Please contact Oracle Corporation, 500 Oracle Parkway, Redwood Shores, CA 94065
+ * or visit www.oracle.com if you need additional information or
+ * have any questions.
  */
 package sunlabs.celeste.node.services;
 
@@ -33,10 +33,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.logging.Level;
 
-import javax.management.InstanceAlreadyExistsException;
-import javax.management.MBeanRegistrationException;
-import javax.management.MalformedObjectNameException;
-import javax.management.NotCompliantMBeanException;
+import javax.management.JMException;
 
 import sunlabs.asdf.util.Time;
 import sunlabs.asdf.web.XML.XHTML;
@@ -49,9 +46,9 @@ import sunlabs.celeste.client.operation.LockFileOperation;
 import sunlabs.celeste.node.services.api.AObjectVersionMapAPI;
 import sunlabs.celeste.node.services.object.VersionObject;
 import sunlabs.titan.TitanGuidImpl;
-import sunlabs.titan.api.BeehiveObject;
 import sunlabs.titan.api.ObjectStore;
 import sunlabs.titan.api.TitanGuid;
+import sunlabs.titan.api.TitanObject;
 import sunlabs.titan.node.AbstractBeehiveObject;
 import sunlabs.titan.node.BeehiveMessage;
 import sunlabs.titan.node.BeehiveMessage.RemoteException;
@@ -62,7 +59,7 @@ import sunlabs.titan.node.BeehiveObjectStore.NoSpaceException;
 import sunlabs.titan.node.Publishers;
 import sunlabs.titan.node.object.AbstractObjectHandler;
 import sunlabs.titan.node.object.MutableObject;
-import sunlabs.titan.node.services.BeehiveService;
+import sunlabs.titan.node.services.AbstractTitanService;
 import sunlabs.titan.node.services.PublishDaemon;
 import sunlabs.titan.util.DOLRStatus;
 
@@ -128,7 +125,7 @@ import sunlabs.titan.util.DOLRStatus;
  */
 public class AObjectVersionService extends AbstractObjectHandler implements AObjectVersionMapAPI {
     private final static long serialVersionUID = 1L;
-    private final static String name = BeehiveService.makeName(AObjectVersionService.class, AObjectVersionService.serialVersionUID);
+    private final static String name = AbstractTitanService.makeName(AObjectVersionService.class, AObjectVersionService.serialVersionUID);
 
     /**
      * A lock on a Celeste file.
@@ -343,8 +340,7 @@ public class AObjectVersionService extends AbstractObjectHandler implements AObj
         }
     }
 
-    public AObjectVersionService(BeehiveNode node)
-    throws MalformedObjectNameException, NotCompliantMBeanException, InstanceAlreadyExistsException, MBeanRegistrationException {
+    public AObjectVersionService(BeehiveNode node) throws JMException {
         super(node, AObjectVersionService.name, "AObject Version Service");
     }
 
@@ -608,7 +604,7 @@ public class AObjectVersionService extends AbstractObjectHandler implements AObj
             //
             // All of this is just to ensure there is only one of these objects in the system at a time.
             // For each published object in the request...
-    		for (Map.Entry<TitanGuid, BeehiveObject.Metadata> entry : publishRequest.getObjectsToPublish().entrySet()) {
+    		for (Map.Entry<TitanGuid, TitanObject.Metadata> entry : publishRequest.getObjectsToPublish().entrySet()) {
     			// This should be part of a new ReplicatedObject helper.
     			Set<Publishers.PublishRecord> publisherSet = this.node.getObjectPublishers().getPublishersAndLock(entry.getKey());
     			try {

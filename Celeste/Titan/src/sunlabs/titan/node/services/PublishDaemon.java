@@ -37,10 +37,7 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 
-import javax.management.InstanceAlreadyExistsException;
-import javax.management.MBeanRegistrationException;
-import javax.management.MalformedObjectNameException;
-import javax.management.NotCompliantMBeanException;
+import javax.management.JMException;
 
 import sunlabs.asdf.jmx.ThreadMBean;
 import sunlabs.asdf.util.Attributes;
@@ -48,7 +45,7 @@ import sunlabs.asdf.util.Time;
 import sunlabs.asdf.web.XML.XHTML;
 import sunlabs.asdf.web.http.HTTP;
 import sunlabs.asdf.web.http.HttpMessage;
-import sunlabs.titan.api.BeehiveObject;
+import sunlabs.titan.api.TitanObject;
 import sunlabs.titan.api.ObjectStore;
 import sunlabs.titan.api.TitanGuid;
 import sunlabs.titan.node.BeehiveMessage;
@@ -86,9 +83,9 @@ import sunlabs.titan.node.services.api.Publish;
  *
  * @author Glenn Scott - Sun Microsystems Laboratories
  */
-public final class PublishDaemon extends BeehiveService implements Publish, PublishDaemonMBean {
+public final class PublishDaemon extends AbstractTitanService implements Publish, PublishDaemonMBean {
     private final static long serialVersionUID = 1L;
-    private final static String name = BeehiveService.makeName(PublishDaemon.class, PublishDaemon.serialVersionUID);
+    private final static String name = AbstractTitanService.makeName(PublishDaemon.class, PublishDaemon.serialVersionUID);
 
     /**
      * The number of seconds between each iteration of the object publishing task.
@@ -139,8 +136,7 @@ public final class PublishDaemon extends BeehiveService implements Publish, Publ
     	}
     }
 
-    public PublishDaemon(final BeehiveNode node)
-    throws MalformedObjectNameException, NotCompliantMBeanException, InstanceAlreadyExistsException, MBeanRegistrationException {
+    public PublishDaemon(final BeehiveNode node) throws JMException {
         super(node, PublishDaemon.name, "Publish Objects in the Object Store");
 
         node.configuration.add(PublishDaemon.PublishObjectInterstitialSleepMillis);
@@ -321,7 +317,7 @@ public final class PublishDaemon extends BeehiveService implements Publish, Publ
         			// Try to get a lock on each object. If that fails, just skip it because whatever Thread has it
         			// locked will eventually unlock it and that will result in a publish or unpublish of that object.
         			//
-        			BeehiveObject object = objectStore.tryGetAndLock(BeehiveObject.class, objectId);
+        			TitanObject object = objectStore.tryGetAndLock(TitanObject.class, objectId);
         			if (object != null) {
         				try {
         					if (object.getRemainingSecondsToLive(Time.currentTimeInSeconds()) < 1) {
@@ -477,13 +473,13 @@ public final class PublishDaemon extends BeehiveService implements Publish, Publ
     }
 
     /**
-     * Publish the availability of the given {@link BeehiveObject}.
+     * Publish the availability of the given {@link TitanObject}.
      * <p>
      * A {@link PublishObjectMessage} is composed and routed through the local node to the node that is the root of the object's identifier.
      * The reply {@link BeehiveMessage} is returned.
      * </p>
      */
-    public BeehiveMessage publish(BeehiveObject object) {
+    public BeehiveMessage publish(TitanObject object) {
     	long publishRecordSecondsToLive = Math.min(this.getPublishRecordSecondsToLive(), object.getRemainingSecondsToLive(Time.currentTimeInSeconds()));
 
     	if (this.log.isLoggable(Level.FINEST)) {
@@ -515,7 +511,7 @@ public final class PublishDaemon extends BeehiveService implements Publish, Publ
         return this.node.receive(message);
     }
 
-    public BeehiveMessage unpublish(BeehiveObject object, UnpublishObject.Type type) {
+    public BeehiveMessage unpublish(TitanObject object, UnpublishObject.Type type) {
         PublishDaemon.UnpublishObject.Request request = new PublishDaemon.UnpublishObject.Request(object.getObjectId(), type);
         if (this.log.isLoggable(Level.FINEST)) {
             this.log.finest("%s %s", object.getObjectId(), object.getObjectType());
@@ -675,12 +671,12 @@ public final class PublishDaemon extends BeehiveService implements Publish, Publ
      */
     public static class PublishObject {
     	/**
-    	 * A message from a {@link BeehiveNode} publishing the availability of one or more {@link BeehiveObject} instances.
+    	 * A message from a {@link BeehiveNode} publishing the availability of one or more {@link TitanObject} instances.
     	 */
         public static class Request implements sunlabs.titan.node.services.api.Publish.Request {
             private static final long serialVersionUID = 1L;
             
-            private Map<TitanGuid,BeehiveObject.Metadata> objects;
+            private Map<TitanGuid,TitanObject.Metadata> objects;
             private NodeAddress publisher;
             private long secondsToLive;
 
@@ -697,11 +693,11 @@ public final class PublishDaemon extends BeehiveService implements Publish, Publ
              *  
              * @param publisher The {@code NodeAddress} of the {@link BeehiveNode} publishing the objects.
              * @param secondsToLive The number of seconds each publish record should exist.
-             * @param object One or more {@link BeehiveObject} instances to publish.
+             * @param object One or more {@link TitanObject} instances to publish.
              */
-            public Request(NodeAddress publisher, long secondsToLive, BeehiveObject...object) {
-            	this.objects = new HashMap<TitanGuid,BeehiveObject.Metadata>();
-            	for (BeehiveObject o : object) {
+            public Request(NodeAddress publisher, long secondsToLive, TitanObject...object) {
+            	this.objects = new HashMap<TitanGuid,TitanObject.Metadata>();
+            	for (TitanObject o : object) {
             		this.objects.put(o.getObjectId(), o.getMetadata());
             	}
             	
@@ -735,9 +731,9 @@ public final class PublishDaemon extends BeehiveService implements Publish, Publ
             }
 
             /**
-             * Get the map of {@link BeehiveObject}s in this Request.
+             * Get the map of {@link TitanObject}s in this Request.
              */
-            public Map<TitanGuid,BeehiveObject.Metadata> getObjectsToPublish() {
+            public Map<TitanGuid,TitanObject.Metadata> getObjectsToPublish() {
             	return this.objects;
             }
 
@@ -774,7 +770,7 @@ public final class PublishDaemon extends BeehiveService implements Publish, Publ
     public static class UnpublishObject {
         public enum  Type { OPTIONAL, REQUIRED };
         /**
-         * A message from a node unpublishing the availability of a {@link BeehiveObject}.
+         * A message from a node unpublishing the availability of a {@link TitanObject}.
          */
     	public static class Request implements Serializable {
     		private final static long serialVersionUID = 1L;

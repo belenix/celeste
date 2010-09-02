@@ -30,17 +30,17 @@ import java.util.Set;
 
 import sunlabs.asdf.web.XML.XHTML;
 import sunlabs.asdf.web.http.HTTP;
-import sunlabs.titan.api.BeehiveObject;
-import sunlabs.titan.api.Service;
+import sunlabs.titan.api.TitanObject;
+import sunlabs.titan.api.TitanService;
 import sunlabs.titan.api.TitanGuid;
 import sunlabs.titan.node.BeehiveMessage;
 import sunlabs.titan.node.BeehiveMessage.RemoteException;
 import sunlabs.titan.node.BeehiveObjectStore;
 import sunlabs.titan.node.Publishers.PublishRecord;
 
-public interface Reflection extends Service {
+public interface Reflection extends TitanService {
 	@Deprecated
-    public BeehiveObject retrieveObject(final TitanGuid objectId) throws RemoteException;
+    public TitanObject retrieveObject(final TitanGuid objectId) throws RemoteException;
 
     public static class ObjectType {
         public static class Request implements Serializable {
@@ -128,7 +128,7 @@ public interface Reflection extends Service {
      * Get the name of the type of the object identified by {@link TitanGuid} {@code objectId}.
      * 
      * @param objectId
-     * @return the String name of the type of the {@link BeehiveObject} specified by the parameter {@code objectId}.
+     * @return the String name of the type of the {@link TitanObject} specified by the parameter {@code objectId}.
      * @throws ClassCastException
      * @throws ClassNotFoundException
      * @throws RemoteException 

@@ -27,15 +27,12 @@ import java.net.URI;
 import java.nio.ByteBuffer;
 import java.util.Map;
 
-import javax.management.InstanceAlreadyExistsException;
-import javax.management.MBeanRegistrationException;
-import javax.management.MalformedObjectNameException;
-import javax.management.NotCompliantMBeanException;
+import javax.management.JMException;
 
 import sunlabs.asdf.web.XML.XHTML;
 import sunlabs.asdf.web.http.HTTP;
 import sunlabs.titan.TitanGuidImpl;
-import sunlabs.titan.api.BeehiveObject;
+import sunlabs.titan.api.TitanObject;
 import sunlabs.titan.api.TitanGuid;
 import sunlabs.titan.node.AbstractBeehiveObject;
 import sunlabs.titan.node.BeehiveMessage;
@@ -45,7 +42,7 @@ import sunlabs.titan.node.object.MutableObject;
 
 public class IntegerObjectType extends AbstractObjectHandler implements MutableObject.Handler<MutableObject.Handler.ObjectAPI> {
     private static final long serialVersionUID = 1L;
-    private final static String name = BeehiveService.makeName(IntegerObjectType.class, IntegerObjectType.serialVersionUID);
+    private final static String name = AbstractTitanService.makeName(IntegerObjectType.class, IntegerObjectType.serialVersionUID);
 
     /*
      * Instances of this class are actually object replicas,
@@ -72,12 +69,11 @@ public class IntegerObjectType extends AbstractObjectHandler implements MutableO
         return null;
     }
 
-    public IntegerObjectType.IntegerObject create(BeehiveObject object) {
+    public IntegerObjectType.IntegerObject create(TitanObject object) {
         return null;
     }
 
-    public IntegerObjectType(BeehiveNode node)
-    throws MalformedObjectNameException, NotCompliantMBeanException, InstanceAlreadyExistsException, MBeanRegistrationException {
+    public IntegerObjectType(BeehiveNode node) throws JMException {
         super(node, IntegerObjectType.name, "Mutable Object");
     }
 

@@ -34,7 +34,7 @@ import java.util.TreeSet;
 import sunlabs.asdf.web.XML.XHTML;
 import sunlabs.asdf.web.http.HTTP;
 import sunlabs.titan.TitanGuidImpl;
-import sunlabs.titan.api.BeehiveObject;
+import sunlabs.titan.api.TitanObject;
 import sunlabs.titan.api.ObjectStore;
 import sunlabs.titan.api.TitanGuid;
 import sunlabs.titan.node.object.AbstractObjectHandler;
@@ -42,7 +42,7 @@ import sunlabs.titan.node.object.DeleteableObject;
 import sunlabs.titan.util.OrderedProperties;
 
 /**
- * The abstract class implementation of the {@link BeehiveObject} interface.
+ * The abstract class implementation of the {@link TitanObject} interface.
  * Object implementors extend this class to take care of the basic behaviours of a {@code BeehiveObject}.
  * <p>
  * Most data objects available from the Beehive object pool are stored in the backing-store of some
@@ -94,10 +94,10 @@ import sunlabs.titan.util.OrderedProperties;
  * </ol>
  *
  */
-public abstract class AbstractBeehiveObject implements BeehiveObject {
+public abstract class AbstractBeehiveObject implements TitanObject {
     private static final long serialVersionUID = 1L;
 
-    public static final class Metadata extends OrderedProperties implements BeehiveObject.Metadata {
+    public static final class Metadata extends OrderedProperties implements TitanObject.Metadata {
         private static final long serialVersionUID = 1L;
 
         public static final Metadata NONE = null;
@@ -121,7 +121,7 @@ public abstract class AbstractBeehiveObject implements BeehiveObject {
             return this;
         }
 
-        public void putAll(BeehiveObject.Metadata meta) {
+        public void putAll(TitanObject.Metadata meta) {
             if (meta != null && meta != AbstractBeehiveObject.Metadata.NONE) {
                 for (Iterator<Object> i = meta.keySet().iterator(); i.hasNext(); /**/) {
                     String key = (String) i.next();
@@ -150,7 +150,7 @@ public abstract class AbstractBeehiveObject implements BeehiveObject {
 
     protected TitanGuid objectId;
 
-    private BeehiveObject.Metadata metaData;
+    private TitanObject.Metadata metaData;
 
     /**
      * 
@@ -194,10 +194,10 @@ public abstract class AbstractBeehiveObject implements BeehiveObject {
     }
     
     public long getRemainingSecondsToLive(long now) {
-    	if (this.getTimeToLive() != BeehiveObject.INFINITE_TIME_TO_LIVE) {
+    	if (this.getTimeToLive() != TitanObject.INFINITE_TIME_TO_LIVE) {
     		return this.getCreationTime() + this.getTimeToLive() - now;
     	}
-    	return BeehiveObject.INFINITE_TIME_TO_LIVE;
+    	return TitanObject.INFINITE_TIME_TO_LIVE;
     }
 
     public void setDeleteTokenId(TitanGuid deleteTokenId) {
@@ -210,11 +210,11 @@ public abstract class AbstractBeehiveObject implements BeehiveObject {
         return this.getPropertyAsObjectId(ObjectStore.METADATA_DELETETOKENID, null);
     }
 
-    public BeehiveObject.Metadata getMetadata() {
+    public TitanObject.Metadata getMetadata() {
         return this.metaData;
     }
 
-    public BeehiveObject.Metadata setProperty(String name, Object value) {
+    public TitanObject.Metadata setProperty(String name, Object value) {
         return this.getMetadata().setProperty(name, value);
     }
 

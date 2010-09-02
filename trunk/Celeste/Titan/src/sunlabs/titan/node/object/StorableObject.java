@@ -36,7 +36,7 @@ import java.util.concurrent.FutureTask;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 
-import sunlabs.titan.api.BeehiveObject;
+import sunlabs.titan.api.TitanObject;
 import sunlabs.titan.api.ObjectStore;
 import sunlabs.titan.api.TitanGuid;
 import sunlabs.titan.api.TitanNode;
@@ -53,7 +53,7 @@ import sunlabs.titan.util.DOLRStatus;
 import sunlabs.titan.util.OrderedProperties;
 
 /**
- * {@link BeehiveObject} and {@link BeehiveObjectHander} classes implementing the interfaces specified
+ * {@link TitanObject} and {@link BeehiveObjectHander} classes implementing the interfaces specified
  * in this class implement the capability of objects to be
  * stored in the Beehive object pool.
  * 
@@ -61,7 +61,7 @@ import sunlabs.titan.util.OrderedProperties;
  */
 public final class StorableObject {
     /**
-     * {@link BeehiveObjectHandler}'s {@link BeehiveObject}'s that are storable in the Beehive object pool implement implement this interface.
+     * {@link BeehiveObjectHandler}'s {@link TitanObject}'s that are storable in the Beehive object pool implement implement this interface.
      *
      * @param <T>
      */
@@ -319,10 +319,10 @@ public final class StorableObject {
      * Wrap an invocation of the {@link StorableObject.Store} in a {@link FutureTask} object.
      */
     public static class StoreTask extends FutureTask<BeehiveMessage> {
-        private BeehiveObject object;
+        private TitanObject object;
         private TitanGuid destination;
 
-        public StoreTask(StorableObject.Handler<? extends StorableObject.Handler.Object>  handler, BeehiveObject object, TitanNodeId destination, CountDownLatch latch) {
+        public StoreTask(StorableObject.Handler<? extends StorableObject.Handler.Object>  handler, TitanObject object, TitanNodeId destination, CountDownLatch latch) {
             super(new StorableObject.StoreTask.Store(handler, object, destination, latch));
             this.object = object;
             this.destination = destination;
@@ -339,10 +339,10 @@ public final class StorableObject {
         private static class Store implements Callable<BeehiveMessage> {
             private  StorableObject.Handler<? extends StorableObject.Handler.Object>  handler;
             private TitanNodeId destination;
-            private BeehiveObject object;
+            private TitanObject object;
             private CountDownLatch latch;
 
-            public Store(StorableObject.Handler<? extends StorableObject.Handler.Object> handler, BeehiveObject object, TitanNodeId destination, CountDownLatch latch) {
+            public Store(StorableObject.Handler<? extends StorableObject.Handler.Object> handler, TitanObject object, TitanNodeId destination, CountDownLatch latch) {
                 this.latch = latch;
                 this.handler = handler;
                 this.destination = destination;

@@ -98,16 +98,16 @@ public interface ObjectStore extends XHTMLInspectable, Iterable<TitanGuid> {
      *
      * @param object
 
-     * @throws InvalidObjectException The {@link BeehiveObject} is invalid because of incorrect parameters.
-     * @throws ObjectExistenceException The {@link BeehiveObject} already exists.
-     * @throws NoSpaceException There is no space on this node for the {@link BeehiveObject}
-     * @throws UnacceptableObjectException The {@link BeehiveObject} is unacceptable as it is presented due
+     * @throws InvalidObjectException The {@link TitanObject} is invalid because of incorrect parameters.
+     * @throws ObjectExistenceException The {@link TitanObject} already exists.
+     * @throws NoSpaceException There is no space on this node for the {@link TitanObject}
+     * @throws UnacceptableObjectException The {@link TitanObject} is unacceptable as it is presented due
      *         to some inconsistency or the object's {@link BeehiveObjectHandler} rejected it during publishing.
      */
-    public TitanGuid create(BeehiveObject object) throws InvalidObjectException, ObjectExistenceException, NoSpaceException, UnacceptableObjectException;
+    public TitanGuid create(TitanObject object) throws InvalidObjectException, ObjectExistenceException, NoSpaceException, UnacceptableObjectException;
 
     /**
-     * Given a {@link TitanGuid} get the corresponding {@link BeehiveObject} from the local object store.
+     * Given a {@link TitanGuid} get the corresponding {@link TitanObject} from the local object store.
       * <p>
      * If the object is not found, the node
      * will perform a clean-up and <em>unpublish</em> of the specified {@code TitanGuid}
@@ -116,8 +116,8 @@ public interface ObjectStore extends XHTMLInspectable, Iterable<TitanGuid> {
      * </p>
      * <p>
      * The BeehiveObject instance returned from this method cannot be put back in the object store
-     * (ie. the subject of a {@link ObjectStore#store(BeehiveObject) store} or
-     * {@link ObjectStore#update(BeehiveObject) update} method).
+     * (ie. the subject of a {@link ObjectStore#store(TitanObject) store} or
+     * {@link ObjectStore#update(TitanObject) update} method).
      * </p>
      * <p>
      * See
@@ -131,11 +131,11 @@ public interface ObjectStore extends XHTMLInspectable, Iterable<TitanGuid> {
      * @param objectId
      * @throws ClassCastException
      */
-    public <C extends BeehiveObject> C get(final Class<? extends C> klasse, final TitanGuid objectId) throws ClassCastException,
+    public <C extends TitanObject> C get(final Class<? extends C> klasse, final TitanGuid objectId) throws ClassCastException,
         BeehiveObjectStore.NotFoundException;
 
     /**
-     * Given a {@link TitanGuid} get the corresponding {@link BeehiveObject} from the local object store.
+     * Given a {@link TitanGuid} get the corresponding {@link TitanObject} from the local object store.
      * <p>
      * If the object is not found, the node
      * will perform a clean-up and <em>unpublish</em> of the specified {@code TitanGuid}
@@ -144,23 +144,23 @@ public interface ObjectStore extends XHTMLInspectable, Iterable<TitanGuid> {
      * </p>
      * <p>
      * The {@code BeehiveObject} instance returned from this method is locked and must be explicitly unlocked
-     * (see {@link ObjectStore#unlock(BeehiveObject)})
+     * (see {@link ObjectStore#unlock(TitanObject)})
      * </p>
      * <p>
      * See
-     * {@link ObjectStore#get} to obtain an instance of a {@link BeehiveObject} which is not locked.
+     * {@link ObjectStore#get} to obtain an instance of a {@link TitanObject} which is not locked.
      * </p>
      *
      * @param objectId the {@link TitanGuid} of the stored object to retrieve.
      * @throws ClassCastException if the stored object is not the specified class.
      * @throws BeehiveObjectStore.NotFoundException if the stored object is not found
      */
-    public <C extends BeehiveObject> C getAndLock(final Class<? extends C> klasse, final TitanGuid objectId) throws ClassCastException,
+    public <C extends TitanObject> C getAndLock(final Class<? extends C> klasse, final TitanGuid objectId) throws ClassCastException,
         BeehiveObjectStore.NotFoundException;
 
     /**
      * Given a {@link TitanGuid} try to obtain a locked instance of the corresponding
-     * {@link BeehiveObject} from the local object store.
+     * {@link TitanObject} from the local object store.
      * (See {@link #getAndLock(Class, TitanGuid)})
      * <p>
      * If the object cannot be immediately locked, the return result is {@code null}.
@@ -170,34 +170,34 @@ public interface ObjectStore extends XHTMLInspectable, Iterable<TitanGuid> {
      * @throws ClassCastException if the stored object is not the specified class.
      * @throws BeehiveObjectStore.NotFoundException if the stored object is not found
      */
-    public <C extends BeehiveObject> C tryGetAndLock(final Class<? extends C> klasse, final TitanGuid objectId) throws ClassCastException,
+    public <C extends TitanObject> C tryGetAndLock(final Class<? extends C> klasse, final TitanGuid objectId) throws ClassCastException,
         BeehiveObjectStore.NotFoundException;
 
     /**
-     * Store (either create or update as appropriate) the given {@link BeehiveObject} in the object store.
+     * Store (either create or update as appropriate) the given {@link TitanObject} in the object store.
      * The object must be already locked by the current thread (see {@link #lock(TitanGuid)}).
      * <p>
-     * As a side-effect, the {@link TitanGuid} of the object is computed and set via {@link BeehiveObject#setObjectId(TitanGuid)}.
+     * As a side-effect, the {@link TitanGuid} of the object is computed and set via {@link TitanObject#setObjectId(TitanGuid)}.
      * </p>
      */
-    public TitanGuid store(BeehiveObject object) throws InvalidObjectException, NoSpaceException, UnacceptableObjectException;
+    public TitanGuid store(TitanObject object) throws InvalidObjectException, NoSpaceException, UnacceptableObjectException;
 
     /**
-     * Update an existing {@link BeehiveObject} in the object store.
+     * Update an existing {@link TitanObject} in the object store.
      * The object <em>must</em> already exist.
      * The object <em>must</em> be locked by the current Thread (see {@link #lock(TitanGuid)}).
      */
-    public TitanGuid update(BeehiveObject object) throws InvalidObjectException, ObjectExistenceException, NoSpaceException,
+    public TitanGuid update(TitanObject object) throws InvalidObjectException, ObjectExistenceException, NoSpaceException,
         UnacceptableObjectException, IOException;
 
     /**
-     * Remove a (locked) {@link BeehiveObject} from the local object store.
+     * Remove a (locked) {@link TitanObject} from the local object store.
      * <p>
-     * The {@link BeehiveObject} must be locked by the object store.
+     * The {@link TitanObject} must be locked by the object store.
      * (see {@link #getAndLock(Class, TitanGuid)}, and {@link #lock(TitanGuid)}
      * </p>
      */
-    public boolean remove(BeehiveObject object) throws IllegalArgumentException;
+    public boolean remove(TitanObject object) throws IllegalArgumentException;
 
     /**
      * Remove a (locked) {@link TitanGuid} from the local object store.  An Unpublish message is NOT sent.
@@ -213,9 +213,9 @@ public interface ObjectStore extends XHTMLInspectable, Iterable<TitanGuid> {
      * <p>
      * NOTE: this method does NOT cause a Publish or Unpublish message to be emitted.
      * </p>
-     * @see ObjectStore#unlock(BeehiveObject)
+     * @see ObjectStore#unlock(TitanObject)
      *
-     * @param objectId the {@link TitanGuid} of the {@link BeehiveObject} to lock.
+     * @param objectId the {@link TitanGuid} of the {@link TitanObject} to lock.
      */
     public void unlock(TitanGuid objectId);
 
@@ -227,7 +227,7 @@ public interface ObjectStore extends XHTMLInspectable, Iterable<TitanGuid> {
      * @see ObjectStore#unlock(TitanGuid)
      */
     // XXX Instead of returning a BeehiveMessage, return the actual Publish.Result.  This means the Publish and Unpublish methods always return a Result.
-    public BeehiveMessage unlock(BeehiveObject object);
+    public BeehiveMessage unlock(TitanObject object);
 
     public XMLObjectStore toXML();
 }

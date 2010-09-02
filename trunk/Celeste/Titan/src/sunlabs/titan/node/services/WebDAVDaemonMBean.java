@@ -23,8 +23,8 @@
  */
 package sunlabs.titan.node.services;
 
-import sunlabs.titan.api.management.BeehiveServiceMBean;
+import sunlabs.titan.api.management.TitanServiceMBean;
 
-public interface WebDAVDaemonMBean extends BeehiveServiceMBean {
+public interface WebDAVDaemonMBean extends TitanServiceMBean {
 
 }

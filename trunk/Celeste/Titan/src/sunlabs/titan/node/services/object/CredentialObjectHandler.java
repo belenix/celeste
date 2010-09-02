@@ -1,5 +1,5 @@
 /*
- * Copyright 2009-2010 Oracle. All Rights Reserved.
+ * Copyright 2007-2010 Oracle. All Rights Reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER
  *
  * This code is free software; you can redistribute it and/or modify
@@ -17,11 +17,10 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
  * 02110-1301 USA
  *
- * Please contact Oracle, 16 Network Circle, Menlo
- * Park, CA 94025 or visit www.oracle.com if you need additional
- * information or have any questions.
+ * Please contact Oracle Corporation, 500 Oracle Parkway, Redwood Shores, CA 94065
+ * or visit www.oracle.com if you need additional information or
+ * have any questions.
  */
-
 package sunlabs.titan.node.services.object;
 
 import java.io.IOException;
@@ -31,14 +30,11 @@ import java.util.Map;
 import java.util.Set;
 import java.util.logging.Level;
 
-import javax.management.InstanceAlreadyExistsException;
-import javax.management.MBeanRegistrationException;
-import javax.management.MalformedObjectNameException;
-import javax.management.NotCompliantMBeanException;
+import javax.management.JMException;
 
 import sunlabs.asdf.web.XML.XHTML;
 import sunlabs.asdf.web.http.HTTP;
-import sunlabs.titan.api.BeehiveObject.Metadata;
+import sunlabs.titan.api.TitanObject.Metadata;
 import sunlabs.titan.api.Credential;
 import sunlabs.titan.api.TitanGuid;
 import sunlabs.titan.node.BeehiveMessage;
@@ -50,13 +46,13 @@ import sunlabs.titan.node.Publishers.PublishRecord;
 import sunlabs.titan.node.object.AbstractObjectHandler;
 import sunlabs.titan.node.object.RetrievableObject;
 import sunlabs.titan.node.object.StorableObject;
-import sunlabs.titan.node.services.BeehiveService;
+import sunlabs.titan.node.services.AbstractTitanService;
 import sunlabs.titan.node.services.PublishDaemon;
 
 public final class CredentialObjectHandler extends AbstractObjectHandler implements CredentialObject {
     private final static long serialVersionUID = 1L;
 
-    private final static String name = BeehiveService.makeName(CredentialObjectHandler.class, CredentialObjectHandler.serialVersionUID);
+    private final static String name = AbstractTitanService.makeName(CredentialObjectHandler.class, CredentialObjectHandler.serialVersionUID);
 
     //
     // At this point a typical object handler incorporates a nested static
@@ -65,11 +61,7 @@ public final class CredentialObjectHandler extends AbstractObjectHandler impleme
     // leave that definition intact.
     //
 
-    public CredentialObjectHandler(BeehiveNode node) throws
-            MalformedObjectNameException,
-            NotCompliantMBeanException,
-            InstanceAlreadyExistsException,
-            MBeanRegistrationException {
+    public CredentialObjectHandler(BeehiveNode node) throws JMException {
         super(node, CredentialObjectHandler.name, "Credential Object Handler");
     }
 

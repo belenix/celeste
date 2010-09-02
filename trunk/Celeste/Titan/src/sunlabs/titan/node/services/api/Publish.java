@@ -28,7 +28,7 @@ import java.util.Map;
 import java.util.Set;
 
 import sunlabs.titan.TitanGuidImpl;
-import sunlabs.titan.api.BeehiveObject;
+import sunlabs.titan.api.TitanObject;
 import sunlabs.titan.api.ObjectStore;
 import sunlabs.titan.api.TitanGuid;
 import sunlabs.titan.node.BeehiveMessage;
@@ -37,13 +37,13 @@ import sunlabs.titan.node.PublishObjectMessage;
 import sunlabs.titan.node.Publishers;
 import sunlabs.titan.node.BeehiveMessage.RemoteException;
 import sunlabs.titan.node.object.AbstractObjectHandler;
-import sunlabs.titan.node.services.BeehiveService;
+import sunlabs.titan.node.services.AbstractTitanService;
 import sunlabs.titan.node.services.PublishDaemon.GetPublishers;
 import sunlabs.titan.node.services.PublishDaemon.UnpublishObject;
 
 /**
- * Implementors of this interface are extensions of the {@link BeehiveService} class and cause
- * {@link BeehiveObject} instances to be published to the rest of the system.
+ * Implementors of this interface are extensions of the {@link AbstractTitanService} class and cause
+ * {@link TitanObject} instances to be published to the rest of the system.
  */
 public interface Publish {
 
@@ -62,7 +62,7 @@ public interface Publish {
          * Return a {@link Map<BeehiveObjectId,BeehiveObject.Metadata>} indexed by the object identifier
          * of the object to publish and the corresponding object metadata as the value.
          */
-        public Map<TitanGuid,BeehiveObject.Metadata> getObjectsToPublish();
+        public Map<TitanGuid,TitanObject.Metadata> getObjectsToPublish();
 
         public long getSecondsToLive();
     }
@@ -72,7 +72,7 @@ public interface Publish {
     }
 
     /**
-     * Publish a {@link BeehiveObject}.
+     * Publish a {@link TitanObject}.
      * <p>
      * This transmits a single {@link PublishObjectMessage} to the root of the {@link TitanGuid} of the object being published.
      * </p>
@@ -93,7 +93,7 @@ public interface Publish {
      * reply must not record a back-pointer to the object on the publishing node.
      * </p>
      */
-    public BeehiveMessage publish(BeehiveObject object);
+    public BeehiveMessage publish(TitanObject object);
 
     /**
      * Transmit a {@link BeehiveMessage} to "unpublish" a {@link TitanGuid}.
@@ -110,7 +110,7 @@ public interface Publish {
     public BeehiveMessage unpublish(TitanGuid objectId, UnpublishObject.Type type);
     
     /**
-     * Transmit a {@link BeehiveMessage} to "unpublish" a {@link BeehiveObject}.
+     * Transmit a {@link BeehiveMessage} to "unpublish" a {@link TitanObject}.
      * <p>
      * This unpublish of an object <em>does contain the object-type of the object</em>.
      * </p>
@@ -121,10 +121,10 @@ public interface Publish {
      * @param objectId the object identifiers of the object to be unpublished
      * @return the reply {@link BeehiveMessage} from the root of object identifier
      */
-    public BeehiveMessage unpublish(BeehiveObject object, UnpublishObject.Type type);
+    public BeehiveMessage unpublish(TitanObject object, UnpublishObject.Type type);
 
     /**
-     * Get the set of publishers of a specified {@link BeehiveObject}.
+     * Get the set of publishers of a specified {@link TitanObject}.
      * @param message
      * @return {@link BeehiveMessage} containing an instance of {@link GetPublishers.Response} as payload.
      * @throws ClassCastException
@@ -134,7 +134,7 @@ public interface Publish {
 	public BeehiveMessage getPublishers(BeehiveMessage message) throws ClassCastException, ClassNotFoundException, RemoteException;
 	
     /**
-     * Get the set of publishers of a specified {@link BeehiveObject}.
+     * Get the set of publishers of a specified {@link TitanObject}.
      * @param message
      * @return {@link Set}<{@link Publishers.PublishRecord}>
      * @throws ClassCastException

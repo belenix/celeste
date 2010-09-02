@@ -34,7 +34,7 @@ import java.util.logging.Level;
 
 import sunlabs.asdf.util.ObjectLock;
 import sunlabs.titan.TitanGuidImpl;
-import sunlabs.titan.api.BeehiveObject;
+import sunlabs.titan.api.TitanObject;
 import sunlabs.titan.api.ObjectStore;
 import sunlabs.titan.api.TitanGuid;
 import sunlabs.titan.api.TitanNode;
@@ -49,7 +49,7 @@ import sunlabs.titan.node.services.PublishDaemon;
 import sunlabs.titan.util.DOLRStatus;
 
 /**
- * {@link BeehiveObject} and {@link BeehiveObjectHander} classes implementing the interfaces specified
+ * {@link TitanObject} and {@link BeehiveObjectHander} classes implementing the interfaces specified
  * in this class implement the capability of objects in the object pool to be
  * deleted.
  * 
@@ -68,7 +68,7 @@ public final class DeleteableObject {
              * Delete this object.
              * <p>
              * Implementations of this method are responsible for setting the fields in this object suitable for deleteing.
-             * (See {@link DeleteableObject#MakeDeletable(BeehiveObject, TitanGuid)}, and {@link DeleteableObject.Handler.createAntiObject}.
+             * (See {@link DeleteableObject#MakeDeletable(TitanObject, TitanGuid)}, and {@link DeleteableObject.Handler.createAntiObject}.
              * </p>
              * @param profferedDeleteToken The {@link TitanGuid} of the delete-token for this object.
              * @param timeToLive The number of seconds for this object to continue to exist in the anti-object form.
@@ -80,7 +80,7 @@ public final class DeleteableObject {
 
         /**
          * <p>
-         * Delete the specified {@link BeehiveObject} using the {@code deletionToken} as the authenticator.
+         * Delete the specified {@link TitanObject} using the {@code deletionToken} as the authenticator.
          * The anti-objects created exist for {@code timeToLive} seconds.
          * </p>
          * <p>
@@ -151,12 +151,12 @@ public final class DeleteableObject {
          * implement that special behaviour in this method.
          * </p>
          *
-         * @param object The original {@link BeehiveObject} (implementing {@link DeleteableObject.Handler.Object}) to be used as the template for the anti-object
+         * @param object The original {@link TitanObject} (implementing {@link DeleteableObject.Handler.Object}) to be used as the template for the anti-object
          * @param profferedDeleteToken The delete-token used as the authenticator of the anti-object.
-         * @return The anti-object form of the orignal {@link BeehiveObject}
+         * @return The anti-object form of the orignal {@link TitanObject}
          * @throws IOException
          */
-        public BeehiveObject createAntiObject(DeleteableObject.Handler.Object object, TitanGuid profferedDeleteToken, long timeToLive)
+        public TitanObject createAntiObject(DeleteableObject.Handler.Object object, TitanGuid profferedDeleteToken, long timeToLive)
         throws IOException, BeehiveObjectStore.NoSpaceException, BeehiveObjectStore.DeleteTokenException;
     }
 
@@ -165,7 +165,7 @@ public final class DeleteableObject {
         object.setProperty(ObjectStore.METADATA_DELETETOKEN, deleteToken);
     }
 
-    public static BeehiveObject MakeDeletable(DeleteableObject.Handler.Object object, TitanGuid deleteTokenId) {
+    public static TitanObject MakeDeletable(DeleteableObject.Handler.Object object, TitanGuid deleteTokenId) {
         object.setDeleteTokenId(deleteTokenId);
         return object;
     }
@@ -235,7 +235,7 @@ public final class DeleteableObject {
      * @param metaData
      * @return true if the delete-token and the delete-token-id in the metaData match signifying that the object is the anti-object form.
      */
-    public static boolean deleteTokenIsValid(BeehiveObject.Metadata metaData) {
+    public static boolean deleteTokenIsValid(TitanObject.Metadata metaData) {
         TitanGuid deleteToken = metaData.getPropertyAsObjectId(ObjectStore.METADATA_DELETETOKEN, null);
         TitanGuid deleteTokenId = metaData.getPropertyAsObjectId(ObjectStore.METADATA_DELETETOKENID, null);
         return DeleteableObject.deleteTokenIsValid(deleteToken, deleteTokenId);
@@ -246,7 +246,7 @@ public final class DeleteableObject {
      * method of classes that implement the {@link DeleteableObject} interface.
      * <p>
      * The given {@link PublishDaemon.PublishObject.Request} {@code publishRequest}
-     * is examined for any {@link BeehiveObject}s that have been deleted (signified by an exposed
+     * is examined for any {@link TitanObject}s that have been deleted (signified by an exposed
      * delete-token, see {@link DeleteableObject.deleteTokenIsValid}),
      * and for those that have, it performs the deletion checks and operation.  
      * </p>
@@ -256,7 +256,7 @@ public final class DeleteableObject {
 
     	List<DOLRStatus> result = new LinkedList<DOLRStatus>();
     	
-        for (Map.Entry<TitanGuid,BeehiveObject.Metadata> entry : publishRequest.getObjectsToPublish().entrySet()) {
+        for (Map.Entry<TitanGuid,TitanObject.Metadata> entry : publishRequest.getObjectsToPublish().entrySet()) {
             if (DeleteableObject.deleteTokenIsValid(entry.getValue())) {
             	result.add(publishObjectHelper(handler, entry.getKey(), publishRequest.getPublisherAddress().getObjectId(), entry.getValue()));
             }
@@ -269,7 +269,7 @@ public final class DeleteableObject {
      * invoke {@link DeleteableObject.deleteBackPointers2} with the given {@code handler},
      * {@code objectId}, {@code publisherNodeId} and {@link metaData}.
      */
-    private static DOLRStatus publishObjectHelper(DeleteableObject.Handler<? extends DeleteableObject.Handler.Object> handler, TitanGuid objectId, TitanGuid publisherNodeId, BeehiveObject.Metadata metaData) {
+    private static DOLRStatus publishObjectHelper(DeleteableObject.Handler<? extends DeleteableObject.Handler.Object> handler, TitanGuid objectId, TitanGuid publisherNodeId, TitanObject.Metadata metaData) {
         // this.log.info("anti-object %s from %s", message.subjectId, message.getSource().getObjectId());
         // We get here because some node has published a valid anti-object.
         if (handler.getPublishObjectDeleteLocks().trylock(objectId)) {
@@ -303,7 +303,7 @@ public final class DeleteableObject {
      * <li>DOLRStatus.GONE The DOLRObject already has an exposed delete-token and it is the same as the given delete-token.</li>
      * </ul>
      */
-    public static DOLRStatus objectIsDeleteable(BeehiveObject.Metadata metaData, TitanGuid profferedDeleteToken) {
+    public static DOLRStatus objectIsDeleteable(TitanObject.Metadata metaData, TitanGuid profferedDeleteToken) {
         TitanGuid objectDeleteTokenId = metaData.getPropertyAsObjectId(ObjectStore.METADATA_DELETETOKENID, null);
 
         if (objectDeleteTokenId == null) {
@@ -340,13 +340,13 @@ public final class DeleteableObject {
      * @param objectId The object-id of the object to delete.
      * @param excludedPublisherId The object-id of the publisher of the
      *        original {@link PublishObjectMessage} that induced this method call.
-     * @param metaData The {@link BeehiveObject.Metadata} of the {@link PublishObjectMessage} that induced this method call.
+     * @param metaData The {@link TitanObject.Metadata} of the {@link PublishObjectMessage} that induced this method call.
      * @throws BeehiveObjectStore.DeleteTokenException The delete-token in the given metadata fails the validation test (see {@link DeleteableObject#deleteTokenIsValid}).
      */
     public static void deleteBackPointers2(DeleteableObject.Handler<? extends DeleteableObject.Handler.Object> objectType,
             TitanGuid objectId,
             TitanGuid excludedPublisherId,
-            BeehiveObject.Metadata metaData)
+            TitanObject.Metadata metaData)
     throws BeehiveObjectStore.DeleteTokenException {
         //objectType.getLogger().info(objectType.getName() + " " + objectId.toString() + " excluding " + excludedPublisherId);
         // Check that the deletion information contained in the PublishObjectMessage is self-consistent.
@@ -366,7 +366,7 @@ public final class DeleteableObject {
 
         DeleteableObject.Request request = new DeleteableObject.Request(objectId,
                 metaData.getPropertyAsObjectId(ObjectStore.METADATA_DELETETOKEN, null),
-                metaData.getPropertyAsLong(ObjectStore.METADATA_SECONDSTOLIVE, BeehiveObject.INFINITE_TIME_TO_LIVE));
+                metaData.getPropertyAsLong(ObjectStore.METADATA_SECONDSTOLIVE, TitanObject.INFINITE_TIME_TO_LIVE));
 
         if (publishers != null) {
             for (Publishers.PublishRecord publisher : publishers) {
@@ -434,9 +434,9 @@ public final class DeleteableObject {
           return message.composeReply(objectType.getNode().getNodeAddress(), DOLRStatus.NOT_ACCEPTABLE);
       }
 
-      BeehiveObject localObject = null;
+      TitanObject localObject = null;
       try {
-          localObject = objectType.getNode().getObjectStore().getAndLock(BeehiveObject.class, objectId);
+          localObject = objectType.getNode().getObjectStore().getAndLock(TitanObject.class, objectId);
 //      if (localObject == null) {
 //          objectType.getLogger().info("%s not local", objectId);
 //          return message.composeReply(objectType.getNode().getNodeAddress(), DOLRStatus.NOT_FOUND);
@@ -460,7 +460,7 @@ public final class DeleteableObject {
 
               long timeToLive = request.getTimeToLive();
 
-              BeehiveObject antiObject = objectType.createAntiObject((DeleteableObject.Handler.Object) localObject, profferedDeleteToken, timeToLive);
+              TitanObject antiObject = objectType.createAntiObject((DeleteableObject.Handler.Object) localObject, profferedDeleteToken, timeToLive);
               if (antiObject != null) {
                   objectType.getNode().getObjectStore().update(antiObject);
                   if (antiObject.getObjectId().equals(localObject.getObjectId())) {

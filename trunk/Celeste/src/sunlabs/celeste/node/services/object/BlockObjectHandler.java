@@ -38,10 +38,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.FutureTask;
 import java.util.logging.Level;
 
-import javax.management.InstanceAlreadyExistsException;
-import javax.management.MBeanRegistrationException;
-import javax.management.MalformedObjectNameException;
-import javax.management.NotCompliantMBeanException;
+import javax.management.JMException;
 
 import sunlabs.asdf.functional.AbstractMapFunction;
 import sunlabs.asdf.functional.MapFunction;
@@ -55,10 +52,10 @@ import sunlabs.asdf.web.http.HttpMessage;
 import sunlabs.celeste.client.ReplicationParameters;
 import sunlabs.celeste.node.object.ExtensibleObject;
 import sunlabs.titan.TitanGuidImpl;
-import sunlabs.titan.api.BeehiveObject;
 import sunlabs.titan.api.ObjectStore;
 import sunlabs.titan.api.TitanGuid;
 import sunlabs.titan.api.TitanNodeId;
+import sunlabs.titan.api.TitanObject;
 import sunlabs.titan.node.AbstractBeehiveObject;
 import sunlabs.titan.node.BeehiveMessage;
 import sunlabs.titan.node.BeehiveMessage.RemoteException;
@@ -74,7 +71,7 @@ import sunlabs.titan.node.object.DeleteableObject;
 import sunlabs.titan.node.object.ReplicatableObject;
 import sunlabs.titan.node.object.RetrievableObject;
 import sunlabs.titan.node.object.StorableObject;
-import sunlabs.titan.node.services.BeehiveService;
+import sunlabs.titan.node.services.AbstractTitanService;
 import sunlabs.titan.node.services.PublishDaemon;
 import sunlabs.titan.util.BufferableExtent;
 import sunlabs.titan.util.BufferableExtentImpl;
@@ -84,11 +81,11 @@ import sunlabs.titan.util.ExtentBufferMap;
 import sunlabs.titan.util.ExtentImpl;
 
 /**
- * This class embodies all operations involving BObjects.
+ * This class embodies all operations involving BlockObjects.
  */
 public final class BlockObjectHandler extends AbstractObjectHandler implements BlockObject {
     private final static long serialVersionUID = 1L;
-    private final static String name = BeehiveService.makeName(BlockObjectHandler.class, BlockObjectHandler.serialVersionUID);
+    private final static String name = AbstractTitanService.makeName(BlockObjectHandler.class, BlockObjectHandler.serialVersionUID);
 
     private final static int replicationStore = 3;
     private final static int replicationCache = 3;
@@ -260,8 +257,7 @@ public final class BlockObjectHandler extends AbstractObjectHandler implements B
         //
         // Package visibility, so that unit tests can access it.
         //
-        BObject(BufferableExtent bounds, ExtentBufferMap data,
-                BeehiveObject.Metadata metadata, TitanGuid deleteTokenId, long timeToLive, ReplicationParameters replicationParams) {
+        BObject(BufferableExtent bounds, ExtentBufferMap data, TitanObject.Metadata metadata, TitanGuid deleteTokenId, long timeToLive, ReplicationParameters replicationParams) {
             this(new BObject.BObjectContents(bounds, data), metadata, deleteTokenId, timeToLive);
             this.replicationMinimum = replicationParams.getAsInteger(BlockObject.Object.REPLICATIONPARAM_MIN_NAME, BlockObjectHandler.replicationStore);
             this.replicationCache = replicationParams.getAsInteger(BlockObject.Object.REPLICATIONPARAM_LOWWATER_NAME, BlockObjectHandler.replicationCache);
@@ -269,7 +265,7 @@ public final class BlockObjectHandler extends AbstractObjectHandler implements B
             this.setProperty(ObjectStore.METADATA_REPLICATION_LOWWATER, this.replicationCache);
         }
 
-        private BObject(BObjectContents contents, BeehiveObject.Metadata metadata, TitanGuid deleteTokenId, long timeToLive) {
+        private BObject(BObjectContents contents, TitanObject.Metadata metadata, TitanGuid deleteTokenId, long timeToLive) {
             super(BlockObjectHandler.class, deleteTokenId, timeToLive);
             this.contents = contents;
         }
@@ -337,11 +333,7 @@ public final class BlockObjectHandler extends AbstractObjectHandler implements B
     // This is a lock signaling that the deleteLocalObject() method is already deleting the specified object.
     private final ObjectLock<TitanGuid> deleteLocalObjectLocks;
 
-    public BlockObjectHandler(BeehiveNode node) throws
-            MalformedObjectNameException,
-            NotCompliantMBeanException,
-            InstanceAlreadyExistsException,
-            MBeanRegistrationException {
+    public BlockObjectHandler(BeehiveNode node) throws JMException {
         super(node, BlockObjectHandler.name, "Celeste Block Object Handler");
         this.publishObjectDeleteLocks = new ObjectLock<TitanGuid>();
         this.deleteLocalObjectLocks = new ObjectLock<TitanGuid>();
@@ -448,7 +440,7 @@ public final class BlockObjectHandler extends AbstractObjectHandler implements B
     }
 
     public BlockObject.Object create(BufferableExtent bounds,
-            ExtentBufferMap data, BeehiveObject.Metadata metadata, TitanGuid deleteTokenId, long timeToLive, ReplicationParameters replicationParams) {
+            ExtentBufferMap data, TitanObject.Metadata metadata, TitanGuid deleteTokenId, long timeToLive, ReplicationParameters replicationParams) {
         return new BObject(bounds, data, metadata, deleteTokenId, timeToLive, replicationParams);
     }
 
@@ -673,7 +665,7 @@ public final class BlockObjectHandler extends AbstractObjectHandler implements B
      * @throws BeehiveObjectStore.NoSpaceException
      * @throws BeehiveObjectStore.DeleteTokenException
      */
-    public BeehiveObject createAntiObject(DeleteableObject.Handler.Object object, TitanGuid profferedDeleteToken, long timeToLive)
+    public TitanObject createAntiObject(DeleteableObject.Handler.Object object, TitanGuid profferedDeleteToken, long timeToLive)
     throws IOException, BeehiveObjectStore.NoSpaceException, BeehiveObjectStore.DeleteTokenException {
         BlockObject.Object bObject = BlockObject.Object.class.cast(object);
         bObject.delete(profferedDeleteToken, timeToLive);

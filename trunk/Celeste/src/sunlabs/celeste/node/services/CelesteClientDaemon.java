@@ -50,10 +50,7 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.logging.Level;
 
-import javax.management.InstanceAlreadyExistsException;
-import javax.management.MBeanRegistrationException;
-import javax.management.MalformedObjectNameException;
-import javax.management.NotCompliantMBeanException;
+import javax.management.JMException;
 
 import sunlabs.asdf.functional.MapFunction;
 import sunlabs.asdf.util.Attributes;
@@ -87,7 +84,6 @@ import sunlabs.celeste.client.operation.SetOwnerAndGroupOperation;
 import sunlabs.celeste.client.operation.UnlockFileOperation;
 import sunlabs.celeste.client.operation.WriteFileOperation;
 import sunlabs.celeste.node.CelesteACL;
-import sunlabs.celeste.node.CelesteNode;
 import sunlabs.celeste.node.ProfileCache;
 import sunlabs.celeste.node.object.ExtensibleObject.JarClassLoader;
 import sunlabs.celeste.node.services.api.AObjectVersionMapAPI;
@@ -100,17 +96,17 @@ import sunlabs.celeste.node.services.object.VersionObjectHandler;
 import sunlabs.celeste.util.ACL;
 import sunlabs.celeste.util.CelesteIO;
 import sunlabs.titan.TitanGuidImpl;
-import sunlabs.titan.api.BeehiveObject;
 import sunlabs.titan.api.Credential;
 import sunlabs.titan.api.ObjectStore;
 import sunlabs.titan.api.TitanGuid;
+import sunlabs.titan.api.TitanObject;
 import sunlabs.titan.node.AbstractBeehiveObject;
 import sunlabs.titan.node.BeehiveNode;
 import sunlabs.titan.node.BeehiveObjectPool;
 import sunlabs.titan.node.BeehiveObjectStore;
 import sunlabs.titan.node.BeehiveObjectStore.UnacceptableObjectException;
 import sunlabs.titan.node.object.MutableObject;
-import sunlabs.titan.node.services.BeehiveService;
+import sunlabs.titan.node.services.AbstractTitanService;
 import sunlabs.titan.node.services.object.CredentialObject;
 import sunlabs.titan.node.services.object.CredentialObjectHandler;
 import sunlabs.titan.util.BufferableExtent;
@@ -126,9 +122,9 @@ import sunlabs.titan.util.OrderedProperties;
  *
  * @author Glenn Scott - Sun Microsystems Laboratories
  */
-public class CelesteClientDaemon extends BeehiveService {
+public class CelesteClientDaemon extends AbstractTitanService {
     private final static long serialVersionUID = 1L;
-    private final static String name = BeehiveService.makeName(CelesteClientDaemon.class, CelesteClientDaemon.serialVersionUID);
+    private final static String name = AbstractTitanService.makeName(CelesteClientDaemon.class, CelesteClientDaemon.serialVersionUID);
 
     public final static Attributes.Prototype Port = new Attributes.Prototype(CelesteClientDaemon.class, "Port",
             14000,
@@ -156,8 +152,7 @@ public class CelesteClientDaemon extends BeehiveService {
 
     private Thread clientDaemon;
 
-    public CelesteClientDaemon(final BeehiveNode node)
-    throws MalformedObjectNameException, NotCompliantMBeanException, InstanceAlreadyExistsException, MBeanRegistrationException {
+    public CelesteClientDaemon(final BeehiveNode node) throws JMException {
         super(node, CelesteClientDaemon.name, "Celeste Client Handler");
         node.configuration.add(CelesteClientDaemon.Port);
         node.configuration.add(CelesteClientDaemon.MaximumClients);
@@ -435,7 +430,7 @@ public class CelesteClientDaemon extends BeehiveService {
         return this.inspectLock(operation);
     }
 
-    public BeehiveObject.Metadata performOperation(NewNameSpaceOperation operation, ObjectInputStream ois)
+    public TitanObject.Metadata performOperation(NewNameSpaceOperation operation, ObjectInputStream ois)
     throws IOException, ClassNotFoundException,
     CelesteException.RuntimeException, CelesteException.AlreadyExistsException, CelesteException.NoSpaceException,
     CelesteException.VerificationException, CelesteException.CredentialException {
@@ -445,7 +440,7 @@ public class CelesteClientDaemon extends BeehiveService {
         return this.newNameSpace(operation, signature, profile);
     }
 
-    public BeehiveObject.Metadata performOperation(NewCredentialOperation operation, ObjectInputStream ois)
+    public TitanObject.Metadata performOperation(NewCredentialOperation operation, ObjectInputStream ois)
     throws IOException, ClassNotFoundException,
     CelesteException.AccessControlException, CelesteException.IllegalParameterException, CelesteException.AlreadyExistsException,
     CelesteException.CredentialException, CelesteException.RuntimeException,
@@ -1208,7 +1203,7 @@ public class CelesteClientDaemon extends BeehiveService {
             //
             // Set up the metadata properties for the yet-to-be-built BlockObjects.
             //
-            BeehiveObject.Metadata bObjectMetaData = new AbstractBeehiveObject.Metadata();
+            TitanObject.Metadata bObjectMetaData = new AbstractBeehiveObject.Metadata();
             TitanGuid deleteTokenHash = aObject.getDeleteTokenId();
 
             final long start = operation.getFileOffset();
@@ -1673,7 +1668,7 @@ public class CelesteClientDaemon extends BeehiveService {
                     if (numberOfBytesToKeepFromLastBObject > 0) {
                         BlockObject.Object lastBObject = blockObjectHandler.retrieve(lastBObjectReference.getObjectId());
 
-                        BeehiveObject.Metadata bObjectMetaData = lastBObject.getMetadata();
+                        TitanObject.Metadata bObjectMetaData = lastBObject.getMetadata();
 
                         BufferableExtent newBounds = new BufferableExtentImpl(lastBObjectReference.getFileOffset(), numberOfBytesToKeepFromLastBObject);
                         ExtentBufferMap data = lastBObject.getDataAsExtentBufferMap();
@@ -1749,7 +1744,7 @@ public class CelesteClientDaemon extends BeehiveService {
     }
 
 
-    public BeehiveObject.Metadata newCredential(NewCredentialOperation operation, Credential.Signature signature, Credential credential)
+    public TitanObject.Metadata newCredential(NewCredentialOperation operation, Credential.Signature signature, Credential credential)
     throws IOException,
             CelesteException.RuntimeException, CelesteException.AlreadyExistsException,
             CelesteException.NoSpaceException, CelesteException.VerificationException, CelesteException.CredentialException {
@@ -1808,7 +1803,7 @@ public class CelesteClientDaemon extends BeehiveService {
         }
     }
 
-    public BeehiveObject.Metadata newNameSpace(NewNameSpaceOperation operation, Credential.Signature signature, Credential credential)
+    public TitanObject.Metadata newNameSpace(NewNameSpaceOperation operation, Credential.Signature signature, Credential credential)
     throws IOException,
             CelesteException.RuntimeException, CelesteException.AlreadyExistsException,
             CelesteException.NoSpaceException, CelesteException.VerificationException, CelesteException.CredentialException {

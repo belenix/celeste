@@ -26,7 +26,7 @@ package sunlabs.titan.node.services.api;
 import java.io.IOException;
 
 import sunlabs.titan.TitanGuidImpl;
-import sunlabs.titan.api.BeehiveObject;
+import sunlabs.titan.api.TitanObject;
 import sunlabs.titan.node.BeehiveMessage;
 
 /**
@@ -34,7 +34,7 @@ import sunlabs.titan.node.BeehiveMessage;
  *
  */
 public interface Store {
-    public BeehiveMessage store(TitanGuidImpl destination, BeehiveObject data)
+    public BeehiveMessage store(TitanGuidImpl destination, TitanObject data)
     throws IOException;
 
 }

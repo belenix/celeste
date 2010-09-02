@@ -45,7 +45,7 @@ import sunlabs.titan.node.NeighbourMap;
 import sunlabs.titan.node.NodeAddress;
 import sunlabs.titan.node.Publishers;
 import sunlabs.titan.node.object.BeehiveObjectHandler;
-import sunlabs.titan.node.services.BeehiveService;
+import sunlabs.titan.node.services.AbstractTitanService;
 import sunlabs.titan.node.util.DOLRLogger;
 
 public interface TitanNode {
@@ -69,7 +69,7 @@ public interface TitanNode {
      * Send the given {@link Serializable} {@code data} via a {@link BeehiveMessage.Type#RouteToNode} to the {@link TitanNode}
      * that is the root of the {@link TitanNodeId} {@code nodeId}.
      *
-     * @param klasse The name of the {@link BeehiveService} to handle the reception of this message.
+     * @param klasse The name of the {@link AbstractTitanService} to handle the reception of this message.
      * @param method The name of the method to invoke in {@code klasse} on the receiving node.
      * @param payload Serializable data as the input parameter to the {@code method} method.
      */
@@ -99,12 +99,12 @@ public interface TitanNode {
     public BeehiveMessage sendToNodeExactly(TitanNodeId nodeId, String klasse, String method, Serializable payload) throws NoSuchNodeException, ClassCastException, RemoteException, ClassNotFoundException;
 
     /**
-     * Send the given {@link Serializable} {@code data} to the {@link BeehiveObject}
+     * Send the given {@link Serializable} {@code data} to the {@link TitanObject}
      * specified by {@link TitanGuid} {@code objectId}.
      * The object must be of the {@link BeehiveObjectHandler} {@code klasse} and the
      * method invoked is specified by String {@code method}.
      *
-     * @param objectId The {@link TitanGuid} of the target {@link BeehiveObject}.
+     * @param objectId The {@link TitanGuid} of the target {@link TitanObject}.
      * @param klasse The name of the {@link BeehiveObjectHandler} to use.
      * @param method The name of the method to invoke.
      * @param payload The data to transmit to the object.
@@ -155,16 +155,16 @@ public interface TitanNode {
 
 
     /**
-     * Get (dynamically loading and instantiating, if necessary) an instance of the named class cast to the given {@link Service}.
+     * Get (dynamically loading and instantiating, if necessary) an instance of the named class cast to the given {@link TitanService}.
      *
      * @param <C>
      * @param klasse
      * @param serviceName
-     * @return an instance of the named class cast to the given {@link Service}
+     * @return an instance of the named class cast to the given {@link TitanService}
      * @throws ClassCastException if the loaded class is <em>not</em> an instance of {@code klasse}.
      * @throws ClassNotFoundException if the class cannot be found.
      */
-    public Service getService(final String serviceName);
+    public TitanService getService(final String serviceName);
 
 
     public ApplicationFramework getServiceFramework();

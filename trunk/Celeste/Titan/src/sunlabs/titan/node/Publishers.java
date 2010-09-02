@@ -41,7 +41,7 @@ import sunlabs.asdf.util.Time;
 import sunlabs.asdf.web.XML.XHTML;
 import sunlabs.asdf.web.http.HTTP;
 import sunlabs.titan.TitanGuidImpl;
-import sunlabs.titan.api.BeehiveObject;
+import sunlabs.titan.api.TitanObject;
 import sunlabs.titan.api.ObjectStore;
 import sunlabs.titan.api.TitanGuid;
 import sunlabs.titan.api.TitanNodeId;
@@ -88,14 +88,14 @@ public class Publishers {
     private BeehiveNode node;
 
     /**
-     * A Publisher object is a record of a single binding of a {@link BeehiveObject} with a node advertising the object's
+     * A Publisher object is a record of a single binding of a {@link TitanObject} with a node advertising the object's
      * availability and the metadata that that node maintains for the published object. Nodes advertise the
      * availability of objects by emitting {@link PublishObjectMessage} messages which are ultimately received by the "root" of the object identifier. 
      * <p>
      * The record consists of:
      * <ul>
      * <li>The {@link NodeAddress} of the node possessing the object.</li>
-     * <li>The {@link BeehiveObject.Metadata} of the object.</li>
+     * <li>The {@link TitanObject.Metadata} of the object.</li>
      * <li>The radius that this record should be shared among the local nodes neighbours. (deprecated)</li>
      * </ul>
      * </p>
@@ -114,7 +114,7 @@ public class Publishers {
         
         private TitanGuid objectId;
         private NodeAddress publisher;
-        private BeehiveObject.Metadata metaData;
+        private TitanObject.Metadata metaData;
         /** The absolute time (in seconds) when this record must be removed (expires) */
         private long expireTimeSeconds;
 
@@ -122,12 +122,12 @@ public class Publishers {
          * Construct a PublishRecord instance binding the given {@link TitanGuidImpl} of an object
          * to the given {@link NodeAddress} of a node advertising its availability.
          *
-         * @param objectId the {@link TitanGuidImpl} of the {@link BeehiveObject}
+         * @param objectId the {@link TitanGuidImpl} of the {@link TitanObject}
          * @param publisher the {@link NodeAddress} of the publishing {@link BeehiveNode}
-         * @param metaData the complete {@link BeehiveObject.Metadata} of the published {@code BeehiveObject}
+         * @param metaData the complete {@link TitanObject.Metadata} of the published {@code BeehiveObject}
          * @param  recordSecondsToLive The system time, in seconds, when this record must be removed.
          */
-        public PublishRecord(TitanGuid objectId, NodeAddress publisher, BeehiveObject.Metadata metaData, long recordSecondsToLive) {
+        public PublishRecord(TitanGuid objectId, NodeAddress publisher, TitanObject.Metadata metaData, long recordSecondsToLive) {
             this.objectId = objectId;
             this.publisher = publisher;
             this.metaData = metaData;
@@ -167,7 +167,7 @@ public class Publishers {
             return this.publisher.getObjectId();
         }
 
-        public BeehiveObject.Metadata getMetadata() {
+        public TitanObject.Metadata getMetadata() {
             return this.metaData;
         }
 
@@ -223,7 +223,7 @@ public class Publishers {
         public XHTML.Table.Data[] toXHTMLTableData() {
         	XHTML.Anchor a = WebDAVDaemon.inspectNodeXHTML(this.publisher);
 
-        	String secondsToLive = (this.getObjectTTL() == BeehiveObject.INFINITE_TIME_TO_LIVE) ? "forever" : Long.toString(this.getObjectTTL());
+        	String secondsToLive = (this.getObjectTTL() == TitanObject.INFINITE_TIME_TO_LIVE) ? "forever" : Long.toString(this.getObjectTTL());
         	String xmlClass = DeleteableObject.deleteTokenIsValid(this.metaData) ? "deleted" : "undeleted";
         	XHTML.Table.Data[] result = new XHTML.Table.Data[4];
 

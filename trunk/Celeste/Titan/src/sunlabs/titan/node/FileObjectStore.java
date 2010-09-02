@@ -39,7 +39,7 @@ import java.util.Iterator;
 import sunlabs.asdf.util.Time;
 import sunlabs.asdf.util.Units;
 import sunlabs.titan.TitanGuidImpl;
-import sunlabs.titan.api.BeehiveObject;
+import sunlabs.titan.api.TitanObject;
 import sunlabs.titan.api.TitanGuid;
 
 /**
@@ -129,7 +129,7 @@ public final class FileObjectStore<K,V> implements Iterable<TitanGuid> {
     }
 
     /**
-     * Return an existing {@link BeehiveObject} instance for the specified {@link TitanGuid}.
+     * Return an existing {@link TitanObject} instance for the specified {@link TitanGuid}.
      * <p>
      * Return {@code null} if the specified object does not exist.
      * </p>
@@ -162,14 +162,14 @@ public final class FileObjectStore<K,V> implements Iterable<TitanGuid> {
 //        }
 //    }
     
-    public BeehiveObject get(TitanGuid objectId)
+    public TitanObject get(TitanGuid objectId)
     throws IOException, ClassCastException, ClassNotFoundException, FileNotFoundException {
         FileInputStream fin = null;
         File objectFile = new File(this.objectStoreDirectory, objectId.toString());
         try {
             fin = new FileInputStream(objectFile);
             ObjectInputStream ois = new ObjectInputStream(new BufferedInputStream(fin, 8*1024));
-            BeehiveObject result = (BeehiveObject) (ois.readObject());
+            TitanObject result = (TitanObject) (ois.readObject());
             return result;
         } catch (FileNotFoundException e) {
             throw e;
@@ -184,9 +184,9 @@ public final class FileObjectStore<K,V> implements Iterable<TitanGuid> {
     }
 
     /**
-     * Commit the specified {@link BeehiveObject} to the backing-store.
+     * Commit the specified {@link TitanObject} to the backing-store.
      */
-    public void put(TitanGuid key, BeehiveObject object) throws BeehiveObjectStore.NoSpaceException, IOException {
+    public void put(TitanGuid key, TitanObject object) throws BeehiveObjectStore.NoSpaceException, IOException {
         TitanGuid objectId = object.getObjectId();
 
         long originalObjectLength = this.sizeOf(objectId);

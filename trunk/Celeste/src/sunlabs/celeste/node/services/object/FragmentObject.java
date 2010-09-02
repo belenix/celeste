@@ -28,19 +28,16 @@ import java.net.URI;
 import java.util.Map;
 import java.util.logging.Level;
 
-import javax.management.InstanceAlreadyExistsException;
-import javax.management.MBeanRegistrationException;
-import javax.management.MalformedObjectNameException;
-import javax.management.NotCompliantMBeanException;
+import javax.management.JMException;
 
 import sunlabs.asdf.util.ObjectLock;
 import sunlabs.asdf.web.XML.XHTML;
 import sunlabs.asdf.web.http.HTTP;
 import sunlabs.celeste.client.ReplicationParameters;
 import sunlabs.titan.TitanGuidImpl;
-import sunlabs.titan.api.BeehiveObject;
 import sunlabs.titan.api.ObjectStore;
 import sunlabs.titan.api.TitanGuid;
+import sunlabs.titan.api.TitanObject;
 import sunlabs.titan.node.AbstractBeehiveObject;
 import sunlabs.titan.node.BeehiveMessage;
 import sunlabs.titan.node.BeehiveMessage.RemoteException;
@@ -52,14 +49,14 @@ import sunlabs.titan.node.object.AbstractObjectHandler;
 import sunlabs.titan.node.object.DeleteableObject;
 import sunlabs.titan.node.object.RetrievableObject;
 import sunlabs.titan.node.object.StorableObject;
-import sunlabs.titan.node.services.BeehiveService;
+import sunlabs.titan.node.services.AbstractTitanService;
 import sunlabs.titan.node.services.PublishDaemon;
 import sunlabs.titan.util.DOLRStatus;
 
 public final class FragmentObject extends AbstractObjectHandler implements FObjectType {
     private final static long serialVersionUID = 1L;
 
-    private final static String name = BeehiveService.makeName(FragmentObject.class, FragmentObject.serialVersionUID);
+    private final static String name = AbstractTitanService.makeName(FragmentObject.class, FragmentObject.serialVersionUID);
     private final static Integer defaultStoreAttempts = Integer.valueOf(100);
 
     private final static int replicationStore = 2;
@@ -73,7 +70,7 @@ public final class FragmentObject extends AbstractObjectHandler implements FObje
 
         private byte[] data;
 
-        public FObject(TitanGuid deleteTokenId, long timeToLive, BeehiveObject.Metadata metaData, byte[] data, ReplicationParameters replicationParams) {
+        public FObject(TitanGuid deleteTokenId, long timeToLive, TitanObject.Metadata metaData, byte[] data, ReplicationParameters replicationParams) {
             super(FragmentObject.class, deleteTokenId, timeToLive);
             this.data = data;
 
@@ -124,9 +121,8 @@ public final class FragmentObject extends AbstractObjectHandler implements FObje
 
     private int storeAttempts;
 
-    public FragmentObject(BeehiveNode node)
-    throws MalformedObjectNameException, NotCompliantMBeanException, InstanceAlreadyExistsException, MBeanRegistrationException {
-        super(node, FragmentObject.name, "FObject Application");
+    public FragmentObject(BeehiveNode node) throws JMException {
+        super(node, FragmentObject.name, "Fragment Object Application");
         this.storeAttempts = FragmentObject.defaultStoreAttempts;
 
         this.publishObjectDeleteLocks = new ObjectLock<TitanGuid>();
@@ -182,14 +178,14 @@ public final class FragmentObject extends AbstractObjectHandler implements FObje
         return message.composeReply(this.node.getNodeAddress());
     }
 
-    public FObjectType.FObject create(TitanGuid deleteTokenId, long timeToLive, ReplicationParameters replicationParams, BeehiveObject.Metadata metaData, byte[] data) {
+    public FObjectType.FObject create(TitanGuid deleteTokenId, long timeToLive, ReplicationParameters replicationParams, TitanObject.Metadata metaData, byte[] data) {
         return new FObject(deleteTokenId, timeToLive, metaData, data, replicationParams);
     }
 
     public FObjectType.FObject storeObject(FObjectType.FObject fObject)
     throws IOException, BeehiveObjectStore.NoSpaceException, BeehiveObjectStore.DeleteTokenException, BeehiveObjectStore.UnacceptableObjectException, BeehiveObjectPool.Exception {
 
-        BeehiveObject object = StorableObject.storeObject(this, fObject);
+        TitanObject object = StorableObject.storeObject(this, fObject);
         return (FObjectType.FObject) object;
     }
 
@@ -234,7 +230,7 @@ public final class FragmentObject extends AbstractObjectHandler implements FObje
      * @return The anti-object of the given DOLRObject.
      * @throws IOException
      */
-    public BeehiveObject createAntiObject(DeleteableObject.Handler.Object object , TitanGuid profferedDeleteToken, long timeToLive)
+    public TitanObject createAntiObject(DeleteableObject.Handler.Object object , TitanGuid profferedDeleteToken, long timeToLive)
     throws IOException, BeehiveObjectStore.NoSpaceException, BeehiveObjectStore.DeleteTokenException {
         FObjectType.FObject fObject = FObjectType.FObject.class.cast(object);
 

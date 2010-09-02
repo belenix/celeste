@@ -60,10 +60,7 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 
-import javax.management.InstanceAlreadyExistsException;
-import javax.management.MBeanRegistrationException;
-import javax.management.MalformedObjectNameException;
-import javax.management.NotCompliantMBeanException;
+import javax.management.JMException;
 import javax.management.ObjectName;
 import javax.net.ssl.KeyManager;
 import javax.net.ssl.KeyManagerFactory;
@@ -87,12 +84,12 @@ import sunlabs.asdf.web.http.HTTP;
 import sunlabs.titan.Copyright;
 import sunlabs.titan.Release;
 import sunlabs.titan.TitanGuidImpl;
-import sunlabs.titan.api.BeehiveObject;
+import sunlabs.titan.api.TitanObject;
 import sunlabs.titan.api.ObjectStore;
-import sunlabs.titan.api.Service;
 import sunlabs.titan.api.TitanGuid;
 import sunlabs.titan.api.TitanNode;
 import sunlabs.titan.api.TitanNodeId;
+import sunlabs.titan.api.TitanService;
 import sunlabs.titan.api.management.NodeMBean;
 import sunlabs.titan.node.BeehiveMessage.RemoteException;
 import sunlabs.titan.node.object.AbstractObjectHandler;
@@ -291,7 +288,7 @@ public class BeehiveNode implements TitanNode, NodeMBean {
     private class PlainServer extends sunlabs.asdf.io.Asynchronous implements ConnectionServer, PlainServerMBean {
         private ObjectName jmxObjectName;
 
-        public PlainServer(ChannelHandler.Factory handlerFactory) throws IOException, InstanceAlreadyExistsException, NotCompliantMBeanException, MBeanRegistrationException, MalformedObjectNameException {
+        public PlainServer(ChannelHandler.Factory handlerFactory) throws IOException, JMException {
             super(connMgr.getServerSocketChannel(), handlerFactory);
 
             if (BeehiveNode.this.jmxObjectName != null) {
@@ -444,8 +441,7 @@ public class BeehiveNode implements TitanNode, NodeMBean {
     private class SSLServer extends sunlabs.asdf.io.Asynchronous implements ConnectionServer, SSLServerMBean {
         private ObjectName jmxObjectName;
 
-        public SSLServer(ServerSocketChannel socketChannel, ChannelHandler.Factory handlerFactory)
-        throws IOException, InstanceAlreadyExistsException, NotCompliantMBeanException, MBeanRegistrationException, MalformedObjectNameException {
+        public SSLServer(ServerSocketChannel socketChannel, ChannelHandler.Factory handlerFactory) throws IOException, JMException {
             super(socketChannel, handlerFactory);
             
             this.setName(Thread.currentThread().getName() + ".SSLServer");
@@ -490,8 +486,7 @@ public class BeehiveNode implements TitanNode, NodeMBean {
             private ObjectName jmxObjectName;
             private long lastActivityMillis;
 
-            public BeehiveService2(ObjectName jmxObjectNameRoot, final Socket socket) throws InstanceAlreadyExistsException,
-            NotCompliantMBeanException, MBeanRegistrationException, MalformedObjectNameException {
+            public BeehiveService2(ObjectName jmxObjectNameRoot, final Socket socket) throws JMException {
                 this.socket = socket;
 
 //                if (jmxObjectNameRoot != null) {
@@ -586,7 +581,7 @@ public class BeehiveNode implements TitanNode, NodeMBean {
         private ThreadPoolExecutor executor;
         private ObjectName jmxObjectName;
 
-        public BeehiveServer2() throws IOException, InstanceAlreadyExistsException, NotCompliantMBeanException, MBeanRegistrationException, MalformedObjectNameException {
+        public BeehiveServer2() throws IOException, JMException {
             super(new ThreadGroup(BeehiveNode.this.getThreadGroup(), "Beehive Server2"), BeehiveNode.this.getThreadGroup().getName());
 
             this.executor = (ThreadPoolExecutor) Executors.newFixedThreadPool(BeehiveNode.this.configuration.asInt(BeehiveNode.ClientMaximum),
@@ -632,19 +627,7 @@ public class BeehiveNode implements TitanNode, NodeMBean {
                     BeehiveNode.this.log.info("Error on %s serverClosed=%b", serverSocket, serverSocket.isClosed());
                     e.printStackTrace();
                     return;
-                } catch (InstanceAlreadyExistsException e) {
-                    // TODO Auto-generated catch block
-                    e.printStackTrace();
-                    return;
-                } catch (NotCompliantMBeanException e) {
-                    // TODO Auto-generated catch block
-                    e.printStackTrace();
-                    return;
-                } catch (MBeanRegistrationException e) {
-                    // TODO Auto-generated catch block
-                    e.printStackTrace();
-                    return;
-                } catch (MalformedObjectNameException e) {
+                } catch (JMException e) {
                     // TODO Auto-generated catch block
                     e.printStackTrace();
                     return;
@@ -782,7 +765,7 @@ public class BeehiveNode implements TitanNode, NodeMBean {
     /** The maximum number of milliseconds a client connection can be idle before it is considered unused and can be closed.
      */
     public final static Attributes.Prototype ClientTimeoutSeconds = new Attributes.Prototype(BeehiveNode.class, "ClientTimeoutSeconds",
-            Time.minutesInSeconds(1),
+            Time.minutesInSeconds(11),
             "The maximum number of milliseconds a client connection can be idle before it is considered unused and can be closed.");
 
     public final static Attributes.Prototype GatewayURL = new Attributes.Prototype(BeehiveNode.class, "GatewayURL",
@@ -1019,13 +1002,7 @@ public class BeehiveNode implements TitanNode, NodeMBean {
             this.getService(ReflectionService.class);
             this.getService(CensusDaemon.class);
             this.getService(WebDAVDaemon.class);
-        } catch (MalformedObjectNameException e) {
-            throw new RuntimeException(e);
-        } catch (InstanceAlreadyExistsException e) {
-            throw new RuntimeException(e);
-        } catch (NotCompliantMBeanException e) {
-            throw new RuntimeException(e);
-        } catch (MBeanRegistrationException e) {
+        } catch (JMException e) {
             throw new RuntimeException(e);
         }
 
@@ -1132,12 +1109,12 @@ public class BeehiveNode implements TitanNode, NodeMBean {
     }
     
     /**
-     * Get (dynamically loading and instantiating, if necessary) an instance of the named class cast to the given {@link Service}.
+     * Get (dynamically loading and instantiating, if necessary) an instance of the named class cast to the given {@link TitanService}.
      *
      * @param <C>
      * @param klasse
      * @param serviceName
-     * @return an instance of the named class cast to the given {@link Service}
+     * @return an instance of the named class cast to the given {@link TitanService}
      * @throws ClassCastException if the loaded class is <em>not</em> an instance of {@code klasse}.
      * @throws ClassNotFoundException if the class cannot be found.
      */
@@ -1146,16 +1123,16 @@ public class BeehiveNode implements TitanNode, NodeMBean {
     }    
 
     /**
-     * Get (dynamically loading and instantiating, if necessary) an instance of the named class cast to the given {@link Service}.
+     * Get (dynamically loading and instantiating, if necessary) an instance of the named class cast to the given {@link TitanService}.
      *
      * @param <C>
      * @param klasse
      * @param serviceName
-     * @return an instance of the named class cast to the given {@link Service}
+     * @return an instance of the named class cast to the given {@link TitanService}
      * @throws ClassCastException if the loaded class is <em>not</em> an instance of {@code klasse}.
      * @throws ClassNotFoundException if the class cannot be found.
      */
-    public Service getService(final String serviceName) {
+    public TitanService getService(final String serviceName) {
         return this.services.get(serviceName);
     }
 
@@ -1353,7 +1330,7 @@ public class BeehiveNode implements TitanNode, NodeMBean {
         if (rootReply.getStatus().isSuccessful()) {
             try {
                 Publish.Request request = message.getPayload(Publish.Request.class, this);
-                for (Map.Entry<TitanGuid,BeehiveObject.Metadata> entry : request.getObjectsToPublish().entrySet()) {
+                for (Map.Entry<TitanGuid,TitanObject.Metadata> entry : request.getObjectsToPublish().entrySet()) {
                     BeehiveNode.this.log.finest("%s->%s ttl=%ds", entry.getKey(), request.getPublisherAddress(), request.getSecondsToLive());
                     this.objectPublishers.update(entry.getKey(),
                             new Publishers.PublishRecord(entry.getKey(), request.getPublisherAddress(), entry.getValue(), request.getSecondsToLive()));
@@ -1379,7 +1356,7 @@ public class BeehiveNode implements TitanNode, NodeMBean {
 
     /**
      * Receive a {@link RouteToObjectMessage}.
-     * The object-id of the desired {@link BeehiveObject} is encoded in the
+     * The object-id of the desired {@link TitanObject} is encoded in the
      * {@link BeehiveMessage#subjectId subjectId} of the received
      * BeehiveMessage.
      * <ol>
@@ -1547,7 +1524,7 @@ public class BeehiveNode implements TitanNode, NodeMBean {
      * @param objectId
      */
     public boolean removeLocalObject(final TitanGuid objectId) throws BeehiveObjectStore.NotFoundException {
-        BeehiveObject object = this.store.getAndLock(BeehiveObject.class, objectId);
+        TitanObject object = this.store.getAndLock(TitanObject.class, objectId);
         if (object == null) {
             return false;
         }
@@ -1794,7 +1771,7 @@ public class BeehiveNode implements TitanNode, NodeMBean {
 
     public void stop() {
         for (String app : this.services.keySet()) {
-            Service application = this.services.get(app);
+            TitanService application = this.services.get(app);
             if (application != null)
                 application.stop();
         }

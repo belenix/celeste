@@ -1,5 +1,5 @@
 /*
- * Copyright 2007-2009 Sun Microsystems, Inc. All Rights Reserved.
+ * Copyright 2007-2010 Oracle. All Rights Reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER
  *
  * This code is free software; you can redistribute it and/or modify
@@ -17,11 +17,10 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
  * 02110-1301 USA
  *
- * Please contact Sun Microsystems, Inc., 16 Network Circle, Menlo
- * Park, CA 94025 or visit www.sun.com if you need additional
- * information or have any questions.
+ * Please contact Oracle Corporation, 500 Oracle Parkway, Redwood Shores, CA 94065
+ * or visit www.oracle.com if you need additional information or
+ * have any questions.
  */
-
 package sunlabs.celeste.node.services.object;
 
 import java.io.Serializable;
@@ -40,7 +39,6 @@ import sunlabs.celeste.client.operation.CreateFileOperation;
 import sunlabs.celeste.node.CelesteACL;
 import sunlabs.celeste.node.object.AccessControlledObject;
 import sunlabs.celeste.node.object.ExtensibleObject;
-import sunlabs.titan.api.BeehiveObject;
 import sunlabs.titan.api.Credential;
 import sunlabs.titan.api.TitanGuid;
 import sunlabs.titan.exception.BeehiveException;
@@ -53,7 +51,7 @@ import sunlabs.titan.node.object.RetrievableObject;
 import sunlabs.titan.node.object.StorableObject;
 
 /**
- * A {@code VersionObject} is a {@link BeehiveObject} that contains the information about
+ * A {@code VersionObject} is a {@link TitanObject} that contains the information about
  * a particular version of a Celeste file. All operations that change a file or its state
  * generate a new version and as a consequence a new {@code VersionObject}.
  *
@@ -155,8 +153,8 @@ public interface VersionObject extends
         public VersionObject.Object.Reference makeReference();
 
         /**
-         * Truncate this VObject to the specified offset by deleting all
-         * BObjects greater than or equal to the given offset.
+         * Truncate this VersionObject to the specified offset by deleting all
+         * BlockObjects greater than or equal to the given offset.
          *
          * @param offset
          */
@@ -271,22 +269,22 @@ public interface VersionObject extends
         public ReplicationParameters getReplicationParameters();
 
         /**
-         * Get the {@link BeehiveObjectId} of this version's owner's {@link Credential}.
+         * Get the {@link TitanGuid} of this version's owner's {@link Credential}.
          */
         public TitanGuid getOwner();
 
         /**
-         * Set the {@link BeehiveObjectId} of this version's owner {@link Credential}.
+         * Set the {@link TitanGuid} of this version's owner {@link Credential}.
          */
         public void setOwner(TitanGuid owner);
 
         /**
-         * Get the {@link BeehiveObjectId} of this version's group {@link Credential}.
+         * Get the {@link TitanGuid} of this version's group {@link Credential}.
          */
         public TitanGuid getGroup();
 
         /**
-         * Set the {@link BeehiveObjectId} of this version's group {@link Credential}.
+         * Set the {@link TitanGuid} of this version's group {@link Credential}.
          */
         public void setGroup(TitanGuid group);
 
@@ -314,7 +312,7 @@ public interface VersionObject extends
     /**
      * Create a new Version Object composed from the supplied parameters.
      *
-     * @param anchorObjectId The {@link BeehiveObjectId} of the {@link AnchorObject} of this file.
+     * @param anchorObjectId The {@link TitanGuid} of the {@link AnchorObject} of this file.
      * @param replicationParams This file's {@link ReplicationParameters}
      * @param createOperation The originating {@link CreateFileOperation} that induced the creation of this Version Object.
      * @param clientMetaData The {@link ClientMetaData} associated with this version of the file.
@@ -327,7 +325,7 @@ public interface VersionObject extends
             Credential.Signature signature);
 
     /**
-     * Get the VersionObject {@link Manifest} from the identified by {@link BeehiveObjectId}
+     * Get the VersionObject {@link Manifest} from the identified by {@link TitanGuid}
      * for the range starting at {@code offset} and continue for {@code length} bytes.
      *
      * @param objectId

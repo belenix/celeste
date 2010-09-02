@@ -43,7 +43,7 @@ import sunlabs.asdf.util.AbstractStoredMap.OutOfSpace;
 import sunlabs.asdf.web.XML.XHTML;
 import sunlabs.asdf.web.http.HTTP;
 import sunlabs.titan.TitanGuidImpl;
-import sunlabs.titan.api.BeehiveObject;
+import sunlabs.titan.api.TitanObject;
 import sunlabs.titan.api.ObjectStore;
 import sunlabs.titan.api.TitanGuid;
 import sunlabs.titan.exception.BeehiveException;
@@ -323,7 +323,7 @@ public final class BeehiveObjectStore implements ObjectStore {
 
     private final BeehiveNode node;
 
-    public static class FileObjectStore3 extends AbstractStoredMap<TitanGuid,BeehiveObject> {
+    public static class FileObjectStore3 extends AbstractStoredMap<TitanGuid,TitanObject> {
 
         /**
          * Construct a new FileObjectStore3 instance with the specified capacity.
@@ -367,7 +367,7 @@ public final class BeehiveObjectStore implements ObjectStore {
         return this.fileStore.contains(objectId);
     }
 
-    public <C extends BeehiveObject> C tryGetAndLock(final Class<? extends C> klasse, final TitanGuid objectId)
+    public <C extends TitanObject> C tryGetAndLock(final Class<? extends C> klasse, final TitanGuid objectId)
     throws ClassCastException, BeehiveObjectStore.NotFoundException {
         synchronized (this.locks) {
             if (this.locks.trylock(objectId)) {
@@ -377,14 +377,14 @@ public final class BeehiveObjectStore implements ObjectStore {
         return null;
     }
     
-    public <C extends BeehiveObject> C get(final Class<? extends C> klasse, final TitanGuid objectId)
+    public <C extends TitanObject> C get(final Class<? extends C> klasse, final TitanGuid objectId)
     throws ClassCastException, BeehiveObjectStore.NotFoundException {
         try {
             if (objectId.equals(this.node.getNodeId())) {
                 this.node.getLogger().warning("Why am I fetching my own node objectid?");
                 new Throwable().printStackTrace();
             }
-            BeehiveObject object = this.fileStore.get(objectId);
+            TitanObject object = this.fileStore.get(objectId);
 
             TitanGuid computedObjectId = BeehiveObjectStore.ObjectId(object);
             if (computedObjectId.equals(objectId)) {
@@ -429,7 +429,7 @@ public final class BeehiveObjectStore implements ObjectStore {
         throw new BeehiveObjectStore.NotFoundException("Object %s (%s) not found.", objectId, klasse.getName());
     }
     
-    public <C extends BeehiveObject> C getAndLock(final Class<? extends C> klasse, final TitanGuid objectId)
+    public <C extends TitanObject> C getAndLock(final Class<? extends C> klasse, final TitanGuid objectId)
     throws ClassCastException, BeehiveObjectStore.NotFoundException {
         synchronized (this.locks) {
             this.lock(objectId);
@@ -454,7 +454,7 @@ public final class BeehiveObjectStore implements ObjectStore {
         return set;
     }
 
-    public TitanGuid create(BeehiveObject object)
+    public TitanGuid create(TitanObject object)
     throws InvalidObjectException, ObjectExistenceException, NoSpaceException, UnacceptableObjectException {
 
         try {
@@ -498,7 +498,7 @@ public final class BeehiveObjectStore implements ObjectStore {
         }
     }
 
-    public TitanGuid update(BeehiveObject object) throws InvalidObjectException, ObjectExistenceException, NoSpaceException, UnacceptableObjectException {
+    public TitanGuid update(TitanObject object) throws InvalidObjectException, ObjectExistenceException, NoSpaceException, UnacceptableObjectException {
         try {
             TitanGuid actualObjectId = BeehiveObjectStore.ObjectId(object);
             object.setObjectId(actualObjectId);
@@ -519,7 +519,7 @@ public final class BeehiveObjectStore implements ObjectStore {
     }
 
     /**
-     * Store the given {@link BeehiveObject} in the local store.
+     * Store the given {@link TitanObject} in the local store.
      * The object's {@link TitanGuid} is computed and set in the given object.
      * <p>
      * There is no locking.
@@ -529,7 +529,7 @@ public final class BeehiveObjectStore implements ObjectStore {
      * @throws IOException
      */
     // XXX This should not throw IllegalArgumentException in place of IOException and NoSpaceException
-    private BeehiveObject put(BeehiveObject object) throws BeehiveObjectStore.InvalidObjectException, IOException {
+    private TitanObject put(TitanObject object) throws BeehiveObjectStore.InvalidObjectException, IOException {
         try {
             object.setProperty(BeehiveObjectStore.METADATA_CREATEDTIME, Time.currentTimeInSeconds());
             this.fileStore.put(object.getObjectId(), object);
@@ -548,14 +548,14 @@ public final class BeehiveObjectStore implements ObjectStore {
     /**
      * {@inheritDoc}
      * 
-     * NB: There is a small vulnerability here: If the object is stored in the local object store, then the {@link #unlock(BeehiveObject)}
+     * NB: There is a small vulnerability here: If the object is stored in the local object store, then the {@link #unlock(TitanObject)}
      * method performs the publish, and the object's handler signals a failure (unacceptable, or whatever), and at that moment this node
      * reboots just before removing the now stored object, upon restarting the object will be published again due to the normal object publishing mechanism.
      * But if during the reboot, the root node was also rebooted or replaced it could be possible that the locally stored, previously unacceptable object
      * will be permitted to remain because the object's root handler will not have the necessary information to reject this object.
      * 
      */
-    public TitanGuid store(BeehiveObject object)
+    public TitanGuid store(TitanObject object)
     throws BeehiveObjectStore.InvalidObjectException, BeehiveObjectStore.NoSpaceException, BeehiveObjectStore.UnacceptableObjectException {
 
         try {
@@ -574,7 +574,7 @@ public final class BeehiveObjectStore implements ObjectStore {
         }
     }
 
-    public boolean remove(BeehiveObject object) {
+    public boolean remove(TitanObject object) {
         return this.remove(object.getObjectId());
     }
 
@@ -601,7 +601,7 @@ public final class BeehiveObjectStore implements ObjectStore {
      * set.
      * </p>
      */
-    public static BeehiveObject CreateSignatureVerifiedObject(TitanGuid objectId, BeehiveObject object) throws BeehiveObjectStore.DeleteTokenException {
+    public static TitanObject CreateSignatureVerifiedObject(TitanGuid objectId, TitanObject object) throws BeehiveObjectStore.DeleteTokenException {
         String deleteTokenId = object.getDeleteTokenId().toString();
 
         TitanGuid dataHash = object.getDataId();
@@ -622,11 +622,11 @@ public final class BeehiveObjectStore implements ObjectStore {
     }
 
     /**
-     * Calculate the {@link TitanGuid} for the given {@link BeehiveObject} in accordance
+     * Calculate the {@link TitanGuid} for the given {@link TitanObject} in accordance
      * with the description of object verification in the documentation
      * for the {@code BeehiveObject} interface.
      * 
-     * See {@link BeehiveObject}.
+     * See {@link TitanObject}.
      *
      * @param object the {@code BeehiveObject} to compute the {@code BeehiveObjectId}.
      * @throws BeehiveObjectStore.InvalidObjectIdException if a valid BeehiveObjectId
@@ -638,7 +638,7 @@ public final class BeehiveObjectStore implements ObjectStore {
      *         by the {@code ObjectStore#METADATA_DELETETOKENID} property
      *         in the meta-data) does not match the Delete Token Hash
      */
-    public static TitanGuid ObjectId(BeehiveObject object) throws BeehiveObjectStore.InvalidObjectIdException, BeehiveObjectStore.DeleteTokenException {
+    public static TitanGuid ObjectId(TitanObject object) throws BeehiveObjectStore.InvalidObjectIdException, BeehiveObjectStore.DeleteTokenException {
         TitanGuid dataHash = object.getDataId();
         TitanGuid deleteTokenId = object.getDeleteTokenId();
 
@@ -716,7 +716,7 @@ public final class BeehiveObjectStore implements ObjectStore {
      * <p>
      * Note that the unlocked object is NOT published or unpublished.
      * To automatically publish or unpublish an object use
-     * {@link BeehiveObjectStore#unlock(BeehiveObject) unlock(BeehiveObject)}
+     * {@link BeehiveObjectStore#unlock(TitanObject) unlock(BeehiveObject)}
      * </p>
      */
     public void unlock(TitanGuid objectId) {
@@ -728,13 +728,13 @@ public final class BeehiveObjectStore implements ObjectStore {
     }
 
     /**
-     * Unlock the given object, by its {@link BeehiveObject#getObjectId()}.
+     * Unlock the given object, by its {@link TitanObject#getObjectId()}.
      * <p>
      * If the object is in the local store transmit a Publish Object message.
      * If the object is NOT in the local store transmit an Unpublish Object message.
      * </p>
      */
-    public BeehiveMessage unlock(BeehiveObject object) {
+    public BeehiveMessage unlock(TitanObject object) {
         // The object must be locked by the invoking thread.
         this.locks.assertLock(object.getObjectId());
 
@@ -752,7 +752,7 @@ public final class BeehiveObjectStore implements ObjectStore {
     }
 
     /**
-     * Unlock a {@link BeehiveObject} and transmit a {@link PublishObjectMessage}.
+     * Unlock a {@link TitanObject} and transmit a {@link PublishObjectMessage}.
      * <p>
      * This transmits a single {@code PublishObjectMessage} to the root of the objectId
      * of the object being published.
@@ -776,7 +776,7 @@ public final class BeehiveObjectStore implements ObjectStore {
      * a backpointer to the object on the publishing node.
      * </p>
      */
-    private BeehiveMessage unlockAndPublish(BeehiveObject object) {
+    private BeehiveMessage unlockAndPublish(TitanObject object) {
         return this.unlockAndPublish(object, false);
     }
 
@@ -786,7 +786,7 @@ public final class BeehiveObjectStore implements ObjectStore {
      * @param trace
      * @return
      */
-    private BeehiveMessage unlockAndPublish(BeehiveObject object, boolean trace) {
+    private BeehiveMessage unlockAndPublish(TitanObject object, boolean trace) {
     	try {
     		Publish publish = (Publish) this.node.getService("sunlabs.titan.node.services.PublishDaemon");
 
@@ -807,14 +807,14 @@ public final class BeehiveObjectStore implements ObjectStore {
     }
 
     /**
-     * Unpublish the given {@link BeehiveObject}, returning the reply {@link BeehiveMessage} from the root of the object's {@link TitanGuid}.
+     * Unpublish the given {@link TitanObject}, returning the reply {@link BeehiveMessage} from the root of the object's {@link TitanGuid}.
      * 
      * @param object
      * @param type
      * @param trace
      * @return
      */
-    private BeehiveMessage unlockAndUnpublish(BeehiveObject object, UnpublishObject.Type type, boolean trace) {
+    private BeehiveMessage unlockAndUnpublish(TitanObject object, UnpublishObject.Type type, boolean trace) {
     	try {
     		Publish publisher = (Publish) this.node.getService(PublishDaemon.class.getName());
     		BeehiveMessage result = publisher.unpublish(object, type);
@@ -839,7 +839,7 @@ public final class BeehiveObjectStore implements ObjectStore {
         XMLObjectStore result = xml.newXMLObjectStore();
         for (TitanGuid objectId : objects) {
             try {
-                BeehiveObject object = this.fileStore.get(objectId);
+                TitanObject object = this.fileStore.get(objectId);
 
                 XMLObject o = xml.newXMLObject(object.getObjectId(),
                         object.getObjectType(),
@@ -896,7 +896,7 @@ public final class BeehiveObjectStore implements ObjectStore {
 
         for (TitanGuid objectId : objects) {
             try {
-                BeehiveObject dolrObject = this.fileStore.get(objectId);
+                TitanObject dolrObject = this.fileStore.get(objectId);
 
                 XHTML.Anchor deleteButton = new XHTML.Anchor("X")
                 .setHref("?action=unpublish-object&objectId=" + objectId)
@@ -916,7 +916,7 @@ public final class BeehiveObjectStore implements ObjectStore {
                     objectIdCell.addClass("deleted");
                 }
 
-                String remainingTimeToLive = (dolrObject.getTimeToLive() == BeehiveObject.INFINITE_TIME_TO_LIVE) ?
+                String remainingTimeToLive = (dolrObject.getTimeToLive() == TitanObject.INFINITE_TIME_TO_LIVE) ?
                 		"forever"
                 		: Long.toString((dolrObject.getCreationTime() + dolrObject.getTimeToLive()) - currentTimeSeconds); 
                 String replicationInfo = String.format("%s &le; %s &le; %s",

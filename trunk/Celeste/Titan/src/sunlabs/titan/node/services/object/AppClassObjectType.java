@@ -1,5 +1,5 @@
 /*
- * Copyright 2007-2009 Sun Microsystems, Inc. All Rights Reserved.
+ * Copyright 2007-2010 Oracle. All Rights Reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER
  *
  * This code is free software; you can redistribute it and/or modify
@@ -17,9 +17,9 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
  * 02110-1301 USA
  *
- * Please contact Sun Microsystems, Inc., 16 Network Circle, Menlo
- * Park, CA 94025 or visit www.sun.com if you need additional
- * information or have any questions.
+ * Please contact Oracle Corporation, 500 Oracle Parkway, Redwood Shores, CA 94065
+ * or visit www.oracle.com if you need additional information or
+ * have any questions.
  */
 package sunlabs.titan.node.services.object;
 
@@ -31,10 +31,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
-import javax.management.InstanceAlreadyExistsException;
-import javax.management.MBeanRegistrationException;
-import javax.management.MalformedObjectNameException;
-import javax.management.NotCompliantMBeanException;
+import javax.management.JMException;
 
 import sunlabs.asdf.web.XML.XHTML;
 import sunlabs.asdf.web.http.HTTP;
@@ -50,7 +47,7 @@ import sunlabs.titan.node.BeehiveObjectStore;
 import sunlabs.titan.node.object.AbstractObjectHandler;
 import sunlabs.titan.node.object.RetrievableObject;
 import sunlabs.titan.node.object.StorableObject;
-import sunlabs.titan.node.services.BeehiveService;
+import sunlabs.titan.node.services.AbstractTitanService;
 import sunlabs.titan.node.services.api.AppClass;
 
 /**
@@ -66,7 +63,7 @@ import sunlabs.titan.node.services.api.AppClass;
  */
 public class AppClassObjectType extends AbstractObjectHandler implements AppClass, AppClassObjectTypeMBean {
     private final static long serialVersionUID = 2L;
-    public final static String name = BeehiveService.makeName(AppClassObjectType.class, AppClassObjectType.serialVersionUID);
+    public final static String name = AbstractTitanService.makeName(AppClassObjectType.class, AppClassObjectType.serialVersionUID);
 
     public final static class AppClassObject extends AbstractBeehiveObject implements AppClass.AppClassObject {
         private final static long serialVersionUID = 1L;
@@ -172,8 +169,7 @@ public class AppClassObjectType extends AbstractObjectHandler implements AppClas
         }
     }
 
-    public AppClassObjectType(BeehiveNode node)
-    throws MalformedObjectNameException, NotCompliantMBeanException, InstanceAlreadyExistsException, MBeanRegistrationException {
+    public AppClassObjectType(BeehiveNode node) throws JMException {
         super(node, AppClassObjectType.name, "AppClass Application");
     }
 

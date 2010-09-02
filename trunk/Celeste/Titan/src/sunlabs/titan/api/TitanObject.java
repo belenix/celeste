@@ -129,7 +129,7 @@ import sunlabs.titan.node.object.BeehiveObjectHandler;
  * Signatures need to implemented and replace the simple hashing.
  * @see BeehiveObjectHandler
  */
-public interface BeehiveObject extends /*XHTMLInspectable,*/ Serializable {
+public interface TitanObject extends /*XHTMLInspectable,*/ Serializable {
     /**
      * Signifies that this object never expires.
      */
@@ -148,7 +148,7 @@ public interface BeehiveObject extends /*XHTMLInspectable,*/ Serializable {
 
         public Metadata setProperty(String name, Object value);
 
-        public void putAll(BeehiveObject.Metadata metaData);
+        public void putAll(TitanObject.Metadata metaData);
 
         public void store(OutputStream out) throws IOException;
 
@@ -167,7 +167,7 @@ public interface BeehiveObject extends /*XHTMLInspectable,*/ Serializable {
      * Produce the {@link TitanGuid} that names this {@code BeehiveObject}.
      * <p>
      * NB: The validity of the object-id of a {@code BeehiveObject} is governed by rules
-     * specified in the preamble documentation for this class (See {@link BeehiveObject}).
+     * specified in the preamble documentation for this class (See {@link TitanObject}).
      * </p>
      */
     public TitanGuid getObjectId();
@@ -201,14 +201,14 @@ public interface BeehiveObject extends /*XHTMLInspectable,*/ Serializable {
     /**
      * Get the number of seconds for this object to live since its creation time.
      *
-     * The value {@link BeehiveObject#INFINITE_TIME_TO_LIVE} signifies an infinite time to live.
+     * The value {@link TitanObject#INFINITE_TIME_TO_LIVE} signifies an infinite time to live.
      */
     public long getTimeToLive();
     
     /**
      * Get the remaining number of seconds from {@code now} (expressed in seconds, see {@link Time.currentTimeInSeconds}
      * and {@link System#currentTimeMillis()} that this object is scheduled to exist before it is expired.
-     * If an object has an infinite expiration date, this method returns {@link BeehiveObject#INFINITE_TIME_TO_LIVE}.
+     * If an object has an infinite expiration date, this method returns {@link TitanObject#INFINITE_TIME_TO_LIVE}.
      */
     public long getRemainingSecondsToLive(long now);
 
@@ -230,7 +230,7 @@ public interface BeehiveObject extends /*XHTMLInspectable,*/ Serializable {
      */
     public TitanGuid getDataId();
 
-    public BeehiveObject.Metadata getMetadata();
+    public TitanObject.Metadata getMetadata();
 
     /**
      * Return {@code true} if this {@code BeehiveObject} is in its anti-object form.
@@ -239,7 +239,7 @@ public interface BeehiveObject extends /*XHTMLInspectable,*/ Serializable {
 
     public String getObjectType();
 
-    public BeehiveObject.Metadata setProperty(String name, Object value);
+    public TitanObject.Metadata setProperty(String name, Object value);
 
     public String getProperty(String name, Object defaultValue);
 

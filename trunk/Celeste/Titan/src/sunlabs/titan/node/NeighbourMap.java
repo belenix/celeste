@@ -1,5 +1,5 @@
 /*
- * Copyright 2007-2009 Sun Microsystems, Inc. All Rights Reserved.
+ * Copyright 2007-2010 Oracle. All Rights Reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER
  *
  * This code is free software; you can redistribute it and/or modify
@@ -17,9 +17,9 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
  * 02110-1301 USA
  *
- * Please contact Sun Microsystems, Inc., 16 Network Circle, Menlo
- * Park, CA 94025 or visit www.sun.com if you need additional
- * information or have any questions.
+ * Please contact Oracle Corporation, 500 Oracle Parkway, Redwood Shores, CA 94065
+ * or visit www.oracle.com if you need additional information or
+ * have any questions.
  */
 package sunlabs.titan.node;
 
@@ -38,15 +38,11 @@ import java.util.TreeSet;
 import javax.management.Attribute;
 import javax.management.AttributeList;
 import javax.management.AttributeNotFoundException;
-import javax.management.InstanceAlreadyExistsException;
 import javax.management.InvalidAttributeValueException;
+import javax.management.JMException;
 import javax.management.MBeanAttributeInfo;
-import javax.management.MBeanException;
 import javax.management.MBeanInfo;
 import javax.management.MBeanOperationInfo;
-import javax.management.MBeanRegistrationException;
-import javax.management.MalformedObjectNameException;
-import javax.management.NotCompliantMBeanException;
 import javax.management.ReflectionException;
 
 import sunlabs.asdf.web.XML.XHTML;
@@ -186,11 +182,7 @@ public final class NeighbourMap {
      * Constructor for the DOLR Neighbour Map.  The Neighbour Map
      * is the fundamental "routing table" for DOLR message routing.
      */
-    public NeighbourMap(BeehiveNode node) throws
-            InstanceAlreadyExistsException,
-            NotCompliantMBeanException,
-            MBeanRegistrationException,
-            MalformedObjectNameException {
+    public NeighbourMap(BeehiveNode node) throws JMException {
         this.n_tables = TitanGuidImpl.n_digits;
 
         this.node = node;
@@ -579,10 +571,7 @@ public final class NeighbourMap {
         return result;
     }
 
-    public Object getAttribute(String attribute) throws
-            AttributeNotFoundException,
-            MBeanException,
-            ReflectionException {
+    public Object getAttribute(String attribute) throws JMException {
         System.out.println("getAttribute: " + attribute);
         Integer value = this.mapReputationRequirements.get(attribute);
         if (value != null) {
@@ -595,11 +584,7 @@ public final class NeighbourMap {
         throw new AttributeNotFoundException("No such property: " + attribute);
     }
 
-    public void setAttribute(Attribute attribute) throws
-            AttributeNotFoundException,
-            InvalidAttributeValueException,
-            MBeanException,
-            ReflectionException {
+    public void setAttribute(Attribute attribute) throws JMException {
         String name = attribute.getName();
 
         System.out.println("setAttribute: " + name);
@@ -617,7 +602,7 @@ public final class NeighbourMap {
         System.out.println("setAttribute: done");
     }
 
-    public Object invoke(String actionName, Object[] params, String[] signature) throws MBeanException, ReflectionException {
+    public Object invoke(String actionName, Object[] params, String[] signature) throws JMException {
         if (actionName.equals("reload") &&
                 (params == null || params.length == 0) &&
                 (signature == null || signature.length == 0)) {

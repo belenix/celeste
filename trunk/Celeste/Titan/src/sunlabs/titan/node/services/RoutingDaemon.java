@@ -38,11 +38,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.logging.Level;
 
-import javax.management.InstanceAlreadyExistsException;
-import javax.management.InstanceNotFoundException;
-import javax.management.MBeanRegistrationException;
-import javax.management.MalformedObjectNameException;
-import javax.management.NotCompliantMBeanException;
+import javax.management.JMException;
 import javax.management.ObjectName;
 
 import sunlabs.asdf.jmx.JMX;
@@ -69,7 +65,7 @@ import sunlabs.titan.node.Reputation;
  * Iterate through our neighbour map, introducing ourselves, updating
  * our own map.
  */
-public final class RoutingDaemon extends BeehiveService implements RoutingDaemonMBean {
+public final class RoutingDaemon extends AbstractTitanService implements RoutingDaemonMBean {
 
     public interface IntroductionMBean extends ThreadMBean {
         public String getJMXCurrentIntroductionRate();
@@ -93,7 +89,7 @@ public final class RoutingDaemon extends BeehiveService implements RoutingDaemon
         private long wakeUpTime;
         private final ObjectName jmxObjectName;
 
-        Introduction() throws MalformedObjectNameException, NotCompliantMBeanException, InstanceAlreadyExistsException, MBeanRegistrationException {
+        Introduction() throws JMException {
             super(RoutingDaemon.this.node.getThreadGroup(), RoutingDaemon.this.node.getNodeId() + " " + RoutingDaemon.name + ".Introduction");
             this.setPriority(Thread.NORM_PRIORITY);
             this.currentIntroductionRate = this.getIntroductionRate();
@@ -231,10 +227,8 @@ public final class RoutingDaemon extends BeehiveService implements RoutingDaemon
             if (this.jmxObjectName != null) {
                 try {
                     ManagementFactory.getPlatformMBeanServer().unregisterMBean(this.jmxObjectName);
-                } catch (InstanceNotFoundException ignore){
-
-                } catch (MBeanRegistrationException ignore){
-
+                } catch (JMException ignore) {
+                    
                 }
             }
 
@@ -369,8 +363,7 @@ public final class RoutingDaemon extends BeehiveService implements RoutingDaemon
         private long lastRunDuration;
         private final ObjectName jmxObjectName;
 
-        protected Reunion()
-        throws MalformedObjectNameException, NotCompliantMBeanException, InstanceAlreadyExistsException, MBeanRegistrationException {
+        protected Reunion() throws JMException {
             super(RoutingDaemon.this.node.getThreadGroup(), RoutingDaemon.this.node.getNodeId() + ":" + RoutingDaemon.this.getName() + ".ReunionDaemon");
             this.setPriority(Thread.NORM_PRIORITY);
             if (RoutingDaemon.this.jmxObjectNameRoot != null) {
@@ -473,9 +466,7 @@ public final class RoutingDaemon extends BeehiveService implements RoutingDaemon
             if (this.jmxObjectName != null) {
                 try {
                     ManagementFactory.getPlatformMBeanServer().unregisterMBean(this.jmxObjectName);
-                } catch (InstanceNotFoundException ignore){
-
-                } catch (MBeanRegistrationException ignore){
+                } catch (JMException ignore) {
 
                 }
             }
@@ -502,7 +493,7 @@ public final class RoutingDaemon extends BeehiveService implements RoutingDaemon
     }
     private final static long serialVersionUID = 1L;
 
-    private final static String name = BeehiveService.makeName(RoutingDaemon.class, RoutingDaemon.serialVersionUID);
+    private final static String name = AbstractTitanService.makeName(RoutingDaemon.class, RoutingDaemon.serialVersionUID);
 
     /** The number of seconds between iterations of the neighbour map introduction */
     private final static Attributes.Prototype IntroductionRateSeconds = new Attributes.Prototype(RoutingDaemon.class, "IntroductionRateSeconds",
@@ -526,8 +517,7 @@ public final class RoutingDaemon extends BeehiveService implements RoutingDaemon
 
     transient private Reunion reunion;
 
-    public RoutingDaemon(final BeehiveNode node)
-    throws MalformedObjectNameException, NotCompliantMBeanException, InstanceAlreadyExistsException, MBeanRegistrationException {
+    public RoutingDaemon(final BeehiveNode node) throws JMException {
         super(node, RoutingDaemon.name, "Maintain routing table.");
         
         node.configuration.add(RoutingDaemon.IntroductionRateSeconds);
@@ -602,7 +592,7 @@ public final class RoutingDaemon extends BeehiveService implements RoutingDaemon
 
     /**
      *
-     * "Top-side" {@link BeehiveService} method to perform a "join" with a Beehive system,
+     * "Top-side" {@link AbstractTitanService} method to perform a "join" with a Beehive system,
      * using the given {@link NodeAddress NodeAddress} gateway as the joining server for the network.
      *
      */

@@ -40,12 +40,12 @@ import sunlabs.celeste.node.erasurecode.ErasureCode;
 import sunlabs.celeste.node.erasurecode.ErasureCodeIdentity;
 import sunlabs.celeste.node.services.object.FObjectType;
 import sunlabs.titan.TitanGuidImpl;
-import sunlabs.titan.api.BeehiveObject;
+import sunlabs.titan.api.TitanObject;
 import sunlabs.titan.api.ObjectStore;
-import sunlabs.titan.api.Service;
 import sunlabs.titan.api.TitanGuid;
 import sunlabs.titan.api.TitanNode;
 import sunlabs.titan.api.TitanNodeId;
+import sunlabs.titan.api.TitanService;
 import sunlabs.titan.api.XHTMLInspectable;
 import sunlabs.titan.node.BeehiveMessage;
 import sunlabs.titan.node.BeehiveMessage.RemoteException;
@@ -353,7 +353,7 @@ public final class StorableFragmentedObject {
      * @param message
      * @return The {@link BeehiveMessage} to use as the response.
      */
-    public static BeehiveMessage storeObjectLocally(StorableFragmentedObject.Handler<StorableFragmentedObject.Handler.Object> objectType, BeehiveObject object, BeehiveMessage message)
+    public static BeehiveMessage storeObjectLocally(StorableFragmentedObject.Handler<StorableFragmentedObject.Handler.Object> objectType, TitanObject object, BeehiveMessage message)
     throws BeehiveObjectStore.NoSpaceException, BeehiveObjectStore.DeleteTokenException {
         TitanNode node = objectType.getNode();
 
@@ -406,10 +406,10 @@ public final class StorableFragmentedObject {
 
         TitanGuid objectId = object.getObjectId();
 
-        Service a = node.getService(CelesteNode.OBJECT_PKG + ".FObjectType");
+        TitanService a = node.getService(CelesteNode.OBJECT_PKG + ".FObjectType");
         if (a instanceof BeehiveObjectHandler && a instanceof FObjectType) {
             FObjectType fObjectApplication = (FObjectType) a;
-            BeehiveObject.Metadata fObjectMetaData = object.getMetadata();
+            TitanObject.Metadata fObjectMetaData = object.getMetadata();
 
             String erasureCodeName = fObjectMetaData.getProperty(StorableFragmentedObject.Handler.ERASURECODER, ErasureCodeIdentity.NAME + "/1");
             ReplicationParameters replicationParams = new ReplicationParameters("FObject.Replication.Store=2;FObjectReplication.LowWater=2;");
@@ -427,12 +427,7 @@ public final class StorableFragmentedObject {
                     byte[] fragment = erasureCoder.getFragment(i);
                     FObjectType.FObject fObject =
                         fObjectApplication.storeObject(
-                                fObjectApplication.create(
-                                        object.getDeleteTokenId(),
-                                        object.getTimeToLive(),
-                                        replicationParams,
-                                        fObjectMetaData,
-                                        fragment));
+                                fObjectApplication.create(object.getDeleteTokenId(), object.getTimeToLive(), replicationParams, fObjectMetaData, fragment));
                     fObjectId[i] = fObject.getObjectId();
                 }
                 StorableFragmentedObject.FragmentMap map = new StorableFragmentedObject.FragmentMap(objectId, erasureCoder, fObjectId);

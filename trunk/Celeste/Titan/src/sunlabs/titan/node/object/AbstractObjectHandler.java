@@ -27,17 +27,14 @@ import java.util.Map;
 import java.util.SortedSet;
 import java.util.logging.Level;
 
-import javax.management.InstanceAlreadyExistsException;
-import javax.management.MBeanRegistrationException;
-import javax.management.MalformedObjectNameException;
-import javax.management.NotCompliantMBeanException;
+import javax.management.JMException;
 
-import sunlabs.titan.api.BeehiveObject;
+import sunlabs.titan.api.TitanObject;
 import sunlabs.titan.api.TitanGuid;
 import sunlabs.titan.node.BeehiveNode;
 import sunlabs.titan.node.NodeAddress;
 import sunlabs.titan.node.Publishers;
-import sunlabs.titan.node.services.BeehiveService;
+import sunlabs.titan.node.services.AbstractTitanService;
 import sunlabs.titan.node.services.PublishDaemon;
 import sunlabs.titan.node.services.api.Publish;
 
@@ -46,7 +43,7 @@ import sunlabs.titan.node.services.api.Publish;
  *
  * This class contains helper methods for implementors.
  */
-public abstract class AbstractObjectHandler extends BeehiveService implements BeehiveObjectHandler {
+public abstract class AbstractObjectHandler extends AbstractTitanService implements BeehiveObjectHandler {
     private final static long serialVersionUID = 1L;
 
     /**
@@ -56,8 +53,7 @@ public abstract class AbstractObjectHandler extends BeehiveService implements Be
      * @param name
      * @param description
      */
-    public AbstractObjectHandler(BeehiveNode node, String name, String description)
-    throws MalformedObjectNameException, NotCompliantMBeanException, InstanceAlreadyExistsException, MBeanRegistrationException {
+    public AbstractObjectHandler(BeehiveNode node, String name, String description) throws JMException {
         super(node, name, description);
     }
     
@@ -72,7 +68,7 @@ public abstract class AbstractObjectHandler extends BeehiveService implements Be
      */
     public static void publishObjectBackup(AbstractObjectHandler handler, PublishDaemon.PublishObject.Request publishRequest) throws ClassNotFoundException {
     	if (publishRequest.isBackup()) {
-    		for (Map.Entry<TitanGuid,BeehiveObject.Metadata> entry : publishRequest.getObjectsToPublish().entrySet()) {
+    		for (Map.Entry<TitanGuid,TitanObject.Metadata> entry : publishRequest.getObjectsToPublish().entrySet()) {
     			if (handler.getLogger().isLoggable(Level.FINEST)) {
     				handler.getLogger().finest("backup backpointer %s -> %s", entry.getKey(), publishRequest.getPublisherAddress().getObjectId());
     			}

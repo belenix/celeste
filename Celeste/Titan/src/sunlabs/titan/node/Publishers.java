@@ -61,7 +61,7 @@ import sunlabs.titan.node.services.WebDAVDaemon;
  * That node is the <em>root</em> node of the published object's {@link TitanGuidImpl}, <em>O<sub>r</sub></em>.
  * </p>
  * <p>
- * Sending a message to an object is broken into two parts: A {@link BeehiveMessage.Type#RouteToNode}
+ * Sending a message to an object is broken into two parts: A {@link TitanMessage.Type#RouteToNode}
  * message is transmitted from the originating node using the object-id of the target object as the destination.
  * The {@code BeehiveMessage.Type.RouteToObject} message traverses the system until it arrives on a node that
  * has a previously stored back-pointer <em>O&rarr;N</em>.

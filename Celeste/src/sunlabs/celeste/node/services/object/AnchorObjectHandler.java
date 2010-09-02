@@ -46,8 +46,8 @@ import sunlabs.titan.api.TitanGuid;
 import sunlabs.titan.api.TitanNodeId;
 import sunlabs.titan.api.TitanObject;
 import sunlabs.titan.node.AbstractBeehiveObject;
-import sunlabs.titan.node.BeehiveMessage;
-import sunlabs.titan.node.BeehiveMessage.RemoteException;
+import sunlabs.titan.node.TitanMessage;
+import sunlabs.titan.node.TitanMessage.RemoteException;
 import sunlabs.titan.node.BeehiveNode;
 import sunlabs.titan.node.BeehiveObjectPool;
 import sunlabs.titan.node.BeehiveObjectStore;
@@ -267,7 +267,7 @@ public final class AnchorObjectHandler extends AbstractObjectHandler implements 
         return new AObject.Version(generationId, serialNumber);
     }
 
-    public BeehiveMessage publishObject(BeehiveMessage message) throws ClassNotFoundException, ClassCastException, BeehiveMessage.RemoteException {
+    public TitanMessage publishObject(TitanMessage message) throws ClassNotFoundException, ClassCastException, TitanMessage.RemoteException {
         if (message.isTraced()) {
             this.log.finest("recv: %s", message.traceReport());
         }
@@ -280,7 +280,7 @@ public final class AnchorObjectHandler extends AbstractObjectHandler implements 
 
         // Reply signifying success, the value of the Publish.Response() is inconsequential.
         // See the storeObject() method below.
-        BeehiveMessage result = message.composeReply(this.node.getNodeAddress(),
+        TitanMessage result = message.composeReply(this.node.getNodeAddress(),
                 new PublishDaemon.PublishObject.Response(new HashSet<TitanGuid>(publishRequest.getObjectsToPublish().keySet())));
 
         if (message.isTraced()) {
@@ -291,7 +291,7 @@ public final class AnchorObjectHandler extends AbstractObjectHandler implements 
         return result;
     }
 
-    public BeehiveMessage unpublishObject(BeehiveMessage message) throws ClassNotFoundException, ClassCastException, BeehiveMessage.RemoteException {
+    public TitanMessage unpublishObject(TitanMessage message) throws ClassNotFoundException, ClassCastException, TitanMessage.RemoteException {
         PublishDaemon.UnpublishObject.Request request = message.getPayload(PublishDaemon.UnpublishObject.Request.class, this.getNode());
         if (this.log.isLoggable(Level.FINE)) {
             this.log.fine("%s -> %s", request.getObjectIds(), message.getSource());
@@ -321,7 +321,7 @@ public final class AnchorObjectHandler extends AbstractObjectHandler implements 
         return aObject;
     }
 
-    public BeehiveMessage retrieveLocalObject(BeehiveMessage message) {
+    public TitanMessage retrieveLocalObject(TitanMessage message) {
         return RetrievableObject.retrieveLocalObject(this, message);
     }
 
@@ -330,12 +330,12 @@ public final class AnchorObjectHandler extends AbstractObjectHandler implements 
         return RetrievableObject.retrieve(this, AObject.class, objectId);
     }
 
-    public BeehiveMessage storeLocalObject(BeehiveMessage message) throws ClassNotFoundException, ClassCastException, BeehiveMessage.RemoteException {
+    public TitanMessage storeLocalObject(TitanMessage message) throws ClassNotFoundException, ClassCastException, TitanMessage.RemoteException {
         if (this.log.isLoggable(Level.FINER)) {
             this.log.finest("%s", message.traceReport());
         }
         AnchorObject.Object aObject = message.getPayload(AnchorObject.Object.class, this.node);
-        BeehiveMessage reply = StorableObject.storeLocalObject(this, aObject, message);
+        TitanMessage reply = StorableObject.storeLocalObject(this, aObject, message);
         return reply;
     }
 
@@ -347,7 +347,7 @@ public final class AnchorObjectHandler extends AbstractObjectHandler implements 
         return (AnchorObject.Object) StorableObject.storeObject(this, aObject);
     }
 
-    public BeehiveMessage deleteLocalObject(BeehiveMessage message) throws ClassNotFoundException {
+    public TitanMessage deleteLocalObject(TitanMessage message) throws ClassNotFoundException {
         if (this.deleteLocalObjectLocks.trylock(message.subjectId)) {
             try {
                 if (this.log.isLoggable(Level.FINER)) {
@@ -376,7 +376,7 @@ public final class AnchorObjectHandler extends AbstractObjectHandler implements 
         }
 
         DeleteableObject.Request request = new DeleteableObject.Request(objectId, profferedDeletionToken, timeToLive);
-        BeehiveMessage reply = this.node.sendToObject(objectId, this.getName(), "deleteLocalObject", request);
+        TitanMessage reply = this.node.sendToObject(objectId, this.getName(), "deleteLocalObject", request);
         return reply.getStatus();
     }
 
@@ -454,7 +454,7 @@ public final class AnchorObjectHandler extends AbstractObjectHandler implements 
         return publishObjectDeleteLocks;
     }
 
-    public BeehiveMessage replicateObject(BeehiveMessage message) throws ClassNotFoundException, ClassCastException, BeehiveMessage.RemoteException {
+    public TitanMessage replicateObject(TitanMessage message) throws ClassNotFoundException, ClassCastException, TitanMessage.RemoteException {
         try {
             ReplicatableObject.Replicate.Request request = message.getPayload(ReplicatableObject.Replicate.Request.class, this.node);
             if (this.log.isLoggable(Level.FINE)) {

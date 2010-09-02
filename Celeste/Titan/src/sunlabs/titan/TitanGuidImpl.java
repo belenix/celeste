@@ -37,8 +37,7 @@ import sunlabs.asdf.util.TimeProfiler;
 import sunlabs.titan.api.TitanGuid;
 
 /**
- * A {@code BeehiveObjectId} is how things (anything and everything) are named in
- * a Titan system.
+ * A {@code TitanGuid} is how things (anything and everything) are named in a Titan system.
  */
 public class TitanGuidImpl implements TitanGuid {
     private static final long serialVersionUID = 1L;

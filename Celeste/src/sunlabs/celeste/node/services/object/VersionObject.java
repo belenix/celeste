@@ -42,7 +42,7 @@ import sunlabs.celeste.node.object.ExtensibleObject;
 import sunlabs.titan.api.Credential;
 import sunlabs.titan.api.TitanGuid;
 import sunlabs.titan.exception.BeehiveException;
-import sunlabs.titan.node.BeehiveMessage.RemoteException;
+import sunlabs.titan.node.TitanMessage.RemoteException;
 import sunlabs.titan.node.BeehiveObjectStore;
 import sunlabs.titan.node.object.DeleteableObject;
 import sunlabs.titan.node.object.InspectableObject;

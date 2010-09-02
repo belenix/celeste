@@ -27,14 +27,14 @@ import java.io.IOException;
 
 import sunlabs.titan.TitanGuidImpl;
 import sunlabs.titan.api.TitanObject;
-import sunlabs.titan.node.BeehiveMessage;
+import sunlabs.titan.node.TitanMessage;
 
 /**
  *  Store an object in a DOLR.
  *
  */
 public interface Store {
-    public BeehiveMessage store(TitanGuidImpl destination, TitanObject data)
+    public TitanMessage store(TitanGuidImpl destination, TitanObject data)
     throws IOException;
 
 }

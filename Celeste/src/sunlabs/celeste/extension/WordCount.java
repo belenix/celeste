@@ -54,7 +54,7 @@ import sunlabs.celeste.node.services.object.VersionObjectHandler;
 import sunlabs.titan.TitanGuidImpl;
 import sunlabs.titan.api.TitanGuid;
 import sunlabs.titan.api.TitanNode;
-import sunlabs.titan.node.BeehiveMessage;
+import sunlabs.titan.node.TitanMessage;
 import sunlabs.titan.node.BeehiveObjectStore;
 import sunlabs.titan.node.object.BeehiveObjectHandler;
 import sunlabs.titan.node.object.MutableObject;
@@ -111,7 +111,7 @@ public class WordCount implements ExtensibleObject.Extension<HashMap<String,Long
     public HashMap<String,Long> call()
     throws BeehiveObjectStore.DeletedObjectException, ClassNotFoundException, BeehiveObjectStore.NotFoundException, BeehiveObjectStore.ObjectExistenceException,
            BeehiveObjectStore.InvalidObjectException, MutableObject.InsufficientResourcesException, MutableObject.NotFoundException,
-           MutableObject.ProtocolException, BeehiveMessage.RemoteException {
+           MutableObject.ProtocolException, TitanMessage.RemoteException {
 
         TitanGuid vObjectId = this.operation.getVObjectId();
         

@@ -55,8 +55,8 @@ import sunlabs.titan.Release;
 import sunlabs.titan.TitanGuidImpl;
 import sunlabs.titan.api.TitanGuid;
 import sunlabs.titan.api.TitanNodeId;
-import sunlabs.titan.node.BeehiveMessage;
-import sunlabs.titan.node.BeehiveMessage.RemoteException;
+import sunlabs.titan.node.TitanMessage;
+import sunlabs.titan.node.TitanMessage.RemoteException;
 import sunlabs.titan.node.BeehiveNode;
 import sunlabs.titan.node.NodeAddress;
 import sunlabs.titan.node.TitanNodeIdImpl;
@@ -308,7 +308,7 @@ public final class CensusDaemon extends AbstractTitanService implements Census, 
      * </p>
      * @param message
      */
-    public Report.Response report(BeehiveMessage message) throws ClassCastException, ClassNotFoundException, BeehiveMessage.RemoteException {
+    public Report.Response report(TitanMessage message) throws ClassCastException, ClassNotFoundException, TitanMessage.RemoteException {
         if (message.isTraced()) {
             this.log.info(message.traceReport());
         }
@@ -347,7 +347,7 @@ public final class CensusDaemon extends AbstractTitanService implements Census, 
      * Respond to a {@link CensusDaemon.Select.Request} operation.
      *
      */
-    public Select.Response select(BeehiveMessage message) throws ClassNotFoundException, ClassCastException, BeehiveMessage.RemoteException {
+    public Select.Response select(TitanMessage message) throws ClassNotFoundException, ClassCastException, TitanMessage.RemoteException {
         Select.Request request = message.getPayload(Select.Request.class, this.node);
         Map<TitanNodeId,OrderedProperties> list = this.selectFromCatalogue(request.getCount(), request.getExcluded(), request.getMatch());
 
@@ -393,7 +393,7 @@ public final class CensusDaemon extends AbstractTitanService implements Census, 
 
                     // XXX If we are sending this report which gets routed back to this node, there appears to be some deadlock.
                     Report.Request request = new Report.Request(CensusDaemon.this.node.getNodeAddress(), myProperties);
-                    BeehiveMessage result = CensusDaemon.this.node.sendToNode(Census.CensusKeeper, CensusDaemon.this.getName(), "report", request);
+                    TitanMessage result = CensusDaemon.this.node.sendToNode(Census.CensusKeeper, CensusDaemon.this.getName(), "report", request);
 
                     if (result != null) {
                         if (result.getStatus().isSuccessful()) {
@@ -506,7 +506,7 @@ public final class CensusDaemon extends AbstractTitanService implements Census, 
         try {
             Select.Request request = new Select.Request(count, exclude, match);
 
-            BeehiveMessage reply = CensusDaemon.this.node.sendToNode(Census.CensusKeeper, CensusDaemon.this.getName(), "select", request);
+            TitanMessage reply = CensusDaemon.this.node.sendToNode(Census.CensusKeeper, CensusDaemon.this.getName(), "select", request);
 
             try {
                 Select.Response response = reply.getPayload(Select.Response.class, this.node);
@@ -526,18 +526,18 @@ public final class CensusDaemon extends AbstractTitanService implements Census, 
     public Map<TitanNodeId,OrderedProperties> select(NodeAddress gateway, int count, Set<TitanNodeId> exclude, OrderedProperties match) {
         Select.Request request = new Select.Request(count, exclude, match);
 
-        BeehiveMessage message = new BeehiveMessage(BeehiveMessage.Type.RouteToNode,
+        TitanMessage message = new TitanMessage(TitanMessage.Type.RouteToNode,
                 this.node.getNodeAddress(),
                 Census.CensusKeeper,
                 TitanGuidImpl.ANY,
                 CensusDaemon.name,
                 "select",
-                BeehiveMessage.Transmission.UNICAST,
-                BeehiveMessage.Route.LOOSELY,
+                TitanMessage.Transmission.UNICAST,
+                TitanMessage.Route.LOOSELY,
                 request
         );
 
-        BeehiveMessage reply;
+        TitanMessage reply;
         if ((reply = this.node.transmit(gateway, message)) == null) {
             return null;
         }

@@ -41,8 +41,8 @@ import sunlabs.titan.api.ObjectStore;
 import sunlabs.titan.api.TitanGuid;
 import sunlabs.titan.api.TitanNode;
 import sunlabs.titan.api.TitanNodeId;
-import sunlabs.titan.node.BeehiveMessage;
-import sunlabs.titan.node.BeehiveMessage.RemoteException;
+import sunlabs.titan.node.TitanMessage;
+import sunlabs.titan.node.TitanMessage.RemoteException;
 import sunlabs.titan.node.BeehiveNode;
 import sunlabs.titan.node.BeehiveObjectPool;
 import sunlabs.titan.node.BeehiveObjectStore;
@@ -92,7 +92,7 @@ public final class StorableObject {
 
         /**
          * <p>
-         * Store the object supplied in the {@link BeehiveMessage} on this node.
+         * Store the object supplied in the {@link TitanMessage} on this node.
          * </p>
          * <p>
          * If the local node cannot store the object because there is no space,
@@ -100,26 +100,28 @@ public final class StorableObject {
          * </p>
          * @param message
          * @return The reply BeehiveMessage containing the entire result of the operation.
-         * @throws BeehiveMessage.RemoteException 
+         * @throws TitanMessage.RemoteException 
          * @throws ClassCastException 
          * @throws ClassNotFoundException 
          */
-        public BeehiveMessage storeLocalObject(BeehiveMessage message) throws ClassNotFoundException, ClassCastException, BeehiveMessage.RemoteException;
+        public TitanMessage storeLocalObject(TitanMessage message) throws ClassNotFoundException, ClassCastException, TitanMessage.RemoteException;
     }
     
     /**
      * Helper method to store an object on the local node.
-     * The returned {@link BeehiveMessage} is the message from the object's root node indicating the status of the publish operation of the stored object.
+     * Typically, this helper method is invoked on the receiver-side of a store object operation.
+     * <p>
+     * The returned {@link TitanMessage} is the message from the object's root node indicating the status of the publish operation of the stored object.
      * The payload of the returned message is either an instance of {@link PublishDaemon.PublishObject.Response}
-     * or an {@link Exception} (see {@link BeehiveMessage#getPayload(Class, BeehiveNode)}.
-     *
+     * or an {@link Exception} (see {@link TitanMessage#getPayload(Class, BeehiveNode)}.
+     * </p>
      * @param handler The instance implementing {@link StorableObject.Handler<? extends StorableObject.Handler.Object>} invoking this method.
      * @param object An instance implementing {@link StorableObject.Handler.Object} to store.
      * @param message
-     * @return The reply {@link BeehiveMessage} containing the response from the {@link BeehiveObjectHandler#publishObject(BeehiveMessage)} method on the root node for this {@code object}.
-     * @throws RemoteException encapsulating an Exception thrown by the storing node. 
+     * @return The reply {@link TitanMessage} containing the response from the {@link BeehiveObjectHandler#publishObject(TitanMessage)} method on the root node for this {@code object}.
+     * @throws TitanMessage.RemoteException encapsulating an Exception thrown by this node.
      */
-    public static BeehiveMessage storeLocalObject(StorableObject.Handler<? extends StorableObject.Handler.Object> handler, StorableObject.Handler.Object object, BeehiveMessage message) throws RemoteException {
+    public static TitanMessage storeLocalObject(StorableObject.Handler<? extends StorableObject.Handler.Object> handler, StorableObject.Handler.Object object, TitanMessage message) throws RemoteException {
         TitanNode node = handler.getNode();
 
         // Ensure that that the object's METADATA_TYPE is set in its metadata.
@@ -127,7 +129,7 @@ public final class StorableObject {
 
         try {
             node.getObjectStore().lock(BeehiveObjectStore.ObjectId(object));
-            BeehiveMessage response = null;
+            TitanMessage response = null;
             try {
                 node.getObjectStore().store(object);
             } finally {
@@ -138,7 +140,7 @@ public final class StorableObject {
                 handler.getLogger().finest("recv(%5.5s...) stored %s", message.getMessageId(), object.getObjectId());
             }
             
-            response.subjectId = object.getObjectId(); // The reponse contains the Set of object-ids.
+            response.subjectId = object.getObjectId(); // The response contains the Set of object-ids.
             return response;
         } catch (BeehiveObjectStore.UnacceptableObjectException e) {
             return message.composeReply(node.getNodeAddress(), DOLRStatus.NOT_ACCEPTABLE, e);
@@ -183,7 +185,6 @@ public final class StorableObject {
     }
 
     /**
-     * @throws BeehiveObjectPool.Exception 
      * Store a {@link StorableObject.Handler.Object} object in the global object store.
      * <p>
      * The number of copies to store is governed by the value {@code nReplicas}
@@ -198,13 +199,15 @@ public final class StorableObject {
      * If the value of {@code nReplicas} is larger than the number of nodes in the system, this method
      * will ultimately throw {@link BeehiveObjectStore.NoSpaceException}.
      * </p>
-     * @param handler The instance of the StorableObject.Handler that is invoking this method.
-     * @param object The StorableObject.Handler.Object to store.
+     * @param handler The instance of the {@link StorableObject.Handler} that is invoking this method.
+     * @param object The {@link StorableObject.Handler} to store.
      * @param nReplicas The number of replicas to store.
-     * @param exclude The Set of nodes to exclude from the candidate set of nodes to store the object.
+     * @param exclude The {@code Set} of nodes to exclude from the candidate set of nodes to store the object.
      * @param executorService An instance of {@link ExecutorService} to use to store the {@code nReplicas} in parallel, or {@code null} to store the objects serially.
      * @throws IOException
      * @throws BeehiveObjectStore.NoSpaceException
+     * @throws 
+     * @throws BeehiveObjectPool.Exception 
      * @throws  
      */
     public static StorableObject.Handler.Object storeObject(StorableObject.Handler<? extends StorableObject.Handler.Object> handler,
@@ -230,11 +233,11 @@ public final class StorableObject {
                 handler.getLogger().fine("%s on nodes: %s.", object.getObjectId(), nodes.keySet());
             }
 
-            LinkedList<FutureTask<BeehiveMessage>> tasks = new LinkedList<FutureTask<BeehiveMessage>>();
+            LinkedList<FutureTask<TitanMessage>> tasks = new LinkedList<FutureTask<TitanMessage>>();
             CountDownLatch latch = new CountDownLatch(nodes.size());
             for (TitanNodeId destination : nodes.keySet()) {
                 excludedNodes.add(destination);
-                FutureTask<BeehiveMessage> task = new StoreTask(handler, object, destination, latch);
+                FutureTask<TitanMessage> task = new StoreTask(handler, object, destination, latch);
                 tasks.add(task);
                 if (executorService != null)
                     executorService.execute(task);
@@ -248,7 +251,7 @@ public final class StorableObject {
                 try {
                     if (latch.await(10000, TimeUnit.MILLISECONDS))
                         break;
-                    for (FutureTask<BeehiveMessage> task : tasks) {
+                    for (FutureTask<TitanMessage> task : tasks) {
                         if (!task.isDone()) {
                             handler.getLogger().warning("(thread=%d) waiting for task %s",  Thread.currentThread().getId(), task.toString());
                         }                        
@@ -263,11 +266,10 @@ public final class StorableObject {
                 handler.getLogger().warning("(id=%d) waiting done.", Thread.currentThread().getId());
             }
 
-
-            // Collect the results from each of the Tasks started above, counting the successful stores..
-            for (FutureTask<BeehiveMessage> task : tasks) {
+            // Collect the results from each of the Tasks started above, counting the successful stores.
+            for (FutureTask<TitanMessage> task : tasks) {
                 try {
-                    BeehiveMessage publishResult = task.get();
+                    TitanMessage publishResult = task.get();
                     if (true) {
                         try {
                             PublishDaemon.PublishObject.Response response = publishResult.getPayload(PublishDaemon.PublishObject.Response.class, handler.getNode());
@@ -318,7 +320,7 @@ public final class StorableObject {
     /**
      * Wrap an invocation of the {@link StorableObject.Store} in a {@link FutureTask} object.
      */
-    public static class StoreTask extends FutureTask<BeehiveMessage> {
+    public static class StoreTask extends FutureTask<TitanMessage> {
         private TitanObject object;
         private TitanGuid destination;
 
@@ -336,7 +338,7 @@ public final class StorableObject {
         /**
          * A simple Callable to store a BeehiveObject on a destination node.
          */
-        private static class Store implements Callable<BeehiveMessage> {
+        private static class Store implements Callable<TitanMessage> {
             private  StorableObject.Handler<? extends StorableObject.Handler.Object>  handler;
             private TitanNodeId destination;
             private TitanObject object;
@@ -349,9 +351,9 @@ public final class StorableObject {
                 this.object = object;
             }
 
-            public BeehiveMessage call() throws BeehiveNode.NoSuchNodeException, ClassCastException, ClassNotFoundException, BeehiveMessage.RemoteException {
+            public TitanMessage call() throws BeehiveNode.NoSuchNodeException, ClassCastException, ClassNotFoundException, TitanMessage.RemoteException {
                 try {
-                    BeehiveMessage reply = this.handler.getNode().sendToNodeExactly(this.destination, this.handler.getName(), "storeLocalObject", this.object);
+                    TitanMessage reply = this.handler.getNode().sendToNodeExactly(this.destination, this.handler.getName(), "storeLocalObject", this.object);
               
                     return reply;
                 } finally {

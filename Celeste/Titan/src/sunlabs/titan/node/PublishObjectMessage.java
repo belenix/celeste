@@ -36,7 +36,7 @@ import sunlabs.titan.node.services.PublishDaemon;
  * True multicast messages are received by the associated {@link AbstractObjectHandler} at each node all along the routing path.
  * </p>
  */
-public final class PublishObjectMessage extends BeehiveMessage {
+public final class PublishObjectMessage extends TitanMessage {
     private final static long serialVersionUID = 1L;
 
     public PublishObjectMessage(
@@ -45,14 +45,14 @@ public final class PublishObjectMessage extends BeehiveMessage {
             String subjectClass,
             String subjectClassMethod,
             PublishDaemon.PublishObject.Request publishRequest) {
-        super(BeehiveMessage.Type.PublishObject,
+        super(TitanMessage.Type.PublishObject,
                 source,
                 new TitanNodeIdImpl(destination),
                 destination,
                 subjectClass,
                 subjectClassMethod,
-                BeehiveMessage.Transmission.MULTICAST,
-                BeehiveMessage.Route.LOOSELY,
+                TitanMessage.Transmission.MULTICAST,
+                TitanMessage.Route.LOOSELY,
                 publishRequest);
     }
 }

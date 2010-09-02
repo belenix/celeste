@@ -32,8 +32,8 @@ import sunlabs.celeste.node.erasurecode.ErasureCode;
 import sunlabs.celeste.node.services.object.FObjectType;
 import sunlabs.titan.api.TitanGuid;
 import sunlabs.titan.api.TitanObject;
-import sunlabs.titan.node.BeehiveMessage;
-import sunlabs.titan.node.BeehiveMessage.RemoteException;
+import sunlabs.titan.node.TitanMessage;
+import sunlabs.titan.node.TitanMessage.RemoteException;
 import sunlabs.titan.node.BeehiveObjectStore;
 import sunlabs.titan.node.object.BeehiveObjectHandler;
 import sunlabs.titan.node.object.DeleteableObject;
@@ -59,7 +59,7 @@ public final class RetrievableFragmentedObject {
         throws ErasureCode.UnsupportedAlgorithmException, ErasureCode.NotRecoverableException, BeehiveObjectStore.DeletedObjectException;
 
         /**
-         * Retrieve the local object described in the {@link BeehiveMessage}.
+         * Retrieve the local object described in the {@link TitanMessage}.
          * <p>
          * This is the "server" side of the retrieve and the object is always retrieved and returned even if it is deleted.
          * </p>
@@ -67,7 +67,7 @@ public final class RetrievableFragmentedObject {
          * The check for a deleted object is to be checked on the client side.
          * </p>
          */
-        public BeehiveMessage retrieveLocalObject(BeehiveMessage message);
+        public TitanMessage retrieveLocalObject(TitanMessage message);
     }
 
 
@@ -79,7 +79,7 @@ public final class RetrievableFragmentedObject {
      */
     public static TitanObject retrieveRemoteObject(RetrievableFragmentedObject.Handler<? extends RetrievableFragmentedObject.Handler.Object> objectType, TitanGuid objectId)
     throws BeehiveObjectStore.DeletedObjectException {
-        BeehiveMessage reply = objectType.getNode().sendToObject(objectId, objectType.getName(), "retrieveLocalObject", objectId);
+        TitanMessage reply = objectType.getNode().sendToObject(objectId, objectType.getName(), "retrieveLocalObject", objectId);
 
         if (!reply.getStatus().isSuccessful()) {
             return null;

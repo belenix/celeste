@@ -32,8 +32,8 @@ import sunlabs.asdf.web.XML.XHTML;
 import sunlabs.asdf.web.http.HTTP;
 import sunlabs.titan.TitanGuidImpl;
 import sunlabs.titan.api.TitanObject;
-import sunlabs.titan.node.BeehiveMessage;
-import sunlabs.titan.node.BeehiveMessage.RemoteException;
+import sunlabs.titan.node.TitanMessage;
+import sunlabs.titan.node.TitanMessage.RemoteException;
 import sunlabs.titan.node.BeehiveNode;
 import sunlabs.titan.node.BeehiveObjectStore;
 import sunlabs.titan.node.services.api.RetrieveObject;
@@ -46,7 +46,7 @@ public final class RetrieveObjectService extends AbstractTitanService implements
         super(node, RetrieveObjectService.name, "Retrieve objects from the object pool");
     }
 
-    public BeehiveMessage retrieveLocalObject(BeehiveMessage message) {
+    public TitanMessage retrieveLocalObject(TitanMessage message) {
         try {
             TitanObject dolrData = this.node.getObjectStore().get(TitanObject.class, message.subjectId);
             return message.composeReply(this.node.getNodeAddress(), dolrData);
@@ -64,7 +64,7 @@ public final class RetrieveObjectService extends AbstractTitanService implements
     }
 
     public TitanObject retrieveObject(final TitanGuidImpl objectId) {
-        BeehiveMessage reply = RetrieveObjectService.this.node.sendToObject(objectId, RetrieveObjectService.name, "retrieveLocalObject", objectId);
+        TitanMessage reply = RetrieveObjectService.this.node.sendToObject(objectId, RetrieveObjectService.name, "retrieveLocalObject", objectId);
         if (!reply.getStatus().isSuccessful())
             return null;
 

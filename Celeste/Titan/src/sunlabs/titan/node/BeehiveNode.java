@@ -91,7 +91,7 @@ import sunlabs.titan.api.TitanNode;
 import sunlabs.titan.api.TitanNodeId;
 import sunlabs.titan.api.TitanService;
 import sunlabs.titan.api.management.NodeMBean;
-import sunlabs.titan.node.BeehiveMessage.RemoteException;
+import sunlabs.titan.node.TitanMessage.RemoteException;
 import sunlabs.titan.node.object.AbstractObjectHandler;
 import sunlabs.titan.node.object.BeehiveObjectHandler;
 import sunlabs.titan.node.services.CensusDaemon;
@@ -198,7 +198,7 @@ public class BeehiveNode implements TitanNode, NodeMBean {
                     data.position(newPosition);
                     if (this.payload.remaining() == 0) {
                         try {
-                            BeehiveMessage request = new BeehiveMessage(this.header.array(), this.payload.array());
+                            TitanMessage request = new TitanMessage(this.header.array(), this.payload.array());
                             RequestHandler service = new RequestHandler(this.node, request, this);
                             service.start();
                             this.state = ParserState.READ_HEADER_LENGTH; 
@@ -225,11 +225,11 @@ public class BeehiveNode implements TitanNode, NodeMBean {
     }
     
     private static class RequestHandler extends Thread implements Runnable {
-        private BeehiveMessage request;
+        private TitanMessage request;
         private ChannelHandler channel;
         private BeehiveNode node;
         
-        public RequestHandler(BeehiveNode node, BeehiveMessage request, ChannelHandler channel) {
+        public RequestHandler(BeehiveNode node, TitanMessage request, ChannelHandler channel) {
             super(String.format("%s.RequestHandler", node.getNodeId()));
             this.node = node;
             this.request = request;
@@ -246,7 +246,7 @@ public class BeehiveNode implements TitanNode, NodeMBean {
                     this.node.log.finest("Request: %s", request);
                 }
                 
-                BeehiveMessage myResponse = this.node.receive(this.request);
+                TitanMessage myResponse = this.node.receive(this.request);
                 
                 if (this.node.log.isLoggable(Level.FINEST)) {
                     this.node.log.finest("Response: %s", myResponse);
@@ -415,7 +415,7 @@ public class BeehiveNode implements TitanNode, NodeMBean {
                     data.position(newPosition);
                     if (this.payload.remaining() == 0) {
                         try {
-                            BeehiveMessage request = new BeehiveMessage(this.header.array(), this.payload.array());
+                            TitanMessage request = new TitanMessage(this.header.array(), this.payload.array());
                             RequestHandler service = new RequestHandler(this.node, request, this);
                             this.node.clientTasks.execute(service);
                             //service.start();
@@ -472,7 +472,7 @@ public class BeehiveNode implements TitanNode, NodeMBean {
      * handle each inbound connection.
      * 
      * Initiators of connections to this Node may place their sockets into a cache
-     * (see {@link BeehiveNode#transmit(BeehiveMessage)} leaving the socket open and ready for use for a subsequent message. 
+     * (see {@link BeehiveNode#transmit(TitanMessage)} leaving the socket open and ready for use for a subsequent message. 
      */
     private class BeehiveServer2 extends Thread implements ConnectionServer, BeehiveServer2MBean {
 
@@ -505,11 +505,11 @@ public class BeehiveNode implements TitanNode, NodeMBean {
                     	// The client will figure that out once it tries to reuse this connection and it is closed and must setup a new connection.
 
                         try {
-                            BeehiveMessage request = BeehiveMessage.newInstance(this.socket.getInputStream());
+                            TitanMessage request = TitanMessage.newInstance(this.socket.getInputStream());
 
                             this.lastActivityMillis = System.currentTimeMillis();
 
-                            BeehiveMessage myResponse = BeehiveNode.this.receive(request);
+                            TitanMessage myResponse = BeehiveNode.this.receive(request);
                             DataOutputStream dos = new DataOutputStream(this.socket.getOutputStream());
                             myResponse.writeObject(dos);
                             dos.flush();
@@ -1160,7 +1160,7 @@ public class BeehiveNode implements TitanNode, NodeMBean {
     }
 
     /**
-     * Process a {@link BeehiveMessage} as input to this Node.
+     * Process a {@link TitanMessage} as input to this Node.
      * <p>
      * If the destination is this Node, then invoke the specified application
      * and return the resulting {@code BeehiveMessage} response.
@@ -1209,9 +1209,9 @@ public class BeehiveNode implements TitanNode, NodeMBean {
      * in the message.  Otherwise, a message is handled normally.
      * <p>
      * @param request
-     * @return - The answering {@link BeehiveMessage} in response.
+     * @return - The answering {@link TitanMessage} in response.
      */
-    public BeehiveMessage receive(BeehiveMessage request) {
+    public TitanMessage receive(TitanMessage request) {
         BeehiveNode.this.log.finest("%s", request.toString());
         try {
             TitanNodeId destinationNodeId = request.getDestinationNodeId();
@@ -1228,17 +1228,17 @@ public class BeehiveNode implements TitanNode, NodeMBean {
                 return this.services.sendMessageToApp(request);
             }
 
-            BeehiveMessage.Type type = request.getType();
+            TitanMessage.Type type = request.getType();
 
-            if (type == BeehiveMessage.Type.PublishObject) {
+            if (type == TitanMessage.Type.PublishObject) {
                 return this.receivePublishObject(request);
             }
 
-            if (type == BeehiveMessage.Type.UnpublishObject) {
+            if (type == TitanMessage.Type.UnpublishObject) {
                 return this.receiveUnpublishObject(request);
             }
 
-            if (type == BeehiveMessage.Type.RouteToObject) {
+            if (type == TitanMessage.Type.RouteToObject) {
                 return this.receiveRouteToObject(request);
             }
 
@@ -1257,7 +1257,7 @@ public class BeehiveNode implements TitanNode, NodeMBean {
                     
                     return request.composeReply(this.address, new BeehiveNode.NoSuchNodeException("%s", destinationNodeId.toString()));
                 }
-                BeehiveMessage result = this.services.sendMessageToApp(request);
+                TitanMessage result = this.services.sendMessageToApp(request);
 
                 if (request.isTraced()) {
                     BeehiveNode.this.log.finest("reply(%s)", result.traceReport());
@@ -1265,7 +1265,7 @@ public class BeehiveNode implements TitanNode, NodeMBean {
                 return result;
             }
 
-            BeehiveMessage result = this.transmit(request);
+            TitanMessage result = this.transmit(request);
 
             return result;
         } catch (ClassCastException e) {
@@ -1274,7 +1274,7 @@ public class BeehiveNode implements TitanNode, NodeMBean {
         } catch (ClassNotFoundException e) {
             BeehiveNode.this.log.severe("Internal message payload ClassNotFoundException.%n");
             return request.composeReply(this.address, e);
-        } catch (BeehiveMessage.RemoteException e) {
+        } catch (TitanMessage.RemoteException e) {
             BeehiveNode.this.log.severe("Internal message payload contained unexpected BeehiveMessage.RemoteException%n");
             return request.composeReply(this.address, e);
         } finally {
@@ -1294,7 +1294,7 @@ public class BeehiveNode implements TitanNode, NodeMBean {
      * <p>
      * If this node is the root of the published object object-id, then dispatch the message to the {@link BeehiveObjectHandler} corresponding to the
      * published object's {@link AbstractObjectHandler}.
-     * The {@link AbstractObjectHandler} is responsible for constructing and returning the reply {@link BeehiveMessage}.
+     * The {@link AbstractObjectHandler} is responsible for constructing and returning the reply {@link TitanMessage}.
      * </p>
      * <p>
      * PublishObjectMessages, while multicast in nature (ie. processed at each hop along the route to the destination node),
@@ -1305,8 +1305,8 @@ public class BeehiveNode implements TitanNode, NodeMBean {
      *
      * @param message The incoming {@link PublishObjectMessage}
      */
-    private BeehiveMessage receivePublishObject(BeehiveMessage message) {
-        BeehiveMessage rootReply;
+    private TitanMessage receivePublishObject(TitanMessage message) {
+        TitanMessage rootReply;
 
         if (message.isTraced()) {
             BeehiveNode.this.log.info("recv: %s", message.traceReport());
@@ -1357,7 +1357,7 @@ public class BeehiveNode implements TitanNode, NodeMBean {
     /**
      * Receive a {@link RouteToObjectMessage}.
      * The object-id of the desired {@link TitanObject} is encoded in the
-     * {@link BeehiveMessage#subjectId subjectId} of the received
+     * {@link TitanMessage#subjectId subjectId} of the received
      * BeehiveMessage.
      * <ol>
      * <li>If (a) This is the target node, or (b) the target
@@ -1382,8 +1382,8 @@ public class BeehiveNode implements TitanNode, NodeMBean {
      * as arguments. The dispatched application will formulate the reply.</li>
      * </ol>
      */
-    private BeehiveMessage receiveRouteToObject(BeehiveMessage request) {
-        BeehiveMessage response;
+    private TitanMessage receiveRouteToObject(TitanMessage request) {
+        TitanMessage response;
 
         if (request.isTraced()) {
             BeehiveNode.this.log.info("recv: %s", request.traceReport());
@@ -1414,15 +1414,15 @@ public class BeehiveNode implements TitanNode, NodeMBean {
         // and have the object contain a ClassLoader that understands where to get the class.  See the note in BeehiveMessage.
         //
 
-        BeehiveMessage proxyMessage;
-        proxyMessage = new BeehiveMessage(BeehiveMessage.Type.RouteToNode,
+        TitanMessage proxyMessage;
+        proxyMessage = new TitanMessage(TitanMessage.Type.RouteToNode,
                 request.getSource(),
                 TitanNodeIdImpl.ANY,
                 request.subjectId,
                 request.getSubjectClass(),
                 request.getSubjectClassMethod(),
-                BeehiveMessage.Transmission.UNICAST,
-                BeehiveMessage.Route.EXACTLY,
+                TitanMessage.Transmission.UNICAST,
+                TitanMessage.Route.EXACTLY,
                 new byte[0]);
         proxyMessage.setRawPayload(request.getRawPayLoad());
 
@@ -1449,7 +1449,7 @@ public class BeehiveNode implements TitanNode, NodeMBean {
                     this.objectPublishers.remove(request.subjectId, publisher.getNodeId());
                     this.log.info("Bad publisher: " + publisher + " responder=" + response.getSource().format());
                 } else if (response.getStatus().isSuccessful()) {
-                    BeehiveMessage reply;
+                    TitanMessage reply;
                     // The idea here is to convey the serialized data from the replying node,
                     // without having to deserialize it and reserialize it just to retransmit
                     // it to the original requestor.  Also, as a result of not deserializing
@@ -1486,7 +1486,7 @@ public class BeehiveNode implements TitanNode, NodeMBean {
      * <p>
      * Delete any back-pointers to the object, and forward the message on to the next hop
      * along the routing path.  If this node terminates the routing path,
-     * invoke the {@link BeehiveObjectHandler#unpublishObject(BeehiveMessage)} method of the object.
+     * invoke the {@link BeehiveObjectHandler#unpublishObject(TitanMessage)} method of the object.
      * </p>
      * <p>
      * Each {@code UnublishObjectMessage}, while multicast in nature, is not really
@@ -1497,7 +1497,7 @@ public class BeehiveNode implements TitanNode, NodeMBean {
      * </p>
      * @param request The received {@link UnpublishObjectMessage}
      */
-    private BeehiveMessage receiveUnpublishObject(BeehiveMessage request) throws ClassCastException, ClassNotFoundException, BeehiveMessage.RemoteException {
+    private TitanMessage receiveUnpublishObject(TitanMessage request) throws ClassCastException, ClassNotFoundException, TitanMessage.RemoteException {
         if (request.isTraced()) {
             BeehiveNode.this.log.info("recv %s: objectId=%s", request.traceReport(), request.getObjectId());
         }
@@ -1536,7 +1536,7 @@ public class BeehiveNode implements TitanNode, NodeMBean {
         return true;
     }
 
-    public BeehiveMessage replyTo(BeehiveMessage message, Serializable serializable) {
+    public TitanMessage replyTo(TitanMessage message, Serializable serializable) {
         return message.composeReply(this.getNodeAddress(), serializable);
     }
 
@@ -1587,63 +1587,63 @@ public class BeehiveNode implements TitanNode, NodeMBean {
                 ));
     }
 
-    public BeehiveMessage routeToNodeMulticast(TitanNodeId nodeId, String klasse, String method, Serializable data) {
-        BeehiveMessage msg = new BeehiveMessage(BeehiveMessage.Type.RouteToNode,
+    public TitanMessage routeToNodeMulticast(TitanNodeId nodeId, String klasse, String method, Serializable data) {
+        TitanMessage msg = new TitanMessage(TitanMessage.Type.RouteToNode,
                 this.getNodeAddress(),
                 nodeId,
                 nodeId,
                 klasse,
                 method,
-                BeehiveMessage.Transmission.MULTICAST,
-                BeehiveMessage.Route.LOOSELY,
+                TitanMessage.Transmission.MULTICAST,
+                TitanMessage.Route.LOOSELY,
                 data);
 
-        BeehiveMessage reply = this.receive(msg);
+        TitanMessage reply = this.receive(msg);
         return reply;
     }
 
-    public BeehiveMessage sendToNode(TitanNodeId nodeId, String klasse, String method, Serializable data) {
-        BeehiveMessage msg = new BeehiveMessage(BeehiveMessage.Type.RouteToNode,
+    public TitanMessage sendToNode(TitanNodeId nodeId, String klasse, String method, Serializable data) {
+        TitanMessage msg = new TitanMessage(TitanMessage.Type.RouteToNode,
                 this.getNodeAddress(),
                 nodeId,
                 nodeId,
                 klasse,
                 method,
-                BeehiveMessage.Transmission.UNICAST,
-                BeehiveMessage.Route.LOOSELY,
+                TitanMessage.Transmission.UNICAST,
+                TitanMessage.Route.LOOSELY,
                 data);
 
-        BeehiveMessage reply = this.receive(msg);
+        TitanMessage reply = this.receive(msg);
         return reply;
     }
     
-    public BeehiveMessage sendToNode(TitanNodeId nodeId, TitanGuid objectId, String klasse, String method, Serializable data) {
-        BeehiveMessage msg = new BeehiveMessage(BeehiveMessage.Type.RouteToNode,
+    public TitanMessage sendToNode(TitanNodeId nodeId, TitanGuid objectId, String klasse, String method, Serializable data) {
+        TitanMessage msg = new TitanMessage(TitanMessage.Type.RouteToNode,
                 this.getNodeAddress(),
                 nodeId,
                 objectId,
                 klasse,
                 method,
-                BeehiveMessage.Transmission.UNICAST,
-                BeehiveMessage.Route.LOOSELY,
+                TitanMessage.Transmission.UNICAST,
+                TitanMessage.Route.LOOSELY,
                 data);
 
-        BeehiveMessage reply = this.receive(msg);
+        TitanMessage reply = this.receive(msg);
         return reply;
     }
 
-    public BeehiveMessage sendToNodeExactly(TitanNodeId nodeId, String objectClass, String method, Serializable data) throws NoSuchNodeException, ClassCastException, RemoteException, ClassNotFoundException {
-        BeehiveMessage msg = new BeehiveMessage(BeehiveMessage.Type.RouteToNode,
+    public TitanMessage sendToNodeExactly(TitanNodeId nodeId, String objectClass, String method, Serializable data) throws NoSuchNodeException, ClassCastException, RemoteException, ClassNotFoundException {
+        TitanMessage msg = new TitanMessage(TitanMessage.Type.RouteToNode,
                 this.getNodeAddress(),
                 nodeId,
                 nodeId,
                 objectClass,
                 method,
-                BeehiveMessage.Transmission.UNICAST,
-                BeehiveMessage.Route.EXACTLY,
+                TitanMessage.Transmission.UNICAST,
+                TitanMessage.Route.EXACTLY,
                 data);
 
-        BeehiveMessage reply = this.receive(msg);
+        TitanMessage reply = this.receive(msg);
         
         if (reply.getStatus().equals(DOLRStatus.THROWABLE)) {
             try {
@@ -1662,38 +1662,38 @@ public class BeehiveNode implements TitanNode, NodeMBean {
         return reply;
     }
 
-    public BeehiveMessage sendToObject(TitanGuid objectId, String klasse, String method, Serializable data) {
+    public TitanMessage sendToObject(TitanGuid objectId, String klasse, String method, Serializable data) {
         // It would be interesting to have a MULTICAST route-to-object
         // message which is sent to each known object.
-        BeehiveMessage message = new BeehiveMessage(
-                BeehiveMessage.Type.RouteToObject,
+        TitanMessage message = new TitanMessage(
+                TitanMessage.Type.RouteToObject,
                 this.getNodeAddress(),
                 new TitanNodeIdImpl(objectId),
                 objectId,
                 klasse,
                 method,
-                BeehiveMessage.Transmission.UNICAST,
-                BeehiveMessage.Route.LOOSELY,
+                TitanMessage.Transmission.UNICAST,
+                TitanMessage.Route.LOOSELY,
                 data);
-        BeehiveMessage reply = this.receive(message);
+        TitanMessage reply = this.receive(message);
         return reply;
     }
     
-    public BeehiveMessage sendToObject(TitanGuid objectId, String klasse, String method, Serializable data, boolean traced) {
+    public TitanMessage sendToObject(TitanGuid objectId, String klasse, String method, Serializable data, boolean traced) {
         // It would be interesting to have a MULTICAST route-to-object
         // message which is sent to each known object.
-        BeehiveMessage message = new BeehiveMessage(
-                BeehiveMessage.Type.RouteToObject,
+        TitanMessage message = new TitanMessage(
+                TitanMessage.Type.RouteToObject,
                 this.getNodeAddress(),
                 new TitanNodeIdImpl(objectId),
                 objectId,
                 klasse,
                 method,
-                BeehiveMessage.Transmission.UNICAST,
-                BeehiveMessage.Route.LOOSELY,
+                TitanMessage.Transmission.UNICAST,
+                TitanMessage.Route.LOOSELY,
                 data);
         message.setTraced(traced);
-        BeehiveMessage reply = this.receive(message);
+        TitanMessage reply = this.receive(message);
         return reply;
     }
 
@@ -1896,12 +1896,12 @@ public class BeehiveNode implements TitanNode, NodeMBean {
      * Transmit a message to its destination.
      *
      * <p>
-     * Note: Use this method and {@link #transmit(NodeAddress, BeehiveMessage)} to
+     * Note: Use this method and {@link #transmit(NodeAddress, TitanMessage)} to
      * transmit a message ONLY IF you want this node to not receive the message.
      * Use {@link BeehiveNode#receive receive} instead.
      * </p>
      */
-    public BeehiveMessage transmit(BeehiveMessage message) {
+    public TitanMessage transmit(TitanMessage message) {
         message.timeToLive++;
         if (message.timeToLive >= this.map.n_tables) {
             this.log.severe("Message exceeded time-to-live: " + message.toString());
@@ -1914,7 +1914,7 @@ public class BeehiveNode implements TitanNode, NodeMBean {
             return this.receive(message);
         }
 
-        BeehiveMessage reply;
+        TitanMessage reply;
         NodeAddress neighbour;
         while ((neighbour = this.map.getRoute(message.getDestinationNodeId())) != null) {
             if ((reply = this.transmit(neighbour, message)) != null) {
@@ -1936,14 +1936,14 @@ public class BeehiveNode implements TitanNode, NodeMBean {
     }
 
     /**
-     * Transmit a {@link BeehiveMessage} directly to a {@link NodeAddress} and return the reply.
+     * Transmit a {@link TitanMessage} directly to a {@link NodeAddress} and return the reply.
      * If the destination address is unresponsive or cannot be reached, the return value is {@code null}.
      *
      * <p>
      * This method should throw Exceptions to signal failures rather than returning null.
      * </p>
      */
-    public BeehiveMessage transmit(NodeAddress addr, BeehiveMessage message) /*throws InterruptedException*/ {
+    public TitanMessage transmit(NodeAddress addr, TitanMessage message) /*throws InterruptedException*/ {
         while (true) {
             Socket socket = null;
             boolean socketValid = true;
@@ -1958,7 +1958,7 @@ public class BeehiveNode implements TitanNode, NodeMBean {
                 message.writeObject(out);
                 out.flush();
 
-                BeehiveMessage response = BeehiveMessage.newInstance(socket.getInputStream());
+                TitanMessage response = TitanMessage.newInstance(socket.getInputStream());
                 if (response.isTraced()) {
                     BeehiveNode.this.log.info("recv: %s, reply: %ss", message.traceReport(), response.traceReport());
                 }

@@ -57,8 +57,8 @@ import sunlabs.titan.api.TitanGuid;
 import sunlabs.titan.api.TitanNodeId;
 import sunlabs.titan.api.TitanObject;
 import sunlabs.titan.node.AbstractBeehiveObject;
-import sunlabs.titan.node.BeehiveMessage;
-import sunlabs.titan.node.BeehiveMessage.RemoteException;
+import sunlabs.titan.node.TitanMessage;
+import sunlabs.titan.node.TitanMessage.RemoteException;
 import sunlabs.titan.node.BeehiveNode;
 import sunlabs.titan.node.BeehiveObjectPool;
 import sunlabs.titan.node.BeehiveObjectStore;
@@ -762,7 +762,7 @@ public final class VersionObjectHandler extends AbstractObjectHandler implements
         return new VObject(anchorObjectId, replicationParams, createOperation, clientMetaData, signature);
     }
 
-    public BeehiveMessage publishObject(BeehiveMessage message) throws ClassCastException, BeehiveMessage.RemoteException, ClassNotFoundException {
+    public TitanMessage publishObject(TitanMessage message) throws ClassCastException, TitanMessage.RemoteException, ClassNotFoundException {
         PublishDaemon.PublishObject.Request publishRequest = message.getPayload(PublishDaemon.PublishObject.Request.class, this.node);
         if (this.log.isLoggable(Level.FINE)) {
             this.log.fine("VersionObject.publishObject(%s)%n", message);
@@ -785,7 +785,7 @@ public final class VersionObjectHandler extends AbstractObjectHandler implements
         return message.composeReply(this.node.getNodeAddress(), new PublishDaemon.PublishObject.Response(new HashSet<TitanGuid>(publishRequest.getObjectsToPublish().keySet())));
     }
 
-    public BeehiveMessage unpublishObject(BeehiveMessage message) throws ClassCastException, BeehiveMessage.RemoteException, ClassNotFoundException {
+    public TitanMessage unpublishObject(TitanMessage message) throws ClassCastException, TitanMessage.RemoteException, ClassNotFoundException {
         PublishDaemon.UnpublishObject.Request request = message.getPayload(PublishDaemon.UnpublishObject.Request.class, this.getNode());
         if (this.log.isLoggable(Level.FINE)) {
             this.log.fine("%s -> %s", request.getObjectIds(), message.getSource());
@@ -795,9 +795,9 @@ public final class VersionObjectHandler extends AbstractObjectHandler implements
         return message.composeReply(this.node.getNodeAddress());
     }
 
-    public BeehiveMessage storeLocalObject(BeehiveMessage message) throws ClassCastException, BeehiveMessage.RemoteException, ClassNotFoundException {
+    public TitanMessage storeLocalObject(TitanMessage message) throws ClassCastException, TitanMessage.RemoteException, ClassNotFoundException {
         VersionObject.Object vObject = message.getPayload(VersionObject.Object.class, this.node);
-        BeehiveMessage reply = StorableObject.storeLocalObject(this, vObject, message);
+        TitanMessage reply = StorableObject.storeLocalObject(this, vObject, message);
         return reply;
     }
 
@@ -807,11 +807,11 @@ public final class VersionObjectHandler extends AbstractObjectHandler implements
         return vObject;
     }
 
-    public BeehiveMessage retrieveLocalObject(BeehiveMessage message) {
+    public TitanMessage retrieveLocalObject(TitanMessage message) {
         return RetrievableObject.retrieveLocalObject(this, message);
     }
 
-    public BeehiveMessage replicateObject(BeehiveMessage message) {
+    public TitanMessage replicateObject(TitanMessage message) {
         try {
             ReplicatableObject.Replicate.Request request = message.getPayload(ReplicatableObject.Replicate.Request.class, this.node);
             if (this.log.isLoggable(Level.FINE)) {
@@ -885,7 +885,7 @@ public final class VersionObjectHandler extends AbstractObjectHandler implements
         return manifest;
     }
 
-    public BeehiveMessage deleteLocalObject(BeehiveMessage message) throws ClassNotFoundException, ClassCastException, BeehiveMessage.RemoteException {
+    public TitanMessage deleteLocalObject(TitanMessage message) throws ClassNotFoundException, ClassCastException, TitanMessage.RemoteException {
         if (this.deleteLocalObjectLocks.trylock(message.subjectId)) {
         	if (this.log.isLoggable(Level.FINE)) {
         		this.log.fine("%s", message.subjectId);
@@ -911,7 +911,7 @@ public final class VersionObjectHandler extends AbstractObjectHandler implements
             this.log.fine("%s %s %ds", objectId, profferedDeletionToken, timeToLive);
         }
         DeleteableObject.Request request = new DeleteableObject.Request(objectId, profferedDeletionToken, timeToLive);
-        BeehiveMessage reply = this.node.sendToObject(objectId, this.getName(), "deleteLocalObject", request);
+        TitanMessage reply = this.node.sendToObject(objectId, this.getName(), "deleteLocalObject", request);
         if (!reply.getStatus().isSuccessful()) {
             this.log.fine("FAILED %s", objectId);
         }
@@ -948,7 +948,7 @@ public final class VersionObjectHandler extends AbstractObjectHandler implements
         return new XHTML.Div("nothing here");
     }
     
-    public BeehiveMessage extensibleOperation(BeehiveMessage message) {
+    public TitanMessage extensibleOperation(TitanMessage message) {
         return ExtensibleObject.extensibleOperation(this, message);
     }
     

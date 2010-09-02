@@ -37,8 +37,8 @@ import sunlabs.asdf.web.XML.XHTML;
 import sunlabs.asdf.web.XML.XML;
 import sunlabs.asdf.web.http.HTTP;
 import sunlabs.titan.node.ApplicationFramework;
-import sunlabs.titan.node.BeehiveMessage;
-import sunlabs.titan.node.BeehiveMessage.RemoteException;
+import sunlabs.titan.node.TitanMessage;
+import sunlabs.titan.node.TitanMessage.RemoteException;
 import sunlabs.titan.node.BeehiveNode.NoSuchNodeException;
 import sunlabs.titan.node.BeehiveObjectStore;
 import sunlabs.titan.node.NeighbourMap;
@@ -66,14 +66,14 @@ public interface TitanNode {
     public NodeAddress getNodeAddress();
     
     /**
-     * Send the given {@link Serializable} {@code data} via a {@link BeehiveMessage.Type#RouteToNode} to the {@link TitanNode}
+     * Send the given {@link Serializable} {@code data} via a {@link TitanMessage.Type#RouteToNode} to the {@link TitanNode}
      * that is the root of the {@link TitanNodeId} {@code nodeId}.
      *
      * @param klasse The name of the {@link AbstractTitanService} to handle the reception of this message.
      * @param method The name of the method to invoke in {@code klasse} on the receiving node.
      * @param payload Serializable data as the input parameter to the {@code method} method.
      */
-    public BeehiveMessage sendToNode(TitanNodeId nodeId, String klasse, String method, Serializable payload);
+    public TitanMessage sendToNode(TitanNodeId nodeId, String klasse, String method, Serializable payload);
     
 
     /**
@@ -81,10 +81,10 @@ public interface TitanNode {
      * This directly violates the separation of nodes and objects.
      */
     @Deprecated
-    public BeehiveMessage sendToNode(TitanNodeId nodeId, TitanGuid objectId, String klasse, String method, Serializable data);
+    public TitanMessage sendToNode(TitanNodeId nodeId, TitanGuid objectId, String klasse, String method, Serializable data);
 
     /**
-     * Transmit a {@link BeehiveMessage.Type#RouteToNode}
+     * Transmit a {@link TitanMessage.Type#RouteToNode}
      * message to the specified node object-id.
      *
      * @param nodeId the {@link TitanNodeId} of the destination node.
@@ -96,7 +96,7 @@ public interface TitanNode {
      * @throws RemoteException 
      * @throws ClassCastException 
      */
-    public BeehiveMessage sendToNodeExactly(TitanNodeId nodeId, String klasse, String method, Serializable payload) throws NoSuchNodeException, ClassCastException, RemoteException, ClassNotFoundException;
+    public TitanMessage sendToNodeExactly(TitanNodeId nodeId, String klasse, String method, Serializable payload) throws NoSuchNodeException, ClassCastException, RemoteException, ClassNotFoundException;
 
     /**
      * Send the given {@link Serializable} {@code data} to the {@link TitanObject}
@@ -109,7 +109,7 @@ public interface TitanNode {
      * @param method The name of the method to invoke.
      * @param payload The data to transmit to the object.
      */
-    public BeehiveMessage sendToObject(TitanGuid objectId, String klasse, String method, Serializable payload);
+    public TitanMessage sendToObject(TitanGuid objectId, String klasse, String method, Serializable payload);
 
 
     public Attributes getConfiguration();
@@ -129,8 +129,8 @@ public interface TitanNode {
     public ThreadGroup getThreadGroup();
 
 
-    public BeehiveMessage transmit(sunlabs.titan.node.NodeAddress gateway, BeehiveMessage message);
-    public BeehiveMessage transmit(BeehiveMessage message);
+    public TitanMessage transmit(sunlabs.titan.node.NodeAddress gateway, TitanMessage message);
+    public TitanMessage transmit(TitanMessage message);
 
 
     public Publishers getObjectPublishers();
@@ -139,13 +139,13 @@ public interface TitanNode {
     public ObjectStore getObjectStore();
 
 
-    public BeehiveMessage receive(BeehiveMessage message);
+    public TitanMessage receive(TitanMessage message);
 
 
     public NeighbourMap getNeighbourMap();
 
 
-    public BeehiveMessage replyTo(BeehiveMessage message, Serializable payload);
+    public TitanMessage replyTo(TitanMessage message, Serializable payload);
 
 
     public TitanGuid getNetworkObjectId();

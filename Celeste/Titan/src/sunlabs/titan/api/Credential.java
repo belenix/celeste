@@ -1,5 +1,5 @@
 /*
- * Copyright 2007-2009 Sun Microsystems, Inc. All Rights Reserved.
+ * Copyright 2007-2010 Oracle. All Rights Reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER
  *
  * This code is free software; you can redistribute it and/or modify
@@ -17,9 +17,9 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
  * 02110-1301 USA
  *
- * Please contact Sun Microsystems, Inc., 16 Network Circle, Menlo
- * Park, CA 94025 or visit www.sun.com if you need additional
- * information or have any questions.
+ * Please contact Oracle Corporation, 500 Oracle Parkway, Redwood Shores, CA 94065
+ * or visit www.oracle.com if you need additional information or
+ * have any questions.
  */
 package sunlabs.titan.api;
 
@@ -34,7 +34,7 @@ import sunlabs.titan.node.object.StorableObject;
 
 /**
  * A {@code Credential} represents an identity of an external entity such as a user, organisation, application, etc.
- * Credentials provide the ability to create and verify a signature of a list of {@link TitanGuidImpl} instances.
+ * It is an internal abstraction of an identity system.
  */
 public interface Credential extends Serializable, StorableObject.Handler.Object, RetrievableObject.Handler.Object, InspectableObject.Handler.Object {
 
@@ -160,15 +160,15 @@ public interface Credential extends Serializable, StorableObject.Handler.Object,
 
     /**
      * Return the object-id of this {@code Credential}.
-     *
+     * <p>
      * Subclasses implement this method according to their particular
      * mechanism for identifying {@code Credential} instances.
-     *
+     * </p><p>
      * Examples are to produce a object-id based upon a distinguished name,
      * or upon a public key.  Both of these examples must permit the
      * object-id of the {@code Credential} to be verified by publicly
      * available information.
-     *
+     * </p>
      * @return an object-id for this {@code Credential}
      */
     public TitanGuid getObjectId();
@@ -200,11 +200,9 @@ public interface Credential extends Serializable, StorableObject.Handler.Object,
      * Verify that a given {@code Signature} was signed by this {@code Credential}.
      *
      * @param signature the signature object to verify
-     * @param           ids the array of object ids which the signature is
-     *                  purported to have signed
+     * @param           ids the array of object ids which the signature is purported to have signed
      *
-     * @return true if this {@code Credential} can verify that the {@code
-     *              Signature} object's digital signature does correctly sign
+     * @return true if this {@code Credential} can verify that the {@code Signature} object's digital signature does correctly sign
      *              the object ids listed
      *
      * @throws Credential.Exception
@@ -213,7 +211,15 @@ public interface Credential extends Serializable, StorableObject.Handler.Object,
 
     public String getName();
 
-    public byte[] decrypt(char[] invokerPassword, byte[] encryptedDeleteToken) throws Credential.Exception;
+    /**
+     * Decrypt the given array of bytes using the given password to unlock the internal key.
+     * 
+     * @param invokerPassword
+     * @param bytes
+     * @return
+     * @throws Credential.Exception
+     */
+    public byte[] decrypt(char[] password, byte[] bytes) throws Credential.Exception;
 
     public byte[] encrypt(byte[] bytes) throws Credential.Exception;
 }

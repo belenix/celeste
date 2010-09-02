@@ -39,8 +39,8 @@ import sunlabs.titan.TitanGuidImpl;
 import sunlabs.titan.api.ObjectStore;
 import sunlabs.titan.api.TitanGuid;
 import sunlabs.titan.node.AbstractBeehiveObject;
-import sunlabs.titan.node.BeehiveMessage;
-import sunlabs.titan.node.BeehiveMessage.RemoteException;
+import sunlabs.titan.node.TitanMessage;
+import sunlabs.titan.node.TitanMessage.RemoteException;
 import sunlabs.titan.node.BeehiveNode;
 import sunlabs.titan.node.BeehiveObjectPool;
 import sunlabs.titan.node.BeehiveObjectStore;
@@ -179,15 +179,15 @@ public class AppClassObjectType extends AbstractObjectHandler implements AppClas
         return object;
     }
 
-    public BeehiveMessage publishObject(BeehiveMessage message) {
+    public TitanMessage publishObject(TitanMessage message) {
         return message.composeReply(this.node.getNodeAddress());
     }
 
-    public BeehiveMessage unpublishObject(BeehiveMessage message) {
+    public TitanMessage unpublishObject(TitanMessage message) {
         return message.composeReply(this.node.getNodeAddress());
     }
 
-    public BeehiveMessage retrieveLocalObject(BeehiveMessage message) {
+    public TitanMessage retrieveLocalObject(TitanMessage message) {
         return RetrievableObject.retrieveLocalObject(this, message);
     }
 
@@ -197,10 +197,10 @@ public class AppClassObjectType extends AbstractObjectHandler implements AppClas
         return object;
     }
     
-    public BeehiveMessage storeLocalObject(BeehiveMessage message) {
+    public TitanMessage storeLocalObject(TitanMessage message) {
         try {
             AppClassObjectType.AppClassObject aObject = message.getPayload(AppClassObjectType.AppClassObject.class, this.node);
-            BeehiveMessage reply = StorableObject.storeLocalObject(this, aObject, message);
+            TitanMessage reply = StorableObject.storeLocalObject(this, aObject, message);
             return reply;
         } catch (ClassNotFoundException e) {
             e.printStackTrace();

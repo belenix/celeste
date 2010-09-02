@@ -31,8 +31,8 @@ import java.util.logging.Level;
 import sunlabs.titan.api.TitanObject;
 import sunlabs.titan.api.TitanGuid;
 import sunlabs.titan.api.TitanNodeId;
-import sunlabs.titan.node.BeehiveMessage;
-import sunlabs.titan.node.BeehiveMessage.RemoteException;
+import sunlabs.titan.node.TitanMessage;
+import sunlabs.titan.node.TitanMessage.RemoteException;
 import sunlabs.titan.node.BeehiveNode;
 import sunlabs.titan.node.Publishers;
 import sunlabs.titan.node.TitanNodeIdImpl;
@@ -55,19 +55,19 @@ public class ReplicatableObject {
 	     * object to be created in the object pool.
 	     * Typically, the specified object is in the receiving node's object store, but may be located
 	     * anywhere.  
-	     * This method is invoked as a result of receiving a {@link BeehiveMessage} containing an instance
+	     * This method is invoked as a result of receiving a {@link TitanMessage} containing an instance
 	     * of {@link ReplicatableObject.Replicate.Request} as the message payload.  The request contains a list
 	     * of nodes known to already have a copy of the object, therefore implementations of this method must
 	     * avoid using those nodes.
 	     * </p>
-	     * @param message the received {@link BeehiveMessage} containing an instance
+	     * @param message the received {@link TitanMessage} containing an instance
          *        of {@link ReplicatableObject.Replicate.Request} as the message payload.
 	     * @return The reply {@code BeehiveMessage}.
-	     * @throws BeehiveMessage.RemoteException 
+	     * @throws TitanMessage.RemoteException 
 	     * @throws ClassCastException 
 	     * @throws ClassNotFoundException 
 	     */
-	    public BeehiveMessage replicateObject(BeehiveMessage message) throws ClassNotFoundException, ClassCastException, BeehiveMessage.RemoteException;
+	    public TitanMessage replicateObject(TitanMessage message) throws ClassNotFoundException, ClassCastException, TitanMessage.RemoteException;
 	    
 	    /**
 	     * Specifies the specific behaviours of instances of {@link TitanObject} that implement {@link ReplicatableObject.Handler.Object}.
@@ -131,7 +131,7 @@ public class ReplicatableObject {
 	 * Must only be called by the root of the object id.
 	 * </p>
 	 */
-	public static void unpublishObjectRootHelper(AbstractTitanService handler, BeehiveMessage message) {
+	public static void unpublishObjectRootHelper(AbstractTitanService handler, TitanMessage message) {
 	    try {
 	        PublishDaemon.UnpublishObject.Request request = message.getPayload(PublishDaemon.UnpublishObject.Request.class, handler.getNode());
 

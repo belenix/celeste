@@ -25,7 +25,7 @@ package sunlabs.titan.api;
 
 import java.io.IOException;
 
-import sunlabs.titan.node.BeehiveMessage;
+import sunlabs.titan.node.TitanMessage;
 import sunlabs.titan.node.BeehiveObjectStore;
 import sunlabs.titan.node.PublishObjectMessage;
 import sunlabs.titan.node.UnpublishObjectMessage;
@@ -42,7 +42,7 @@ public interface ObjectStore extends XHTMLInspectable, Iterable<TitanGuid> {
     /** If set, this object must not be cached */
     public final static String METADATA_UNCACHABLE = "ObjectStore.Uncachable";
 
-    /** The {@link BeehiveObjectHandler} that controls this object. Mandatory. */
+    /** The {@link TitanObjectHandler} that controls this object. Mandatory. */
     public final static String METADATA_TYPE = "ObjectStore.Type";
 
 //    /** If set, this object is a persistent object. */
@@ -98,13 +98,14 @@ public interface ObjectStore extends XHTMLInspectable, Iterable<TitanGuid> {
      *
      * @param object
 
-     * @throws InvalidObjectException The {@link TitanObject} is invalid because of incorrect parameters.
-     * @throws ObjectExistenceException The {@link TitanObject} already exists.
-     * @throws NoSpaceException There is no space on this node for the {@link TitanObject}
-     * @throws UnacceptableObjectException The {@link TitanObject} is unacceptable as it is presented due
+     * @throws BeehiveObjectStore.InvalidObjectException The {@link TitanObject} is invalid because of incorrect parameters.
+     * @throws BeehiveObjectStore.ObjectExistenceException The {@link TitanObject} already exists.
+     * @throws BeehiveObjectStore.NoSpaceException There is no space on this node for the {@link TitanObject}
+     * @throws BeehiveObjectStore.UnacceptableObjectException The {@link TitanObject} is unacceptable as it is presented due
      *         to some inconsistency or the object's {@link BeehiveObjectHandler} rejected it during publishing.
      */
-    public TitanGuid create(TitanObject object) throws InvalidObjectException, ObjectExistenceException, NoSpaceException, UnacceptableObjectException;
+    public TitanGuid create(TitanObject object) throws BeehiveObjectStore.InvalidObjectException, BeehiveObjectStore.ObjectExistenceException,
+        BeehiveObjectStore.NoSpaceException, BeehiveObjectStore.UnacceptableObjectException;
 
     /**
      * Given a {@link TitanGuid} get the corresponding {@link TitanObject} from the local object store.
@@ -143,7 +144,7 @@ public interface ObjectStore extends XHTMLInspectable, Iterable<TitanGuid> {
      * object-id and {@link BeehiveObjectStore.NotFoundException} is thrown.
      * </p>
      * <p>
-     * The {@code BeehiveObject} instance returned from this method is locked and must be explicitly unlocked
+     * The {@code TitanObject} instance returned from this method is locked and must be explicitly unlocked
      * (see {@link ObjectStore#unlock(TitanObject)})
      * </p>
      * <p>
@@ -220,14 +221,13 @@ public interface ObjectStore extends XHTMLInspectable, Iterable<TitanGuid> {
     public void unlock(TitanGuid objectId);
 
     /**
-     * Unlock the given object and if the object is in the local store, emit
-     * a {@link PublishObjectMessage}.  If the object is NOT in the local store,
-     * emit an {@link UnpublishObjectMessage}.
+     * Unlock the given object and if the object is in the local store, emit a {@link PublishObjectMessage}.
+     * If the object is NOT in the local store, emit an {@link UnpublishObjectMessage}.
      *
      * @see ObjectStore#unlock(TitanGuid)
      */
-    // XXX Instead of returning a BeehiveMessage, return the actual Publish.Result.  This means the Publish and Unpublish methods always return a Result.
-    public BeehiveMessage unlock(TitanObject object);
+    // XXX Instead of returning a TitanMessage, return the actual Publish.Result.  This means the Publish and Unpublish methods always return a Result.
+    public TitanMessage unlock(TitanObject object);
 
     public XMLObjectStore toXML();
 }

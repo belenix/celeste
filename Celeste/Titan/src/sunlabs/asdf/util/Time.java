@@ -88,6 +88,11 @@ public class Time {
         return days * Time.DAYS_IN_MILLISECONDS;
     }
 
+    /** Return the number of seconds in the given number of days. */
+    public static long daysToSeconds(int days) {
+        return days * Time.DAYS_IN_SECONDS;
+    }
+
     public static long millisecondsToDays(long milliseconds) {
         return milliseconds / Time.DAYS_IN_MILLISECONDS;
     }

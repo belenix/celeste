@@ -43,36 +43,36 @@ import sunlabs.asdf.web.http.HTTP;
 import sunlabs.titan.api.TitanNode;
 import sunlabs.titan.api.TitanService;
 import sunlabs.titan.api.management.TitanServiceMBean;
-import sunlabs.titan.node.BeehiveMessage;
+import sunlabs.titan.node.TitanMessage;
 import sunlabs.titan.node.BeehiveNode;
 import sunlabs.titan.node.util.DOLRLogger;
 import sunlabs.titan.node.util.DOLRLoggerMBean;
 import sunlabs.titan.util.WeakMBeanRegistrar;
 
 /**
- * A Beehive Node Service invoked by the reception of a {@link BeehiveMessage}
+ * A TitanService invoked by the reception of a {@link TitanMessage}
  * is responsible for interpreting and processing that message, and
- * ultimately returning a {@link BeehiveMessage} reply.
+ * ultimately returning a {@link TitanMessage} reply.
  *
  * </p><p>
  *
- * Each BeehiveService has a name which is specified in the body of
- * each {@link BeehiveMessage}.
+ * Each {@code TitanService} has a name which is specified in the body of
+ * each {@link TitanMessage}.
  * [NB:  In the Tapestry paper, each Applications has a "GUID", just like the Nodes
  * and stored Objects, but in this implementation Applications are simply identified
  * with a String (with no whitespace) as a name.]
  *
  * </p><p>
  *
- * Every BeehiveService has an associated filesystem directory in which it may
+ * Every {@code TitanService} has an associated filesystem directory in which it may
  * store private data for the application's use.  Example uses of the
  * filesystem directory are to store data which is persistent across restarts
- * of the BeehiveService (or Beehive Node), keeping a log file of the application's
+ * of the {@code TitanService} (or Titan Node), keeping a log file of the application's
  * activities, and so forth.
  *
  * </p><p>
  *
- * Similarly, each BeehiveService has a HTTP URL which it can use to interact
+ * Similarly, each {@code TitanService} has a HTTP URL which it can use to interact
  * with an administrator.  Example uses of the HTTP URL is to produce a HTML
  * web page to display the current state of the application, setting and
  * reseting runtime parameters, and to display portions of the log file(s).
@@ -147,12 +147,12 @@ public abstract class AbstractTitanService extends NotificationBroadcasterSuppor
         }
     }
     
-
-    public BeehiveMessage invokeMethod(String methodName, BeehiveMessage request) {
+    public TitanMessage invokeMethod(String methodName, TitanMessage request) {
         try {
-            Object object = this.getClass().getMethod(methodName, BeehiveMessage.class).invoke(this, request);
-            if (object instanceof BeehiveMessage) {
-                return (BeehiveMessage) object;
+            Object object = this.getClass().getMethod(methodName, TitanMessage.class).invoke(this, request);
+            if (object instanceof TitanMessage) {
+                System.out.printf("%s.%s returns deprecated return value%n", this.getClass(), methodName);
+                return (TitanMessage) object;
             }
             return request.composeReply(this.node.getNodeAddress(), (Serializable) object);
         } catch (IllegalArgumentException e) {

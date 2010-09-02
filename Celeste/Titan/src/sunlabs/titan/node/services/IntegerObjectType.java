@@ -35,7 +35,7 @@ import sunlabs.titan.TitanGuidImpl;
 import sunlabs.titan.api.TitanObject;
 import sunlabs.titan.api.TitanGuid;
 import sunlabs.titan.node.AbstractBeehiveObject;
-import sunlabs.titan.node.BeehiveMessage;
+import sunlabs.titan.node.TitanMessage;
 import sunlabs.titan.node.BeehiveNode;
 import sunlabs.titan.node.object.AbstractObjectHandler;
 import sunlabs.titan.node.object.MutableObject;
@@ -77,19 +77,19 @@ public class IntegerObjectType extends AbstractObjectHandler implements MutableO
         super(node, IntegerObjectType.name, "Mutable Object");
     }
 
-    public BeehiveMessage setObjectHistory(BeehiveMessage message) {
+    public TitanMessage setObjectHistory(TitanMessage message) {
         return null;
     }
 
-    public BeehiveMessage getObjectHistory(BeehiveMessage message) {
+    public TitanMessage getObjectHistory(TitanMessage message) {
         return null;
     }
 
-    public BeehiveMessage publishObject(BeehiveMessage message) {
+    public TitanMessage publishObject(TitanMessage message) {
         return null;
     }
 
-    public BeehiveMessage unpublishObject(BeehiveMessage message) {
+    public TitanMessage unpublishObject(TitanMessage message) {
         return null;
     }
 
@@ -102,7 +102,7 @@ public class IntegerObjectType extends AbstractObjectHandler implements MutableO
         return null;
     }
 
-    public BeehiveMessage storeLocalObject(BeehiveMessage message) {
+    public TitanMessage storeLocalObject(TitanMessage message) {
         return null;
     }
 

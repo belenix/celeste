@@ -38,12 +38,12 @@ import sunlabs.titan.api.TitanObject;
 import sunlabs.titan.api.ObjectStore;
 import sunlabs.titan.api.TitanGuid;
 import sunlabs.titan.api.TitanNode;
-import sunlabs.titan.node.BeehiveMessage;
+import sunlabs.titan.node.TitanMessage;
 import sunlabs.titan.node.BeehiveNode;
 import sunlabs.titan.node.BeehiveObjectStore;
 import sunlabs.titan.node.PublishObjectMessage;
 import sunlabs.titan.node.Publishers;
-import sunlabs.titan.node.BeehiveMessage.RemoteException;
+import sunlabs.titan.node.TitanMessage.RemoteException;
 import sunlabs.titan.node.BeehiveObjectStore.DeleteTokenException;
 import sunlabs.titan.node.services.PublishDaemon;
 import sunlabs.titan.util.DOLRStatus;
@@ -126,17 +126,17 @@ public final class DeleteableObject {
 
         /**
          * This method is invoked as the result of receiving a deleteLocalObject
-         * {@link BeehiveMessage} or the receipt of a {@link PublishObjectMessage} containing valid
+         * {@link TitanMessage} or the receipt of a {@link PublishObjectMessage} containing valid
          * delete information.
          * @param message
-         * @return A reply {@link BeehiveMessage}
-         * @throws BeehiveMessage.RemoteException 
+         * @return A reply {@link TitanMessage}
+         * @throws TitanMessage.RemoteException 
          * @throws ClassCastException 
          */
-        public BeehiveMessage deleteLocalObject(BeehiveMessage message) throws ClassNotFoundException, ClassCastException, BeehiveMessage.RemoteException;
+        public TitanMessage deleteLocalObject(TitanMessage message) throws ClassNotFoundException, ClassCastException, TitanMessage.RemoteException;
 
         /**
-         * Every {@link DeleteableObject.Handler#publishObject(BeehiveMessage)} implementation must have a per-object lock
+         * Every {@link DeleteableObject.Handler#publishObject(TitanMessage)} implementation must have a per-object lock
          * to protect against modification by simultaneous reception of deletion PublishObjectMessage messages.
          */
         public ObjectLock<TitanGuid> getPublishObjectDeleteLocks();
@@ -242,7 +242,7 @@ public final class DeleteableObject {
     }
 
     /**
-     * Helper function for implementors of the {@link BeehiveObjectHandler#publishObject(BeehiveMessage)}
+     * Helper function for implementors of the {@link BeehiveObjectHandler#publishObject(TitanMessage)}
      * method of classes that implement the {@link DeleteableObject} interface.
      * <p>
      * The given {@link PublishDaemon.PublishObject.Request} {@code publishRequest}
@@ -330,7 +330,7 @@ public final class DeleteableObject {
     }
 
     /**
-     * Transmit {@code deleteLocalObject} {@link BeehiveMessage}s to all nodes that
+     * Transmit {@code deleteLocalObject} {@link TitanMessage}s to all nodes that
      * are publishing the object specified by the given object-id.
      * <p>
      * Does not send messages to the local {@link BeehiveNode} nor to the node
@@ -415,7 +415,7 @@ public final class DeleteableObject {
 //        }
 //    }
 
-    public static BeehiveMessage deleteLocalObject(DeleteableObject.Handler<? extends DeleteableObject.Handler.Object> objectType, DeleteableObject.Request request, BeehiveMessage message) {
+    public static TitanMessage deleteLocalObject(DeleteableObject.Handler<? extends DeleteableObject.Handler.Object> objectType, DeleteableObject.Request request, TitanMessage message) {
 
 //      objectType.getLogger().info("%5.5s... id=%5.5s... ttl=%ss from %s",
 //              message.getMessageId(),

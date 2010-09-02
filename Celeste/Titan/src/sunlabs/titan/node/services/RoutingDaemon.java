@@ -51,8 +51,8 @@ import sunlabs.asdf.web.http.HTTP;
 import sunlabs.asdf.web.http.HttpMessage;
 import sunlabs.titan.TitanGuidImpl;
 import sunlabs.titan.api.TitanGuid;
-import sunlabs.titan.node.BeehiveMessage;
-import sunlabs.titan.node.BeehiveMessage.RemoteException;
+import sunlabs.titan.node.TitanMessage;
+import sunlabs.titan.node.TitanMessage.RemoteException;
 import sunlabs.titan.node.BeehiveNode;
 import sunlabs.titan.node.Dossier;
 import sunlabs.titan.node.NodeAddress;
@@ -423,7 +423,7 @@ public final class RoutingDaemon extends AbstractTitanService implements Routing
                                                     RoutingDaemon.this.log.fine("fail %s", address.format());
                                                 }
                                                 // Get dossier entry: if it is too old, then delete it
-                                                long tooOld = System.currentTimeMillis() - RoutingDaemon.this.node.getConfiguration().asLong(RoutingDaemon.DossierTimeToLive);
+                                                long tooOld = Time.millisecondsToSeconds(System.currentTimeMillis()) - RoutingDaemon.this.node.getConfiguration().asLong(RoutingDaemon.DossierTimeToLiveSeconds);
                                                 Dossier.Entry e = RoutingDaemon.this.node.getNeighbourMap().getDossier().getEntryAndLock(address);
                                                 try {
                                                     if (e.getTimestamp() < tooOld) {
@@ -506,22 +506,21 @@ public final class RoutingDaemon extends AbstractTitanService implements Routing
                 "The number of seconds between iterations of the neighbour map reunion.");
 
     /**
-     * The number of milliseconds until a {@link Dossier.Entry} becomes
-     * old and is removed.
+     * The number of seconds until a {@link Dossier.Entry} becomes old and is removed.
      */
-    private final static Attributes.Prototype DossierTimeToLive = new Attributes.Prototype(RoutingDaemon.class, "DossierTimeToLive",
-            Time.daysToMilliseconds(30),
-            "The number of milliseconds until a Dossier.Entry becomes old and is removed.");
+    private final static Attributes.Prototype DossierTimeToLiveSeconds = new Attributes.Prototype(RoutingDaemon.class, "DossierTimeToLiveSeconds",
+            Time.daysToSeconds(30),
+            "The number of seconds until a Dossier.Entry becomes old and is removed.");
 
     transient private Introduction introductionDaemon;
 
     transient private Reunion reunion;
 
     public RoutingDaemon(final BeehiveNode node) throws JMException {
-        super(node, RoutingDaemon.name, "Maintain routing table.");
+        super(node, RoutingDaemon.name, "Maintain the local routing table.");
         
         node.configuration.add(RoutingDaemon.IntroductionRateSeconds);
-        node.configuration.add(RoutingDaemon.DossierTimeToLive);
+        node.configuration.add(RoutingDaemon.DossierTimeToLiveSeconds);
         node.configuration.add(RoutingDaemon.ReunionRateSeconds);
 
         Map<String,Integer> mapReputationRequirements = Reputation.newCoefficients();
@@ -532,10 +531,10 @@ public final class RoutingDaemon extends AbstractTitanService implements Routing
         if (this.log.isLoggable(Level.CONFIG)) {
             this.log.config("%s", this.node.getConfiguration().get(RoutingDaemon.IntroductionRateSeconds));
             this.log.config("%s", this.node.getConfiguration().get(RoutingDaemon.ReunionRateSeconds));
-            this.log.config("%s", this.node.getConfiguration().get(RoutingDaemon.DossierTimeToLive));
+            this.log.config("%s", this.node.getConfiguration().get(RoutingDaemon.DossierTimeToLiveSeconds));
             if (this.node.getConfiguration().get(BeehiveNode.ClientTimeoutSeconds).asLong() < this.node.getConfiguration().get(RoutingDaemon.IntroductionRateSeconds).asLong()
-                    || this.node.getConfiguration().get(BeehiveNode.ClientTimeoutSeconds).asLong() < this.node.getConfiguration().get(RoutingDaemon.ReunionRateSeconds).asLong()) {
-                this.log.config("Warning %s is less than either %s or %s and will result in unnecessary close and reopen of connections.",
+                    && this.node.getConfiguration().get(BeehiveNode.ClientTimeoutSeconds).asLong() < this.node.getConfiguration().get(RoutingDaemon.ReunionRateSeconds).asLong()) {
+                this.log.config("Warning %s is less than %s or %s and will result in unnecessary close and reopen of connections.",
                         BeehiveNode.ClientTimeoutSeconds,
                         RoutingDaemon.IntroductionRateSeconds,
                         RoutingDaemon.ReunionRateSeconds);
@@ -544,7 +543,7 @@ public final class RoutingDaemon extends AbstractTitanService implements Routing
     }
 
     /**
-     * Receive and process a Join message.
+     * Receive and process a JoinOperation message.
      *
      * <p>
      * Route a message to the next hop for the destination node object-id.
@@ -557,21 +556,19 @@ public final class RoutingDaemon extends AbstractTitanService implements Routing
      * to drop into place.
      * </p>
      */
-    public BeehiveMessage join(BeehiveMessage message) throws ClassNotFoundException, ClassCastException, BeehiveMessage.RemoteException {
+    public JoinOperation.Response join(TitanMessage message) throws ClassNotFoundException, ClassCastException, TitanMessage.RemoteException {
         //this.log.entering(message.toString());
-
-        BeehiveMessage reply;
 
         if (this.node.getNeighbourMap().getRoute(message.getDestinationNodeId()) != null) {
             // This clause is executed on the non-root nodes of the joining
             // object-id.  ONLY after the root has created a response: we only
             // augment the data in the response.
-            reply = this.node.transmit(message);
+            TitanMessage reply = this.node.transmit(message);
             JoinOperation.Response response = reply.getPayload(JoinOperation.Response.class, this.node);
             Set<NodeAddress> addresses = response.getMap();
             addresses.addAll(this.node.getNeighbourMap().keySet());
             response.setMap(addresses);
-            reply = this.node.replyTo(message, response);
+            return response;
         } else {
             // This clause is executed on the root node of the joining object-id.
             Map<TitanGuid,Set<Publishers.PublishRecord>> objectRoots = new Hashtable<TitanGuid,Set<Publishers.PublishRecord>>();
@@ -582,34 +579,27 @@ public final class RoutingDaemon extends AbstractTitanService implements Routing
                 }
             }
 
-            JoinOperation.Response response = new JoinOperation.Response(this.node.getNetworkObjectId(), this.node.getNeighbourMap().keySet(), objectRoots);
-
-            reply = this.node.replyTo(message, response);
+            return new JoinOperation.Response(this.node.getNetworkObjectId(), this.node.getNeighbourMap().keySet(), objectRoots);
         }
-
-        return reply;
     }
 
     /**
-     *
      * "Top-side" {@link AbstractTitanService} method to perform a "join" with a Beehive system,
      * using the given {@link NodeAddress NodeAddress} gateway as the joining server for the network.
-     *
      */
     public JoinOperation.Response join(NodeAddress gateway) throws IOException {
-
         JoinOperation.Request request = new JoinOperation.Request();
 
         // Join messages must be multicast so each node along the routing path
         // has an opportunity to annotate the response from the root.
-        BeehiveMessage message = new BeehiveMessage(BeehiveMessage.Type.RouteToNode,
+        TitanMessage message = new TitanMessage(TitanMessage.Type.RouteToNode,
                 this.node.getNodeAddress(),
                 this.node.getNodeId(),
                 TitanGuidImpl.ANY,
                 RoutingDaemon.name,
                 "join",
-                BeehiveMessage.Transmission.MULTICAST,
-                BeehiveMessage.Route.LOOSELY,
+                TitanMessage.Transmission.MULTICAST,
+                TitanMessage.Route.LOOSELY,
                 request
         );
 //        message.setTraced(true);
@@ -619,7 +609,7 @@ public final class RoutingDaemon extends AbstractTitanService implements Routing
             return null;
         }
 
-        BeehiveMessage reply;
+        TitanMessage reply;
         if ((reply = this.node.transmit(gateway, message)) == null) {
             return null;
         }
@@ -663,6 +653,32 @@ public final class RoutingDaemon extends AbstractTitanService implements Routing
         }
     }
 
+//    public TitanMessage _ping(TitanMessage message) throws ClassNotFoundException, ClassCastException, RemoteException {
+//        this.node.getNeighbourMap().add(message.getSource());
+//
+//        TitanMessage reply;
+//        PingOperation.Request request = message.getPayload(PingOperation.Request.class, this.node);
+//
+//        if (this.node.getNeighbourMap().isRoot(message.getDestinationNodeId())) {
+//            //
+//            // Respond with our NeighbourMap and our set of
+//            // object backpointers.
+//            //
+//            Map<TitanGuid,Set<Publishers.PublishRecord>> publishers = new HashMap<TitanGuid,Set<Publishers.PublishRecord>>();
+//
+//            for (TitanGuid objectId : this.node.getObjectPublishers().keySet()) {
+//                HashSet<Publishers.PublishRecord> includedPublishers = new HashSet<Publishers.PublishRecord>();
+//                publishers.put(objectId, includedPublishers);
+//            }
+//            PingOperation.Response response = new PingOperation.Response(this.node.getNeighbourMap().keySet(), publishers);
+//            reply = this.node.replyTo(message, response);
+//        } else {
+//            reply = this.node.transmit(message);
+//        }
+//
+//        return reply;
+//    }
+
     /**
      * Respond to a ping message.
      * <p>
@@ -676,10 +692,10 @@ public final class RoutingDaemon extends AbstractTitanService implements Routing
      * Add the pinging node to our neighbour table.
      * </p>
      */
-    public BeehiveMessage ping(BeehiveMessage message) throws ClassNotFoundException, ClassCastException, RemoteException {
+    public PingOperation.Response ping(TitanMessage message) throws ClassNotFoundException, ClassCastException, RemoteException {
         this.node.getNeighbourMap().add(message.getSource());
 
-        BeehiveMessage reply;
+        TitanMessage reply;
         PingOperation.Request request = message.getPayload(PingOperation.Request.class, this.node);
 
         if (this.node.getNeighbourMap().isRoot(message.getDestinationNodeId())) {
@@ -694,12 +710,12 @@ public final class RoutingDaemon extends AbstractTitanService implements Routing
                 publishers.put(objectId, includedPublishers);
             }
             PingOperation.Response response = new PingOperation.Response(this.node.getNeighbourMap().keySet(), publishers);
-            reply = this.node.replyTo(message, response);
+            return response;
         } else {
             reply = this.node.transmit(message);
+            PingOperation.Response response = reply.getPayload(PingOperation.Response.class, this.node);
+            return response;
         }
-
-        return reply;
     }
 
     /**
@@ -711,7 +727,7 @@ public final class RoutingDaemon extends AbstractTitanService implements Routing
     public PingOperation.Response ping(NodeAddress target, PingOperation.Request request) throws IOException, RemoteException {
         long startTime = System.currentTimeMillis();
         this.log.finest("%s", target.format());
-        BeehiveMessage reply = this.node.sendToNode(target.getObjectId(), RoutingDaemon.name, "ping", request);
+        TitanMessage reply = this.node.sendToNode(target.getObjectId(), RoutingDaemon.name, "ping", request);
         long latency = System.currentTimeMillis() - startTime;
         this.log.finest("%s response %dms", target.format(), latency);
 

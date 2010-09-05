@@ -168,8 +168,8 @@ public abstract class AbstractTitanService extends NotificationBroadcasterSuppor
             e.printStackTrace();
             return request.composeReply(this.node.getNodeAddress(), e);
         } catch (InvocationTargetException e) {
-            this.log.severe(e.toString());
-            e.printStackTrace();
+            // The invoked method threw an Exception so package it up as a reply to the requestor.
+            this.log.info(e.toString());
             return request.composeReply(this.node.getNodeAddress(), e.getCause());
         } catch (NoSuchMethodException e) {
             e.printStackTrace();

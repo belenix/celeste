@@ -105,7 +105,8 @@ public final class RetrievableFragmentedObject {
     }
 
     public static TitanObject retrieveRemoteObject(RetrievableFragmentedObject.Handler<? extends RetrievableFragmentedObject.Handler.Object> objectType, StorableFragmentedObject.FragmentMap map)
-      throws ErasureCode.UnsupportedAlgorithmException, ErasureCode.NotRecoverableException, BeehiveObjectStore.DeletedObjectException, BeehiveObjectStore.NotFoundException {
+    throws ClassCastException, ClassNotFoundException, ErasureCode.UnsupportedAlgorithmException, ErasureCode.NotRecoverableException,
+        BeehiveObjectStore.DeletedObjectException, BeehiveObjectStore.NotFoundException {
         TitanObject object = retrieveRemoteObject(objectType, map.getObjectId());
         if (object != null) {
             if (DeleteableObject.deleteTokenIsValid(object.getMetadata())) {
@@ -114,7 +115,7 @@ public final class RetrievableFragmentedObject {
             return object;
         }
 
-        // Failure to retrieve the DOLRObject directly means we need to reconstruct it from fragments
+        // Failure to retrieve the object directly means we need to reconstruct it from fragments
 
         TitanGuid[] frags = map.getFragments();
         ErasureCode erasureCoder = map.getErasureCoder();

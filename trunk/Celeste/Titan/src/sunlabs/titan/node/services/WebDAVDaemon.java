@@ -72,6 +72,7 @@ import sunlabs.asdf.web.ajax.dojo.Dojo;
 import sunlabs.asdf.web.http.ClassLoaderBackend;
 import sunlabs.asdf.web.http.FileSystemBackend;
 import sunlabs.asdf.web.http.HTTP;
+import sunlabs.asdf.web.http.HTTP.Message;
 import sunlabs.asdf.web.http.HTTP.Request.Method;
 import sunlabs.asdf.web.http.HTTPServer;
 import sunlabs.asdf.web.http.HttpContent;
@@ -87,9 +88,10 @@ import sunlabs.asdf.web.http.WebDAVServerMain;
 import sunlabs.titan.Copyright;
 import sunlabs.titan.Release;
 import sunlabs.titan.TitanGuidImpl;
-import sunlabs.titan.api.TitanObject;
 import sunlabs.titan.api.TitanGuid;
+import sunlabs.titan.api.TitanNode;
 import sunlabs.titan.api.TitanNodeId;
+import sunlabs.titan.api.TitanObject;
 import sunlabs.titan.node.BeehiveNode;
 import sunlabs.titan.node.BeehiveObjectStore;
 import sunlabs.titan.node.NodeAddress;
@@ -120,7 +122,7 @@ public final class WebDAVDaemon extends AbstractTitanService implements WebDAVDa
             public HTTP.Response execute(HTTP.Request request, HTTP.Identity identity) {
                 try {
                     HttpContent.Multipart.FormData props = new HttpContent.Multipart.FormData(request.getURI());
-                    return WebDAVDaemon.this.generateResponse(request, request.getURI(), props);
+                    return WebDAVDaemon.this.generateResponse(request, request.getURI(), props.getMap());
                 }  catch (UnsupportedEncodingException unsupportedEncoding) {
                     return new HttpResponse(HTTP.Response.Status.BAD_REQUEST, new HttpContent.Text.Plain(unsupportedEncoding.getLocalizedMessage()));
                 }
@@ -347,35 +349,41 @@ public final class WebDAVDaemon extends AbstractTitanService implements WebDAVDa
     
     private static String revision = Release.ThisRevision();
 
-    public final static Attributes.Prototype Port = new Attributes.Prototype(WebDAVDaemon.class, "Port", 12001, "The port number this node listens for incoming HTTP connections.");
-    public final static Attributes.Prototype ServerRoot = new Attributes.Prototype(WebDAVDaemon.class, "Root", "web", "The pathname prefix for the HTTP server to use when serving files.");
-    public final static Attributes.Prototype ClientMaximum = new Attributes.Prototype(WebDAVDaemon.class, "ClientMaximum", 4, "The maximum number of concurrent clients.");
-    public final static Attributes.Prototype ClientTimeoutMillis = new Attributes.Prototype(WebDAVDaemon.class, "ClientTimeoutMillis", Time.secondsInMilliseconds(60), "The number of milliseconds a connection may be idle before it is closed.");
+    public final static Attributes.Prototype Port = new Attributes.Prototype(WebDAVDaemon.class, "Port", 12001,
+            "The port number this node listens for incoming HTTP connections.");
+    public final static Attributes.Prototype ServerRoot = new Attributes.Prototype(WebDAVDaemon.class, "Root", "web",
+            "The pathname prefix for the HTTP server to use when serving files.");
+    public final static Attributes.Prototype ClientMaximum = new Attributes.Prototype(WebDAVDaemon.class, "ClientMaximum", 4,
+            "The maximum number of concurrent clients.");
+    public final static Attributes.Prototype ClientTimeoutMillis = new Attributes.Prototype(WebDAVDaemon.class, "ClientTimeoutMillis", Time.secondsInMilliseconds(60),
+            "The number of milliseconds a connection may be idle before it is closed.");
 
     /** CSS files to be loaded by the Node inspector */
-    public final static Attributes.Prototype InspectorCSS = new Attributes.Prototype(WebDAVDaemon.class, "InspectorCSS", "/css/DOLRStyle.css,/css/BeehiveColours.css", "The css file to use for the node inspector interface.");
+    public final static Attributes.Prototype InspectorCSS = new Attributes.Prototype(WebDAVDaemon.class, "InspectorCSS", "/css/DOLRStyle.css,/css/BeehiveColours.css",
+            "The css file to use for the node inspector interface.");
     /** JavaScript files to be loaded by the Node inspector */
-    public final static Attributes.Prototype InspectorJS = new Attributes.Prototype(WebDAVDaemon.class, "InspectorJS", "/js/DOLRScript.js", "The JavaScript file to load for the node inspector interface.");
+    public final static Attributes.Prototype InspectorJS = new Attributes.Prototype(WebDAVDaemon.class, "InspectorJS", "/js/DOLRScript.js",
+            "The JavaScript file to load for the node inspector interface.");
     
     transient private Daemon daemon;
 
-    public WebDAVDaemon(final BeehiveNode node) throws JMException {
+    public WebDAVDaemon(final TitanNode node) throws JMException {
         super(node, AbstractTitanService.makeName(WebDAVDaemon.class, WebDAVDaemon.serialVersionUID), "Beehive WebDAV Interface");
 
-        node.configuration.add(WebDAVDaemon.Port);
-        node.configuration.add(WebDAVDaemon.ServerRoot);
-        node.configuration.add(WebDAVDaemon.ClientMaximum);
-        node.configuration.add(WebDAVDaemon.ClientTimeoutMillis);
-        node.configuration.add(WebDAVDaemon.InspectorCSS);
-        node.configuration.add(WebDAVDaemon.InspectorJS);
+        node.getConfiguration().add(WebDAVDaemon.Port);
+        node.getConfiguration().add(WebDAVDaemon.ServerRoot);
+        node.getConfiguration().add(WebDAVDaemon.ClientMaximum);
+        node.getConfiguration().add(WebDAVDaemon.ClientTimeoutMillis);
+        node.getConfiguration().add(WebDAVDaemon.InspectorCSS);
+        node.getConfiguration().add(WebDAVDaemon.InspectorJS);
 
         if (this.log.isLoggable(Level.CONFIG)) {
-            this.log.config("%s", node.configuration.get(WebDAVDaemon.Port));
-            this.log.config("%s", node.configuration.get(WebDAVDaemon.ServerRoot));
-            this.log.config("%s", node.configuration.get(WebDAVDaemon.ClientMaximum));
-            this.log.config("%s", node.configuration.get(WebDAVDaemon.ClientTimeoutMillis));
-            this.log.config("%s", node.configuration.get(WebDAVDaemon.InspectorCSS));
-            this.log.config("%s", node.configuration.get(WebDAVDaemon.InspectorJS));
+            this.log.config("%s", node.getConfiguration().get(WebDAVDaemon.Port));
+            this.log.config("%s", node.getConfiguration().get(WebDAVDaemon.ServerRoot));
+            this.log.config("%s", node.getConfiguration().get(WebDAVDaemon.ClientMaximum));
+            this.log.config("%s", node.getConfiguration().get(WebDAVDaemon.ClientTimeoutMillis));
+            this.log.config("%s", node.getConfiguration().get(WebDAVDaemon.InspectorCSS));
+            this.log.config("%s", node.getConfiguration().get(WebDAVDaemon.InspectorJS));
         }
     }
 
@@ -383,7 +391,7 @@ public final class WebDAVDaemon extends AbstractTitanService implements WebDAVDa
      * This produces the resulting {@link HTTPResponse} to the client interface.
      *
      */
-    private HTTP.Response generateResponse(HTTP.Request request, final URI uri, HTTP.Message.Body.MultiPart.FormData props) {
+    private HTTP.Response generateResponse(HTTP.Request request, final URI uri, Map<String, Message> map) {
         //
         // Synthesize a URL namespace for parts of the Node.
         //
@@ -402,7 +410,7 @@ public final class WebDAVDaemon extends AbstractTitanService implements WebDAVDa
                 if (uri.getPath().equals("/map")) {
                 	return new HttpResponse(HTTP.Response.Status.OK, new HttpContent.Text.Plain(this.node.getNeighbourMap().toString() + this.node.getNodeAddress() + "\n"));
                 } else if (uri.getPath().startsWith("/service/")) {
-                	XHTML.EFlow folio = this.node.getServiceFramework().toXHTML(uri, props);
+                	XHTML.EFlow folio = this.node.getServiceFramework().toXHTML(uri, map);
                 	if (folio != null) {
                 		XHTML.Body body = new XHTML.Body(folio);
                 		return new HttpResponse(HTTP.Response.Status.OK, new HttpContent.Text.HTML(this.makeDocument(name, body, null, null)));
@@ -426,7 +434,7 @@ public final class WebDAVDaemon extends AbstractTitanService implements WebDAVDa
                     Reflection reflection = this.node.getService(ReflectionService.class);
                     if (reflection != null) {
                         return new HttpResponse(HTTP.Response.Status.OK,
-                                new HttpContent.Text.HTML(this.makeDocument("Reflection", new XHTML.Body(reflection.toXHTML(uri, props)), null, null))); 
+                                new HttpContent.Text.HTML(this.makeDocument("Reflection", new XHTML.Body(reflection.toXHTML(uri, map)), null, null))); 
                     }
                     return new HttpResponse(HTTP.Response.Status.BAD_REQUEST, new HttpContent.Text.Plain("Unknown service: " + name));
                 } else if (uri.getPath().startsWith("/route-table")) {
@@ -470,7 +478,7 @@ public final class WebDAVDaemon extends AbstractTitanService implements WebDAVDa
                 	TitanGuid objectId = new TitanGuidImpl(uri.getPath().substring("/inspect/".length()));
                 	Reflection reflection = this.node.getService(ReflectionService.class);
                 	try {
-                		XHTML.EFlow eflow = reflection.inspectObject(objectId, uri, props);
+                		XHTML.EFlow eflow = reflection.inspectObject(objectId, uri, map);
                 		return new HttpResponse(HTTP.Response.Status.OK, new HttpContent.Text.HTML(this.makeDocument(objectId.toString(), new XHTML.Body(eflow), null, null)));      
                 	} catch (BeehiveObjectStore.NotFoundException e) {
                 		return new HttpResponse(HTTP.Response.Status.NOT_FOUND, new HttpContent.Text.Plain(HTTP.Response.Status.NOT_FOUND.toString() + " " + objectId.toString()));
@@ -490,23 +498,23 @@ public final class WebDAVDaemon extends AbstractTitanService implements WebDAVDa
             }
 
             //
-            String action = HttpMessage.asString(props.get("action"), null);
+            String action = HttpMessage.asString(map.get("action"), null);
 
             if (action != null) {
                 if (action.equals("disconnect")) {
-                    this.node.getNeighbourMap().remove(new NodeAddress(HttpMessage.asString(props.get("address"), null)));
+                    this.node.getNeighbourMap().remove(new NodeAddress(HttpMessage.asString(map.get("address"), null)));
                 } else if (action.equals("unpublish-object")) {
-                    String objectId = HttpMessage.asString(props.get("objectId"), null);
+                    String objectId = HttpMessage.asString(map.get("objectId"), null);
 
                     if (objectId == null || objectId.equals("")) {
                         return new HttpResponse(HTTP.Response.Status.BAD_REQUEST, new HttpContent.Text.Plain("Bad Request: Missing object-id"));
                     }
                     this.node.removeLocalObject(new TitanGuidImpl(objectId));
 
-                    XHTML.Document result = makeDocument(this.node.getNodeId().toString(), new XHTML.Body(this.node.toXHTML(uri, props)), null, null);
+                    XHTML.Document result = makeDocument(this.node.getNodeId().toString(), new XHTML.Body(this.node.toXHTML(uri, map)), null, null);
                     return new HttpResponse(HTTP.Response.Status.OK, new HttpContent.Text.HTML(result));
                 } else if (action.equals("remove-object")) {
-                    String oid = HttpMessage.asString(props.get("objectId"), null);
+                    String oid = HttpMessage.asString(map.get("objectId"), null);
 
                     if (oid == null || oid.equals("")) {
                         return new HttpResponse(HTTP.Response.Status.BAD_REQUEST, new HttpContent.Text.Plain("Bad Request: Missing object-id"));
@@ -515,7 +523,7 @@ public final class WebDAVDaemon extends AbstractTitanService implements WebDAVDa
                     this.node.getObjectStore().lock(objectId);
                     try {
                         this.node.getObjectStore().remove(objectId);
-                        XHTML.Document result = makeDocument(this.node.getNodeId().toString(), new XHTML.Body(this.node.toXHTML(uri, props)), null, null);
+                        XHTML.Document result = makeDocument(this.node.getNodeId().toString(), new XHTML.Body(this.node.toXHTML(uri, map)), null, null);
                         return new HttpResponse(HTTP.Response.Status.OK, new HttpContent.Text.HTML(result));
                     } finally {
                         this.node.getObjectStore().unlock(objectId);
@@ -524,7 +532,7 @@ public final class WebDAVDaemon extends AbstractTitanService implements WebDAVDa
                     this.node.stop();
                     return new HttpResponse(HTTP.Response.Status.OK, new HttpContent.Text.Plain("should be dead"));
                 } else if (action.equals("connect")) {
-                    String location = HttpMessage.asString(props.get("node"), "");
+                    String location = HttpMessage.asString(map.get("node"), "");
                     if (location.equals("")) {
                         return new HttpResponse(HTTP.Response.Status.BAD_REQUEST, new HttpContent.Text.Plain("Bad Request: Missing node specification"));
                     }
@@ -552,7 +560,7 @@ public final class WebDAVDaemon extends AbstractTitanService implements WebDAVDa
                         //this.node.getNeighbourMap().put(new NodeAddress(location));
                         //this.node.getNeighbourMap().put(this.node.getAddress());
                         this.node.getNeighbourMap().add(new NodeAddress(location));
-                        return new HttpResponse(HTTP.Response.Status.OK, new HttpContent.Text.HTML(makeDocument(this.node.getNodeId().toString(), new XHTML.Body(this.node.toXHTML(uri, props)), null, null)));
+                        return new HttpResponse(HTTP.Response.Status.OK, new HttpContent.Text.HTML(makeDocument(this.node.getNodeId().toString(), new XHTML.Body(this.node.toXHTML(uri, map)), null, null)));
                     } catch (IOException e) {
                         return new HttpResponse(HTTP.Response.Status.INTERNAL_SERVER_ERROR,
                                 new HttpContent.Text.Plain(e.toString() + " " + e.getLocalizedMessage()));
@@ -561,7 +569,7 @@ public final class WebDAVDaemon extends AbstractTitanService implements WebDAVDa
                 }
             }
 
-            XHTML.Document result = makeDocument(this.node.getNodeId().toString(), new XHTML.Body(this.node.toXHTML(uri, props)), null, null);
+            XHTML.Document result = makeDocument(this.node.getNodeId().toString(), new XHTML.Body(this.node.toXHTML(uri, map)), null, null);
 
 //            try {
 //                OutputStream out = new FileOutputStream("WebDAVDaemon.out");

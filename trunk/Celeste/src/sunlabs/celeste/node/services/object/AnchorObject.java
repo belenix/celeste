@@ -32,6 +32,7 @@ import sunlabs.celeste.client.ReplicationParameters;
 import sunlabs.celeste.node.services.api.AObjectVersionMapAPI;
 import sunlabs.titan.api.TitanGuid;
 import sunlabs.titan.api.XHTMLInspectable;
+import sunlabs.titan.node.BeehiveObjectStore.DeleteTokenException;
 import sunlabs.titan.node.TitanMessage.RemoteException;
 import sunlabs.titan.node.BeehiveObjectStore;
 import sunlabs.titan.node.object.DeleteableObject;
@@ -127,7 +128,8 @@ public interface AnchorObject extends
             int bObjectSize,
             boolean signWrites);
     
-    public DOLRStatus delete(FileIdentifier fileIdentifier, TitanGuid deletionToken, long timeToLive) throws IOException, BeehiveObjectStore.NoSpaceException;
+    public DOLRStatus delete(FileIdentifier fileIdentifier, TitanGuid deletionToken, long timeToLive) throws IOException, BeehiveObjectStore.NoSpaceException,
+        ClassCastException, RemoteException, DeleteTokenException, ClassNotFoundException;
 
     /**
      * Retrieve the {@link AnchorObject} given the Celeste {@link FileIdentifier}.
@@ -138,6 +140,7 @@ public interface AnchorObject extends
      * @throws BeehiveObjectStore.NotFoundException If the {@code AnchorObject} was not found.
      * @throws RemoteException 
      * @throws ClassCastException 
+     * @throws ClassNotFoundException 
      */
-    public AnchorObject.Object retrieve(FileIdentifier fileIdentifier) throws BeehiveObjectStore.DeletedObjectException, BeehiveObjectStore.NotFoundException, ClassCastException;
+    public AnchorObject.Object retrieve(FileIdentifier fileIdentifier) throws BeehiveObjectStore.DeletedObjectException, BeehiveObjectStore.NotFoundException, ClassCastException, ClassNotFoundException;
 }

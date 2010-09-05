@@ -28,16 +28,16 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.logging.Level;
 
-import sunlabs.titan.api.TitanObject;
 import sunlabs.titan.api.TitanGuid;
 import sunlabs.titan.api.TitanNodeId;
+import sunlabs.titan.api.TitanObject;
+import sunlabs.titan.node.BeehiveNode;
+import sunlabs.titan.node.BeehiveObjectPool;
+import sunlabs.titan.node.BeehiveObjectStore;
+import sunlabs.titan.node.Publishers;
 import sunlabs.titan.node.TitanMessage;
 import sunlabs.titan.node.TitanMessage.RemoteException;
-import sunlabs.titan.node.BeehiveNode;
-import sunlabs.titan.node.Publishers;
-import sunlabs.titan.node.TitanNodeIdImpl;
-import sunlabs.titan.node.services.AbstractTitanService;
-import sunlabs.titan.node.services.PublishDaemon;
+import sunlabs.titan.node.services.api.Publish;
 
 /**
  * A ReplicatableObject is an object in the object pool that is replicated and the pool
@@ -63,11 +63,16 @@ public class ReplicatableObject {
 	     * @param message the received {@link TitanMessage} containing an instance
          *        of {@link ReplicatableObject.Replicate.Request} as the message payload.
 	     * @return The reply {@code BeehiveMessage}.
-	     * @throws TitanMessage.RemoteException 
 	     * @throws ClassCastException 
-	     * @throws ClassNotFoundException 
+	     * @throws ClassNotFoundException
+	     * @throws BeehiveObjectStore.NotFoundException
+	     * @throws BeehiveObjectStore.DeletedObjectException
+         * @throws BeehiveObjectStore.NoSpaceException
+         * @throws BeehiveObjectStore.UnacceptableObjectException
+         * @throws BeehiveObjectPool.Exception
 	     */
-	    public TitanMessage replicateObject(TitanMessage message) throws ClassNotFoundException, ClassCastException, TitanMessage.RemoteException;
+	    public ReplicatableObject.Replicate.Response replicateObject(TitanMessage message) throws ClassNotFoundException, ClassCastException,
+	    BeehiveObjectStore.NotFoundException, BeehiveObjectStore.DeletedObjectException, BeehiveObjectStore.NoSpaceException, BeehiveObjectStore.UnacceptableObjectException, BeehiveObjectPool.Exception;
 	    
 	    /**
 	     * Specifies the specific behaviours of instances of {@link TitanObject} that implement {@link ReplicatableObject.Handler.Object}.
@@ -97,9 +102,9 @@ public class ReplicatableObject {
 	        }
 	        
 	        /**
-	         * Get the {@link Set} of {@link TitanGuid} instances of the nodes to not use when replicating the object.
+	         * Get the {@link Set} of {@link TitanNodeId} instances of the nodes to not use when replicating the object.
 	         * <p>
-	         * Typically this consists of the nodes currently publishing the object, as they are already contributin a replica.
+	         * Typically this consists of the nodes currently publishing the object, as they are already contributing a replica.
 	         *  </p>
 	         * (See {@link #getObjectId()).
 	         */
@@ -131,11 +136,9 @@ public class ReplicatableObject {
 	 * Must only be called by the root of the object id.
 	 * </p>
 	 */
-	public static void unpublishObjectRootHelper(AbstractTitanService handler, TitanMessage message) {
+	public static void unpublishObjectRootHelper(ReplicatableObject.Handler<? extends ReplicatableObject.Handler.Object> handler, Publish.PublishUnpublishRequest request) {
 	    try {
-	        PublishDaemon.UnpublishObject.Request request = message.getPayload(PublishDaemon.UnpublishObject.Request.class, handler.getNode());
-
-	        for (TitanGuid objectId : request.getObjectIds()) {
+	        for (TitanGuid objectId : request.getObjects().keySet()) {
 	            Set<Publishers.PublishRecord> publishers = handler.getNode().getObjectPublishers().getPublishers(objectId);
 	            Publishers.PublishRecord bestPublisher = null;
 
@@ -146,14 +149,15 @@ public class ReplicatableObject {
 	            // Compose the set of node that already have a copy of the object.
 	            // Include the node that is unpublishing the object, as we cannot ask it to replicate it.
 	            Set<TitanNodeId> publisherSet = new HashSet<TitanNodeId>();
-	            publisherSet.add(message.getSource().getObjectId());
+
+	            publisherSet.add(request.getPublisherAddress().getObjectId());
 
 	            for (Publishers.PublishRecord publisher : publishers) {
 	                publisherSet.add(publisher.getNodeId());
 	                if (handler.getLogger().isLoggable(Level.FINE)) {
 	                    handler.getLogger().fine("  publisher=%s", publisher.getNodeId());
 	                }
-	                if (!publisher.getNodeId().equals(message.getSource())) {
+	                if (!publisher.getNodeId().equals(request.getPublisherAddress().getObjectId())) {
 	                    if (bestPublisher == null || bestPublisher.getObjectTTL() < publisher.getObjectTTL()) {
 	                        bestPublisher = publisher;
 	                    }

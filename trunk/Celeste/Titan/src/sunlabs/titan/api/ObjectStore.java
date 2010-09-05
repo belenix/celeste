@@ -25,15 +25,16 @@ package sunlabs.titan.api;
 
 import java.io.IOException;
 
-import sunlabs.titan.node.TitanMessage;
+import sunlabs.titan.node.BeehiveObjectPool;
 import sunlabs.titan.node.BeehiveObjectStore;
-import sunlabs.titan.node.PublishObjectMessage;
-import sunlabs.titan.node.UnpublishObjectMessage;
 import sunlabs.titan.node.BeehiveObjectStore.InvalidObjectException;
 import sunlabs.titan.node.BeehiveObjectStore.NoSpaceException;
 import sunlabs.titan.node.BeehiveObjectStore.ObjectExistenceException;
 import sunlabs.titan.node.BeehiveObjectStore.UnacceptableObjectException;
+import sunlabs.titan.node.PublishObjectMessage;
+import sunlabs.titan.node.UnpublishObjectMessage;
 import sunlabs.titan.node.object.BeehiveObjectHandler;
+import sunlabs.titan.node.services.api.Publish;
 import sunlabs.titan.node.services.xml.TitanXML.XMLObjectStore;
 
 // Not sure this interface is that useful as opposed to just using the class definition
@@ -103,9 +104,10 @@ public interface ObjectStore extends XHTMLInspectable, Iterable<TitanGuid> {
      * @throws BeehiveObjectStore.NoSpaceException There is no space on this node for the {@link TitanObject}
      * @throws BeehiveObjectStore.UnacceptableObjectException The {@link TitanObject} is unacceptable as it is presented due
      *         to some inconsistency or the object's {@link BeehiveObjectHandler} rejected it during publishing.
+     * @throws ClassNotFoundException 
      */
     public TitanGuid create(TitanObject object) throws BeehiveObjectStore.InvalidObjectException, BeehiveObjectStore.ObjectExistenceException,
-        BeehiveObjectStore.NoSpaceException, BeehiveObjectStore.UnacceptableObjectException;
+        BeehiveObjectStore.NoSpaceException, BeehiveObjectStore.UnacceptableObjectException, ClassNotFoundException;
 
     /**
      * Given a {@link TitanGuid} get the corresponding {@link TitanObject} from the local object store.
@@ -223,11 +225,13 @@ public interface ObjectStore extends XHTMLInspectable, Iterable<TitanGuid> {
     /**
      * Unlock the given object and if the object is in the local store, emit a {@link PublishObjectMessage}.
      * If the object is NOT in the local store, emit an {@link UnpublishObjectMessage}.
+     * @throws BeehiveObjectStore.Exception 
+     * @throws BeehiveObjectPool.Exception 
+     * @throws ClassNotFoundException 
      *
      * @see ObjectStore#unlock(TitanGuid)
      */
-    // XXX Instead of returning a TitanMessage, return the actual Publish.Result.  This means the Publish and Unpublish methods always return a Result.
-    public TitanMessage unlock(TitanObject object);
+    public Publish.PublishUnpublishResponse unlock(TitanObject object) throws ClassNotFoundException, BeehiveObjectStore.Exception, BeehiveObjectPool.Exception;
 
     public XMLObjectStore toXML();
 }

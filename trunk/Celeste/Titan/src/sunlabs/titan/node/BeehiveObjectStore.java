@@ -36,20 +36,19 @@ import java.util.TreeSet;
 import java.util.logging.Level;
 
 import sunlabs.asdf.util.AbstractStoredMap;
+import sunlabs.asdf.util.AbstractStoredMap.OutOfSpace;
 import sunlabs.asdf.util.ObjectLock;
 import sunlabs.asdf.util.Time;
 import sunlabs.asdf.util.Units;
-import sunlabs.asdf.util.AbstractStoredMap.OutOfSpace;
 import sunlabs.asdf.web.XML.XHTML;
 import sunlabs.asdf.web.http.HTTP;
 import sunlabs.titan.TitanGuidImpl;
-import sunlabs.titan.api.TitanObject;
 import sunlabs.titan.api.ObjectStore;
 import sunlabs.titan.api.TitanGuid;
+import sunlabs.titan.api.TitanObject;
 import sunlabs.titan.exception.BeehiveException;
 import sunlabs.titan.node.services.PublishDaemon;
 import sunlabs.titan.node.services.WebDAVDaemon;
-import sunlabs.titan.node.services.PublishDaemon.UnpublishObject;
 import sunlabs.titan.node.services.api.Publish;
 import sunlabs.titan.node.services.xml.TitanXML;
 import sunlabs.titan.node.services.xml.TitanXML.XMLObject;
@@ -424,8 +423,8 @@ public final class BeehiveObjectStore implements ObjectStore {
             this.node.getLogger().fine("Object %s (%s) not found.", objectId, klasse.getName());
         }
 
-        Publish app = this.node.getService(PublishDaemon.class);
-        app.unpublish(objectId, UnpublishObject.Type.REQUIRED);
+        Publish publish = this.node.getService(PublishDaemon.class);
+        publish.unpublish(objectId);
         throw new BeehiveObjectStore.NotFoundException("Object %s (%s) not found.", objectId, klasse.getName());
     }
     
@@ -454,8 +453,7 @@ public final class BeehiveObjectStore implements ObjectStore {
         return set;
     }
 
-    public TitanGuid create(TitanObject object)
-    throws InvalidObjectException, ObjectExistenceException, NoSpaceException, UnacceptableObjectException {
+    public TitanGuid create(TitanObject object) throws InvalidObjectException, ObjectExistenceException, NoSpaceException, UnacceptableObjectException, ClassNotFoundException {
 
         try {
             // Set the object's object-id by force, to ensure that it is correct.
@@ -478,9 +476,17 @@ public final class BeehiveObjectStore implements ObjectStore {
                     // that emits the PublishObjectMessage.  Otherwise, we didn't
                     // create it and we just need to silently unlock.
                     if (needToPublish) {
-                        if (!this.unlock(object).getStatus().isSuccessful()) {
-                            throw new BeehiveObjectStore.InvalidObjectException(computedObjectId.toString());
+                        try {
+                            this.unlock(object);
+                        } catch (BeehiveObjectStore.Exception e) {
+                            throw new BeehiveObjectStore.UnacceptableObjectException(e);
+                        } catch (BeehiveObjectPool.Exception e) {
+                            throw new BeehiveObjectStore.UnacceptableObjectException(e);
                         }
+
+                        //                        if (!this.unlock(object).getStatus().isSuccessful()) {
+                        //                            throw new BeehiveObjectStore.InvalidObjectException(computedObjectId.toString());
+                        //                        }
                     } else {
                         this.unlock(computedObjectId);
                     }
@@ -528,7 +534,6 @@ public final class BeehiveObjectStore implements ObjectStore {
      * @throws BeehiveObjectStore.InvalidObjectException
      * @throws IOException
      */
-    // XXX This should not throw IllegalArgumentException in place of IOException and NoSpaceException
     private TitanObject put(TitanObject object) throws BeehiveObjectStore.InvalidObjectException, IOException {
         try {
             object.setProperty(BeehiveObjectStore.METADATA_CREATEDTIME, Time.currentTimeInSeconds());
@@ -536,8 +541,6 @@ public final class BeehiveObjectStore implements ObjectStore {
             return object;
         } catch (IOException e) {
             throw new IllegalArgumentException(e);
-//        } catch (BeehiveObjectStore.NoSpaceException noSpace) {
-//            throw new IllegalArgumentException(noSpace);
         } catch (IllegalStateException e) {
             throw e;
         } catch (OutOfSpace e) {
@@ -580,9 +583,6 @@ public final class BeehiveObjectStore implements ObjectStore {
 
     public boolean remove(TitanGuid objectId) {
         this.locks.assertLock(objectId);
-		//        if (this.locks.lockerId(objectId) != Thread.currentThread().getId()) {
-		//            throw new IllegalStateException("Object must be locked");
-		//        }
 
         if (this.node.getLogger().isLoggable(Level.FINE)) {
             this.node.getLogger().fine("%s", objectId);
@@ -728,17 +728,22 @@ public final class BeehiveObjectStore implements ObjectStore {
     }
 
     /**
-     * Unlock the given object, by its {@link TitanObject#getObjectId()}.
+     * Unlock the given object, by its {@link TitanObject#getObjectId()},
+     * and depending upon whether or not the object is in the local object store, emit a publish
+     * or unpublish message and return the corresponding result.
      * <p>
      * If the object is in the local store transmit a Publish Object message.
      * If the object is NOT in the local store transmit an Unpublish Object message.
      * </p>
+     * @throws BeehiveObjectStore.Exception 
+     * @throws BeehiveObjectPool.Exception 
+     * @throws ClassNotFoundException 
      */
-    public TitanMessage unlock(TitanObject object) {
+    public Publish.PublishUnpublishResponse unlock(TitanObject object) throws ClassNotFoundException, BeehiveObjectPool.Exception, BeehiveObjectStore.Exception {
         // The object must be locked by the invoking thread.
         this.locks.assertLock(object.getObjectId());
 
-        // After all the processing that this BeehiveObject has gone through,
+        // After all the processing that this TitanObject has gone through,
         // if it still exists in the object store, then we emit a Publish message.
         // Otherwise, we emit an Unpublish message.
         if (this.fileStore.contains(object.getObjectId())) {
@@ -748,7 +753,7 @@ public final class BeehiveObjectStore implements ObjectStore {
             return this.unlockAndPublish(object);
         }
 
-        return this.unlockAndUnpublish(object, UnpublishObject.Type.REQUIRED, true);
+        return this.unlockAndUnpublish(object);
     }
 
     /**
@@ -776,32 +781,37 @@ public final class BeehiveObjectStore implements ObjectStore {
      * a backpointer to the object on the publishing node.
      * </p>
      */
-    private TitanMessage unlockAndPublish(TitanObject object) {
+    private Publish.PublishUnpublishResponse unlockAndPublish(TitanObject object) throws ClassNotFoundException, BeehiveObjectPool.Exception, BeehiveObjectStore.Exception {
         return this.unlockAndPublish(object, false);
     }
 
     /**
-     * Returns the BeehiveMessage result from the object's handler publish method.
+     * Returns the TitanMessage result from the object's handler publish method.
      * @param object
      * @param trace
      * @return
+     * @throws ClassNotFoundException 
+     * @throws BeehiveObjectPool.Exception 
      */
-    private TitanMessage unlockAndPublish(TitanObject object, boolean trace) {
+    private Publish.PublishUnpublishResponse unlockAndPublish(TitanObject object, boolean trace) throws ClassNotFoundException, BeehiveObjectPool.Exception, BeehiveObjectStore.Exception {
     	try {
     		Publish publish = (Publish) this.node.getService("sunlabs.titan.node.services.PublishDaemon");
 
-    		TitanMessage result = publish.publish(object);
-
-    		if (!result.getStatus().isSuccessful()) {
-    			// This publish was *not* successful we must not store the
-    			// object. Forcibly remove it without emitting an unpublish message.
-    			if (this.node.getLogger().isLoggable(Level.FINE)) {
-    				this.node.getLogger().fine("%s signaling to not store object %s", result.getStatus().toString(), object.getObjectId());
-    			}
-    			this.fileStore.remove(object.getObjectId());
-    		}
-    		return result;
-    	} finally {
+    		Publish.PublishUnpublishResponse result = publish.publish(object);
+    		return result;	    
+    	} catch (ClassCastException e) {
+            this.fileStore.remove(object.getObjectId());   
+            throw e;
+        } catch (ClassNotFoundException e) {
+            this.fileStore.remove(object.getObjectId());   
+            throw e;
+        } catch (sunlabs.titan.node.BeehiveObjectPool.Exception e) {
+            this.fileStore.remove(object.getObjectId());   
+            throw e;
+        } catch (BeehiveObjectStore.Exception e) {
+            this.fileStore.remove(object.getObjectId());
+            throw e;
+        } finally {
     		this.unlock(object.getObjectId(), false);
     	}
     }
@@ -813,11 +823,16 @@ public final class BeehiveObjectStore implements ObjectStore {
      * @param type
      * @param trace
      * @return
+     * @throws BeehiveObjectStore.Exception 
+     * @throws BeehiveObjectPool.Exception 
+     * @throws ClassNotFoundException 
+     * @throws ClassCastException 
      */
-    private TitanMessage unlockAndUnpublish(TitanObject object, UnpublishObject.Type type, boolean trace) {
+    private Publish.PublishUnpublishResponse unlockAndUnpublish(TitanObject object) throws ClassCastException, ClassNotFoundException,
+    BeehiveObjectPool.Exception, BeehiveObjectStore.Exception {
     	try {
-    		Publish publisher = (Publish) this.node.getService(PublishDaemon.class.getName());
-    		TitanMessage result = publisher.unpublish(object, type);
+    		Publish publisher = (Publish) this.node.getService(PublishDaemon.class);
+    		Publish.PublishUnpublishResponse result = publisher.unpublish(object);
     		return result;
     	} finally {
     		this.unlock(object.getObjectId());

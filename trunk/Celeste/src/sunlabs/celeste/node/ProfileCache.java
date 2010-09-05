@@ -37,7 +37,7 @@ import sunlabs.celeste.client.operation.ReadProfileOperation;
 import sunlabs.titan.TitanGuidImpl;
 import sunlabs.titan.api.Credential;
 import sunlabs.titan.api.TitanGuid;
-import sunlabs.titan.node.BeehiveNode;
+import sunlabs.titan.api.TitanNode;
 
 /**
  * A {@code ProfileCache} maintains a cache of recently used {@code Profile_}
@@ -87,7 +87,7 @@ public class ProfileCache {
      * @param celesteNode  the proxy to be used for communicating with
      *                      Celeste
      */
-    public ProfileCache(BeehiveNode celesteNode) {
+    public ProfileCache(TitanNode celesteNode) {
         this(celesteNode, ((int) ProfileCache.defaultCacheTimeout)/1000);
     }
 
@@ -100,7 +100,7 @@ public class ProfileCache {
      * @param timeout       the lifetime in seconds during which a cache entry
      *                      is valid
      */
-    public ProfileCache(BeehiveNode node, int timeout) {
+    public ProfileCache(TitanNode node, int timeout) {
         this(node.getNodeAddress().getInternetworkAddress(), null, timeout);
     }
 

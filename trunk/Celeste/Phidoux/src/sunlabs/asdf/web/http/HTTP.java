@@ -29,6 +29,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.PrintWriter;
+import java.io.Serializable;
 import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -38,6 +39,8 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.logging.Logger;
+
+import sunlabs.asdf.web.http.HTTP.Message.Header.If.Conditional;
 
 /**
  * The HTTP class contains interfaces, definitions and helper classes for implementing an 
@@ -1782,7 +1785,7 @@ public class HTTP {
             
             public interface MultiPart extends HTTP.Message.Body, Iterable<HTTP.Message> {
 
-                public interface FormData extends HTTP.Message.Body, Map<String,HTTP.Message> {
+                public interface FormData extends Serializable, HTTP.Message.Body, Map<String,HTTP.Message> {
                 
                 }
             }

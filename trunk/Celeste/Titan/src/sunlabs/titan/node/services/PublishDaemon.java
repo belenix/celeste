@@ -25,10 +25,8 @@ package sunlabs.titan.node.services;
 
 import java.io.Serializable;
 import java.net.URI;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.LinkedList;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ScheduledFuture;
@@ -45,19 +43,21 @@ import sunlabs.asdf.util.Time;
 import sunlabs.asdf.web.XML.XHTML;
 import sunlabs.asdf.web.http.HTTP;
 import sunlabs.asdf.web.http.HttpMessage;
-import sunlabs.titan.api.TitanObject;
 import sunlabs.titan.api.ObjectStore;
 import sunlabs.titan.api.TitanGuid;
-import sunlabs.titan.node.TitanMessage;
-import sunlabs.titan.node.TitanMessage.RemoteException;
-import sunlabs.titan.node.BeehiveNode;
+import sunlabs.titan.api.TitanNode;
+import sunlabs.titan.api.TitanObject;
+import sunlabs.titan.node.BeehiveObjectPool;
 import sunlabs.titan.node.BeehiveObjectStore;
 import sunlabs.titan.node.NodeAddress;
 import sunlabs.titan.node.PublishObjectMessage;
 import sunlabs.titan.node.Publishers;
+import sunlabs.titan.node.TitanMessage;
+import sunlabs.titan.node.TitanMessage.RemoteException;
 import sunlabs.titan.node.TitanNodeIdImpl;
 import sunlabs.titan.node.UnpublishObjectMessage;
 import sunlabs.titan.node.object.AbstractObjectHandler;
+import sunlabs.titan.node.object.BeehiveObjectHandler;
 import sunlabs.titan.node.services.api.Publish;
 
 /**
@@ -136,17 +136,17 @@ public final class PublishDaemon extends AbstractTitanService implements Publish
     	}
     }
 
-    public PublishDaemon(final BeehiveNode node) throws JMException {
+    public PublishDaemon(final TitanNode node) throws JMException {
         super(node, PublishDaemon.name, "Publish Objects in the Object Store");
 
-        node.configuration.add(PublishDaemon.PublishObjectInterstitialSleepMillis);
-        node.configuration.add(PublishDaemon.PublishPeriodSeconds);
-        node.configuration.add(PublishDaemon.ExpirePeriodSeconds);
+        node.getConfiguration().add(PublishDaemon.PublishObjectInterstitialSleepMillis);
+        node.getConfiguration().add(PublishDaemon.PublishPeriodSeconds);
+        node.getConfiguration().add(PublishDaemon.ExpirePeriodSeconds);
 
         if (this.log.isLoggable(Level.CONFIG)) {
-            this.log.config("%s", node.configuration.get(PublishDaemon.PublishObjectInterstitialSleepMillis));
-            this.log.config("%s", node.configuration.get(PublishDaemon.PublishPeriodSeconds));
-            this.log.config("%s", node.configuration.get(PublishDaemon.ExpirePeriodSeconds));
+            this.log.config("%s", node.getConfiguration().get(PublishDaemon.PublishObjectInterstitialSleepMillis));
+            this.log.config("%s", node.getConfiguration().get(PublishDaemon.PublishPeriodSeconds));
+            this.log.config("%s", node.getConfiguration().get(PublishDaemon.ExpirePeriodSeconds));
         }
 
         this.expireDaemon = new ExpireBackpointerDaemon();
@@ -160,14 +160,15 @@ public final class PublishDaemon extends AbstractTitanService implements Publish
      * object was not found and the node transmits a remedial unpublish message to the rest
      * of the system to remove any spurious back-pointers for the object that point to this node.
      */
-    public TitanMessage unpublishObject(TitanMessage message) throws ClassCastException, ClassNotFoundException, TitanMessage.RemoteException {
-        PublishDaemon.UnpublishObject.Request request = message.getPayload(PublishDaemon.UnpublishObject.Request.class, this.getNode());
+    public Publish.PublishUnpublishResponse unpublishObject(TitanMessage message) throws ClassCastException, ClassNotFoundException, TitanMessage.RemoteException {
+        Publish.PublishUnpublishRequest request = message.getPayload(Publish.PublishUnpublishRequest.class, this.getNode());
         if (this.log.isLoggable(Level.FINEST)) {                
-            this.log.finest("%s", request.getObjectIds());
+            this.log.finest("%s", request);
         }
+        
+        // There is nothing to do, the backpointers will be removed in TitanNode.receive() method(s).
 
-        TitanMessage response = message.composeReply(this.node.getNodeAddress());
-        return response;
+        return new PublishDaemon.PublishObject.PublishUnpublishResponseImpl(this.node.getNodeAddress());
     }
     
     private class ExpireBackpointerDaemon implements Runnable {
@@ -327,7 +328,18 @@ public final class PublishDaemon extends AbstractTitanService implements Publish
         						objectStore.remove(object);
         					}
         				} finally {
-        					objectStore.unlock(object);
+        					try {
+                                objectStore.unlock(object);
+                            } catch (ClassNotFoundException e) {
+                                // TODO Auto-generated catch block
+                                e.printStackTrace();
+                            } catch (BeehiveObjectStore.Exception e) {
+                                // TODO Auto-generated catch block
+                                e.printStackTrace();
+                            } catch (BeehiveObjectPool.Exception e) {
+                                // TODO Auto-generated catch block
+                                e.printStackTrace();
+                            }
         				}
         			} else {
         				if (PublishDaemon.this.log.isLoggable(Level.FINEST)) {
@@ -476,17 +488,19 @@ public final class PublishDaemon extends AbstractTitanService implements Publish
      * Publish the availability of the given {@link TitanObject}.
      * <p>
      * A {@link PublishObjectMessage} is composed and routed through the local node to the node that is the root of the object's identifier.
+     * The {@link BeehiveObjectHandler#publishObject(TitanMessage)} method in the {@code BeehiveObjectHandler} corresponding to the given {@link TitanObject}'s
+     * class is invoked and its reply returned.
      * The reply {@link TitanMessage} is returned.
      * </p>
      */
-    public TitanMessage publish(TitanObject object) {
-    	long publishRecordSecondsToLive = Math.min(this.getPublishRecordSecondsToLive(), object.getRemainingSecondsToLive(Time.currentTimeInSeconds()));
+    public PublishDaemon.PublishObject.PublishUnpublishResponseImpl publish(TitanObject object) throws ClassCastException, ClassNotFoundException, BeehiveObjectPool.Exception, BeehiveObjectStore.Exception {
+        long publishRecordSecondsToLive = Math.min(this.getPublishRecordSecondsToLive(), object.getRemainingSecondsToLive(Time.currentTimeInSeconds()));
 
-    	if (this.log.isLoggable(Level.FINEST)) {
-    		this.log.finest("%s objectTTL=%ds recordTTL=%ds", object.getObjectId(), object.getRemainingSecondsToLive(Time.currentTimeInSeconds()), publishRecordSecondsToLive);
-    	}
-   
-    	PublishDaemon.PublishObject.Request publishRequest = new PublishDaemon.PublishObject.Request(this.node.getNodeAddress(), publishRecordSecondsToLive, object);
+        if (this.log.isLoggable(Level.FINEST)) {
+            this.log.finest("%s objectTTL=%ds recordTTL=%ds", object.getObjectId(), object.getRemainingSecondsToLive(Time.currentTimeInSeconds()), publishRecordSecondsToLive);
+        }
+
+        PublishDaemon.PublishObject.PublishUnpublishRequestImpl publishRequest = new PublishDaemon.PublishObject.PublishUnpublishRequestImpl(this.node.getNodeAddress(), publishRecordSecondsToLive, object);
 
         // this.node.sendPublishObjectMessage(BeehiveObject object);
         // this.node.sendPublishObjectMessage(object.getObjectId(), object.getProperty(BeehiveObjectStore.METADATA_TYPE),
@@ -496,31 +510,51 @@ public final class PublishDaemon extends AbstractTitanService implements Publish
 
         TitanMessage reply = this.node.receive(message);
 
-        return reply;
+        try {
+            PublishDaemon.PublishObject.PublishUnpublishResponseImpl response = reply.getPayload(PublishDaemon.PublishObject.PublishUnpublishResponseImpl.class, this.node);
+            return response;
+        } catch (RemoteException e) {
+            // We know that the "publishObject" method is defined to throw ClassNotFoundException, ClassCastException, BeehiveObjectPool.Exception, BeehiveObjectStore.Exception
+            if (e.getCause() instanceof BeehiveObjectPool.Exception)
+                throw (BeehiveObjectPool.Exception) e.getCause();
+            if (e.getCause() instanceof BeehiveObjectStore.Exception)
+                throw (BeehiveObjectStore.Exception) e.getCause();
+            throw new IllegalArgumentException(e);
+        }
     }
     
-    public TitanMessage unpublish(TitanGuid objectId, UnpublishObject.Type type) {
-    	PublishDaemon.UnpublishObject.Request request = new PublishDaemon.UnpublishObject.Request(objectId, type);
+    public TitanMessage unpublish(TitanGuid objectId) {
+    	Publish.PublishUnpublishRequest request = new PublishDaemon.PublishObject.PublishUnpublishRequestImpl(this.node.getNodeAddress(), objectId);
     	if (this.log.isLoggable(Level.FINEST)) {
     		this.log.finest("%s", objectId);
     	}
     	
         TitanMessage message = new UnpublishObjectMessage(this.node.getNodeAddress(), objectId, PublishDaemon.name, "unpublishObject", request);
-        message.setTraced(true);
 
         return this.node.receive(message);
     }
 
-    public TitanMessage unpublish(TitanObject object, UnpublishObject.Type type) {
-        PublishDaemon.UnpublishObject.Request request = new PublishDaemon.UnpublishObject.Request(object.getObjectId(), type);
+    public Publish.PublishUnpublishResponse unpublish(TitanObject object) throws ClassCastException, ClassNotFoundException, BeehiveObjectPool.Exception, BeehiveObjectStore.Exception {
+        Publish.PublishUnpublishRequest request = new PublishDaemon.PublishObject.PublishUnpublishRequestImpl(this.node.getNodeAddress(), 0L, object);
         if (this.log.isLoggable(Level.FINEST)) {
             this.log.finest("%s %s", object.getObjectId(), object.getObjectType());
         }
-        
+
         TitanMessage message = new UnpublishObjectMessage(this.node.getNodeAddress(), object.getObjectId(), object.getObjectType(), "unpublishObject", request);
         message.setTraced(true);
 
-        return this.node.receive(message);
+        TitanMessage reply = this.node.receive(message);
+        try {
+            Publish.PublishUnpublishResponse result = reply.getPayload(Publish.PublishUnpublishResponse.class, this.node);
+            return result;
+        } catch (TitanMessage.RemoteException e) {
+            // We know that the "unpublishObject" method is defined to throw ClassNotFoundException, ClassCastException, BeehiveObjectPool.Exception, BeehiveObjectStore.Exception
+            if (e.getCause() instanceof BeehiveObjectPool.Exception)
+                throw (BeehiveObjectPool.Exception) e.getCause();
+            if (e.getCause() instanceof BeehiveObjectStore.Exception)
+                throw (BeehiveObjectStore.Exception) e.getCause();
+            throw new IllegalArgumentException(e);
+        }
     }    
 
     public static class GetPublishers implements Serializable {
@@ -671,9 +705,9 @@ public final class PublishDaemon extends AbstractTitanService implements Publish
      */
     public static class PublishObject {
     	/**
-    	 * A message from a {@link BeehiveNode} publishing the availability of one or more {@link TitanObject} instances.
+    	 * A message from a {@link TitanNode} publishing the availability of one or more {@link TitanObject} instances.
     	 */
-        public static class Request implements sunlabs.titan.node.services.api.Publish.Request {
+        public static class PublishUnpublishRequestImpl implements sunlabs.titan.node.services.api.Publish.PublishUnpublishRequest {
             private static final long serialVersionUID = 1L;
             
             private Map<TitanGuid,TitanObject.Metadata> objects;
@@ -683,19 +717,21 @@ public final class PublishDaemon extends AbstractTitanService implements Publish
             /**
              * If {@code true} this Publish is a backup for the root of the object's
              * {@link TitanGuid} and signals the helper method
-             * {@link AbstractObjectHandler#publishObjectBackup(AbstractObjectHandler, Request)}
+             * {@link AbstractObjectHandler#publishObjectBackup(AbstractObjectHandler, Publish.PublishUnpublishRequest)}
              * to not continue making backup back-pointers.
              */
             private boolean backup;
 
             /**
-             * Construct a Request containing the {@code NodeAddress} of the {@code BeehiveNode} publishing the given objects.
+             * Construct a {@link Publish.PublishUnpublishRequest} containing the {@link NodeAddress} of the {@code TitanNode} publishing the given objects.
+             * 
+             * @see PublishUnpublishRequestImpl#PublishUnpublishRequestImpl(NodeAddress, TitanGuid...)
              *  
-             * @param publisher The {@code NodeAddress} of the {@link BeehiveNode} publishing the objects.
+             * @param publisher The {@code NodeAddress} of the {@link TitanNode} publishing the objects.
              * @param secondsToLive The number of seconds each publish record should exist.
              * @param object One or more {@link TitanObject} instances to publish.
              */
-            public Request(NodeAddress publisher, long secondsToLive, TitanObject...object) {
+            public PublishUnpublishRequestImpl(NodeAddress publisher, long secondsToLive, TitanObject...object) {
             	this.objects = new HashMap<TitanGuid,TitanObject.Metadata>();
             	for (TitanObject o : object) {
             		this.objects.put(o.getObjectId(), o.getMetadata());
@@ -704,11 +740,31 @@ public final class PublishDaemon extends AbstractTitanService implements Publish
             	this.publisher = publisher;
             	this.secondsToLive = secondsToLive;            	
             }
+            
+            /**
+             * Construct a {@link Publish.PublishUnpublishRequest} containing the {@link NodeAddress} of the {@code TitanNode} publishing the given objects.
+             * This is the anonymous form of publish or unpublish where there is no accompanying metaadata about the objects.
+             * 
+             * @see PublishUnpublishRequestImpl#PublishUnpublishRequestImpl(NodeAddress, long, TitanObject...)
+             *  
+             * @param publisher The {@code NodeAddress} of the {@link TitanNode} publishing the objects.
+             * @param secondsToLive The number of seconds each publish record should exist.
+             * @param object One or more {@link TitanObject} instances to publish.
+             */
+            public PublishUnpublishRequestImpl(NodeAddress publisher, TitanGuid...objectIds) {
+                this.objects = new HashMap<TitanGuid,TitanObject.Metadata>();
+                for (TitanGuid objectId : objectIds) {
+                    this.objects.put(objectId, null);
+                }
+                
+                this.publisher = publisher;
+                this.secondsToLive = 0;
+            }
 
             /**
              * If {@code true} this Publish is a backup for the root of the object's
              * {@link TitanGuid} and signals the helper method
-             * {@link AbstractObjectHandler#publishObjectBackup(AbstractObjectHandler, Request)}
+             * {@link AbstractObjectHandler#publishObjectBackup(AbstractObjectHandler, PublishUnpublishRequestImpl)}
              * to <b>not</b> continue making backup back-pointers.
              */
             public boolean isBackup() {
@@ -731,9 +787,9 @@ public final class PublishDaemon extends AbstractTitanService implements Publish
             }
 
             /**
-             * Get the map of {@link TitanObject}s in this Request.
+             * Get the map of {@link TitanGuid}s to {@link TitanObject.Metadata} in this Request.
              */
-            public Map<TitanGuid,TitanObject.Metadata> getObjectsToPublish() {
+            public Map<TitanGuid,TitanObject.Metadata> getObjects() {
             	return this.objects;
             }
 
@@ -745,60 +801,80 @@ public final class PublishDaemon extends AbstractTitanService implements Publish
             }
         }
 
-        public static class Response implements sunlabs.titan.node.services.api.Publish.Response, Serializable {
+        public static class PublishUnpublishResponseImpl implements Publish.PublishUnpublishResponse, Serializable {
             private static final long serialVersionUID = 1L;
             private Set<TitanGuid> objectIds;
+            private NodeAddress rootNodeAddress;
 
-            public Response() {
+            public PublishUnpublishResponseImpl(NodeAddress rootNodeAddress) {
                 this.objectIds = new HashSet<TitanGuid>();
+                this.rootNodeAddress = rootNodeAddress;
             }
 
-            public Response(Set<TitanGuid> objectIds) {
+            public PublishUnpublishResponseImpl(NodeAddress rootNodeAddress, Set<TitanGuid> objectIds) {
+                this(rootNodeAddress);
                 this.objectIds = objectIds;
             }
-            
+
             public Set<TitanGuid> getObjectIds() {
                 return this.objectIds;
             }
+            
+            public NodeAddress getRootNodeAddress() {
+                return this.rootNodeAddress;
+            }
         }
     }
-    
+
     /**
      * 
      *
      */
-    public static class UnpublishObject {
-        public enum  Type { OPTIONAL, REQUIRED };
-        /**
-         * A message from a node unpublishing the availability of a {@link TitanObject}.
-         */
-    	public static class Request implements Serializable {
-    		private final static long serialVersionUID = 1L;
-
-    		private UnpublishObject.Type type;
-    		private Collection<TitanGuid> objectIds;
-    		
-    		public Request(TitanGuid objectId, UnpublishObject.Type type) {
-    		    this.type = type;
-    			this.objectIds = new LinkedList<TitanGuid>();
-    			this.objectIds.add(objectId);
-    		}
-    		
-    		public UnpublishObject.Type getType() {
-    		    return this.type;
-    		}
-    		
-    		public Collection<TitanGuid> getObjectIds() {
-    			return this.objectIds;
-    		}
-    	}
-    	
-    	public static class Response implements Serializable {
-    		private final static long serialVersionUID = 1L;
-    		
-    		public Response() {
-    			
-    		}
-    	}
-    }
+//    public static class UnpublishObject {
+//        public enum  Type { OPTIONAL, REQUIRED };
+//        /**
+//         * A message from a node unpublishing the availability of a {@link TitanObject}.
+//         */
+//        public static class Request implements Serializable {
+//            private final static long serialVersionUID = 1L;
+//
+////          private UnpublishObject.Type type;
+//            private Collection<TitanGuid> objectIds;
+//
+//            private NodeAddress publisher;
+//            
+//            public Request(NodeAddress publisher, TitanGuid objectId, UnpublishObject.Type type) {
+//                this.publisher = publisher;
+////              this.type = type;
+//                this.objectIds = new LinkedList<TitanGuid>();
+//                this.objectIds.add(objectId);
+//            }
+//            
+////          public UnpublishObject.Type getType() {
+////              return this.type;
+////          }
+//            
+//            public Collection<TitanGuid> getObjectIds() {
+//                return this.objectIds;
+//            }
+//            
+//            public NodeAddress getPublisherAddress() {
+//                return this.publisher;
+//            }
+//        }
+//        
+//        public static class Response implements Serializable {
+//            private final static long serialVersionUID = 1L;
+//            private NodeAddress rootNodeAddress;
+//            
+//            public Response(NodeAddress rootNodeAddress) {
+//                this.rootNodeAddress = rootNodeAddress;             
+//            }
+//
+//            public NodeAddress getRootNodeAddress() {
+//                return this.rootNodeAddress;
+//            }
+//        }
+//    }
+    
 }

@@ -34,21 +34,23 @@ import javax.management.JMException;
 
 import sunlabs.asdf.web.XML.XHTML;
 import sunlabs.asdf.web.http.HTTP;
-import sunlabs.titan.api.TitanObject.Metadata;
 import sunlabs.titan.api.Credential;
 import sunlabs.titan.api.TitanGuid;
-import sunlabs.titan.node.BeehiveObjectPool.DisallowedDuplicateException;
-import sunlabs.titan.node.TitanMessage;
-import sunlabs.titan.node.TitanMessage.RemoteException;
-import sunlabs.titan.node.BeehiveNode;
+import sunlabs.titan.api.TitanNode;
+import sunlabs.titan.api.TitanObject;
+import sunlabs.titan.api.TitanObject.Metadata;
 import sunlabs.titan.node.BeehiveObjectPool;
+import sunlabs.titan.node.BeehiveObjectPool.DisallowedDuplicateException;
 import sunlabs.titan.node.BeehiveObjectStore;
 import sunlabs.titan.node.Publishers.PublishRecord;
+import sunlabs.titan.node.TitanMessage;
+import sunlabs.titan.node.TitanMessage.RemoteException;
 import sunlabs.titan.node.object.AbstractObjectHandler;
 import sunlabs.titan.node.object.RetrievableObject;
 import sunlabs.titan.node.object.StorableObject;
 import sunlabs.titan.node.services.AbstractTitanService;
 import sunlabs.titan.node.services.PublishDaemon;
+import sunlabs.titan.node.services.api.Publish;
 
 public final class CredentialObjectHandler extends AbstractObjectHandler implements CredentialObject {
     private final static long serialVersionUID = 1L;
@@ -62,7 +64,7 @@ public final class CredentialObjectHandler extends AbstractObjectHandler impleme
     // leave that definition intact.
     //
 
-    public CredentialObjectHandler(BeehiveNode node) throws JMException {
+    public CredentialObjectHandler(TitanNode node) throws JMException {
         super(node, CredentialObjectHandler.name, "Credential Object Handler");
     }
 
@@ -73,40 +75,15 @@ public final class CredentialObjectHandler extends AbstractObjectHandler impleme
     // This method is executed by the credential's root node.
     //
 
-    public PublishDaemon.PublishObject.Response publishObject(TitanMessage msg) throws DisallowedDuplicateException, ClassCastException, RemoteException, ClassNotFoundException {
-        PublishDaemon.PublishObject.Request publishRequest = msg.getPayload(PublishDaemon.PublishObject.Request.class, this.node);
-        if (this.log.isLoggable(Level.FINE)) {
-            this.log.fine("node %s publishing %s", publishRequest.getPublisherAddress().getObjectId(), publishRequest.getObjectsToPublish());
-        }
-
-        // Don't add a new object if it differs from the objects we already have with this object-id.
-        for (Map.Entry<TitanGuid, Metadata> object : publishRequest.getObjectsToPublish().entrySet()) {
-            Set<PublishRecord> alreadyPublishedObjects = this.node.getObjectPublishers().getPublishers(object.getKey());
-            if (alreadyPublishedObjects.size() > 0) {
-                for (PublishRecord record : alreadyPublishedObjects) {
-                    String dataHash = record.getMetadataProperty(BeehiveObjectStore.METADATA_DATAHASH, "error");
-                    if (dataHash.compareTo(object.getValue().getProperty(BeehiveObjectStore.METADATA_DATAHASH)) != 0) {
-                        throw new BeehiveObjectPool.DisallowedDuplicateException("Credential already exists");
-                    }
-                    break;
-                }
-            }
-        }
-
-        AbstractObjectHandler.publishObjectBackup(this, publishRequest);
-        // Dup the getObjectsToPublish set as it's backed by a Map and is not serializable.
-        return new PublishDaemon.PublishObject.Response(new HashSet<TitanGuid>(publishRequest.getObjectsToPublish().keySet()));
-    }
-    
-    public TitanMessage _publishObject(TitanMessage msg) throws DisallowedDuplicateException {
+    public PublishDaemon.PublishObject.PublishUnpublishResponseImpl publishObject(TitanMessage msg) throws DisallowedDuplicateException, ClassCastException, ClassNotFoundException {
         try {
-            PublishDaemon.PublishObject.Request publishRequest = msg.getPayload(PublishDaemon.PublishObject.Request.class, this.node);
+            PublishDaemon.PublishObject.PublishUnpublishRequestImpl publishRequest = msg.getPayload(PublishDaemon.PublishObject.PublishUnpublishRequestImpl.class, this.node);
             if (this.log.isLoggable(Level.FINE)) {
-                this.log.fine("node %s publishing %s", publishRequest.getPublisherAddress().getObjectId(), publishRequest.getObjectsToPublish());
+                this.log.fine("node %s publishing %s", publishRequest.getPublisherAddress().getObjectId(), publishRequest.getObjects());
             }
 
             // Don't add a new object if it differs from the objects we already have with this object-id.
-            for (Map.Entry<TitanGuid, Metadata> object : publishRequest.getObjectsToPublish().entrySet()) {
+            for (Map.Entry<TitanGuid, Metadata> object : publishRequest.getObjects().entrySet()) {
                 Set<PublishRecord> alreadyPublishedObjects = this.node.getObjectPublishers().getPublishers(object.getKey());
                 if (alreadyPublishedObjects.size() > 0) {
                     for (PublishRecord record : alreadyPublishedObjects) {
@@ -121,18 +98,14 @@ public final class CredentialObjectHandler extends AbstractObjectHandler impleme
 
             AbstractObjectHandler.publishObjectBackup(this, publishRequest);
             // Dup the getObjectsToPublish set as it's backed by a Map and is not serializable.
-            return msg.composeReply(this.node.getNodeAddress(), new PublishDaemon.PublishObject.Response(new HashSet<TitanGuid>(publishRequest.getObjectsToPublish().keySet())));
-        } catch (ClassNotFoundException e) {
-            e.printStackTrace();
-            return msg.composeReply(this.node.getNodeAddress(), e);
-        } catch (RemoteException e) {
-            e.printStackTrace();
-            return msg.composeReply(this.node.getNodeAddress(), e);
+            return new PublishDaemon.PublishObject.PublishUnpublishResponseImpl(this.node.getNodeAddress(), new HashSet<TitanGuid>(publishRequest.getObjects().keySet()));
+        } catch (TitanMessage.RemoteException e) {
+            throw new IllegalArgumentException(e.getCause());
         }
     }
-
-    public TitanMessage unpublishObject(TitanMessage msg) {
-        return msg.composeReply(this.node.getNodeAddress());
+    
+    public Publish.PublishUnpublishResponse unpublishObject(TitanMessage msg) {
+        return new PublishDaemon.PublishObject.PublishUnpublishResponseImpl(this.node.getNodeAddress());
     }
 
     //
@@ -147,65 +120,47 @@ public final class CredentialObjectHandler extends AbstractObjectHandler impleme
     // N.B.  Here we assume that Credential is equivalent to (the
     // hypothetical) CredentialObject.CredentialAPI interface.
     //
-    public Credential retrieve(TitanGuid objectId) throws
-            BeehiveObjectStore.DeletedObjectException,
-            BeehiveObjectStore.NotFoundException {
-
+    public Credential retrieve(TitanGuid objectId) throws BeehiveObjectStore.DeletedObjectException, BeehiveObjectStore.NotFoundException, ClassCastException, ClassNotFoundException {
         Credential credential = RetrievableObject.retrieve(this, Credential .class, objectId);
         if (credential == null)
             throw new BeehiveObjectStore.NotFoundException("Credential %s not found.", objectId);
         return credential;
     }
 
-    public TitanMessage retrieveLocalObject(TitanMessage message) {
-        return RetrievableObject.retrieveLocalObject(this, message);
+    public TitanObject retrieveLocalObject(TitanMessage message) throws BeehiveObjectStore.NotFoundException {
+        return node.getObjectStore().get(TitanObject.class, message.subjectId);
     }
 
     //
     // Methods from CredentialObject's StorableObjectType super-interface
     //
 
-    public TitanMessage storeLocalObject(TitanMessage message) {
+    public Publish.PublishUnpublishResponse storeLocalObject(TitanMessage message) throws ClassNotFoundException, ClassCastException, BeehiveObjectStore.NoSpaceException, BeehiveObjectStore.DeleteTokenException,
+    BeehiveObjectStore.UnacceptableObjectException, BeehiveObjectPool.Exception, BeehiveObjectStore.InvalidObjectIdException, BeehiveObjectStore.InvalidObjectException {
         if (this.log.isLoggable(Level.FINER)) {
             this.log.finest("%s", message.traceReport());
         }
         try {
             Credential credential = message.getPayload(Credential.class, this.node);
-            TitanMessage reply = StorableObject.storeLocalObject(this, credential, message);
-            return reply;
-        } catch (ClassNotFoundException e) {
-            return message.composeReply(node.getNodeAddress(), e);
-        } catch (ClassCastException e) {
-            return message.composeReply(node.getNodeAddress(), e);
+            Publish.PublishUnpublishResponse response = StorableObject.storeLocalObject(this, credential, message);
+            return response;
         } catch (RemoteException e) {
-            return message.composeReply(node.getNodeAddress(), e);
+            throw new IllegalArgumentException(e.getCause());
         }
-    }
-
-    //
-    // Methods from CredentialObject's InspectableObjectType super-interface
-    //
-    // Also from the XHTMLInspectable super-interface of
-    // BeehiveObjectHandler's Service super-interface
-    //
-
-    public XHTML.EFlow toXHTML(URI uri, Map<String,HTTP.Message> props) {
-        return new XHTML.Div("nothing here");
     }
 
     //
     // Methods from CredentialObject's StorableObjectType super-interface
     //
 
-    public Credential storeObject(Credential credential) throws
-            IOException,
+    public Credential storeObject(Credential credential) throws IOException,
             BeehiveObjectStore.NoSpaceException,BeehiveObjectStore.DeleteTokenException, BeehiveObjectStore.UnacceptableObjectException, BeehiveObjectPool.Exception {
         //
         // Store the credential under its stated object id (rather than under
         // the id that its contents would dictate).
         //
         // XXX: It seems odd that the decision on how an object's
-        //      BeehiveObjectId is determined is deferred until the object is
+        //      TitanGuid is determined is deferred until the object is
         //      stored.  One would naively expect it to be an inherent
         //      property of the object that's established immediately when
         //      it's constructed.
@@ -220,5 +175,16 @@ public final class CredentialObjectHandler extends AbstractObjectHandler impleme
         BeehiveObjectStore.CreateSignatureVerifiedObject(credential.getObjectId(), credential);
         StorableObject.storeObject(this, credential);
         return credential;
+    }
+    
+    //
+    // Methods from CredentialObject's InspectableObjectType super-interface
+    //
+    // Also from the XHTMLInspectable super-interface of
+    // BeehiveObjectHandler's Service super-interface
+    //
+
+    public XHTML.EFlow toXHTML(URI uri, Map<String,HTTP.Message> props) {
+        return new XHTML.Div("nothing here");
     }
 }

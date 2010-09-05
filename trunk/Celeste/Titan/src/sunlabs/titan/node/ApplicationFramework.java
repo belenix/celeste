@@ -53,6 +53,7 @@ import java.util.logging.Level;
 import sunlabs.asdf.web.XML.XHTML;
 import sunlabs.asdf.web.http.HTTP;
 import sunlabs.titan.TitanGuidImpl;
+import sunlabs.titan.api.TitanNode;
 import sunlabs.titan.api.TitanService;
 import sunlabs.titan.api.XHTMLInspectable;
 import sunlabs.titan.node.BeehiveObjectStore.NotFoundException;
@@ -1202,11 +1203,9 @@ public final class ApplicationFramework implements XHTMLInspectable {
                     // loader.  See the XXX remark at classNameToLoader's
                     // declaration.
                     //
-                    ApplicationLoader loader =
-                        this.classNameToLoader.get(unversionedName);
+                    ApplicationLoader loader = this.classNameToLoader.get(unversionedName);
                     if (loader == null) {
-                        loader = new ApplicationLoader(
-                            this.getClass().getClassLoader());
+                        loader = new ApplicationLoader(this.getClass().getClassLoader());
                         this.classNameToLoader.put(unversionedName, loader);
                     }
                     //this.log.info("locally loading %s using loader %s",
@@ -1454,8 +1453,7 @@ public final class ApplicationFramework implements XHTMLInspectable {
      *      if {@code theClass} is not a {@code BeehiveService}
      */
     private TitanService instantiateAndCheck(Class<?> theClass, long requested)
-        throws InstantiationException, IllegalAccessException,
-               InvocationTargetException, NoSuchMethodException
+        throws InstantiationException, IllegalAccessException, InvocationTargetException, NoSuchMethodException
     {
         if (theClass == null) {
             return null;
@@ -1472,12 +1470,11 @@ public final class ApplicationFramework implements XHTMLInspectable {
         if (!TitanService.class.isAssignableFrom(theClass))
             throw new ClassCastException("not a BeehiveService");
         @SuppressWarnings(value="unchecked")
-            Class <? extends TitanService> appClass =
-                (Class<TitanService>)theClass;
+            Class <? extends TitanService> appClass = (Class<TitanService>) theClass;
 
         TitanService application = null;
         try {
-            Constructor<? extends TitanService> ctor = appClass.getDeclaredConstructor(BeehiveNode.class);
+            Constructor<? extends TitanService> ctor = appClass.getDeclaredConstructor(TitanNode.class);
             application = (TitanService) ctor.newInstance(this.node);
         } catch (NoSuchMethodException nsme) {
             this.log.throwing(nsme);

@@ -31,18 +31,18 @@ import javax.management.JMException;
 import sunlabs.asdf.web.XML.XHTML;
 import sunlabs.asdf.web.http.HTTP;
 import sunlabs.titan.TitanGuidImpl;
+import sunlabs.titan.api.TitanNode;
 import sunlabs.titan.api.TitanObject;
+import sunlabs.titan.node.BeehiveObjectStore;
 import sunlabs.titan.node.TitanMessage;
 import sunlabs.titan.node.TitanMessage.RemoteException;
-import sunlabs.titan.node.BeehiveNode;
-import sunlabs.titan.node.BeehiveObjectStore;
 import sunlabs.titan.node.services.api.RetrieveObject;
 
 public final class RetrieveObjectService extends AbstractTitanService implements RetrieveObject, RetrieveObjectServiceMBean {
     private final static long serialVersionUID = 1L;
     public final static String name = AbstractTitanService.makeName(RetrieveObjectService.class, RetrieveObjectService.serialVersionUID);
 
-    public RetrieveObjectService(BeehiveNode node) throws JMException {
+    public RetrieveObjectService(TitanNode node) throws JMException {
         super(node, RetrieveObjectService.name, "Retrieve objects from the object pool");
     }
 

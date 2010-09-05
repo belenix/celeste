@@ -336,7 +336,8 @@ public interface VersionObject extends
      * @throws BeehiveObjectStore.DeletedObjectException
      * @throws BeehiveObjectStore.NotFoundException
      * @throws RemoteException 
+     * @throws ClassNotFoundException 
      */
     public Manifest getManifest(TitanGuid objectId, long offset, long length)
-    throws VersionObject.BadManifestException, ClassCastException, BeehiveObjectStore.DeletedObjectException, BeehiveObjectStore.NotFoundException, RemoteException;
+    throws VersionObject.BadManifestException, ClassCastException, BeehiveObjectStore.DeletedObjectException, BeehiveObjectStore.NotFoundException, RemoteException, ClassNotFoundException;
 }

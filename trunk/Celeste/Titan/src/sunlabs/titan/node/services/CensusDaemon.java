@@ -54,11 +54,12 @@ import sunlabs.asdf.web.http.HttpMessage;
 import sunlabs.titan.Release;
 import sunlabs.titan.TitanGuidImpl;
 import sunlabs.titan.api.TitanGuid;
+import sunlabs.titan.api.TitanNode;
 import sunlabs.titan.api.TitanNodeId;
-import sunlabs.titan.node.TitanMessage;
-import sunlabs.titan.node.TitanMessage.RemoteException;
 import sunlabs.titan.node.BeehiveNode;
 import sunlabs.titan.node.NodeAddress;
+import sunlabs.titan.node.TitanMessage;
+import sunlabs.titan.node.TitanMessage.RemoteException;
 import sunlabs.titan.node.TitanNodeIdImpl;
 import sunlabs.titan.node.services.api.Census;
 import sunlabs.titan.util.OrderedProperties;
@@ -284,13 +285,13 @@ public final class CensusDaemon extends AbstractTitanService implements Census, 
         return result;
     }
 
-    public CensusDaemon(BeehiveNode node) throws JMException {
+    public CensusDaemon(TitanNode node) throws JMException {
         super(node, CensusDaemon.name, "Catalogue all Nodes");
 
-        node.configuration.add(CensusDaemon.ReportRateMillis);
+        node.getConfiguration().add(CensusDaemon.ReportRateMillis);
 
         if (this.log.isLoggable(Level.CONFIG)) {
-            this.log.config("%s",node.configuration.get(CensusDaemon.ReportRateMillis));
+            this.log.config("%s",node.getConfiguration().get(CensusDaemon.ReportRateMillis));
         }
 
         this.catalogue = Collections.synchronizedSortedMap(new TreeMap<TitanNodeId,OrderedProperties>());

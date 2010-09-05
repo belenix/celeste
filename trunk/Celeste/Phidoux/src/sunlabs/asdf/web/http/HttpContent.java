@@ -53,6 +53,7 @@ import java.util.Set;
 
 import sunlabs.asdf.web.XML.XHTML;
 import sunlabs.asdf.web.http.HTTP;
+import sunlabs.asdf.web.http.HTTP.Message;
 import sunlabs.asdf.web.http.HttpHeader;
 import sunlabs.asdf.web.http.HttpMessage;
 import sunlabs.asdf.web.http.HttpUtil;
@@ -430,6 +431,8 @@ public abstract class HttpContent implements HTTP.Message.Body {
         }
         
         public static class FormData extends HttpContent.Multipart implements Map<String,HTTP.Message>, HTTP.Message.Body.MultiPart.FormData {
+            private static final long serialVersionUID = 1L;
+            
             private Map<String,HTTP.Message> map;
 
             public FormData() {
@@ -516,6 +519,10 @@ public abstract class HttpContent implements HTTP.Message.Body {
                         this.put(key, message);
                     }
                 }
+            }
+            
+            public Map<String, Message> getMap() {
+                return this.map;
             }
 
             public void clear() {

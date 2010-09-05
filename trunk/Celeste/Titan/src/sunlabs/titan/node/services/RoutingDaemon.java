@@ -51,16 +51,17 @@ import sunlabs.asdf.web.http.HTTP;
 import sunlabs.asdf.web.http.HttpMessage;
 import sunlabs.titan.TitanGuidImpl;
 import sunlabs.titan.api.TitanGuid;
-import sunlabs.titan.node.TitanMessage;
-import sunlabs.titan.node.TitanMessage.RemoteException;
+import sunlabs.titan.api.TitanNode;
 import sunlabs.titan.node.BeehiveNode;
 import sunlabs.titan.node.Dossier;
 import sunlabs.titan.node.NodeAddress;
 import sunlabs.titan.node.Publishers;
 import sunlabs.titan.node.Reputation;
+import sunlabs.titan.node.TitanMessage;
+import sunlabs.titan.node.TitanMessage.RemoteException;
 
 /**
- * A Beehive Node routing table maintenance daemon.
+ * A Titan Node routing table maintenance daemon.
  *
  * Iterate through our neighbour map, introducing ourselves, updating
  * our own map.
@@ -132,7 +133,7 @@ public final class RoutingDaemon extends AbstractTitanService implements Routing
                 // Iterate through our neighbour map, reintroducing ourselves, updating
                 // our own map from data obtained from our neighbours.
                 //
-                // For each level in our routing table, send a Beehive Ping message to that node.
+                // For each level in our routing table, send a Titan Ping message to that node.
                 // In return that node will return a reply containing its routing table.
                 // We will use that first level to (re) populate our routing table.
 
@@ -264,7 +265,7 @@ public final class RoutingDaemon extends AbstractTitanService implements Routing
          *
          * The Join operation response contains:
          * <ul>
-         * <li>The {@link TitanGuid} of the Beehive network.</li>
+         * <li>The {@link TitanGuid} of the Titan network.</li>
          * <li>A {@link Set} containing this node's routing table.</li>
          * <li>A {@link Map} of this node's object publishers.</li>
          * </ul>
@@ -349,7 +350,7 @@ public final class RoutingDaemon extends AbstractTitanService implements Routing
             }
 
             /**
-             * Get the {@code Map<BeehiveObjectId,Map<BeehiveObjectId,Publishers.Publisher>>}
+             * Get the {@code Map<TitanGuid,Set<Publishers.PublishRecord>>>}
              * instances from this response.
              */
             public Map<TitanGuid,Set<Publishers.PublishRecord>> getPublishRecords() {
@@ -516,12 +517,12 @@ public final class RoutingDaemon extends AbstractTitanService implements Routing
 
     transient private Reunion reunion;
 
-    public RoutingDaemon(final BeehiveNode node) throws JMException {
+    public RoutingDaemon(final TitanNode node) throws JMException {
         super(node, RoutingDaemon.name, "Maintain the local routing table.");
         
-        node.configuration.add(RoutingDaemon.IntroductionRateSeconds);
-        node.configuration.add(RoutingDaemon.DossierTimeToLiveSeconds);
-        node.configuration.add(RoutingDaemon.ReunionRateSeconds);
+        node.getConfiguration().add(RoutingDaemon.IntroductionRateSeconds);
+        node.getConfiguration().add(RoutingDaemon.DossierTimeToLiveSeconds);
+        node.getConfiguration().add(RoutingDaemon.ReunionRateSeconds);
 
         Map<String,Integer> mapReputationRequirements = Reputation.newCoefficients();
         mapReputationRequirements.put(Dossier.LATENCY, new Integer(50));

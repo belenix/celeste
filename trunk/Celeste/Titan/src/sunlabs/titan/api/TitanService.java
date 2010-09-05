@@ -30,7 +30,6 @@ import java.util.Map;
 import sunlabs.asdf.web.XML.XHTML;
 import sunlabs.asdf.web.http.HTTP;
 import sunlabs.titan.node.TitanMessage;
-import sunlabs.titan.node.BeehiveNode;
 import sunlabs.titan.node.util.DOLRLogger;
 
 /**
@@ -40,14 +39,14 @@ import sunlabs.titan.node.util.DOLRLogger;
  * for a Beehive service.
  * Methods in a class implementing this interface that have the parameter
  * signature of
- * <code><i>method</i>(BeehiveMessage message)</code>
+ * <code><i>method</i>(TitanMessage message)</code>
  * are invoked by a {@link TitanMessage}.
  * <p>
  * There are (currently) three kinds of services.
  * <ul>
  * <li>
- * The first are autonomous threads maintaining parts of the Beehive node state,
- * or participating in the exchange of Beehive node information.
+ * The first are autonomous threads maintaining parts of the Titan node state,
+ * or participating in the exchange of Titan node information.
  * Examples of these kinds of services maintain the routing tables and the
  * periodic retransmitting of object publish messages.
  * By convention the names of these kinds of services end with the String
@@ -95,7 +94,7 @@ public interface TitanService extends Serializable {
     public String getStatus();
 
     /**
-     * Get the name of this Beehive Service.
+     * Get the name of this Titan Service.
      */
     public String getName();
 
@@ -105,7 +104,7 @@ public interface TitanService extends Serializable {
     public String getDescription();
 
     /**
-     * Get the {@link BeehiveNode} of this {@code Service}.
+     * Get the {@link TitanNode} of this {@code Service}.
      */
     public TitanNode getNode();
 
@@ -135,7 +134,7 @@ public interface TitanService extends Serializable {
      * No attempt is made to detect whether there are any current users of
      * this application.  An application stopping unexpectedly should be
      * viewed as just another transient failure, and the service should
-     * be re-obtained via a call to {@link BeehiveNode#getService(String)}.
+     * be re-obtained via a call to {@link TitanNode#getService(String)}.
      * </p>
      * <p>
      * Implementations of this method must protect themselves from {@code start()} having

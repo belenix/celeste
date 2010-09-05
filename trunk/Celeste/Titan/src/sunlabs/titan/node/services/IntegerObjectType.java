@@ -32,13 +32,14 @@ import javax.management.JMException;
 import sunlabs.asdf.web.XML.XHTML;
 import sunlabs.asdf.web.http.HTTP;
 import sunlabs.titan.TitanGuidImpl;
-import sunlabs.titan.api.TitanObject;
 import sunlabs.titan.api.TitanGuid;
+import sunlabs.titan.api.TitanNode;
+import sunlabs.titan.api.TitanObject;
 import sunlabs.titan.node.AbstractBeehiveObject;
 import sunlabs.titan.node.TitanMessage;
-import sunlabs.titan.node.BeehiveNode;
 import sunlabs.titan.node.object.AbstractObjectHandler;
 import sunlabs.titan.node.object.MutableObject;
+import sunlabs.titan.node.services.api.Publish;
 
 public class IntegerObjectType extends AbstractObjectHandler implements MutableObject.Handler<MutableObject.Handler.ObjectAPI> {
     private static final long serialVersionUID = 1L;
@@ -73,7 +74,7 @@ public class IntegerObjectType extends AbstractObjectHandler implements MutableO
         return null;
     }
 
-    public IntegerObjectType(BeehiveNode node) throws JMException {
+    public IntegerObjectType(TitanNode node) throws JMException {
         super(node, IntegerObjectType.name, "Mutable Object");
     }
 
@@ -85,12 +86,12 @@ public class IntegerObjectType extends AbstractObjectHandler implements MutableO
         return null;
     }
 
-    public TitanMessage publishObject(TitanMessage message) {
-        return null;
+    public Publish.PublishUnpublishResponse publishObject(TitanMessage message) {
+        return new PublishDaemon.PublishObject.PublishUnpublishResponseImpl(this.node.getNodeAddress());
     }
 
-    public TitanMessage unpublishObject(TitanMessage message) {
-        return null;
+    public Publish.PublishUnpublishResponse unpublishObject(TitanMessage msg) {
+        return new PublishDaemon.PublishObject.PublishUnpublishResponseImpl(this.node.getNodeAddress());
     }
 
     public ByteBuffer setValue(TitanGuid objectId, ByteBuffer predicatedValue, ByteBuffer value) {

@@ -30,13 +30,14 @@ import java.util.Set;
 
 import sunlabs.asdf.web.XML.XHTML;
 import sunlabs.asdf.web.http.HTTP;
+import sunlabs.titan.api.TitanGuid;
 import sunlabs.titan.api.TitanObject;
 import sunlabs.titan.api.TitanService;
-import sunlabs.titan.api.TitanGuid;
+import sunlabs.titan.node.BeehiveObjectStore;
+import sunlabs.titan.node.BeehiveObjectStore.NotFoundException;
+import sunlabs.titan.node.Publishers.PublishRecord;
 import sunlabs.titan.node.TitanMessage;
 import sunlabs.titan.node.TitanMessage.RemoteException;
-import sunlabs.titan.node.BeehiveObjectStore;
-import sunlabs.titan.node.Publishers.PublishRecord;
 
 public interface Reflection extends TitanService {
 	@Deprecated
@@ -120,7 +121,7 @@ public interface Reflection extends TitanService {
         }
     }
     
-    public TitanMessage inspectObject(TitanMessage message) throws ClassCastException, ClassNotFoundException, TitanMessage.RemoteException;
+    public ObjectInspect.Response inspectObject(TitanMessage message) throws ClassCastException, ClassNotFoundException, TitanMessage.RemoteException, NotFoundException;
     
     public XHTML.EFlow inspectObject(TitanGuid objectId, URI uri, Map<String,HTTP.Message> props) throws ClassCastException, ClassNotFoundException, BeehiveObjectStore.NotFoundException;
     
@@ -144,5 +145,5 @@ public interface Reflection extends TitanService {
      * @throws BeehiveObjectStore.NotFoundException
      * @throws TitanMessage.RemoteException 
      */
-    public TitanMessage getObjectType(final TitanMessage message) throws ClassCastException, ClassNotFoundException, BeehiveObjectStore.NotFoundException, TitanMessage.RemoteException;
+    public ObjectType.Response getObjectType(final TitanMessage message) throws ClassCastException, ClassNotFoundException, BeehiveObjectStore.NotFoundException, TitanMessage.RemoteException;
 }

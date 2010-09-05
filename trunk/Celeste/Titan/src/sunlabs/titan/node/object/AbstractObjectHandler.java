@@ -29,13 +29,12 @@ import java.util.logging.Level;
 
 import javax.management.JMException;
 
-import sunlabs.titan.api.TitanObject;
 import sunlabs.titan.api.TitanGuid;
-import sunlabs.titan.node.BeehiveNode;
+import sunlabs.titan.api.TitanNode;
+import sunlabs.titan.api.TitanObject;
 import sunlabs.titan.node.NodeAddress;
 import sunlabs.titan.node.Publishers;
 import sunlabs.titan.node.services.AbstractTitanService;
-import sunlabs.titan.node.services.PublishDaemon;
 import sunlabs.titan.node.services.api.Publish;
 
 /**
@@ -53,12 +52,12 @@ public abstract class AbstractObjectHandler extends AbstractTitanService impleme
      * @param name
      * @param description
      */
-    public AbstractObjectHandler(BeehiveNode node, String name, String description) throws JMException {
+    public AbstractObjectHandler(TitanNode node, String name, String description) throws JMException {
         super(node, name, description);
     }
     
     /**
-     * This method transmits the {@link Publish.Request} to nodes that are next in
+     * This method transmits the {@link Publish.PublishUnpublishRequest} to nodes that are next in
      * line to succeed this node, should this node leave the system.
      *
      * @param handler the {@link AbstractObjectHandler} of the caller.
@@ -66,9 +65,9 @@ public abstract class AbstractObjectHandler extends AbstractTitanService impleme
      *
      * XXX How many copies of a publish record to push around?
      */
-    public static void publishObjectBackup(AbstractObjectHandler handler, PublishDaemon.PublishObject.Request publishRequest) throws ClassNotFoundException {
+    public static void publishObjectBackup(AbstractObjectHandler handler, Publish.PublishUnpublishRequest publishRequest) throws ClassNotFoundException {
     	if (publishRequest.isBackup()) {
-    		for (Map.Entry<TitanGuid,TitanObject.Metadata> entry : publishRequest.getObjectsToPublish().entrySet()) {
+    		for (Map.Entry<TitanGuid,TitanObject.Metadata> entry : publishRequest.getObjects().entrySet()) {
     			if (handler.getLogger().isLoggable(Level.FINEST)) {
     				handler.getLogger().finest("backup backpointer %s -> %s", entry.getKey(), publishRequest.getPublisherAddress().getObjectId());
     			}

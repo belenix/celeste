@@ -37,13 +37,13 @@ import sunlabs.asdf.web.XML.XHTML;
 import sunlabs.asdf.web.XML.XML;
 import sunlabs.asdf.web.http.HTTP;
 import sunlabs.titan.node.ApplicationFramework;
-import sunlabs.titan.node.TitanMessage;
-import sunlabs.titan.node.TitanMessage.RemoteException;
 import sunlabs.titan.node.BeehiveNode.NoSuchNodeException;
 import sunlabs.titan.node.BeehiveObjectStore;
 import sunlabs.titan.node.NeighbourMap;
 import sunlabs.titan.node.NodeAddress;
 import sunlabs.titan.node.Publishers;
+import sunlabs.titan.node.TitanMessage;
+import sunlabs.titan.node.TitanMessage.RemoteException;
 import sunlabs.titan.node.object.BeehiveObjectHandler;
 import sunlabs.titan.node.services.AbstractTitanService;
 import sunlabs.titan.node.util.DOLRLogger;
@@ -177,8 +177,16 @@ public interface TitanNode {
      */
     public XHTML.EFlow toXHTML(URI uri, Map<String,HTTP.Message> props) throws URISyntaxException;
 
-
-    public boolean removeLocalObject(final TitanGuid objectId) throws BeehiveObjectStore.NotFoundException;
+    /**
+     * 
+     * @param objectId
+     * @return
+     * @throws BeehiveObjectStore.NotFoundException
+     * @throws ClassNotFoundException
+     * @throws BeehiveObjectStore.Exception
+     * @throws sunlabs.titan.node.BeehiveObjectPool.Exception
+     */
+    public boolean removeLocalObject(final TitanGuid objectId) throws BeehiveObjectStore.NotFoundException, ClassNotFoundException, BeehiveObjectStore.Exception, sunlabs.titan.node.BeehiveObjectPool.Exception;
 
     /**
      * Run the given {@link Runnable} on this node's {@link ExecutorService}

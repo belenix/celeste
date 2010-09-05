@@ -48,19 +48,20 @@ import sunlabs.celeste.node.services.object.VersionObject;
 import sunlabs.titan.TitanGuidImpl;
 import sunlabs.titan.api.ObjectStore;
 import sunlabs.titan.api.TitanGuid;
+import sunlabs.titan.api.TitanNode;
 import sunlabs.titan.api.TitanObject;
 import sunlabs.titan.node.AbstractBeehiveObject;
-import sunlabs.titan.node.TitanMessage;
-import sunlabs.titan.node.TitanMessage.RemoteException;
-import sunlabs.titan.node.BeehiveNode;
 import sunlabs.titan.node.BeehiveObjectStore;
 import sunlabs.titan.node.BeehiveObjectStore.InvalidObjectException;
 import sunlabs.titan.node.BeehiveObjectStore.NoSpaceException;
 import sunlabs.titan.node.Publishers;
+import sunlabs.titan.node.TitanMessage;
+import sunlabs.titan.node.TitanMessage.RemoteException;
 import sunlabs.titan.node.object.AbstractObjectHandler;
 import sunlabs.titan.node.object.MutableObject;
 import sunlabs.titan.node.services.AbstractTitanService;
 import sunlabs.titan.node.services.PublishDaemon;
+import sunlabs.titan.node.services.api.Publish;
 import sunlabs.titan.util.DOLRStatus;
 
 /**
@@ -340,7 +341,7 @@ public class AObjectVersionService extends AbstractObjectHandler implements AObj
         }
     }
 
-    public AObjectVersionService(BeehiveNode node) throws JMException {
+    public AObjectVersionService(TitanNode node) throws JMException {
         super(node, AObjectVersionService.name, "AObject Version Service");
     }
 
@@ -533,7 +534,15 @@ public class AObjectVersionService extends AbstractObjectHandler implements AObj
             	return message.composeReply(this.getNode().getNodeAddress(), e);
             } finally {
                 if (object != null)
-                    AObjectVersionService.this.node.getObjectStore().unlock(object);
+                    try {
+                        AObjectVersionService.this.node.getObjectStore().unlock(object);
+                    } catch (sunlabs.titan.node.BeehiveObjectStore.Exception e) {
+                        // TODO Auto-generated catch block
+                        e.printStackTrace();
+                    } catch (sunlabs.titan.node.BeehiveObjectPool.Exception e) {
+                        // TODO Auto-generated catch block
+                        e.printStackTrace();
+                    }
             }
         } catch (ClassNotFoundException e) {
             return message.composeReply(this.getNode().getNodeAddress(), e);
@@ -595,16 +604,16 @@ public class AObjectVersionService extends AbstractObjectHandler implements AObj
      * is obligated to not publish the object again, and all intermediate nodes are obligated
      * to remove any back-pointer to this object.
      */
-    public TitanMessage publishObject(TitanMessage message) {
+    public Publish.PublishUnpublishResponse publishObject(TitanMessage message) throws ClassNotFoundException, ClassCastException, BeehiveObjectStore.ObjectExistenceException {
     	try {
-    		PublishDaemon.PublishObject.Request publishRequest = message.getPayload(PublishDaemon.PublishObject.Request.class, this.node);;
+    	    Publish.PublishUnpublishRequest publishRequest = message.getPayload(Publish.PublishUnpublishRequest.class, this.node);;
     		
             // Because the message may come from the root of a published object, in it's attempts to store additional copies of the publish record,
             // the message.source can be different than the publisher encoded in the request.
             //
             // All of this is just to ensure there is only one of these objects in the system at a time.
             // For each published object in the request...
-    		for (Map.Entry<TitanGuid, TitanObject.Metadata> entry : publishRequest.getObjectsToPublish().entrySet()) {
+    		for (Map.Entry<TitanGuid, TitanObject.Metadata> entry : publishRequest.getObjects().entrySet()) {
     			// This should be part of a new ReplicatedObject helper.
     			Set<Publishers.PublishRecord> publisherSet = this.node.getObjectPublishers().getPublishersAndLock(entry.getKey());
     			try {
@@ -620,7 +629,8 @@ public class AObjectVersionService extends AbstractObjectHandler implements AObj
     							//this.log.info("Existing publisher " + publisher.getNodeId() + " id=" + message.getObjectId().toString());
     							if (!publisher.getNodeId().equals(publishRequest.getPublisherAddress().getObjectId())) {
     								//this.log.info("Root sees too many copies of " + message.getObjectId().toString());
-    								return message.composeReply(this.getNode().getNodeAddress(), DOLRStatus.CONFLICT, new BeehiveObjectStore.ObjectExistenceException());
+    							    throw new BeehiveObjectStore.ObjectExistenceException();
+//    								return message.composeReply(this.getNode().getNodeAddress(), DOLRStatus.CONFLICT, new BeehiveObjectStore.ObjectExistenceException());
     							} else {
     								//this.log.info("Republish " + message.getObjectId().toString() + " from " + message.getSource().getNodeId().toString());
     							}
@@ -633,19 +643,15 @@ public class AObjectVersionService extends AbstractObjectHandler implements AObj
     		}
 
     		AbstractObjectHandler.publishObjectBackup(this, publishRequest);
-    	} catch (ClassNotFoundException e) {
-    		return message.composeReply(this.getNode().getNodeAddress(), e);
-    	} catch (ClassCastException e) {
-            return message.composeReply(this.getNode().getNodeAddress(), e);
         } catch (RemoteException e) {
-            return message.composeReply(this.getNode().getNodeAddress(), e);
+            throw new IllegalArgumentException(e.getCause());
         }
 
-        return message.composeReply(this.getNode().getNodeAddress());
+        return new PublishDaemon.PublishObject.PublishUnpublishResponseImpl(this.node.getNodeAddress());
     }
 
-    public TitanMessage unpublishObject(TitanMessage message) {
-        return message.composeReply(this.getNode().getNodeAddress(), DOLRStatus.BAD_REQUEST);
+    public Publish.PublishUnpublishResponse unpublishObject(TitanMessage msg) {
+        return new PublishDaemon.PublishObject.PublishUnpublishResponseImpl(this.node.getNodeAddress());
     }
 
     public XHTML.EFlow toXHTML(URI uri, Map<String,HTTP.Message> props) {

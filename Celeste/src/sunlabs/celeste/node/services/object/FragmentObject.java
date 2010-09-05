@@ -37,20 +37,21 @@ import sunlabs.celeste.client.ReplicationParameters;
 import sunlabs.titan.TitanGuidImpl;
 import sunlabs.titan.api.ObjectStore;
 import sunlabs.titan.api.TitanGuid;
+import sunlabs.titan.api.TitanNode;
 import sunlabs.titan.api.TitanObject;
 import sunlabs.titan.node.AbstractBeehiveObject;
-import sunlabs.titan.node.TitanMessage;
-import sunlabs.titan.node.TitanMessage.RemoteException;
-import sunlabs.titan.node.BeehiveNode;
 import sunlabs.titan.node.BeehiveObjectPool;
 import sunlabs.titan.node.BeehiveObjectStore;
 import sunlabs.titan.node.PublishObjectMessage;
+import sunlabs.titan.node.TitanMessage;
+import sunlabs.titan.node.TitanMessage.RemoteException;
 import sunlabs.titan.node.object.AbstractObjectHandler;
 import sunlabs.titan.node.object.DeleteableObject;
 import sunlabs.titan.node.object.RetrievableObject;
 import sunlabs.titan.node.object.StorableObject;
 import sunlabs.titan.node.services.AbstractTitanService;
 import sunlabs.titan.node.services.PublishDaemon;
+import sunlabs.titan.node.services.api.Publish;
 import sunlabs.titan.util.DOLRStatus;
 
 public final class FragmentObject extends AbstractObjectHandler implements FObjectType {
@@ -121,7 +122,7 @@ public final class FragmentObject extends AbstractObjectHandler implements FObje
 
     private int storeAttempts;
 
-    public FragmentObject(BeehiveNode node) throws JMException {
+    public FragmentObject(TitanNode node) throws JMException {
         super(node, FragmentObject.name, "Fragment Object Application");
         this.storeAttempts = FragmentObject.defaultStoreAttempts;
 
@@ -137,14 +138,19 @@ public final class FragmentObject extends AbstractObjectHandler implements FObje
         this.storeAttempts = count;
     }
 
-    public TitanMessage storeLocalObject(TitanMessage message) throws ClassCastException, TitanMessage.RemoteException, ClassNotFoundException {
-        FObjectType.FObject fObject = message.getPayload(FObjectType.FObject.class, this.node);
-        TitanMessage reply = StorableObject.storeLocalObject(this, fObject, message);
-        return reply;
+    public Publish.PublishUnpublishResponse storeLocalObject(TitanMessage message)  throws ClassNotFoundException, ClassCastException, BeehiveObjectStore.NoSpaceException, BeehiveObjectStore.DeleteTokenException,
+    BeehiveObjectStore.UnacceptableObjectException, BeehiveObjectPool.Exception, BeehiveObjectStore.InvalidObjectIdException, BeehiveObjectStore.InvalidObjectException  {
+        try {
+            FObjectType.FObject fObject = message.getPayload(FObjectType.FObject.class, this.node);
+            Publish.PublishUnpublishResponse reply = StorableObject.storeLocalObject(this, fObject, message);
+            return reply;
+        } catch (TitanMessage.RemoteException e) {
+            throw new IllegalArgumentException(e.getCause());
+        }
     }
 
-    public TitanMessage retrieveLocalObject(TitanMessage message) {
-        return RetrievableObject.retrieveLocalObject(this, message);
+    public TitanObject retrieveLocalObject(TitanMessage message) throws BeehiveObjectStore.NotFoundException {
+        return this.node.getObjectStore().get(TitanObject.class, message.subjectId);
     }
 
     /**
@@ -156,26 +162,30 @@ public final class FragmentObject extends AbstractObjectHandler implements FObje
      * @throws ClassCastException 
      */
     public FragmentObject.FObject retrieve(TitanGuid objectId)
-    throws BeehiveObjectStore.NotFoundException, BeehiveObjectStore.DeletedObjectException, ClassCastException {
+    throws ClassCastException, ClassNotFoundException, BeehiveObjectStore.NotFoundException, BeehiveObjectStore.DeletedObjectException, ClassCastException {
         FragmentObject.FObject object = RetrievableObject.retrieve(this, FragmentObject.FObject.class, objectId);
         return object;
     }
 
-    public TitanMessage publishObject(TitanMessage message) throws ClassCastException, TitanMessage.RemoteException, ClassNotFoundException {
-        PublishDaemon.PublishObject.Request publishRequest = message.getPayload(PublishDaemon.PublishObject.Request.class, this.node);
+    public Publish.PublishUnpublishResponse publishObject(TitanMessage message) throws ClassCastException, ClassNotFoundException {
+        try {
+            Publish.PublishUnpublishRequest publishRequest = message.getPayload(Publish.PublishUnpublishRequest.class, this.node);
 
-        //
-        // Handle deleted objects.
-        //
-        DeleteableObject.publishObjectHelper(this, publishRequest);
+            //
+            // Handle deleted objects.
+            //
+            DeleteableObject.publishObjectHelper(this, publishRequest);
 
-        AbstractObjectHandler.publishObjectBackup(this, publishRequest);
+            AbstractObjectHandler.publishObjectBackup(this, publishRequest);
 
-        return message.composeReply(this.node.getNodeAddress(), new PublishDaemon.PublishObject.Response());
+            return new PublishDaemon.PublishObject.PublishUnpublishResponseImpl(this.node.getNodeAddress());
+        } catch (TitanMessage.RemoteException e) {
+            throw new IllegalArgumentException(e.getCause());
+        }
     }
 
-    public TitanMessage unpublishObject(TitanMessage message) {
-        return message.composeReply(this.node.getNodeAddress());
+    public Publish.PublishUnpublishResponse unpublishObject(TitanMessage message) {
+        return new PublishDaemon.PublishObject.PublishUnpublishResponseImpl(this.node.getNodeAddress());
     }
 
     public FObjectType.FObject create(TitanGuid deleteTokenId, long timeToLive, ReplicationParameters replicationParams, TitanObject.Metadata metaData, byte[] data) {
@@ -200,7 +210,7 @@ public final class FragmentObject extends AbstractObjectHandler implements FObje
      * @throws TitanMessage.RemoteException 
      * @throws ClassCastException 
      */
-    public TitanMessage deleteLocalObject(TitanMessage message) throws ClassNotFoundException, ClassCastException, TitanMessage.RemoteException {
+    public TitanMessage deleteLocalObject(TitanMessage message) throws ClassNotFoundException, ClassCastException, TitanMessage.RemoteException, BeehiveObjectStore.DeleteTokenException {
         if (this.deleteLocalObjectLocks.trylock(message.subjectId)) {
             if (this.log.isLoggable(Level.FINE)) {
                 this.log.fine("%s", message.subjectId);
@@ -211,8 +221,8 @@ public final class FragmentObject extends AbstractObjectHandler implements FObje
                 this.deleteLocalObjectLocks.unlock(message.subjectId);
             }
         }
-
-        return message.composeReply(this.node.getNodeAddress(), DOLRStatus.TEMPORARY_REDIRECT);
+        // Can't get the lock on this object because it is already busy.  Assume that it will be successful.
+        return message.composeReply(this.node.getNodeAddress(), new DeleteableObject.Response());
     }
 
     public DOLRStatus deleteObject(TitanGuid objectId, TitanGuid profferedDeletionToken, long timeToLive)

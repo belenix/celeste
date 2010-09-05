@@ -71,10 +71,9 @@ public class DeleteFileOperation extends AbstractCelesteOperation {
         return super.toString() + " deleteToken=" + this.deleteToken;
     }
     
-    public Serializable dispatch(CelesteClientDaemon celeste, ObjectInputStream ois)
-    throws IOException, ClassNotFoundException,
-           CelesteException.CredentialException, CelesteException.AccessControlException, CelesteException.NotFoundException,
-           CelesteException.RuntimeException, CelesteException.DeletedException, CelesteException.VerificationException, CelesteException.NoSpaceException  {
+    public Serializable dispatch(CelesteClientDaemon celeste, ObjectInputStream ois) throws IOException, ClassNotFoundException,
+        CelesteException.CredentialException, CelesteException.AccessControlException, CelesteException.NotFoundException, CelesteException.RuntimeException,
+        CelesteException.DeletedException, CelesteException.VerificationException, CelesteException.NoSpaceException, CelesteException.IllegalParameterException  {
         return celeste.performOperation(this, ois);
     }
 }

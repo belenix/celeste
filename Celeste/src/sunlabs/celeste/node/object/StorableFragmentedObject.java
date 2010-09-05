@@ -47,6 +47,7 @@ import sunlabs.titan.api.TitanNode;
 import sunlabs.titan.api.TitanNodeId;
 import sunlabs.titan.api.TitanService;
 import sunlabs.titan.api.XHTMLInspectable;
+import sunlabs.titan.node.BeehiveObjectStore.Exception;
 import sunlabs.titan.node.TitanMessage;
 import sunlabs.titan.node.TitanMessage.RemoteException;
 import sunlabs.titan.node.BeehiveNode;
@@ -385,12 +386,19 @@ public final class StorableFragmentedObject {
                     objectType.getLogger().info("recv(%5.5s...) stored %s", message.getMessageId(), object.getObjectId());
                 }
             } finally {
-                node.getObjectStore().unlock(object);
+                try {
+                    node.getObjectStore().unlock(object);
+                } catch (ClassNotFoundException e) {
+                    // TODO Auto-generated catch block
+                    e.printStackTrace();
+                } catch (Exception e) {
+                    // TODO Auto-generated catch block
+                    e.printStackTrace();
+                } catch (sunlabs.titan.node.BeehiveObjectPool.Exception e) {
+                    // TODO Auto-generated catch block
+                    e.printStackTrace();
+                }
             }
-
-//            TitanMessage result = message.composeReply(node.getNodeAddress(), DOLRStatus.CREATED, object.getObjectId());
-//            result.subjectId = object.getObjectId(); // XXX Should be encoded in the return value.
-//            return result;
         } catch (BeehiveObjectStore.UnacceptableObjectException e) {
             return message.composeReply(node.getNodeAddress(), e);
         } catch (BeehiveObjectStore.DeleteTokenException e) {

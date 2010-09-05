@@ -1,5 +1,5 @@
 /*
- * Copyright 2007-2008 Sun Microsystems, Inc. All Rights Reserved.
+ * Copyright 2007-2010 Oracle. All Rights Reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER
  *
  * This code is free software; you can redistribute it and/or modify
@@ -17,9 +17,9 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
  * 02110-1301 USA
  *
- * Please contact Sun Microsystems, Inc., 16 Network Circle, Menlo
- * Park, CA 94025 or visit www.sun.com if you need additional
- * information or have any questions.
+ * Please contact Oracle Corporation, 500 Oracle Parkway, Redwood Shores, CA 94065
+ * or visit www.oracle.com if you need additional information or
+ * have any questions.
  */
 package sunlabs.titan.node.services.api;
 
@@ -27,19 +27,19 @@ import java.io.Serializable;
 import java.util.Map;
 import java.util.Set;
 
-import sunlabs.titan.TitanGuidImpl;
-import sunlabs.titan.api.TitanObject;
 import sunlabs.titan.api.ObjectStore;
 import sunlabs.titan.api.TitanGuid;
-import sunlabs.titan.node.TitanMessage;
+import sunlabs.titan.api.TitanObject;
+import sunlabs.titan.node.BeehiveObjectPool;
+import sunlabs.titan.node.BeehiveObjectStore;
 import sunlabs.titan.node.NodeAddress;
 import sunlabs.titan.node.PublishObjectMessage;
 import sunlabs.titan.node.Publishers;
+import sunlabs.titan.node.TitanMessage;
 import sunlabs.titan.node.TitanMessage.RemoteException;
 import sunlabs.titan.node.object.AbstractObjectHandler;
 import sunlabs.titan.node.services.AbstractTitanService;
 import sunlabs.titan.node.services.PublishDaemon.GetPublishers;
-import sunlabs.titan.node.services.PublishDaemon.UnpublishObject;
 
 /**
  * Implementors of this interface are extensions of the {@link AbstractTitanService} class and cause
@@ -47,28 +47,55 @@ import sunlabs.titan.node.services.PublishDaemon.UnpublishObject;
  */
 public interface Publish {
 
-    public interface Request extends Serializable {
+    /**
+     * A Publish.Request to publish one (or more {@link TitanObject}'s.
+     * @see Publish.PublishUnpublishResponse
+     * @author Glenn Scott - Oracle Sun Labs.
+     */
+    public interface PublishUnpublishRequest extends Serializable {
         /**
-         * If {@code true} this Publish is a backup for the root of the object's
-         * {@link TitanGuid} and signals the helper method
-         * {@link AbstractObjectHandler#publishObjectBackup(AbstractObjectHandler, Request)}
-         * to <b>not</b> continue making backup back-pointers.
+         * If {@code true} this {@code Publish.Request} is a backup for the root of the object's
+         * {@link TitanGuid}.
+         * @see {@link AbstractObjectHandler#publishObjectBackup(AbstractObjectHandler, Request)}
          */
         public boolean isBackup();
         
+        /**
+         * Get the {@link NodeAddress} of the sender of this Request.
+         * @return the {@link NodeAddress} of the sender of this Request.
+         */
         public NodeAddress getPublisherAddress();
 
         /**
          * Return a {@link Map<BeehiveObjectId,BeehiveObject.Metadata>} indexed by the object identifier
          * of the object to publish and the corresponding object metadata as the value.
          */
-        public Map<TitanGuid,TitanObject.Metadata> getObjectsToPublish();
+        public Map<TitanGuid,TitanObject.Metadata> getObjects();
 
+        /**
+         * Get the number of seconds that any publish record that results from this Request should exist.
+         * 
+         * @return the number of seconds that any publish record that results from this Request should exist.
+         */
         public long getSecondsToLive();
+
+        /**
+         * Set the backup flag to {@code value}.
+         * See {@link #isBackup()}
+         */
+        public void setBackup(boolean b);
     }
 
-    public interface Response {
-
+    /**
+     * The Response to a {@link PublishUnpublishRequest}.
+     * 
+     * @see Publish.PublishUnpublishRequest
+     * @author Glenn Scott - Oracle Sun Labs.
+     */
+    public interface PublishUnpublishResponse {
+        public Set<TitanGuid> getObjectIds();
+        
+        public NodeAddress getRootNodeAddress();
     }
 
     /**
@@ -92,8 +119,12 @@ public interface Publish {
      * If the status encoded in the {@link TitanMessage} reply is NOT any of the codes representing success, each node propagating the
      * reply must not record a back-pointer to the object on the publishing node.
      * </p>
+     * @throws sunlabs.titan.node.BeehiveObjectStore.Exception 
+     * @throws BeehiveObjectPool.Exception 
+     * @throws ClassNotFoundException 
+     * @throws ClassCastException 
      */
-    public TitanMessage publish(TitanObject object);
+    public Publish.PublishUnpublishResponse publish(TitanObject object) throws ClassCastException, ClassNotFoundException, BeehiveObjectPool.Exception, sunlabs.titan.node.BeehiveObjectStore.Exception;
 
     /**
      * Transmit a {@link TitanMessage} to "unpublish" a {@link TitanGuid}.
@@ -107,12 +138,13 @@ public interface Publish {
      * @param objectId the object identifiers of the object to be unpublished
      * @return the reply {@link TitanMessage} from the root of object identifier
      */
-    public TitanMessage unpublish(TitanGuid objectId, UnpublishObject.Type type);
+    public TitanMessage unpublish(TitanGuid objectId);
     
     /**
      * Transmit a {@link TitanMessage} to "unpublish" a {@link TitanObject}.
      * <p>
      * This unpublish of an object <em>does contain the object-type of the object</em>.
+     * See also, {@link Publish#unpublish(TitanGuid, PublishDaemon.UnpublishObject.Type)}.
      * </p>
      * <p>
      * This is typically used where an object was not found and the node transmits a remedial unpublish message to the rest
@@ -120,8 +152,13 @@ public interface Publish {
      * </p>
      * @param objectId the object identifiers of the object to be unpublished
      * @return the reply {@link TitanMessage} from the root of object identifier
+     * @throws BeehiveObjectStore.Exception 
+     * @throws BeehiveObjectPool.Exception 
+     * @throws ClassNotFoundException 
+     * @throws ClassCastException 
+     * @throws BeehiveObjectStore.Exception 
      */
-    public TitanMessage unpublish(TitanObject object, UnpublishObject.Type type);
+    public Publish.PublishUnpublishResponse unpublish(TitanObject object) throws ClassCastException, ClassNotFoundException, BeehiveObjectPool.Exception, BeehiveObjectStore.Exception;
 
     /**
      * Get the set of publishers of a specified {@link TitanObject}.

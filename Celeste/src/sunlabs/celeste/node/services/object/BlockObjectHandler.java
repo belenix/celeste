@@ -54,18 +54,14 @@ import sunlabs.celeste.node.object.ExtensibleObject;
 import sunlabs.titan.TitanGuidImpl;
 import sunlabs.titan.api.ObjectStore;
 import sunlabs.titan.api.TitanGuid;
+import sunlabs.titan.api.TitanNode;
 import sunlabs.titan.api.TitanNodeId;
 import sunlabs.titan.api.TitanObject;
 import sunlabs.titan.node.AbstractBeehiveObject;
-import sunlabs.titan.node.TitanMessage;
-import sunlabs.titan.node.TitanMessage.RemoteException;
-import sunlabs.titan.node.BeehiveNode;
 import sunlabs.titan.node.BeehiveObjectPool;
 import sunlabs.titan.node.BeehiveObjectStore;
-import sunlabs.titan.node.BeehiveObjectStore.DeletedObjectException;
-import sunlabs.titan.node.BeehiveObjectStore.NoSpaceException;
-import sunlabs.titan.node.BeehiveObjectStore.NotFoundException;
-import sunlabs.titan.node.BeehiveObjectStore.UnacceptableObjectException;
+import sunlabs.titan.node.TitanMessage;
+import sunlabs.titan.node.TitanMessage.RemoteException;
 import sunlabs.titan.node.object.AbstractObjectHandler;
 import sunlabs.titan.node.object.DeleteableObject;
 import sunlabs.titan.node.object.ReplicatableObject;
@@ -73,6 +69,7 @@ import sunlabs.titan.node.object.RetrievableObject;
 import sunlabs.titan.node.object.StorableObject;
 import sunlabs.titan.node.services.AbstractTitanService;
 import sunlabs.titan.node.services.PublishDaemon;
+import sunlabs.titan.node.services.api.Publish;
 import sunlabs.titan.util.BufferableExtent;
 import sunlabs.titan.util.BufferableExtentImpl;
 import sunlabs.titan.util.DOLRStatus;
@@ -333,7 +330,7 @@ public final class BlockObjectHandler extends AbstractObjectHandler implements B
     // This is a lock signaling that the deleteLocalObject() method is already deleting the specified object.
     private final ObjectLock<TitanGuid> deleteLocalObjectLocks;
 
-    public BlockObjectHandler(BeehiveNode node) throws JMException {
+    public BlockObjectHandler(TitanNode node) throws JMException {
         super(node, BlockObjectHandler.name, "Celeste Block Object Handler");
         this.publishObjectDeleteLocks = new ObjectLock<TitanGuid>();
         this.deleteLocalObjectLocks = new ObjectLock<TitanGuid>();
@@ -344,32 +341,45 @@ public final class BlockObjectHandler extends AbstractObjectHandler implements B
 
     }
 
-    public TitanMessage storeLocalObject(TitanMessage message) throws ClassCastException, TitanMessage.RemoteException, ClassNotFoundException {
-        BlockObject.Object bObject = message.getPayload(BlockObject.Object.class, this.node);
-        TitanMessage reply = StorableObject.storeLocalObject(this, bObject, message);
-        return reply;
-    }
-
-    public TitanMessage publishObject(TitanMessage message) throws ClassNotFoundException, ClassCastException, RemoteException {
-        PublishDaemon.PublishObject.Request publishRequest = message.getPayload(PublishDaemon.PublishObject.Request.class, this.node);
-
-        //
-        // Handle deleted objects.
-        //
-        DeleteableObject.publishObjectHelper(this, publishRequest);
-        AbstractObjectHandler.publishObjectBackup(this, publishRequest);
-
-        return message.composeReply(this.node.getNodeAddress(), new PublishDaemon.PublishObject.Response(new HashSet<TitanGuid>(publishRequest.getObjectsToPublish().keySet())));
-    }
-
-    public TitanMessage unpublishObject(TitanMessage message) throws ClassCastException, RemoteException, ClassNotFoundException {
-        PublishDaemon.UnpublishObject.Request request = message.getPayload(PublishDaemon.UnpublishObject.Request.class, this.getNode());
-        if (this.log.isLoggable(Level.FINE)) {
-            this.log.fine("%s -> %s", request.getObjectIds(), message.getSource());
+    public Publish.PublishUnpublishResponse storeLocalObject(TitanMessage message)  throws ClassNotFoundException, ClassCastException, BeehiveObjectStore.NoSpaceException, BeehiveObjectStore.DeleteTokenException,
+    BeehiveObjectStore.UnacceptableObjectException, BeehiveObjectPool.Exception, BeehiveObjectStore.InvalidObjectIdException, BeehiveObjectStore.InvalidObjectException {
+        try {
+            BlockObject.Object bObject = message.getPayload(BlockObject.Object.class, this.node);
+            Publish.PublishUnpublishResponse reply = StorableObject.storeLocalObject(this, bObject, message);
+            return reply;
+        } catch (TitanMessage.RemoteException e) {
+            throw new IllegalArgumentException(e.getCause());
         }
-        ReplicatableObject.unpublishObjectRootHelper(this, message);
+    }
 
-        return message.composeReply(this.node.getNodeAddress());
+    public Publish.PublishUnpublishResponse publishObject(TitanMessage message) throws ClassNotFoundException, ClassCastException {
+        try {
+            Publish.PublishUnpublishRequest publishRequest = message.getPayload(Publish.PublishUnpublishRequest.class, this.node);
+
+            //
+            // Handle deleted objects.
+            //
+            DeleteableObject.publishObjectHelper(this, publishRequest);
+            AbstractObjectHandler.publishObjectBackup(this, publishRequest);
+
+            return new PublishDaemon.PublishObject.PublishUnpublishResponseImpl(this.node.getNodeAddress(), new HashSet<TitanGuid>(publishRequest.getObjects().keySet()));
+        } catch (TitanMessage.RemoteException e) {
+            throw new IllegalArgumentException(e.getCause());
+        }
+    }
+
+    public Publish.PublishUnpublishResponse unpublishObject(TitanMessage message) throws ClassCastException, ClassNotFoundException {
+        try {
+            Publish.PublishUnpublishRequest request = message.getPayload(Publish.PublishUnpublishRequest.class, this.getNode());
+            if (this.log.isLoggable(Level.FINE)) {
+                this.log.fine("%s", request);
+            }
+            ReplicatableObject.unpublishObjectRootHelper(this, request);
+
+            return new PublishDaemon.PublishObject.PublishUnpublishResponseImpl(this.node.getNodeAddress());
+        } catch (TitanMessage.RemoteException e) {
+            throw new IllegalArgumentException(e.getCause());
+        }
     }
 
     public XHTML.EFlow toXHTML(URI uri, Map<String,HTTP.Message> props) {
@@ -427,14 +437,13 @@ public final class BlockObjectHandler extends AbstractObjectHandler implements B
         return bObject;
     }
 
-    public TitanMessage retrieveLocalObject(TitanMessage message) {
+    public TitanObject retrieveLocalObject(TitanMessage message) throws BeehiveObjectStore.NotFoundException {
         long startTime = System.currentTimeMillis();
         try {
-            return RetrievableObject.retrieveLocalObject(this, message);
+            return this.node.getObjectStore().get(TitanObject.class, message.subjectId);
         } finally {
             if (this.log.isLoggable(Level.FINE)) {
-                this.log.fine("[%d ms] %s",
-                    System.currentTimeMillis() - startTime, message.subjectId);
+                this.log.fine("[%d ms] %s", System.currentTimeMillis() - startTime, message.subjectId);
             }
         }
     }
@@ -470,7 +479,7 @@ public final class BlockObjectHandler extends AbstractObjectHandler implements B
             }
 
             @Override
-            public BlockObject.Object function(BlockObject.Object.Reference item) throws BeehiveObjectStore.DeletedObjectException, BeehiveObjectStore.NotFoundException {
+            public BlockObject.Object function(BlockObject.Object.Reference item) throws ClassNotFoundException, ClassCastException, BeehiveObjectStore.DeletedObjectException, BeehiveObjectStore.NotFoundException {
                 BlockObject.Object bObject = MappableBlockObjectReader.this.handler.retrieve(item.getObjectId());
                 if (MappableBlockObjectReader.this.collection != null) {
                     //
@@ -523,7 +532,7 @@ public final class BlockObjectHandler extends AbstractObjectHandler implements B
             this.desiredSpan = desiredSpan;
         }
 
-        public BlockObjectHandler.BObject call() throws BeehiveObjectStore.DeletedObjectException, BeehiveObjectStore.NotFoundException {
+        public BlockObjectHandler.BObject call() throws ClassCastException, ClassNotFoundException, BeehiveObjectStore.DeletedObjectException, BeehiveObjectStore.NotFoundException {
             long startTime = System.currentTimeMillis();
             try {
                 BlockObjectHandler.BObject bObject = RetrievableObject.retrieve(BlockObjectHandler.this, BlockObjectHandler.BObject.class, this.reference.getObjectId());
@@ -577,11 +586,19 @@ public final class BlockObjectHandler extends AbstractObjectHandler implements B
                 e.printStackTrace();
             } catch (BeehiveObjectStore.NotFoundException e) {
                 e.printStackTrace();
+            } catch (ClassCastException e) {
+                // TODO Auto-generated catch block
+                e.printStackTrace();
+            } catch (ClassNotFoundException e) {
+                // TODO Auto-generated catch block
+                e.printStackTrace();
             }
         }
     }
     
-    public TitanMessage replicateObject(TitanMessage message) throws ClassNotFoundException, ClassCastException, TitanMessage.RemoteException {
+
+    public ReplicatableObject.Replicate.Response replicateObject(TitanMessage message) throws ClassNotFoundException, ClassCastException,
+    BeehiveObjectStore.NotFoundException, BeehiveObjectStore.DeletedObjectException, BeehiveObjectStore.NoSpaceException, BeehiveObjectStore.UnacceptableObjectException, BeehiveObjectPool.Exception {
         try {
             ReplicatableObject.Replicate.Request request = message.getPayload(ReplicatableObject.Replicate.Request.class, this.node);
             if (this.log.isLoggable(Level.FINE)) {
@@ -599,38 +616,21 @@ public final class BlockObjectHandler extends AbstractObjectHandler implements B
             }
 
             aObject.setProperty(ObjectStore.METADATA_SECONDSTOLIVE, aObject.getRemainingSecondsToLive(Time.currentTimeInSeconds()));
-            
+
             StorableObject.storeObject(this, aObject, 1, excludeNodes, null);
-            
-            return message.composeReply(this.node.getNodeAddress());
-        } catch (NotFoundException e) {
-            e.printStackTrace();
-            return message.composeReply(this.node.getNodeAddress(), e);
-        } catch (DeletedObjectException e) {
-            e.printStackTrace();
-            return message.composeReply(this.node.getNodeAddress(), e);
-        } catch (NoSpaceException e) {
-            e.printStackTrace();
-            return message.composeReply(this.node.getNodeAddress(), e);
-        } catch (IOException e) {
-            e.printStackTrace();
-            return message.composeReply(this.node.getNodeAddress(), e);
-        } catch (UnacceptableObjectException e) {
-            e.printStackTrace();
-            return message.composeReply(this.node.getNodeAddress(), e);
-        } catch (BeehiveObjectPool.Exception e) {
-            e.printStackTrace();
-            return message.composeReply(this.node.getNodeAddress(), e);
+
+            return new ReplicatableObject.Replicate.Response();
+        } catch (TitanMessage.RemoteException e) {
+            throw new IllegalArgumentException(e.getCause());
         }
     }
 
-    public BlockObject.Object retrieve(TitanGuid objectId)
-    throws BeehiveObjectStore.NotFoundException, BeehiveObjectStore.DeletedObjectException {
+    public BlockObject.Object retrieve(TitanGuid objectId) throws ClassCastException, ClassNotFoundException, BeehiveObjectStore.NotFoundException, BeehiveObjectStore.DeletedObjectException {
 
         return RetrievableObject.retrieve(this, BlockObject.Object .class, objectId);
     }
 
-    public TitanMessage deleteLocalObject(TitanMessage message) throws ClassNotFoundException, TitanMessage.RemoteException {
+    public TitanMessage deleteLocalObject(TitanMessage message) throws ClassNotFoundException, TitanMessage.RemoteException, BeehiveObjectStore.DeleteTokenException {
         // If the object is locked here, then we are already in the process of deleting it, so just return.
         if (this.deleteLocalObjectLocks.trylock(message.subjectId)) {
             try {
@@ -643,7 +643,7 @@ public final class BlockObjectHandler extends AbstractObjectHandler implements B
             }
         }
 
-        return message.composeReply(this.node.getNodeAddress());
+        return message.composeReply(this.node.getNodeAddress(), new DeleteableObject.Response());
     }
 
     public ObjectLock<TitanGuid> getPublishObjectDeleteLocks() {

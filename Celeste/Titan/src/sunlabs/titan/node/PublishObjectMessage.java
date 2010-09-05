@@ -44,7 +44,7 @@ public final class PublishObjectMessage extends TitanMessage {
             TitanGuid destination,
             String subjectClass,
             String subjectClassMethod,
-            PublishDaemon.PublishObject.Request publishRequest) {
+            PublishDaemon.PublishObject.PublishUnpublishRequestImpl publishRequest) {
         super(TitanMessage.Type.PublishObject,
                 source,
                 new TitanNodeIdImpl(destination),

@@ -38,17 +38,22 @@ import sunlabs.asdf.web.http.HTTP;
 import sunlabs.titan.TitanGuidImpl;
 import sunlabs.titan.api.ObjectStore;
 import sunlabs.titan.api.TitanGuid;
+import sunlabs.titan.api.TitanNode;
+import sunlabs.titan.api.TitanObject;
 import sunlabs.titan.node.AbstractBeehiveObject;
-import sunlabs.titan.node.TitanMessage;
-import sunlabs.titan.node.TitanMessage.RemoteException;
-import sunlabs.titan.node.BeehiveNode;
 import sunlabs.titan.node.BeehiveObjectPool;
 import sunlabs.titan.node.BeehiveObjectStore;
+import sunlabs.titan.node.BeehiveObjectStore.InvalidObjectException;
+import sunlabs.titan.node.BeehiveObjectStore.NoSpaceException;
+import sunlabs.titan.node.TitanMessage;
+import sunlabs.titan.node.TitanMessage.RemoteException;
 import sunlabs.titan.node.object.AbstractObjectHandler;
 import sunlabs.titan.node.object.RetrievableObject;
 import sunlabs.titan.node.object.StorableObject;
 import sunlabs.titan.node.services.AbstractTitanService;
+import sunlabs.titan.node.services.PublishDaemon;
 import sunlabs.titan.node.services.api.AppClass;
+import sunlabs.titan.node.services.api.Publish;
 
 /**
  * This service currently does nothing except mark
@@ -169,7 +174,7 @@ public class AppClassObjectType extends AbstractObjectHandler implements AppClas
         }
     }
 
-    public AppClassObjectType(BeehiveNode node) throws JMException {
+    public AppClassObjectType(TitanNode node) throws JMException {
         super(node, AppClassObjectType.name, "AppClass Application");
     }
 
@@ -179,35 +184,32 @@ public class AppClassObjectType extends AbstractObjectHandler implements AppClas
         return object;
     }
 
-    public TitanMessage publishObject(TitanMessage message) {
-        return message.composeReply(this.node.getNodeAddress());
+    public PublishDaemon.PublishObject.PublishUnpublishResponseImpl publishObject(TitanMessage message) {
+        return new PublishDaemon.PublishObject.PublishUnpublishResponseImpl(this.node.getNodeAddress());
     }
 
-    public TitanMessage unpublishObject(TitanMessage message) {
-        return message.composeReply(this.node.getNodeAddress());
+    public Publish.PublishUnpublishResponse unpublishObject(TitanMessage message) {
+        return new PublishDaemon.PublishObject.PublishUnpublishResponseImpl(this.node.getNodeAddress());
     }
 
-    public TitanMessage retrieveLocalObject(TitanMessage message) {
-        return RetrievableObject.retrieveLocalObject(this, message);
+    public TitanObject retrieveLocalObject(TitanMessage message) throws BeehiveObjectStore.NotFoundException {
+        return this.node.getObjectStore().get(TitanObject.class, message.subjectId);
     }
 
-    public AppClassObjectType.AppClassObject retrieve(TitanGuid objectId)
-    throws BeehiveObjectStore.NotFoundException, BeehiveObjectStore.DeletedObjectException {
+    public AppClassObjectType.AppClassObject retrieve(TitanGuid objectId) throws ClassCastException, ClassNotFoundException,
+        BeehiveObjectStore.NotFoundException, BeehiveObjectStore.DeletedObjectException {
         AppClassObjectType.AppClassObject object = RetrievableObject.retrieve(this, AppClassObjectType.AppClassObject.class, objectId);
         return object;
     }
     
-    public TitanMessage storeLocalObject(TitanMessage message) {
+    public  Publish.PublishUnpublishResponse storeLocalObject(TitanMessage message) throws ClassCastException, ClassNotFoundException,
+    BeehiveObjectStore.UnacceptableObjectException, BeehiveObjectStore.DeleteTokenException, BeehiveObjectStore.InvalidObjectIdException, NoSpaceException, InvalidObjectException {
         try {
             AppClassObjectType.AppClassObject aObject = message.getPayload(AppClassObjectType.AppClassObject.class, this.node);
-            TitanMessage reply = StorableObject.storeLocalObject(this, aObject, message);
+            Publish.PublishUnpublishResponse reply = StorableObject.storeLocalObject(this, aObject, message);
             return reply;
-        } catch (ClassNotFoundException e) {
-            e.printStackTrace();
-            return message.composeReply(node.getNodeAddress(), e);
         } catch (RemoteException e) {
-            e.printStackTrace();
-            return message.composeReply(node.getNodeAddress(), e);
+            throw new IllegalArgumentException(e.getCause());
         }
     }
 

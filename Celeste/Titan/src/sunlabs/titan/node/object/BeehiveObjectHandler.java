@@ -25,14 +25,15 @@ package sunlabs.titan.node.object;
 
 import java.io.Serializable;
 
+import sunlabs.titan.api.TitanNode;
 import sunlabs.titan.api.TitanObject;
 import sunlabs.titan.api.TitanService;
 import sunlabs.titan.node.BeehiveObjectPool;
 import sunlabs.titan.node.BeehiveObjectStore;
 import sunlabs.titan.node.PublishObjectMessage;
 import sunlabs.titan.node.TitanMessage;
-import sunlabs.titan.node.TitanMessage.RemoteException;
 import sunlabs.titan.node.UnpublishObjectMessage;
+import sunlabs.titan.node.services.api.Publish;
 
 /**
  * Objects in the Titan object pool have data (the state of the object) and
@@ -109,14 +110,13 @@ public interface BeehiveObjectHandler/*<T extends BeehiveObjectHandler.ObjectAPI
      * method will result in deadlock if there is only one object in the system.
      * </p>
      * @param message
-     * @return The reply {@link TitanMessage}
-     * @throws RemoteException 
+     * @return The reply {@link Publish.PublishUnpublishResponse}.
      * @throws ClassCastException 
      * @throws ClassNotFoundException 
      * @throws BeehiveObjectPool.Exception
      * @throws BeehiveObjectStore.Exception
      */
-    public Serializable publishObject(TitanMessage message) throws ClassNotFoundException, ClassCastException, RemoteException, BeehiveObjectPool.Exception, BeehiveObjectStore.Exception;
+    public Publish.PublishUnpublishResponse publishObject(TitanMessage message) throws ClassNotFoundException, ClassCastException, BeehiveObjectPool.Exception, BeehiveObjectStore.Exception;
 
     /**
      * Receive and process a {@link UnpublishObjectMessage} for a
@@ -128,10 +128,9 @@ public interface BeehiveObjectHandler/*<T extends BeehiveObjectHandler.ObjectAPI
      * </p>
      *
      * @param message
-     * @return The reply {@link TitanMessage}
-     * @throws TitanMessage.RemoteException 
+     * @return The reply {@link Publish.PublishUnpublishResponse}.
      * @throws ClassCastException 
      * @throws ClassNotFoundException 
      */
-    public TitanMessage unpublishObject(TitanMessage message) throws ClassNotFoundException, ClassCastException, TitanMessage.RemoteException;
+    public Publish.PublishUnpublishResponse unpublishObject(TitanMessage message) throws ClassNotFoundException, ClassCastException;
 }

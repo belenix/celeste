@@ -99,12 +99,15 @@ import sunlabs.titan.TitanGuidImpl;
 import sunlabs.titan.api.Credential;
 import sunlabs.titan.api.ObjectStore;
 import sunlabs.titan.api.TitanGuid;
+import sunlabs.titan.api.TitanNode;
 import sunlabs.titan.api.TitanObject;
 import sunlabs.titan.node.AbstractBeehiveObject;
 import sunlabs.titan.node.BeehiveNode;
 import sunlabs.titan.node.BeehiveObjectPool;
 import sunlabs.titan.node.BeehiveObjectStore;
+import sunlabs.titan.node.BeehiveObjectStore.DeleteTokenException;
 import sunlabs.titan.node.BeehiveObjectStore.UnacceptableObjectException;
+import sunlabs.titan.node.TitanMessage.RemoteException;
 import sunlabs.titan.node.object.MutableObject;
 import sunlabs.titan.node.services.AbstractTitanService;
 import sunlabs.titan.node.services.object.CredentialObject;
@@ -152,18 +155,18 @@ public class CelesteClientDaemon extends AbstractTitanService {
 
     private Thread clientDaemon;
 
-    public CelesteClientDaemon(final BeehiveNode node) throws JMException {
+    public CelesteClientDaemon(final TitanNode node) throws JMException {
         super(node, CelesteClientDaemon.name, "Celeste Client Handler");
-        node.configuration.add(CelesteClientDaemon.Port);
-        node.configuration.add(CelesteClientDaemon.MaximumClients);
-        node.configuration.add(CelesteClientDaemon.ClientBacklog);
+        node.getConfiguration().add(CelesteClientDaemon.Port);
+        node.getConfiguration().add(CelesteClientDaemon.MaximumClients);
+        node.getConfiguration().add(CelesteClientDaemon.ClientBacklog);
 
         this.credentialCache = new ProfileCache(node);
 
         if (this.log.isLoggable(Level.CONFIG)) {
-            this.log.config("%s", node.configuration.get(CelesteClientDaemon.Port));
-            this.log.config("%s", node.configuration.get(CelesteClientDaemon.MaximumClients));
-            this.log.config("%s", node.configuration.get(CelesteClientDaemon.ClientBacklog));
+            this.log.config("%s", node.getConfiguration().get(CelesteClientDaemon.Port));
+            this.log.config("%s", node.getConfiguration().get(CelesteClientDaemon.MaximumClients));
+            this.log.config("%s", node.getConfiguration().get(CelesteClientDaemon.ClientBacklog));
         }
     }
 
@@ -375,38 +378,33 @@ public class CelesteClientDaemon extends AbstractTitanService {
         }
     }
 
-    public ResponseMessage performOperation(ProbeOperation operation, ObjectInputStream ois)
-    throws IOException, ClassNotFoundException,
-    CelesteException.AccessControlException, CelesteException.IllegalParameterException,
-    CelesteException.AlreadyExistsException, CelesteException.VerificationException, CelesteException.DeletedException,
-    CelesteException.CredentialException, CelesteException.RuntimeException,
-    CelesteException.NotFoundException, CelesteException.NoSpaceException {
+    public ResponseMessage performOperation(ProbeOperation operation, ObjectInputStream ois) throws IOException, ClassNotFoundException,
+        CelesteException.AccessControlException, CelesteException.IllegalParameterException, CelesteException.AlreadyExistsException,
+        CelesteException.VerificationException, CelesteException.DeletedException, CelesteException.CredentialException, CelesteException.RuntimeException,
+        CelesteException.NotFoundException, CelesteException.NoSpaceException {
 
         return this.probe(operation);
     }
 
-    public OrderedProperties performOperation(CreateFileOperation operation, ObjectInputStream ois)
-    throws IOException, ClassNotFoundException,
-    CelesteException.AccessControlException, CelesteException.IllegalParameterException,
-    CelesteException.AlreadyExistsException, CelesteException.VerificationException, CelesteException.DeletedException,
-    CelesteException.CredentialException, CelesteException.RuntimeException,
-    CelesteException.NotFoundException, CelesteException.NoSpaceException {
+    public OrderedProperties performOperation(CreateFileOperation operation, ObjectInputStream ois) throws IOException, ClassNotFoundException,
+        CelesteException.AccessControlException, CelesteException.IllegalParameterException, CelesteException.AlreadyExistsException,
+        CelesteException.VerificationException, CelesteException.DeletedException, CelesteException.CredentialException, CelesteException.RuntimeException,
+        CelesteException.NotFoundException, CelesteException.NoSpaceException {
 
         Credential.Signature signature = (Credential.Signature) ois.readObject();
         return this.createFile(operation, signature);
     }
 
-    public boolean performOperation(DeleteFileOperation operation, ObjectInputStream ois)
-    throws IOException, ClassNotFoundException,
-    CelesteException.CredentialException, CelesteException.AccessControlException, CelesteException.NotFoundException,
-    CelesteException.RuntimeException, CelesteException.DeletedException, CelesteException.VerificationException, CelesteException.NoSpaceException {
+    public boolean performOperation(DeleteFileOperation operation, ObjectInputStream ois) throws IOException, ClassNotFoundException,
+        CelesteException.CredentialException, CelesteException.AccessControlException, CelesteException.NotFoundException,
+        CelesteException.RuntimeException, CelesteException.DeletedException, CelesteException.VerificationException, CelesteException.NoSpaceException,
+        CelesteException.IllegalParameterException {
 
         Credential.Signature signature = (Credential.Signature) ois.readObject();
         return this.deleteFile(operation, signature);
     }
 
-    public ResponseMessage performOperation(ExtensibleOperation operation, ObjectInputStream ois)
-    throws IOException, ClassNotFoundException,
+    public ResponseMessage performOperation(ExtensibleOperation operation, ObjectInputStream ois) throws IOException, ClassNotFoundException,
     CelesteException.VerificationException, CelesteException.AccessControlException, CelesteException.CredentialException, CelesteException.NotFoundException,
     CelesteException.RuntimeException, CelesteException.NoSpaceException, CelesteException.IllegalParameterException {
 
@@ -415,71 +413,62 @@ public class CelesteClientDaemon extends AbstractTitanService {
         return this.runExtension(operation, signature, object);
     }
 
-    public ResponseMessage performOperation(InspectFileOperation operation, ObjectInputStream ois)
-    throws IOException, ClassNotFoundException, CelesteException.NotFoundException, CelesteException.RuntimeException, CelesteException.DeletedException {
-
+    public ResponseMessage performOperation(InspectFileOperation operation, ObjectInputStream ois)  throws IOException, ClassNotFoundException,
+        CelesteException.NotFoundException, CelesteException.RuntimeException, CelesteException.DeletedException {
         return this.inspectFile(operation);
     }
 
-    public ResponseMessage performOperation(InspectLockOperation operation, ObjectInputStream ois)
-    throws IOException, ClassNotFoundException,
-    CelesteException.CredentialException, CelesteException.AccessControlException, CelesteException.NotFoundException, CelesteException.DeletedException,
-    CelesteException.RuntimeException, CelesteException.VerificationException, CelesteException.IllegalParameterException, CelesteException.OutOfDateException,
-    CelesteException.FileLocked {
+    public ResponseMessage performOperation(InspectLockOperation operation, ObjectInputStream ois) throws IOException, ClassNotFoundException,
+        CelesteException.CredentialException, CelesteException.AccessControlException, CelesteException.NotFoundException, CelesteException.DeletedException,
+        CelesteException.RuntimeException, CelesteException.VerificationException, CelesteException.IllegalParameterException,
+        CelesteException.OutOfDateException, CelesteException.FileLocked {
 
         return this.inspectLock(operation);
     }
 
-    public TitanObject.Metadata performOperation(NewNameSpaceOperation operation, ObjectInputStream ois)
-    throws IOException, ClassNotFoundException,
-    CelesteException.RuntimeException, CelesteException.AlreadyExistsException, CelesteException.NoSpaceException,
-    CelesteException.VerificationException, CelesteException.CredentialException {
+    public TitanObject.Metadata performOperation(NewNameSpaceOperation operation, ObjectInputStream ois) throws IOException, ClassNotFoundException,
+        CelesteException.RuntimeException, CelesteException.AlreadyExistsException, CelesteException.NoSpaceException, CelesteException.VerificationException,
+        CelesteException.CredentialException {
 
         Profile_ profile = (Profile_) ois.readObject();
         Credential.Signature signature = (Credential.Signature) ois.readObject();
         return this.newNameSpace(operation, signature, profile);
     }
 
-    public TitanObject.Metadata performOperation(NewCredentialOperation operation, ObjectInputStream ois)
-    throws IOException, ClassNotFoundException,
-    CelesteException.AccessControlException, CelesteException.IllegalParameterException, CelesteException.AlreadyExistsException,
-    CelesteException.CredentialException, CelesteException.RuntimeException,
-    CelesteException.NoSpaceException, CelesteException.VerificationException {
+    public TitanObject.Metadata performOperation(NewCredentialOperation operation, ObjectInputStream ois) throws IOException, ClassNotFoundException,
+        CelesteException.AccessControlException, CelesteException.IllegalParameterException, CelesteException.AlreadyExistsException,
+        CelesteException.CredentialException, CelesteException.RuntimeException, CelesteException.NoSpaceException, CelesteException.VerificationException {
 
         Profile_ profile = (Profile_) ois.readObject();
         Credential.Signature signature = (Credential.Signature) ois.readObject();
         return this.newCredential(operation, signature, profile);
     }
 
-    public ResponseMessage performOperation(ReadFileOperation operation, ObjectInputStream ois)
-    throws IOException, ClassNotFoundException,
-    CelesteException.CredentialException, CelesteException.AccessControlException, CelesteException.NotFoundException,
-    CelesteException.DeletedException, CelesteException.RuntimeException, CelesteException.VerificationException, CelesteException.IllegalParameterException {
+    public ResponseMessage performOperation(ReadFileOperation operation, ObjectInputStream ois) throws IOException, ClassNotFoundException,
+        CelesteException.CredentialException, CelesteException.AccessControlException, CelesteException.NotFoundException, CelesteException.DeletedException,
+        CelesteException.RuntimeException, CelesteException.VerificationException, CelesteException.IllegalParameterException {
 
         Credential.Signature signature = (Credential.Signature) ois.readObject();
 
         return this.readFile(operation, signature);
     }
 
-    public Credential performOperation(ReadProfileOperation operation, ObjectInputStream ois)
-    throws IOException, ClassNotFoundException,
-    CelesteException.CredentialException, CelesteException.AccessControlException, CelesteException.NotFoundException, CelesteException.RuntimeException {
+    public Credential performOperation(ReadProfileOperation operation, ObjectInputStream ois) throws IOException, ClassNotFoundException,
+        CelesteException.CredentialException, CelesteException.AccessControlException, CelesteException.NotFoundException, CelesteException.RuntimeException {
 
         return this.readCredential(operation);
     }
 
-    public OrderedProperties performOperation(SetACLOperation operation, ObjectInputStream ois)
-    throws IOException, ClassNotFoundException,
-    CelesteException.CredentialException, CelesteException.AccessControlException, CelesteException.NotFoundException, CelesteException.RuntimeException,
-    CelesteException.NoSpaceException, CelesteException.DeletedException, CelesteException.VerificationException, CelesteException.OutOfDateException,
-    CelesteException.FileLocked {
+    public OrderedProperties performOperation(SetACLOperation operation, ObjectInputStream ois) throws IOException, ClassNotFoundException,
+        CelesteException.CredentialException, CelesteException.AccessControlException, CelesteException.NotFoundException, CelesteException.RuntimeException,
+        CelesteException.NoSpaceException, CelesteException.DeletedException, CelesteException.VerificationException, CelesteException.OutOfDateException,
+        CelesteException.FileLocked {
 
         Credential.Signature signature = (Credential.Signature) ois.readObject();
         return this.setACL(operation, signature);
     }
 
-    public OrderedProperties performOperation(WriteFileOperation operation, ObjectInputStream ois)
-    throws IOException, ClassNotFoundException,
+    public OrderedProperties performOperation(WriteFileOperation operation, ObjectInputStream ois) throws IOException, ClassNotFoundException,
         CelesteException.CredentialException, CelesteException.IllegalParameterException, CelesteException.AccessControlException, CelesteException.NotFoundException,
         CelesteException.NoSpaceException, CelesteException.RuntimeException, CelesteException.VerificationException, CelesteException.DeletedException,
         CelesteException.OutOfDateException, CelesteException.FileLocked {
@@ -501,18 +490,16 @@ public class CelesteClientDaemon extends AbstractTitanService {
         //        return this.celesteNode.runExtension((ScriptableOperation) operation, signature, object);
     }
 
-    public OrderedProperties performOperation(SetFileLengthOperation operation, ObjectInputStream ois)
-    throws IOException, ClassNotFoundException,
-    CelesteException.CredentialException, CelesteException.AccessControlException, CelesteException.NotFoundException,
-    CelesteException.RuntimeException, CelesteException.DeletedException, CelesteException.NoSpaceException,
-    CelesteException.VerificationException, CelesteException.OutOfDateException, CelesteException.FileLocked {
+    public OrderedProperties performOperation(SetFileLengthOperation operation, ObjectInputStream ois) throws IOException, ClassNotFoundException,
+        CelesteException.CredentialException, CelesteException.AccessControlException, CelesteException.NotFoundException, CelesteException.RuntimeException,
+        CelesteException.DeletedException, CelesteException.NoSpaceException, CelesteException.VerificationException, CelesteException.OutOfDateException,
+        CelesteException.FileLocked {
 
         Credential.Signature signature = (Credential.Signature) ois.readObject();
         return this.setFileLength(operation, signature);
     }
 
-    public OrderedProperties performOperation(SetOwnerAndGroupOperation operation, ObjectInputStream ois)
-    throws IOException, ClassNotFoundException,
+    public OrderedProperties performOperation(SetOwnerAndGroupOperation operation, ObjectInputStream ois) throws IOException, ClassNotFoundException,
     CelesteException.CredentialException, CelesteException.AccessControlException, CelesteException.NotFoundException, CelesteException.RuntimeException,
     CelesteException.DeletedException, CelesteException.NoSpaceException, CelesteException.VerificationException, CelesteException.OutOfDateException,
     CelesteException.FileLocked {
@@ -521,8 +508,7 @@ public class CelesteClientDaemon extends AbstractTitanService {
         return this.setOwnerAndGroup(operation, signature);
     }
 
-    public ResponseMessage performOperation(LockFileOperation operation, ObjectInputStream ois)
-    throws IOException, ClassNotFoundException,
+    public ResponseMessage performOperation(LockFileOperation operation, ObjectInputStream ois) throws IOException, ClassNotFoundException,
     CelesteException.CredentialException, CelesteException.AccessControlException, CelesteException.NotFoundException, CelesteException.DeletedException,
     CelesteException.RuntimeException, CelesteException.VerificationException, CelesteException.IllegalParameterException, CelesteException.OutOfDateException,
     CelesteException.FileLocked {
@@ -531,8 +517,7 @@ public class CelesteClientDaemon extends AbstractTitanService {
         return this.lockFile(operation, signature);
     }
 
-    public ResponseMessage performOperation(UnlockFileOperation operation, ObjectInputStream ois)
-    throws IOException, ClassNotFoundException,
+    public ResponseMessage performOperation(UnlockFileOperation operation, ObjectInputStream ois) throws IOException, ClassNotFoundException,
     CelesteException.CredentialException, CelesteException.AccessControlException, CelesteException.NotFoundException, CelesteException.DeletedException,
     CelesteException.RuntimeException, CelesteException.VerificationException, CelesteException.IllegalParameterException, CelesteException.OutOfDateException,
     CelesteException.FileNotLocked, CelesteException.FileLocked {
@@ -868,7 +853,7 @@ public class CelesteClientDaemon extends AbstractTitanService {
     public Boolean deleteFile(DeleteFileOperation operation, Credential.Signature signature)
     throws IOException,
         CelesteException.CredentialException, CelesteException.AccessControlException, CelesteException.NotFoundException,
-        CelesteException.RuntimeException, CelesteException.DeletedException, CelesteException.VerificationException, CelesteException.NoSpaceException {
+        CelesteException.RuntimeException, CelesteException.DeletedException, CelesteException.VerificationException, CelesteException.NoSpaceException, CelesteException.IllegalParameterException {
 
         TimeProfiler timingProfiler = new TimeProfiler(operation.getOperationName());
         try {
@@ -890,6 +875,14 @@ public class CelesteClientDaemon extends AbstractTitanService {
             return Boolean.TRUE;
         } catch (BeehiveObjectStore.NoSpaceException e) {
             throw new CelesteException.NoSpaceException(e);
+        } catch (ClassCastException e) {
+            throw new CelesteException.RuntimeException(e);
+        } catch (RemoteException e) {
+            throw new CelesteException.RuntimeException(e.getCause());
+        } catch (DeleteTokenException e) {
+            throw new CelesteException.IllegalParameterException(e);
+        } catch (ClassNotFoundException e) {
+            throw new CelesteException.RuntimeException(e);
         } finally {
             timingProfiler.stamp("remainder");
             timingProfiler.printCSV(System.out);
@@ -1367,6 +1360,10 @@ public class CelesteClientDaemon extends AbstractTitanService {
             throw new CelesteException.RuntimeException(e);
         } catch (BeehiveObjectPool.Exception e) {
             throw new CelesteException.RuntimeException(e);
+        } catch (ClassCastException e) {
+            throw new CelesteException.RuntimeException(e);
+        } catch (ClassNotFoundException e) {
+            throw new CelesteException.RuntimeException(e);
         } finally {
             timingProfiler.stamp("remainder");
             timingProfiler.printCSV(System.out);
@@ -1425,6 +1422,10 @@ public class CelesteClientDaemon extends AbstractTitanService {
             } catch (MutableObject.NotFoundException e) {
                 throw new CelesteException.RuntimeException(e);
             } catch (MutableObject.ProtocolException e) {
+                throw new CelesteException.RuntimeException(e);
+            } catch (ClassCastException e) {
+                throw new CelesteException.RuntimeException(e);
+            } catch (ClassNotFoundException e) {
                 throw new CelesteException.RuntimeException(e);
             }
             timeProfiler.stamp("VObjectId");
@@ -1523,6 +1524,10 @@ public class CelesteClientDaemon extends AbstractTitanService {
             return new ResponseMessage(deleted);
         } catch (BeehiveObjectStore.NotFoundException e) {
             return new ResponseMessage(e);
+        } catch (ClassCastException e) {
+            throw new CelesteException.RuntimeException(e);
+        } catch (ClassNotFoundException e) {
+            throw new CelesteException.RuntimeException(e);
         } finally {
             timeProfiler.stamp("remainder");
             timeProfiler.printCSV(System.out);
@@ -1736,6 +1741,10 @@ public class CelesteClientDaemon extends AbstractTitanService {
             throw new CelesteException.RuntimeException(e);
         } catch (BeehiveObjectPool.Exception e) {
             throw new CelesteException.RuntimeException(e);
+        } catch (ClassCastException e) {
+            throw new CelesteException.RuntimeException(e);
+        } catch (ClassNotFoundException e) {
+            throw new CelesteException.RuntimeException(e);
         } finally {
             timingProfiler.stamp("remainder");
             timingProfiler.printCSV(System.out);
@@ -1867,8 +1876,7 @@ public class CelesteClientDaemon extends AbstractTitanService {
     }
 
     // XXX Return the value, not a ResponseMessage.  ResponseMessage occludes exceptions and makes the client unwrap it, instead of the client-side API.
-    public Credential readCredential(ReadProfileOperation operation)
-    throws IOException, CelesteException.NotFoundException, CelesteException.RuntimeException {
+    public Credential readCredential(ReadProfileOperation operation) throws IOException, CelesteException.NotFoundException, CelesteException.RuntimeException {
 
         TimeProfiler timing = new TimeProfiler(operation.getOperationName());
 
@@ -1890,6 +1898,10 @@ public class CelesteClientDaemon extends AbstractTitanService {
             throw new CelesteException.RuntimeException(e);
         } catch (BeehiveObjectStore.NotFoundException e) {
             throw new CelesteException.NotFoundException(e);
+        } catch (ClassCastException e) {
+            throw new CelesteException.RuntimeException(e);
+        } catch (ClassNotFoundException e) {
+            throw new CelesteException.RuntimeException(e);
         } finally {
             timing.print(System.out);
         }

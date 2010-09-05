@@ -1329,8 +1329,8 @@ public class BeehiveNode implements TitanNode, NodeMBean {
         // Otherwise, do NOT store a back-pointer.
         if (rootReply.getStatus().isSuccessful()) {
             try {
-                Publish.Request request = message.getPayload(Publish.Request.class, this);
-                for (Map.Entry<TitanGuid,TitanObject.Metadata> entry : request.getObjectsToPublish().entrySet()) {
+                Publish.PublishUnpublishRequest request = message.getPayload(Publish.PublishUnpublishRequest.class, this);
+                for (Map.Entry<TitanGuid,TitanObject.Metadata> entry : request.getObjects().entrySet()) {
                     BeehiveNode.this.log.finest("%s->%s ttl=%ds", entry.getKey(), request.getPublisherAddress(), request.getSecondsToLive());
                     this.objectPublishers.update(entry.getKey(),
                             new Publishers.PublishRecord(entry.getKey(), request.getPublisherAddress(), entry.getValue(), request.getSecondsToLive()));
@@ -1414,8 +1414,7 @@ public class BeehiveNode implements TitanNode, NodeMBean {
         // and have the object contain a ClassLoader that understands where to get the class.  See the note in BeehiveMessage.
         //
 
-        TitanMessage proxyMessage;
-        proxyMessage = new TitanMessage(TitanMessage.Type.RouteToNode,
+        TitanMessage proxyMessage = new TitanMessage(TitanMessage.Type.RouteToNode,
                 request.getSource(),
                 TitanNodeIdImpl.ANY,
                 request.subjectId,
@@ -1426,9 +1425,9 @@ public class BeehiveNode implements TitanNode, NodeMBean {
                 new byte[0]);
         proxyMessage.setRawPayload(request.getRawPayLoad());
 
-        // Avoid a possible ConcurrentModificationException due to a publisher reporting that the object is not found and as a consequence
-        // we remove it from the set of publishers while concurrently using that set to iterate through the publishers.
-        // Simply create a new Set with the same content.
+        // To avoid a possible ConcurrentModificationException due to a publisher reporting that the object is not found and as a
+        // consequence of that unpublish message we remove it from the set of publishers while concurrently using that set here
+        // to iterate through the publishers, simply create a duplicate of the publisher Set.
         
         Set<Publishers.PublishRecord> publishers = new HashSet<Publishers.PublishRecord>();
         publishers.addAll(this.objectPublishers.getPublishers(request.subjectId));
@@ -1439,31 +1438,35 @@ public class BeehiveNode implements TitanNode, NodeMBean {
                 BeehiveNode.this.log.info("proxy msg=%5.5s... -> %s", request.getMessageId(), publisher.getNodeId());
             }
 
+            // These checks need to be updated in synchrony with the results and exceptions embodied in the new form of TitanMessages,
+            // where the status contains less information and more information is expressed in execptions and return values.
+
             if ((response = this.transmit(proxyMessage)) != null) {
-                if (response.getStatus() == DOLRStatus.SERVICE_UNAVAILABLE) {
-                    this.log.info("Unavailable publisher: " + publisher);
-                } else if (response.getStatus() == DOLRStatus.NOT_FOUND) {
-                    // The object was not found at the node we expected.
-                    // Delete that node from the publisher list and try again.
-                    // XXX We should reduce our reputation assessment of that node for not informing us of the object's removal.
-                    this.objectPublishers.remove(request.subjectId, publisher.getNodeId());
-                    this.log.info("Bad publisher: " + publisher + " responder=" + response.getSource().format());
-                } else if (response.getStatus().isSuccessful()) {
-                    TitanMessage reply;
-                    // The idea here is to convey the serialized data from the replying node,
-                    // without having to deserialize it and reserialize it just to retransmit
-                    // it to the original requestor.  Also, as a result of not deserializing
-                    // the data, we don't have to worry about having a class loader that understands
-                    // the serialized data.
-                    // reply = request.proxyReply(this.getNodeAddress(), response.getStatus(), response.getRawPayLoad());
-                    reply = request.composeReply(this.getNodeAddress(), response.getStatus());
-                    reply.setRawPayload(response.getRawPayLoad());
-                    reply.setMulticast(Boolean.FALSE);
-                    //this.log.exiting("RouteToObject(2) done: " + request.getSubjectClass() + " " + request.subjectId + " from " + request.getSource().getObjectId() + " from " + request.getSource().getObjectId() + " " + reply.getStatus());
-                    return reply;
+                if (response.getStatus().isSuccessful()) {
+                    return response;
+                    //              TitanMessage reply;
+                    //              // The idea here is to convey the serialized data from the replying node,
+                    //              // without having to deserialize it and reserialize it just to retransmit
+                    //              // it to the original requestor.  Also, as a result of not deserializing
+                    //              // the data, we don't have to worry about having a class loader that understands
+                    //              // the serialized data.
+                    //              // reply = request.proxyReply(this.getNodeAddress(), response.getStatus(), response.getRawPayLoad());
+                    //              reply = request.composeReply(this.getNodeAddress(), response.getStatus());
+                    //              reply.setRawPayload(response.getRawPayLoad());
+                    //              reply.setMulticast(Boolean.FALSE);
+                    //              //this.log.exiting("RouteToObject(2) done: " + request.getSubjectClass() + " " + request.subjectId + " from " + request.getSource().getObjectId() + " from " + request.getSource().getObjectId() + " " + reply.getStatus());
+                    //              return reply;
+//                } else if (response.getStatus() == DOLRStatus.SERVICE_UNAVAILABLE) {
+//                    this.log.info("Unavailable publisher: " + publisher);
+//                } else if (response.getStatus() == DOLRStatus.NOT_FOUND) {
+//                    // The object was not found at the node we expected.
+//                    // XXX We should reduce our reputation assessment of that node for not informing us of the object's removal.
+//                    // Delete that node from the publisher list and try again.
+//                    // this.objectPublishers.remove(request.subjectId, publisher.getNodeId());
+//                    // Don't delete it.  Rely on the node issuing an unpublish.
+//                    this.log.info("Bad publisher: " + publisher + " responder=" + response.getSource().format());
                 } else {
                     this.log.info("%5.5s...: %s failed. %s", request.getMessageId(), publisher, response.getStatus());
-
                 }
                 // The response did not signal success, so keep trying.
             }
@@ -1502,8 +1505,9 @@ public class BeehiveNode implements TitanNode, NodeMBean {
             BeehiveNode.this.log.info("recv %s: objectId=%s", request.traceReport(), request.getObjectId());
         }
 
-        PublishDaemon.UnpublishObject.Request unpublishRequest = request.getPayload(PublishDaemon.UnpublishObject.Request.class, this);
-        for (TitanGuid objectId : unpublishRequest.getObjectIds()) {
+        //PublishDaemon.UnpublishObject.Request unpublishRequest = request.getPayload(PublishDaemon.UnpublishObject.Request.class, this);
+        Publish.PublishUnpublishRequest unpublishRequest = request.getPayload(Publish.PublishUnpublishRequest.class, this);
+        for (TitanGuid objectId : unpublishRequest.getObjects().keySet()) {
             // Remove the unpublished object from this node's publisher records.
             this.getObjectPublishers().remove(objectId, request.getSource().getObjectId());
         }
@@ -1523,17 +1527,17 @@ public class BeehiveNode implements TitanNode, NodeMBean {
      * </p>
      * @param objectId
      */
-    public boolean removeLocalObject(final TitanGuid objectId) throws BeehiveObjectStore.NotFoundException {
+    public boolean removeLocalObject(final TitanGuid objectId) throws ClassNotFoundException, BeehiveObjectStore.NotFoundException, BeehiveObjectStore.Exception, BeehiveObjectPool.Exception {
         TitanObject object = this.store.getAndLock(TitanObject.class, objectId);
         if (object == null) {
             return false;
         }
         try {
             this.store.remove(object);
+            return true;
         } finally {
             this.store.unlock(object);
         }
-        return true;
     }
 
     public TitanMessage replyTo(TitanMessage message, Serializable serializable) {

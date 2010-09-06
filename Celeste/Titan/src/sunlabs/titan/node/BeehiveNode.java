@@ -932,7 +932,7 @@ public class BeehiveNode implements TitanNode, NodeMBean {
             BeehiveNode.registrar.registerMBean(JMX.objectName(this.jmxObjectName, "log"), this.log, DOLRLoggerMBean.class);
 
             this.connMgr = ConnectionManager.getInstance(this.configuration.asString(BeehiveNode.ConnectionType), this.getNodeAddress(), this.nodeKey);
-            // Still some problems with the new async I/O mechanism and SSL.  Soaks up a lot of memory.
+            // Still some problems with the new async I/O mechanism and SSL.  It uses up a lot of memory.
             if (false) {
                 this.server = new BeehiveServer2();
             } else {
@@ -1255,7 +1255,7 @@ public class BeehiveNode implements TitanNode, NodeMBean {
                 if (request.isExactRouting() && !destinationNodeId.equals(this.getNodeId())) {
                     BeehiveNode.this.log.finest("routed to nonexistent node %s%n", destinationNodeId);
                     
-                    return request.composeReply(this.address, new BeehiveNode.NoSuchNodeException("%s", destinationNodeId.toString()));
+                    return request.composeReply(this.address, new BeehiveNode.NoSuchNodeException("%s: %s", this.address, destinationNodeId.toString()));
                 }
                 TitanMessage result = this.services.sendMessageToApp(request);
 

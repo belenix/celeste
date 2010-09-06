@@ -418,7 +418,7 @@ public final class NeighbourMap {
         }
 
         //
-        // Pick the neighbour with the best reputation.
+        // The Set is sorted in reputation order, pick the neighbour with the best reputation.
         //
         NodeAddress route = e.first();
         //System.out.printf("%s -> [%d,%d] hit: %s\n", destination, hopCount, d, route);

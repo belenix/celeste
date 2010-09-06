@@ -35,8 +35,8 @@ import sunlabs.titan.node.util.DOLRLogger;
 /**
  * Every {@link TitanNode} instance has a set of services which implement
  * the capabilities of the system.
- * Every message transmitted between Beehive Nodes is a message destined
- * for a Beehive service.
+ * Every message transmitted between ç Nodes is a message destined
+ * for a TitanNode service.
  * Methods in a class implementing this interface that have the parameter
  * signature of
  * <code><i>method</i>(TitanMessage message)</code>

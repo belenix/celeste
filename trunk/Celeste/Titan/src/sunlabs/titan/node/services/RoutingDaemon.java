@@ -585,7 +585,7 @@ public final class RoutingDaemon extends AbstractTitanService implements Routing
     }
 
     /**
-     * "Top-side" {@link AbstractTitanService} method to perform a "join" with a Beehive system,
+     * "Top-side" {@link AbstractTitanService} method to perform a "join" with a Titan system,
      * using the given {@link NodeAddress NodeAddress} gateway as the joining server for the network.
      */
     public JoinOperation.Response join(NodeAddress gateway) throws IOException {
@@ -696,7 +696,6 @@ public final class RoutingDaemon extends AbstractTitanService implements Routing
     public PingOperation.Response ping(TitanMessage message) throws ClassNotFoundException, ClassCastException, RemoteException {
         this.node.getNeighbourMap().add(message.getSource());
 
-        TitanMessage reply;
         PingOperation.Request request = message.getPayload(PingOperation.Request.class, this.node);
 
         if (this.node.getNeighbourMap().isRoot(message.getDestinationNodeId())) {
@@ -713,7 +712,7 @@ public final class RoutingDaemon extends AbstractTitanService implements Routing
             PingOperation.Response response = new PingOperation.Response(this.node.getNeighbourMap().keySet(), publishers);
             return response;
         } else {
-            reply = this.node.transmit(message);
+            TitanMessage reply = this.node.transmit(message);
             PingOperation.Response response = reply.getPayload(PingOperation.Response.class, this.node);
             return response;
         }
@@ -722,8 +721,8 @@ public final class RoutingDaemon extends AbstractTitanService implements Routing
     /**
      * Transmit a ping message to the given {@link NodeAddress} {@code target}.
      *
-     * @param target the destination {@link NodeAddress} of the {@link BeehiveNode} to ping.
-     * @param request the {@link PingOperation.Request} to transmit to the destination {@code BeehiveNode}
+     * @param target the destination {@link NodeAddress} of the {@link TitanNode} to ping.
+     * @param request the {@link PingOperation.Request} to transmit to the destination {@code TitanNode}
      */
     public PingOperation.Response ping(NodeAddress target, PingOperation.Request request) throws IOException, RemoteException {
         long startTime = System.currentTimeMillis();

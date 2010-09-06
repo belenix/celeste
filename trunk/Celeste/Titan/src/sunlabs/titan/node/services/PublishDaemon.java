@@ -61,7 +61,7 @@ import sunlabs.titan.node.object.BeehiveObjectHandler;
 import sunlabs.titan.node.services.api.Publish;
 
 /**
- * The Beehive Node Publish Object Daemon
+ * The Titan Node Publish Object Daemon
  *
  * <p>
  * Perform two independent functions:

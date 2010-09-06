@@ -51,7 +51,9 @@ import javax.net.ssl.X509TrustManager;
 import sunlabs.asdf.jmx.JMX;
 
 /**
- * Instances of this class are asynchronous channel input servers.
+ * Instances of this class are asynchronous channel input servers, each running as a single {@link Thread} accepting incoming connections,
+ * creating an instance of {@link ChannelHandler.Factory} for each and looping waiting for I/O events to be raised on each connection
+ * and dispatching them to their respective {@code ChannelHandler.Factory} instance.
  */
 public class Asynchronous extends Thread implements Runnable, AsynchronousMBean {
     private ServerSocketChannel server;

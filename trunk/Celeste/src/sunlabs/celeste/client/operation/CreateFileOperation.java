@@ -1,5 +1,5 @@
 /*
- * Copyright 2007-2008 Sun Microsystems, Inc. All Rights Reserved.
+ * Copyright 2007-2010 Oracle. All Rights Reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER
  *
  * This code is free software; you can redistribute it and/or modify
@@ -17,11 +17,10 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
  * 02110-1301 USA
  *
- * Please contact Sun Microsystems, Inc., 16 Network Circle, Menlo
- * Park, CA 94025 or visit www.sun.com if you need additional
- * information or have any questions.
+ * Please contact Oracle Corporation, 500 Oracle Parkway, Redwood Shores, CA 94065
+ * or visit www.oracle.com if you need additional information or
+ * have any questions.
  */
-
 package sunlabs.celeste.client.operation;
 
 import java.io.IOException;
@@ -45,8 +44,8 @@ import sunlabs.titan.api.TitanGuid;
  * writing data, or modifying meta-data such as permissions.
  * </p>
  * <p>
- * Celeste file names are a 2-tuple consisting of the {@link BeehiveObjectId}
- * of the file's name-space and a {@link BeehiveObjectId} file-identifier unique
+ * Celeste file names are a 2-tuple consisting of the {@link TitanGuid}
+ * of the file's name-space and a {@code TitanGuid} file-identifier unique
  * within the name-space (see {@link NewNameSpaceOperation}).  All Celeste file
  * interactions name the file by supplying both of these values.
  * </p>
@@ -54,10 +53,10 @@ import sunlabs.titan.api.TitanGuid;
  * A set of parameters, supplied at file creation time, govern the existence of the file:
  * <ul>
  * <li>The maximum time-to-live, expressed in seconds from the moment the creation takes place.</li>
- * <li>The {@link BeehiveObjectId} of the file's delete-token (see <b>Deleting Files in the Celeste Peer-to-Peer Storage System</b>)</li>
+ * <li>The {@link TitanGuid} of the file's delete-token (see <b>Deleting Files in the Celeste Peer-to-Peer Storage System</b>)</li>
  * <li>The block-size of the underlying blocks that comprise the file.</li>
- * <li>The {@code BeehiveObjectId} of the Celeste credential representing the owner of the file.</li>
- * <li>The {@code BeehiveObjectId} of the Celeste credential representing the group of the file.</li>
+ * <li>The {@code TitanGuid} of the Celeste credential representing the owner of the file.</li>
+ * <li>The {@code TitanGuid} of the Celeste credential representing the group of the file.</li>
  * <li>The {@link ReplicationParameters} governing the low-level replication requirements for components of the file.</li>
  * <li>The {@link CelesteACL} instance establishing the initial access-control parameters for the file.</li>
  * <li>A boolean value signifying whether or not subsequent writes to this file are to be signed by the writer.</li>
@@ -80,7 +79,7 @@ public class CreateFileOperation extends UpdateOperation {
     public static ReplicationParameters defaultReplicationParameters =
         new ReplicationParameters("AObject.Replication.Store=2;VObject.Replication.Store=2;BObject.Replication.Store=2;AObjectVersionMap.Params=1,1");
     /**
-     * The default {@link BeehiveObjectId} of the {@link Credential} representing the group ownership of a created file.
+     * The default {@link TitanGuid} of the {@link Credential} representing the group ownership of a created file.
      */
     public static TitanGuid defaultGroupId = null;
     /**
@@ -101,15 +100,15 @@ public class CreateFileOperation extends UpdateOperation {
      * Creates a {@code CreateFileOperation} object encapsulating the fields
      * given as arguments.
      *
-     * @param requestorId       The {@code BeehiveObjectId} of the requestor's {@code Credential} (See {@link Credential#getObjectId()}.
+     * @param requestorId       The {@code TitanGuid} of the requestor's {@code Credential} (See {@link Credential#getObjectId()}.
      * @param fileIdentifier    The {@link FileIdentifier} of the file to create.
-     * @param deleteTokenId     The {@code BeehiveObjectId} the file's delete token.
+     * @param deleteTokenId     The {@code TitanGuid} the file's delete token.
      * @param timeToLive        The maximum number of seconds that this file will exist.
      * @param blockObjectSize   The maximum size of the data blocks for this file.
      * @param replicationParams The String representation of the replication parameters (See {@link ReplicationParameters}) to be used for the file.
      * @param clientMetaData    The {@link ClientMetaData} instance containing client-supplied metadata for this file.
-     * @param ownerId           The {@code BeehiveObjectId} of the {@link Credential} recorded as owning the file's initial version
-     * @param groupId           The {@code BeehiveObjectId} of the {@link Credential} recorded as the group of the initial file version
+     * @param ownerId           The {@code TitanGuid} of the {@link Credential} recorded as owning the file's initial version
+     * @param groupId           The {@code TitanGuid} of the {@link Credential} recorded as the group of the initial file version
      * @param acl               The access control list (See {@link CelesteACL}) to be attached to the file's initial version.
      * @param signWrites        If {@code true}, all modifications to the file require that the data to be signed.
      *
@@ -138,15 +137,15 @@ public class CreateFileOperation extends UpdateOperation {
      * Creates a {@code CreateFileOperation} object encapsulating the fields
      * given as arguments.
      *
-     * @param requestorId       The {@code BeehiveObjectId} of the requestor's {@code Credential} (See {@link Credential#getObjectId()}.
+     * @param requestorId       The {@code TitanGuid} of the requestor's {@code Credential} (See {@link Credential#getObjectId()}.
      * @param fileIdentifier    The {@link FileIdentifier} of the file to create.
-     * @param deleteTokenId     The {@code BeehiveObjectId} the file's delete token.
+     * @param deleteTokenId     The {@code TitanGuid} the file's delete token.
      * @param timeToLive        The maximum number of seconds that this file will exist.
      * @param blockObjectSize   The maximum size of the data blocks for this file.
      * @param replicationParams The {@link ReplicationParameters} to be used for the file.
      * @param clientMetaData a  {@link ClientMetaData} instance containing client-supplied metadata for this file.
-     * @param ownerId           The {@code BeehiveObjectId} of the {@link Credential} recorded as owning the file's initial version
-     * @param groupId           The {@code BeehiveObjectId} of the {@link Credential} recorded as the group of the initial file version
+     * @param ownerId           The {@code TitanGuid} of the {@link Credential} recorded as owning the file's initial version
+     * @param groupId           The {@code TitanGuid} of the {@link Credential} recorded as the group of the initial file version
      * @param acl               The access control list (See {@link CelesteACL}) to be attached to the file's initial version.
      * @param signWrites        If {@code true}, all modifications to the file require the data to be signed.
      *

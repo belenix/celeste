@@ -102,7 +102,7 @@ import sunlabs.titan.api.TitanGuid;
 import sunlabs.titan.api.TitanNode;
 import sunlabs.titan.api.TitanObject;
 import sunlabs.titan.node.AbstractBeehiveObject;
-import sunlabs.titan.node.BeehiveNode;
+import sunlabs.titan.node.TitanNodeImpl;
 import sunlabs.titan.node.BeehiveObjectPool;
 import sunlabs.titan.node.BeehiveObjectStore;
 import sunlabs.titan.node.BeehiveObjectStore.DeleteTokenException;
@@ -680,7 +680,7 @@ public class CelesteClientDaemon extends AbstractTitanService {
      * <p>
      * If no lock is set, return {@code false}.
      * <p>
-     * Otherwise a lock is already set.  If that lock is not owned by the client specified in the {@CelesteOperation}
+     * Otherwise a lock is already set.  If that lock is not owned by the client specified in the {@link CelesteOperation}
      * (See {@link CelesteOperation#getClass()}), then throw {@link CelesteException.FileLocked} containing current file
      * meta-data, including the lock information.
      * </p>
@@ -1555,7 +1555,7 @@ public class CelesteClientDaemon extends AbstractTitanService {
                         if (mainClassName == null) {
                             throw new CelesteException.IllegalParameterException("Jar file %s does not specifiy a 'Main-Class' manifest attribute.", jarFileURLs[0]);
                         }
-                        Callable<Serializable> extension = classLoader.construct(mainClassName, (BeehiveNode) this.node, operation);
+                        Callable<Serializable> extension = classLoader.construct(mainClassName, (TitanNodeImpl) this.node, operation);
                         try {
                             return new ResponseMessage(extension.call());
                         } catch (Exception e) {

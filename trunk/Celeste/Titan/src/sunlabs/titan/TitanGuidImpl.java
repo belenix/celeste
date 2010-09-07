@@ -64,7 +64,7 @@ public class TitanGuidImpl implements TitanGuid {
      * of the number encoded.
      * </p><p>
      * Effectively the value for n_digits should be something like:
-     * {@code MessageDigest.getInstance(BeehiveObjectId.hashFunction).digest().length * 2}
+     * {@code MessageDigest.getInstance(TitanGuidImpl.hashFunction).digest().length * 2}
      * </p>
      */
     public static int n_digits;
@@ -94,7 +94,7 @@ public class TitanGuidImpl implements TitanGuid {
     protected byte[] asBytes;
 
     /**
-     * Return true if the given String is suitable for a BeehiveObjectId.
+     * Return true if the given String is suitable for a TitanGuid.
      * @param string
      */
     public static boolean IsValid(String string) {
@@ -129,7 +129,7 @@ public class TitanGuidImpl implements TitanGuid {
 
     /**
      * A constructor that takes an array of bytes as the raw object identifier.
-     * The second argument is simply to differentiate the constructor's signature from {@link TitanGuidImpl#BeehiveObjectId(byte[])}.
+     * The second argument is simply to differentiate the constructor's signature from {@link TitanGuidImpl#TitanGuidImpl(byte[])}.
      * @param bytes
      * @param string
      */
@@ -161,7 +161,7 @@ public class TitanGuidImpl implements TitanGuid {
     }
 
     /**
-     * Construct a new BeehiveObjectId instance from a String representation of the identifier in hex.
+     * Construct a new TitanGuidImpl instance from a String representation of the identifier in hex.
      * <p>
      * The given value must be a contiguous string of hexadecimal numerals {@link TitanGuidImpl.n_digits} in length.
      * </p>
@@ -192,7 +192,7 @@ public class TitanGuidImpl implements TitanGuid {
       -1, -1, -1, -1, -1, -1, -1, -1,  -1, -1, -1, -1, -1, -1, -1, -1, /* 112-127 */ };
     
     /**
-     * Construct a new BeehiveObjectId instance from a String representation of the identifier in hex.
+     * Construct a new TitanGuidImpl instance from a String representation of the identifier in hex.
      * <p>
      * The given value must be a contiguous string of hexadecimal numerals {@link TitanGuidImpl.n_digits} in length.
      * </p>
@@ -247,7 +247,7 @@ public class TitanGuidImpl implements TitanGuid {
     }
 
     /**
-     * Create a new {@code BeehiveObjectId} by combining more data to this {@code BeehiveObjectId}.
+     * Create a new {@code TitanGuid} by combining more data to this {@code TitanGuid}.
      *
      * @param data The data to combine.
      */
@@ -256,7 +256,7 @@ public class TitanGuidImpl implements TitanGuid {
     }
     
     /**
-     * Create a new {@code BeehiveObjectId} by combining more data to this {@code BeehiveObjectId}.
+     * Create a new {@code TitanGuid} by combining more data to this {@code TitanGuid}.
      *
      * @param data The data to combine.
      */
@@ -275,15 +275,15 @@ public class TitanGuidImpl implements TitanGuid {
     }
 
     /**
-     * Construct a new {@code BeehiveObjectId} by combining the given instance {@code other} with this instance.
-     * If the given BeehiveObjectId is null, this instance is returned (a new instance is not created).
+     * Construct a new {@code TitanGuid} by combining the given instance {@code other} with this instance.
+     * If the given {@code TitanGuid} is null, this instance is returned (a new instance is not created).
      */
     public TitanGuid add(TitanGuid other) {
         return (other == null) ? this : this.add(other.getBytes());
     }
     
     /**
-     * Construct a new {@code BeehiveObjectId} by combining the bytes from the given String with this instance.
+     * Construct a new {@code TitanGuid} by combining the bytes from the given String with this instance.
      * If the given String is null, this instance is returned (a new instance is not created).
      */
     public TitanGuid add(String string) {
@@ -436,7 +436,7 @@ public class TitanGuidImpl implements TitanGuid {
                 int diff = b2 - b1;
                 if (diff < 0)
                     diff += 16;
-//                System.out.printf("%d_%d%n", (BeehiveObjectId.n_digits-i), diff);
+//                System.out.printf("%d_%d%n", (TitanGuidImpl.n_digits-i), diff);
                 return (TitanGuidImpl.n_digits-i) * 100 + diff;
             }
         }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2007-2009 Sun Microsystems, Inc. All Rights Reserved.
+ * Copyright 2010 Oracle. All Rights Reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER
  *
  * This code is free software; you can redistribute it and/or modify
@@ -17,9 +17,9 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
  * 02110-1301 USA
  *
- * Please contact Sun Microsystems, Inc., 16 Network Circle, Menlo
- * Park, CA 94025 or visit www.sun.com if you need additional
- * information or have any questions.
+ * Please contact Oracle Corporation, 500 Oracle Parkway, Redwood Shores, CA 94065
+ * or visit www.oracle.com if you need additional information or
+ * have any questions.
  */
 package sunlabs.titan.node;
 
@@ -49,7 +49,7 @@ import sunlabs.titan.node.object.DeleteableObject;
 import sunlabs.titan.node.services.WebDAVDaemon;
 
 /**
- * Object location in the Beehive Object Pool.
+ * Object location in the Titan Object Pool.
  * <p>
  * Nodes that possess objects periodically publish the availability of each object by routing a
  * {@link PublishObjectMessage} containing the information about the object and the node that possesses it.
@@ -85,7 +85,7 @@ public class Publishers {
 
     private BackedObjectMap<TitanGuid,Set<Publishers.PublishRecord>> publishers;
     private Map<TitanGuid,Set<Publishers.PublishRecord>> byObjectId;
-    private BeehiveNode node;
+    private TitanNodeImpl node;
 
     /**
      * A Publisher object is a record of a single binding of a {@link TitanObject} with a node advertising the object's
@@ -123,8 +123,8 @@ public class Publishers {
          * to the given {@link NodeAddress} of a node advertising its availability.
          *
          * @param objectId the {@link TitanGuidImpl} of the {@link TitanObject}
-         * @param publisher the {@link NodeAddress} of the publishing {@link BeehiveNode}
-         * @param metaData the complete {@link TitanObject.Metadata} of the published {@code BeehiveObject}
+         * @param publisher the {@link NodeAddress} of the publishing {@link TitanNodeImpl}
+         * @param metaData the complete {@link TitanObject.Metadata} of the published {@code TitanObject}
          * @param  recordSecondsToLive The system time, in seconds, when this record must be removed.
          */
         public PublishRecord(TitanGuid objectId, NodeAddress publisher, TitanObject.Metadata metaData, long recordSecondsToLive) {
@@ -137,7 +137,7 @@ public class Publishers {
 
         @Override
         public boolean equals(Object other) {
-            // Two Publisher instances are equal if they have equal {@link BeehiveObjectId} and node-id {@link BeehiveObjectId} values.
+            // Two Publisher instances are equal if they have equal {@link TitanGuid} and node-id {@link TitanNodeId} values.
             if (this == other)
                 return true;
 
@@ -236,7 +236,7 @@ public class Publishers {
         }
     }
 
-    public Publishers(BeehiveNode node, String spoolDirectory) throws IOException {
+    public Publishers(TitanNodeImpl node, String spoolDirectory) throws IOException {
         this.node = node;
 
         this.byObjectId = Collections.synchronizedMap(new HashMap<TitanGuid,Set<Publishers.PublishRecord>>());
@@ -254,17 +254,17 @@ public class Publishers {
 
     /**
      * <p>
-     * Get the {@link Set} of {@link Map<BeehiveObjectId,Publishers.Publisher>} instances (NodeId&rarr;PublishRecord) for the given {@link TitanGuid}.
+     * Get the {@link Set} of {@link Publishers.PublishRecord} instances for the given {@link TitanGuid}.
      * <em>There result is NOT locked.</em>
      * </p>
      * <p>
-     * If there are no Publishers of the given {@code BeehiveObjectId}, return an empty {@code Set}.
+     * If there are no Publishers of the given {@code TitanGuid}, return an empty {@code Set}.
      * </p>
      *
-     * @param objectId the {@code BeehiveObjectId} of the published object.
+     * @param objectId the {@code TitanGuid} of the published object.
      *
      * @return  a {@code Set} consisting of all the {@code Publishers.Publisher}
-     * instances for the given {@code BeehiveObjectId}.
+     * instances for the given {@code TitanGuid}.
      */
     public Set<Publishers.PublishRecord> getPublishers(TitanGuid objectId) {
         Set<Publishers.PublishRecord> set = this.getPublishersAndLock(objectId);
@@ -281,13 +281,13 @@ public class Publishers {
      * <em>There result is locked and MUST be unlocked when the caller has finished manipulating.</em>
      * </p>
      * <p>
-     * If there are no Publishers of the given {@code BeehiveObjectId}, return an empty {@code Set}.
+     * If there are no Publishers of the given {@code TitanGuid}, return an empty {@code Set}.
      * </p>
-     * @param objectId the {@code BeehiveObjectId} of the published object.
+     * @param objectId the {@code TitanGuid} of the published object.
      *
-     * @return  a {@code Set} consisting of all the {@code Publishers.Publisher} instances for the given {@code BeehiveObjectId}.
+     * @return  a {@code Set} consisting of all the {@code Publishers.Publisher} instances for the given {@code TitanGuid}.
      *
-     * @throws IllegalStateException if an attempt to lock a {@code BeehiveObjectId}} more than once.
+     * @throws IllegalStateException if an attempt to lock a {@code TitanGuid}} more than once.
      */
     public Set<Publishers.PublishRecord> getPublishersAndLock(TitanGuid objectId) throws IllegalStateException {
         this.locks.lock(objectId);

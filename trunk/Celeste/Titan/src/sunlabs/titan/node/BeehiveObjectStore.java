@@ -317,10 +317,9 @@ public final class BeehiveObjectStore implements ObjectStore {
     }
 
 
-    //private final ObjectLock<BeehiveObjectId> locks;
     private final ObjectLock<TitanGuid> locks;
 
-    private final BeehiveNode node;
+    private final TitanNodeImpl node;
 
     public static class FileObjectStore3 extends AbstractStoredMap<TitanGuid,TitanObject> {
 
@@ -355,7 +354,7 @@ public final class BeehiveObjectStore implements ObjectStore {
      * consists of both objects stored locally as well as the
      * back-pointers to objects stored elsewhere.
      */
-    public BeehiveObjectStore(final BeehiveNode node, String objectStoreCapacity) throws IOException {
+    public BeehiveObjectStore(final TitanNodeImpl node, String objectStoreCapacity) throws IOException {
         this.node = node;
         this.fileStore = new FileObjectStore3(new File(node.getSpoolDirectory() + File.separator + "object-store" + File.separator + "object"), objectStoreCapacity);
 
@@ -592,8 +591,8 @@ public final class BeehiveObjectStore implements ObjectStore {
 
     /**
      * <p>
-     * Configure the given BeehiveObject to have a signature verified object-id
-     * equal to the given BeehiveObjectId.
+     * Configure the given {@link TitanObject} to have a signature verified object-id
+     * equal to the given {@code TitanGuid}.
      * </p>
      * <p>
      * The given BeehiveObject must can prepared with the metadata properties
@@ -628,8 +627,8 @@ public final class BeehiveObjectStore implements ObjectStore {
      * 
      * See {@link TitanObject}.
      *
-     * @param object the {@code BeehiveObject} to compute the {@code BeehiveObjectId}.
-     * @throws BeehiveObjectStore.InvalidObjectIdException if a valid BeehiveObjectId
+     * @param object the {@code BeehiveObject} to compute the {@code TitanGuid}.
+     * @throws BeehiveObjectStore.InvalidObjectIdException if a valid {@code TitanGuid}
      *         cannot be calculated.
      * @throws BeehiveObjectStore.DeleteTokenException if the Delete Token hash
      *         (specified by the {@link ObjectStore#METADATA_DELETETOKENID}

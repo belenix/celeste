@@ -37,7 +37,7 @@ import sunlabs.titan.api.ObjectStore;
 import sunlabs.titan.api.TitanGuid;
 import sunlabs.titan.api.TitanNode;
 import sunlabs.titan.api.TitanObject;
-import sunlabs.titan.node.BeehiveNode;
+import sunlabs.titan.node.TitanNodeImpl;
 import sunlabs.titan.node.BeehiveObjectPool;
 import sunlabs.titan.node.BeehiveObjectStore;
 import sunlabs.titan.node.BeehiveObjectStore.DeleteTokenException;
@@ -342,7 +342,7 @@ public final class DeleteableObject {
      * Transmit {@code deleteLocalObject} {@link TitanMessage}s to all nodes that
      * are publishing the object specified by the given object-id.
      * <p>
-     * Does not send messages to the local {@link BeehiveNode} nor to the node
+     * Does not send messages to the local {@link TitanNodeImpl} nor to the node
      * identified by the given object-id publisherId.
      * </p>
      * @param objectType The {@link DeleteableObject.Handler} of the object to delete.

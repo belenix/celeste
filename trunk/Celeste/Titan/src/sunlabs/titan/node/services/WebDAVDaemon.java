@@ -92,7 +92,7 @@ import sunlabs.titan.api.TitanGuid;
 import sunlabs.titan.api.TitanNode;
 import sunlabs.titan.api.TitanNodeId;
 import sunlabs.titan.api.TitanObject;
-import sunlabs.titan.node.BeehiveNode;
+import sunlabs.titan.node.TitanNodeImpl;
 import sunlabs.titan.node.BeehiveObjectStore;
 import sunlabs.titan.node.NodeAddress;
 import sunlabs.titan.node.services.api.Census;
@@ -332,7 +332,7 @@ public final class WebDAVDaemon extends AbstractTitanService implements WebDAVDa
 
     /**
      * Produce an {@link XHTML.Anchor} element that links to a HTML document that
-     * inspects the {@link BeehiveNode} identified by the given {@link NodeAddress}.
+     * inspects the {@link TitanNodeImpl} identified by the given {@link NodeAddress}.
      * 
      * See {@link WebDAVDaemon} for the dispatch of the HTTP request the link induces.
      */
@@ -545,7 +545,7 @@ public final class WebDAVDaemon extends AbstractTitanService implements WebDAVDa
                         BufferedReader r = null;
                         try {
                             OrderedProperties gatewayOptions = new OrderedProperties(new URL(location + "/gateway"));
-                            location = gatewayOptions.getProperty(BeehiveNode.NodeAddress.getName());
+                            location = gatewayOptions.getProperty(TitanNodeImpl.NodeAddress.getName());
                         } catch (MalformedURLException e) {
                             return new HttpResponse(HTTP.Response.Status.BAD_REQUEST, new HttpContent.Text.Plain("Bad Request: Malformed gateway address: " + location));
                         } finally {
@@ -615,9 +615,9 @@ public final class WebDAVDaemon extends AbstractTitanService implements WebDAVDa
         	}
         }
 
-        Dojo dojo = new Dojo(this.node.getConfiguration().asString(BeehiveNode.DojoRoot),
-                this.node.getConfiguration().asString(BeehiveNode.DojoJavascript),
-                this.node.getConfiguration().asString(BeehiveNode.DojoTheme)
+        Dojo dojo = new Dojo(this.node.getConfiguration().asString(TitanNodeImpl.DojoRoot),
+                this.node.getConfiguration().asString(TitanNodeImpl.DojoJavascript),
+                this.node.getConfiguration().asString(TitanNodeImpl.DojoTheme)
                 );
 
         dojo.setConfig("isDebug: false, parseOnLoad: true, baseUrl: './', useXDomain: true, modulePaths: {'sunlabs': '/dojo/1.3.1/sunlabs'}");

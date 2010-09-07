@@ -63,18 +63,13 @@ import sunlabs.titan.node.services.xml.TitanXML.XMLRoutingTable;
  */
 public final class NeighbourMap {
     /**
-     * <p>
-     *
      * Comparator of Reputations.
-     *
-     * </p><p>
-     *
+     * <p>
      * This node always trusts itself, so anytime this node is compared to any
      * other node, this node has the better reputation.  Otherwise, if the
      * reputations of node A and node B are equal, the one with the lower
      * numeric value for its ObjectId is better.  Otherwise, simply return the
      * comparision of the two reputations.
-     *
      * </p>
      */
     public class ReputationComparator implements Comparator<NodeAddress>, Serializable {
@@ -87,7 +82,7 @@ public final class NeighbourMap {
             super();
         }
 
-        public ReputationComparator(BeehiveNode thisNode, Map<String,Integer> requirements) {
+        public ReputationComparator(TitanNodeImpl thisNode, Map<String,Integer> requirements) {
             super();
             this.node = thisNode.getNodeAddress();
             this.mapReputationRequirements = requirements;
@@ -171,9 +166,9 @@ public final class NeighbourMap {
     private int maxDepth;
 
     private Map<String,Integer> mapReputationRequirements;
-    private final BeehiveNode node;
+    private final TitanNodeImpl node;
 
-    /** Dossier on every neighbour ever known by this {@code BeehiveNode}. */
+    /** Dossier on every neighbour ever known by this {@code TitanNode}. */
     private Dossier dossier;
 
 //    private ObjectName jmxObjectName;
@@ -182,7 +177,7 @@ public final class NeighbourMap {
      * Constructor for the DOLR Neighbour Map.  The Neighbour Map
      * is the fundamental "routing table" for DOLR message routing.
      */
-    public NeighbourMap(BeehiveNode node) throws JMException {
+    public NeighbourMap(TitanNodeImpl node) throws JMException {
         this.n_tables = TitanGuidImpl.n_digits;
 
         this.node = node;
@@ -452,7 +447,7 @@ public final class NeighbourMap {
      * Return {@code true} if this {@code NeighbourMap} is the root of the given {@link TitanGuidImpl} {@code objectId}.
      * </p>
      * @param objectId
-     * @return true if this neighbour map cannot route the given {@code BeehiveObjectId} to a neighbour.
+     * @return true if this neighbour map cannot route the given {@code TitanGuid} to a neighbour.
      */
     public boolean isRoot(TitanGuid objectId) {
         return this.newGetRoute(objectId, 0) == null;
@@ -644,7 +639,7 @@ public final class NeighbourMap {
     }
 
     /**
-     * Given a {@link TitanGuidImpl} {@code root} as the central node, compare successive {@code BeehiveObjectId}
+     * Given a {@link TitanGuid} {@code root} as the central node, compare successive {@code TitanGuid}
      * instances ordering them as which would be the next in routing succession to replace the central node.
      * Note that this is determined from information in the local neighbor-map, not perfect global information.
      */

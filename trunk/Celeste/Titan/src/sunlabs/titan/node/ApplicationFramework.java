@@ -70,7 +70,7 @@ import sunlabs.titan.util.DOLRStatus;
 
 /**
  * The ApplicationFramework is the portion of a
- * {@link sunlabs.titan.node.BeehiveNode}
+ * {@link sunlabs.titan.node.TitanNodeImpl}
  * which directs messages to the correct
  * {@link AbstractTitanService}
  * installed on that node.
@@ -99,7 +99,7 @@ import sunlabs.titan.util.DOLRStatus;
  * application, install it at a single site in the system, restart a single
  * Node, and let the change propagate through the system automatically.
  * <p>
- * The second use-case is also compelling, but less so.  BeehiveNodes
+ * The second use-case is also compelling, but less so.  TitanNodes
  * can support any application, so it would be good if they could also
  * dynamically support brand-new (new to that Beehive) applications.
  * This actually motivated the original thinking about this problem:
@@ -121,7 +121,7 @@ import sunlabs.titan.util.DOLRStatus;
  * they must know where to look for the .class file being loaded.  By default,
  * classes should be found on the {@code CLASSPATH} provided to the VM as it
  * is started.  We'd like to be able to find classes in use by a different VM
- * that is running a BeehiveNode.  How to find those classes?
+ * that is running a TitanNode.  How to find those classes?
  * <p>
  * One common mechanism is to declare a place where classes will be available,
  * typically a standard URL.  This location is known to all starting VMs and
@@ -196,7 +196,7 @@ import sunlabs.titan.util.DOLRStatus;
  * it checks an internal data structure {@link #applications} to see if it has
  * already been loaded.  If it hasn't, a new class loader is created and the
  * application is loaded either from the local {@code CLASSPATH} or from the
- * object pool.  The application is then stored locally in the BeehiveNode (so it will
+ * object pool.  The application is then stored locally in the TitanNode (so it will
  * be available to other Nodes via the object pool) and started.  The application is
  * always stored locally and published if necessary.  Note that the
  * application is stored in the object pool, making it available to other
@@ -579,7 +579,7 @@ public final class ApplicationFramework implements XHTMLInspectable {
     //
     private boolean loadingService = false;
 
-    private final BeehiveNode node;
+    private final TitanNodeImpl node;
     private final DOLRLogger log;
 
     //
@@ -656,13 +656,13 @@ public final class ApplicationFramework implements XHTMLInspectable {
     //      approach would require understanding its successor.)
 
     /**
-     *  Create a new ApplicationFramework.
+     * Create a new ApplicationFramework.
      *
-     * @param node the BeehiveNode hosting this application framework
+     * @param node the TitanNode hosting this application framework
      * @param log  the log to be used for trace information
      * @throws NullPointerException if node or log are null
      */
-    public ApplicationFramework(BeehiveNode node, DOLRLogger log) {
+    public ApplicationFramework(TitanNodeImpl node, DOLRLogger log) {
         if (node == null || log == null) {
             throw new NullPointerException("node and log must not be null");
         }
@@ -1436,7 +1436,7 @@ public final class ApplicationFramework implements XHTMLInspectable {
      *
      * @param theClass  the class to instantiate.  It is assumed to extend
      *                  {@link AbstractTitanService}, and have a constructor that takes
-     *                  a {@link BeehiveNode} as an argument.
+     *                  a {@link TitanNodeImpl} as an argument.
      * @param requested the version number the instantiated application must
      *                  be >= to.  It is assumed that all applications are
      *                  backward compatible with previous versions (if they

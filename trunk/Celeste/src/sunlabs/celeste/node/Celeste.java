@@ -42,8 +42,8 @@ import java.util.concurrent.Executors;
 import sunlabs.asdf.util.Time;
 import sunlabs.celeste.node.services.CelesteClientDaemon;
 import sunlabs.titan.Copyright;
-import sunlabs.titan.node.BeehiveNode;
-import sunlabs.titan.node.BeehiveNode.ConfigurationException;
+import sunlabs.titan.node.TitanNodeImpl;
+import sunlabs.titan.node.TitanNodeImpl.ConfigurationException;
 import sunlabs.titan.node.services.WebDAVDaemon;
 import sunlabs.titan.util.OrderedProperties;
 
@@ -57,7 +57,7 @@ import sunlabs.titan.util.OrderedProperties;
  * thread or in separate processes.
  * </p>
  * <p>
- * If the BeehiveNode instances are run in separate threads,
+ * If the CelesteNode instances are run in separate threads,
  * each instance of CelesteNode is programmatically independant
  * from the others and shares only static class variables.
  * </p>
@@ -96,7 +96,7 @@ import sunlabs.titan.util.OrderedProperties;
  * <tr><td>--dossier</td><td>Enable fast-startup using cached data on neighbours.</td><td>(false)</td></tr>
  * </table>
  * <p>
- * Options to create BeehiveNode instances in separate processes:
+ * Options to create CelesteNode instances in separate processes:
  * </p>
  * <table class='Beehive-options'>
  * <tr><td>--use-processes</td><td>Use separate processes for each Beehive Node</td><td>(false)</td></tr>
@@ -157,14 +157,14 @@ public class Celeste {
         String gatewayArgument = null;
 
         // This way to construct the spool directory is very UNIX-centric.
-        properties.setProperty(BeehiveNode.LocalFileSystemRoot.getName(), File.listRoots()[0] + "tmp" + File.separator + "celeste" + File.separator);
+        properties.setProperty(TitanNodeImpl.LocalFileSystemRoot.getName(), File.listRoots()[0] + "tmp" + File.separator + "celeste" + File.separator);
 
-        properties.setProperty(BeehiveNode.Port.getName(), 12000);
-        properties.setProperty(BeehiveNode.ConnectionType.getName(), "ssl");
+        properties.setProperty(TitanNodeImpl.Port.getName(), 12000);
+        properties.setProperty(TitanNodeImpl.ConnectionType.getName(), "ssl");
         properties.setProperty(WebDAVDaemon.Port.getName(), 12001);
-        properties.setProperty(BeehiveNode.InterNetworkAddress.getName(), "127.0.0.1");
-        properties.setProperty(BeehiveNode.GatewayRetryDelayMillis.getName(), Time.secondsInMilliseconds(30));
-        properties.setProperty(BeehiveNode.ObjectStoreCapacity.getName(), "unlimited");
+        properties.setProperty(TitanNodeImpl.InterNetworkAddress.getName(), "127.0.0.1");
+        properties.setProperty(TitanNodeImpl.GatewayRetryDelayMillis.getName(), Time.secondsInMilliseconds(30));
+        properties.setProperty(TitanNodeImpl.ObjectStoreCapacity.getName(), "unlimited");
         properties.setProperty(CelesteClientDaemon.Port.getName(), 14000);
 
         String javaFile = System.getenv("JAVA");
@@ -214,7 +214,7 @@ public class Celeste {
         jarFile = mxbean.getClassPath();
 
         try {
-            properties.setProperty(BeehiveNode.InterNetworkAddress.getName(), InetAddress.getLocalHost().getHostAddress());
+            properties.setProperty(TitanNodeImpl.InterNetworkAddress.getName(), InetAddress.getLocalHost().getHostAddress());
         } catch (UnknownHostException e) {
             e.printStackTrace();
             System.exit(1);
@@ -243,7 +243,7 @@ public class Celeste {
                     }
                 } else if (args[i].equals("--localfs-root") || args[i].equals("--spool-root")) {
                     String value = args[++i];
-                    properties.setProperty(BeehiveNode.LocalFileSystemRoot.getName(), value + File.separator);
+                    properties.setProperty(TitanNodeImpl.LocalFileSystemRoot.getName(), value + File.separator);
                 } else if (args[i].equals("--n-nodes")) {
                     n_nodes = Integer.parseInt(args[++i]);
                     if (n_nodes < 1) {
@@ -252,32 +252,32 @@ public class Celeste {
                     }
                 } else if (args[i].equals("--gateway")) {
                     gatewayArgument = args[++i];
-                    properties.setProperty(BeehiveNode.GatewayURL.getName(), gatewayArgument);
+                    properties.setProperty(TitanNodeImpl.GatewayURL.getName(), gatewayArgument);
                 } else if (args[i].equals("--gateway-retry")) {
                     String value = args[++i];
                     if (Integer.parseInt(value) < 10) {
                         System.err.printf("--gateway-retry %s: retry time cannot be less than 10 seconds.", value);
                         throw new IllegalArgumentException();
                     }
-                    properties.setProperty(BeehiveNode.GatewayRetryDelayMillis.getName(), value);
+                    properties.setProperty(TitanNodeImpl.GatewayRetryDelayMillis.getName(), value);
                 } else if (args[i].equals("--local-address") || args[i].equals("--node-address")) {
                     String value = args[++i];
-//                    properties.setProperty(BeehiveNode.LocalNetworkAddress.getName(), value);
-                    properties.setProperty(BeehiveNode.InterNetworkAddress.getName(), value);
+//                    properties.setProperty(TitanNodeImpl.LocalNetworkAddress.getName(), value);
+                    properties.setProperty(TitanNodeImpl.InterNetworkAddress.getName(), value);
                 } else if (args[i].equals("--nat")) {
                     String[] value = args[++i].split(":");
-//                    properties.setProperty(BeehiveNode.LocalNetworkAddress.getName(), value[0]);
-                    properties.setProperty(BeehiveNode.InterNetworkAddress.getName(), value[1]);
+//                    properties.setProperty(TitanNodeImpl.LocalNetworkAddress.getName(), value[0]);
+                    properties.setProperty(TitanNodeImpl.InterNetworkAddress.getName(), value[1]);
                 } else if (args[i].equals("--internetwork-address")) {
-                    properties.setProperty(BeehiveNode.InterNetworkAddress.getName(), args[++i]);
+                    properties.setProperty(TitanNodeImpl.InterNetworkAddress.getName(), args[++i]);
                 } else if (args[i].equals("--beehive-port") || args[i].equals("--mos-port")) {
                     String[] tokens = args[++i].split(",");
                     String port = tokens[0];
                     if (tokens.length > 1)
                         beehivePortIncrement = Integer.parseInt(tokens[1]);
-                    properties.setProperty(BeehiveNode.Port.getName(), port);
+                    properties.setProperty(TitanNodeImpl.Port.getName(), port);
                 } else if (args[i].equals("--beehive-connection-type")) {
-                    properties.setProperty(BeehiveNode.ConnectionType.getName(), args[++i]);
+                    properties.setProperty(TitanNodeImpl.ConnectionType.getName(), args[++i]);
                 } else if (args[i].equals("--http-port")) {
                     String[] tokens = args[++i].split(",");
                     String port = tokens[0];
@@ -307,7 +307,7 @@ public class Celeste {
                 } else if (args[i].equals("--keystore") ) {
                     keyStoreNames = args[++i].split(",");
                 } else if (args[i].equals("--object-store-capacity") ) {
-                    properties.setProperty(BeehiveNode.ObjectStoreCapacity.getName(), args[++i]);
+                    properties.setProperty(TitanNodeImpl.ObjectStoreCapacity.getName(), args[++i]);
                 } else if (args[i].equals("--version")) {
                     System.out.println(release);
                     System.out.println(Copyright.miniNotice);
@@ -317,15 +317,15 @@ public class Celeste {
                     System.out.printf(" [--n-nodes <integer>] (%d)%n", n_nodes);
                     System.out.printf(" [--threads] (do not use threads)%n");
                     System.out.printf(" [--gateway <URL>] (%s)%n", String.valueOf(gatewayArgument));
-                    System.out.printf(" [--gateway-retry <seconds>] (%s)%n", properties.getPropertyAsInt(BeehiveNode.GatewayRetryDelayMillis.getName()));
+                    System.out.printf(" [--gateway-retry <seconds>] (%s)%n", properties.getPropertyAsInt(TitanNodeImpl.GatewayRetryDelayMillis.getName()));
                     System.out.printf(" [--http-port <integer>[,<integer>]] (%d,%d)%n", properties.getPropertyAsInt(WebDAVDaemon.Port.getName()), webdavPortIncrement);
                     System.out.printf(" [--jar <file name>] (%s)%n", String.valueOf(jarFile));
                     System.out.printf(" [--java <file name>] (%s)%n", javaFile);
                     System.out.printf(" [--jmx-port <integer>[,<integer>]] (%d,%d)%n] (%d)%n", jmxPort, jmxPortIncrement);
-                    System.out.printf(" [--beehive-port <integer>[,<integer>]] (%d,%d)%n", properties.getPropertyAsInt(BeehiveNode.Port.getName()), beehivePortIncrement);
-                    System.out.printf(" [--internetwork-address <ip-addr>] (%s)%n", properties.getProperty(BeehiveNode.InterNetworkAddress.getName()));
-                    System.out.printf(" [--object-store-capacity <number>|\"unlimited\"] (%s)%n", properties.getProperty(BeehiveNode.ObjectStoreCapacity.getName()));
-                    System.out.printf(" [--localfs-root <directory name>] (%s)%n", properties.getProperty(BeehiveNode.LocalFileSystemRoot.getName()));
+                    System.out.printf(" [--beehive-port <integer>[,<integer>]] (%d,%d)%n", properties.getPropertyAsInt(TitanNodeImpl.Port.getName()), beehivePortIncrement);
+                    System.out.printf(" [--internetwork-address <ip-addr>] (%s)%n", properties.getProperty(TitanNodeImpl.InterNetworkAddress.getName()));
+                    System.out.printf(" [--object-store-capacity <number>|\"unlimited\"] (%s)%n", properties.getProperty(TitanNodeImpl.ObjectStoreCapacity.getName()));
+                    System.out.printf(" [--localfs-root <directory name>] (%s)%n", properties.getProperty(TitanNodeImpl.LocalFileSystemRoot.getName()));
                     System.exit(0);
                 } else {
                     System.out.println("Ignoring unknown option: " + args[i]);
@@ -346,10 +346,10 @@ public class Celeste {
             }
         }
 
-        File rootDirectory = new File(properties.getProperty(BeehiveNode.LocalFileSystemRoot.getName()));
+        File rootDirectory = new File(properties.getProperty(TitanNodeImpl.LocalFileSystemRoot.getName()));
         if (!rootDirectory.exists()) {
             if (rootDirectory.mkdirs() == false) {
-                System.err.printf("Failed to create %s%n", properties.getProperty(BeehiveNode.LocalFileSystemRoot.getName()));
+                System.err.printf("Failed to create %s%n", properties.getProperty(TitanNodeImpl.LocalFileSystemRoot.getName()));
                 System.exit(1);
             }
         }
@@ -372,7 +372,7 @@ public class Celeste {
                     OrderedProperties configurationProperties = new OrderedProperties();
                     configurationProperties.putAll(properties);
                     if (keyStoreNames != null) {
-                        configurationProperties.setProperty(BeehiveNode.KeyStoreFileName.getName(), keyStoreNames[i]);
+                        configurationProperties.setProperty(TitanNodeImpl.KeyStoreFileName.getName(), keyStoreNames[i]);
                     }
 
                     node[i] = new CelesteNode(configurationProperties);
@@ -380,7 +380,7 @@ public class Celeste {
                     thread[i] = node[i].start();
 
                     System.out.printf("%s [%d ms] %s%n", dateFormat.format(new Date()),
-                            System.currentTimeMillis() - Long.parseLong(node[i].getProperty(BeehiveNode.StartTime.getName())),
+                            System.currentTimeMillis() - Long.parseLong(node[i].getProperty(TitanNodeImpl.StartTime.getName())),
                             node[i].getNodeAddress().format());
 
                     try {
@@ -389,8 +389,8 @@ public class Celeste {
                         e.printStackTrace();
                     }
 
-                    properties.setProperty(BeehiveNode.GatewayURL.getName(), node[0].getNodeAddress().getHTTPInterface());
-                    properties.setProperty(BeehiveNode.Port.getName(), properties.getPropertyAsInt(BeehiveNode.Port.getName()) + beehivePortIncrement);
+                    properties.setProperty(TitanNodeImpl.GatewayURL.getName(), node[0].getNodeAddress().getHTTPInterface());
+                    properties.setProperty(TitanNodeImpl.Port.getName(), properties.getPropertyAsInt(TitanNodeImpl.Port.getName()) + beehivePortIncrement);
                     properties.setProperty(WebDAVDaemon.Port.getName(), properties.getPropertyAsInt(WebDAVDaemon.Port.getName()) + webdavPortIncrement);
                     properties.setProperty(CelesteClientDaemon.Port.getName(), properties.getPropertyAsInt(CelesteClientDaemon.Port.getName()) + celestePortIncrement);
                 }
@@ -408,7 +408,7 @@ public class Celeste {
             } catch (java.net.BindException e) {
                 System.out.printf(
                         "%s beehive-port=%d http-port=%d celeste-port=%d jmx-port=%d%n",
-                        e.toString(), properties.getPropertyAsInt(BeehiveNode.Port.getName()), properties.getPropertyAsInt(WebDAVDaemon.Port.getName()),
+                        e.toString(), properties.getPropertyAsInt(TitanNodeImpl.Port.getName()), properties.getPropertyAsInt(WebDAVDaemon.Port.getName()),
                         properties.getPropertyAsInt(WebDAVDaemon.Port.getName()), jmxPort);
             } catch (IOException e) {
                 e.printStackTrace();
@@ -433,13 +433,13 @@ public class Celeste {
             // Customise this node's properties.
             configurationProperties.putAll(properties);
             if (keyStoreNames != null) {
-                configurationProperties.setProperty(BeehiveNode.KeyStoreFileName.getName(), keyStoreNames[i]);
+                configurationProperties.setProperty(TitanNodeImpl.KeyStoreFileName.getName(), keyStoreNames[i]);
             }
 
             String configurationFileName = String.format("%s/node-%s-%s-%d.cf",
-                    configurationProperties.getProperty(BeehiveNode.LocalFileSystemRoot.getName()),
-                    configurationProperties.getProperty(BeehiveNode.InterNetworkAddress.getName()),
-                    configurationProperties.getProperty(BeehiveNode.Port.getName()),
+                    configurationProperties.getProperty(TitanNodeImpl.LocalFileSystemRoot.getName()),
+                    configurationProperties.getProperty(TitanNodeImpl.InterNetworkAddress.getName()),
+                    configurationProperties.getProperty(TitanNodeImpl.Port.getName()),
                     i);
             
             FileOutputStream fout = null;
@@ -474,11 +474,11 @@ public class Celeste {
             // subsequent nodes use it as a gateway.
             //
             if (i == 0) {
-                gatewayArgument = "http://" +  properties.getProperty(BeehiveNode.InterNetworkAddress.getName()) + ":" + properties.getProperty(WebDAVDaemon.Port.getName());
-                properties.setProperty(BeehiveNode.GatewayURL.getName(), gatewayArgument);
+                gatewayArgument = "http://" +  properties.getProperty(TitanNodeImpl.InterNetworkAddress.getName()) + ":" + properties.getProperty(WebDAVDaemon.Port.getName());
+                properties.setProperty(TitanNodeImpl.GatewayURL.getName(), gatewayArgument);
             }
 
-            properties.setProperty(BeehiveNode.Port.getName(), properties.getPropertyAsInt(BeehiveNode.Port.getName()) + beehivePortIncrement);
+            properties.setProperty(TitanNodeImpl.Port.getName(), properties.getPropertyAsInt(TitanNodeImpl.Port.getName()) + beehivePortIncrement);
             properties.setProperty(WebDAVDaemon.Port.getName(), properties.getPropertyAsInt(WebDAVDaemon.Port.getName()) + webdavPortIncrement);
             properties.setProperty(CelesteClientDaemon.Port.getName(), properties.getPropertyAsInt(CelesteClientDaemon.Port.getName()) + celestePortIncrement);
             if (jmxPort != null) {

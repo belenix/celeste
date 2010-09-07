@@ -68,13 +68,13 @@ public interface CelesteAPI extends Closeable {
     /** The API uses text representations of operations */
     public static final String CLIENT_PROTOCOL_TEXT = "text";
     
-    /** The {@link BeehiveObjectId} file's {@link AnchorObject} */
+    /** The {@link TitanGuid} file's {@link AnchorObject} */
     public final static String AOBJECTID_NAME = "Celeste.AObjectId";
     
-    /** The {@link BeehiveObjectId} of the file's {@link VersionObject} */
+    /** The {@link TitanGuid} of the file's {@link VersionObject} */
     public final static String VOBJECTID_NAME = "Celeste.VObjectId";
     
-    /** The {@link BeehiveObjectId} of the file's lock */
+    /** The {@link TitanGuid} of the file's lock */
     public final static String LOCKID_NAME = "Celeste.Lock.Id";
 
     /** The reference count of the file's lock */
@@ -86,7 +86,7 @@ public interface CelesteAPI extends Closeable {
     /** The reference count of the file's type */
     public final static String LOCKTYPE_NAME = "Celeste.Lock.Type";
     
-    /** The {@link BeehiveObjectId} of a file's Delete Token. */
+    /** The {@link TitanGuid} of a file's Delete Token. */
     public final static String DELETETOKENID_NAME = "Celeste.DeleteTokenId";
     
     /** The String representing the file's replication information. */
@@ -95,10 +95,10 @@ public interface CelesteAPI extends Closeable {
     /** The maximum number bytes in size of an underlying {@link BlockObject} that comprises a file */
     public final static String DEFAULTBOBJECTSIZE_NAME = "Celeste.BObjectSize";
     
-    /** The {@link BeehiveObjectId} of the file's owner {@link Credential} */
+    /** The {@link TitanGuid} of the file's owner {@link Credential} */
     public final static String VOBJECT_OWNER_NAME = "Celeste.OwnerId";
     
-    /** The {@link BeehiveObjectId} of the file's group {@link Credential} */
+    /** The {@link TitanGuid} of the file's group {@link Credential} */
     public final static String VOBJECT_GROUP_NAME = "Celeste.GroupId";
     public final static String VOBJECT_ACL_NAME = "Celeste.ACL";
     public final static String FILE_SIZE_NAME = "Celeste.FileSize";
@@ -191,7 +191,7 @@ public interface CelesteAPI extends Closeable {
      * Delete a Celeste file.
      * 
      * Deletion requires supplying the delete-token as a parameter in the {@link DeleteFileOperation}.
-     * The delete-token is the original, secret, {@link BeehiveObjectId} such that the {@link BeehiveObjectId}
+     * The delete-token is the original, secret, {@link TitanGuid} such that the {@code TitanGuid}
      * of that original delete token (ie. <i>F(F(delete-token))</i>) is equal to value given to the
      * {@link CreateFileOperation} constructor when the file was created.
      * 
@@ -230,14 +230,14 @@ public interface CelesteAPI extends Closeable {
 
      * <table>
      *   <tbody>
-     *    <tr><td>{@link CelesteAPI#AOBJECTID_NAME AOBJECTID_NAME}</td><td>The AnchorObject BeehiveObjectId.</td></tr>
+     *    <tr><td>{@link CelesteAPI#AOBJECTID_NAME AOBJECTID_NAME}</td><td>The AnchorObject TitanGuid.</td></tr>
      *    <tr><td>{@link CelesteAPI#DEFAULTBOBJECTSIZE_NAME DEFAULTBOBJECTSIZE_NAME}</td></td><td>The default BlockObject size</td></tr>
      *    <tr><td>{@link CelesteAPI#DEFAULTREPLICATIONPARAMETERS_NAME DEFAULTREPLICATIONPARAMETERS_NAME}</td></td>The replication parameters.</td></tr>
-     *    <tr><td>{@link CelesteAPI#DELETETOKENID_NAME DELETETOKENID_NAME}</td></td><td>The Delete Token BeehiveObjectId</td></tr>
+     *    <tr><td>{@link CelesteAPI#DELETETOKENID_NAME DELETETOKENID_NAME}</td></td><td>The Delete Token TitanGuid</td></tr>
      *    <tr><td>{@link CelesteAPI#FILE_SIZE_NAME FILE_SIZE_NAME}</td></td><td>The file size</td></tr>
-     *    <tr><td>{@link CelesteAPI#VOBJECTID_NAME VOBJECTID_NAME}</td></td><td>The VersionObject BeehiveObjectId</td></tr>
-     *    <tr><td>{@link CelesteAPI#VOBJECT_GROUP_NAME VOBJECT_GROUP_NAME}</td></td><td>The BeehiveObjectId of the group credential</td></tr>
-     *    <tr><td>{@link CelesteAPI#VOBJECT_OWNER_NAME VOBJECT_OWNER_NAME}</td></td><td>The BeehiveObjectId of the owner credential</td></tr>
+     *    <tr><td>{@link CelesteAPI#VOBJECTID_NAME VOBJECTID_NAME}</td></td><td>The VersionObject TitanGuid</td></tr>
+     *    <tr><td>{@link CelesteAPI#VOBJECT_GROUP_NAME VOBJECT_GROUP_NAME}</td></td><td>The TitanGuid of the group credential</td></tr>
+     *    <tr><td>{@link CelesteAPI#VOBJECT_OWNER_NAME VOBJECT_OWNER_NAME}</td></td><td>The TitanGuid of the owner credential</td></tr>
      *    <tr><td>{@link CelesteAPI#WRITE_SIGNATURE_INCLUDES_DATA WRITES_MUST_BE_SIGNED_NAME}</td></td><td>"True" if writes are signed</td></tr>
      *    <tr><td>{@link CelesteAPI#VOBJECT_ACL_NAME VOBJECT_ACL_NAME}</td><td>The encoded AccessControlList</td></tr>
      *    <tr><td>{@link CelesteAPI#WRITERS_SIGNATURE_NAME WRITERS_SIGNATURE_NAME}</td><td>The encoded signature of the last updater</td></tr>

@@ -59,7 +59,7 @@ import sunlabs.titan.TitanGuidImpl;
 import sunlabs.titan.api.TitanGuid;
 import sunlabs.titan.api.TitanNodeId;
 import sunlabs.titan.api.XHTMLInspectable;
-import sunlabs.titan.node.BeehiveNode;
+import sunlabs.titan.node.TitanNodeImpl;
 import sunlabs.titan.node.TitanMessage;
 import sunlabs.titan.node.TitanMessage.RemoteException;
 import sunlabs.titan.node.services.CensusDaemon;
@@ -956,8 +956,8 @@ public class MutableObject {
          * Get the {@link TitanGuid} of this {@code ObjectHistory}.
          *
          * <p>
-         * Each {@code ObjectHistory} instance will have a unique {@code BeehiveObjectId}
-         * distinguished by the {@code BeehiveObjectId} of the MutableObject it represents, the {@link TimeStamp}
+         * Each {@code ObjectHistory} instance will have a unique {@code TitanGuid}
+         * distinguished by the {@code TitanGuid} of the MutableObject it represents, the {@link TimeStamp}
          * history and the {@code replicaId}.
          * </p>
          */
@@ -1090,8 +1090,8 @@ public class MutableObject {
         /**
          * Get the {@link TitanGuid} of this {@code ObjectHistorySet}.
          * <p>
-         * The BeehiveObjectId of this @code ObjectHistorySet} is computed as a hash over the entire {@code ObjectHistorySet}.
-         * This is not the same as the {@code BeehiveObjectId} of the MutableObject that this {@code ObjectHistorySet} represents.
+         * The TitanGuid of this @code ObjectHistorySet} is computed as a hash over the entire {@code ObjectHistorySet}.
+         * This is not the same as the {@code TitanGuid} of the MutableObject that this {@code ObjectHistorySet} represents.
          * See {@link #getMutableObjectIdObjectId()}
          * </p>
          */
@@ -1798,9 +1798,9 @@ public class MutableObject {
          *
          * @throws ObjectHistory.ValidationException
          * @throws MutableObject.ExistenceException if the {@link ObjectHistory} already exists in the object pool.
-         * @throws BeehiveNode.NoSuchNodeException
+         * @throws TitanNodeImpl.NoSuchNodeException
          */
-        public MutableObject.ObjectHistory call() throws ObjectHistory.ValidationException, MutableObject.ExistenceException, BeehiveNode.NoSuchNodeException {
+        public MutableObject.ObjectHistory call() throws ObjectHistory.ValidationException, MutableObject.ExistenceException, TitanNodeImpl.NoSuchNodeException {
 
             if (handler.getLogger().isLoggable(Level.FINEST)) {
                 handler.getLogger().finest("replica[%d] %s on node %s", this.replicaIndex, this.replicaId, this.destinationNodeId);

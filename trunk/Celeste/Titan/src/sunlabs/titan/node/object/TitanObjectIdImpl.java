@@ -46,9 +46,9 @@ public class TitanObjectIdImpl extends TitanGuidImpl implements TitanObjectId {
     }
     
     /**
-     * Construct a new BeehiveObjectId instance from a String representation of the identifier in hex.
+     * Construct a new {@code TitanObjectIdImpl} instance from a String representation of the identifier in hex.
      * <p>
-     * The given value must be a contiguous string of hexadecimal numerals {@link TitanGuidImpl.n_digits} in length.
+     * The given value must be a contiguous string of hexadecimal numerals {@link TitanGuidImpl#n_digits} in length.
      * </p>
      */
     public TitanObjectIdImpl(String hexValue) throws NumberFormatException {

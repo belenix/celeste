@@ -32,7 +32,7 @@ import java.util.Date;
 
 import sunlabs.celeste.node.services.CelesteClientDaemon;
 import sunlabs.titan.api.Credential;
-import sunlabs.titan.node.BeehiveNode;
+import sunlabs.titan.node.TitanNodeImpl;
 import sunlabs.titan.util.OrderedProperties;
 
 /**
@@ -55,7 +55,7 @@ import sunlabs.titan.util.OrderedProperties;
  * traditional file system semantics.
  * </p>
  */
-public final class CelesteNode extends BeehiveNode /*implements CelesteAPI*/ {
+public final class CelesteNode extends TitanNodeImpl /*implements CelesteAPI*/ {
     public final static String PACKAGE = CelesteNode.class.getPackage().getName();
     public final static String SERVICE_PKG = PACKAGE + ".services";
     public final static String OBJECT_PKG = "sunlabs.celeste.node.services.object";
@@ -83,7 +83,7 @@ public final class CelesteNode extends BeehiveNode /*implements CelesteAPI*/ {
             Thread thread = node.start();
 
             System.out.printf("%s [%d ms] %s%n", dateFormat.format(new Date()),
-                    System.currentTimeMillis() - Long.parseLong(node.getProperty(BeehiveNode.StartTime.getName())), node.toString());
+                    System.currentTimeMillis() - Long.parseLong(node.getProperty(TitanNodeImpl.StartTime.getName())), node.toString());
             while (true) {
                 try {
                     thread.join();

@@ -31,7 +31,7 @@ import java.util.logging.Level;
 import sunlabs.titan.api.TitanGuid;
 import sunlabs.titan.api.TitanNodeId;
 import sunlabs.titan.api.TitanObject;
-import sunlabs.titan.node.BeehiveNode;
+import sunlabs.titan.node.TitanNodeImpl;
 import sunlabs.titan.node.BeehiveObjectPool;
 import sunlabs.titan.node.BeehiveObjectStore;
 import sunlabs.titan.node.Publishers;
@@ -171,7 +171,7 @@ public class ReplicatableObject {
 	                    }
 	                    handler.getNode().sendToNodeExactly(bestPublisher.getNodeId(), bestPublisher.getObjectType(), "replicateObject", new Replicate.Request(objectId, publisherSet));
 	                    break;
-	                } catch (BeehiveNode.NoSuchNodeException e) {
+	                } catch (TitanNodeImpl.NoSuchNodeException e) {
 	                    e.printStackTrace();
 	                    // keep trying.
 	                }

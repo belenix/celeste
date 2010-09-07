@@ -35,8 +35,8 @@ import sunlabs.titan.node.util.DOLRLogger;
 /**
  * Every {@link TitanNode} instance has a set of services which implement
  * the capabilities of the system.
- * Every message transmitted between ç Nodes is a message destined
- * for a TitanNode service.
+ * Every message transmitted between nodes is a message destined
+ * for a {@code TitanNode} service.
  * Methods in a class implementing this interface that have the parameter
  * signature of
  * <code><i>method</i>(TitanMessage message)</code>
@@ -71,6 +71,22 @@ import sunlabs.titan.node.util.DOLRLogger;
  * @author Glenn Scott - Sun Microsystems Laboratories
  */
 public interface TitanService extends Serializable {
+    
+    /**
+     * Classes implementing this interface and providing request/response communication between instances on different {@link TitanNodeImpl} instances
+     * implement this interface for requests sent to a {@code BeehiveObjectHandler}.
+     */
+    public interface Request extends Serializable {
+        
+    }
+
+    /**
+     * Classes implementing this interface and providing request/response communication between instances on different {@link TitanNodeImpl} instances
+     * implement this interface for requests sent from a {@code BeehiveObjectHandler}.
+     */
+    public interface Response extends Serializable {
+        
+    }
 
     /**
      * The configuration parameter name controlling the logging level of

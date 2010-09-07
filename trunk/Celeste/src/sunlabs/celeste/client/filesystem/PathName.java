@@ -1,9 +1,31 @@
+/*
+ * Copyright 2007-2010 Oracle. All Rights Reserved.
+ * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER
+ *
+ * This code is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2
+ * only, as published by the Free Software Foundation.
+ *
+ * This code is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ * General Public License version 2 for more details (a copy is
+ * included in the LICENSE file that accompanied this code).
+ *
+ * You should have received a copy of the GNU General Public License
+ * version 2 along with this work; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
+ * 02110-1301 USA
+ *
+ * Please contact Oracle Corporation, 500 Oracle Parkway, Redwood Shores, CA 94065
+ * or visit www.oracle.com if you need additional information or
+ * have any questions.
+ */
 package sunlabs.celeste.client.filesystem;
 
 import java.net.URI;
 import java.util.Iterator;
 import java.util.Stack;
-
 
 public class PathName implements Iterable<HierarchicalFileSystem.FileName>, HierarchicalFileSystem.FileName {
     private String separator = "/";
@@ -84,12 +106,12 @@ public class PathName implements Iterable<HierarchicalFileSystem.FileName>, Hier
     }
 
     /**
-     * Get a component of a {@code PathName} indexed by {@code index}.
+     * Get the component of a {@code PathName} indexed by {@code index}.
      * 
      * Note that if the PathName is absolute (ie. it starts with the {@link #separator} string), the <i>0</i>th element is the separator string  alone.
      * 
      * @param index
-     * @return
+     * @return the component of a {@code PathName} indexed by {@code index}.
      */
     public String get(int index) {
         String result = this.path.elementAt(index);
@@ -103,7 +125,7 @@ public class PathName implements Iterable<HierarchicalFileSystem.FileName>, Hier
      * <li>{@code tail("/a/b/c/d")} returns {@code "a/b/c/d"} (absolute paths contain the {@link #separator} string as the first component).</li>
      * <li>{@code tail("a/b/c/d")} returns "b/c/d".</li>
      * </ul>
-     * @return
+     * @return the tail of the path.
      */
     public PathName tail() {
         return this.tail(this.size()-1);
@@ -288,8 +310,7 @@ public class PathName implements Iterable<HierarchicalFileSystem.FileName>, Hier
          * {@code PathIterator} does not support the {@code remove()}
          * operation.
          *
-         * @throws UnsupportedOperationException
-         *         always
+         * @throws UnsupportedOperationException  always
          */
         public void remove() {
             throw new UnsupportedOperationException();

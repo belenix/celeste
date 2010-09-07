@@ -42,7 +42,7 @@ import sunlabs.titan.node.object.RetrievableObject;
 import sunlabs.titan.util.DOLRStatus;
 
 /**
- * An AnchorObject is a {@link BeehiveObject} that represents, and contains information about,
+ * An AnchorObject is a {@link TitanObject} that represents, and contains information about,
  * a specific Celeste file.
  * 
  * @see VersionObject
@@ -107,14 +107,14 @@ public interface AnchorObject extends
         public boolean getSignWrites();
 
         /**
-         * Set the {@link AObjectVersionMap} parameters for the mutable object system.
+         * Set the {@link AObjectVersionService} parameters for the mutable object system.
          *
          * @param params
          */
         public void setAObjectVersionMapParams(AObjectVersionMapAPI.Parameters params);
 
         /**
-         * Get the {@link AObjectVersionMap} parameters for the mutable object system.
+         * Get the {@link AObjectVersionService} parameters for the mutable object system.
          */
         public AObjectVersionMapAPI.Parameters getAObjectVersionMapParams();
     }

@@ -44,7 +44,7 @@ import sunlabs.titan.api.TitanNode;
 import sunlabs.titan.api.TitanService;
 import sunlabs.titan.api.management.TitanServiceMBean;
 import sunlabs.titan.node.TitanMessage;
-import sunlabs.titan.node.BeehiveNode;
+import sunlabs.titan.node.TitanNodeImpl;
 import sunlabs.titan.node.util.DOLRLogger;
 import sunlabs.titan.node.util.DOLRLoggerMBean;
 import sunlabs.titan.util.WeakMBeanRegistrar;
@@ -250,7 +250,7 @@ public abstract class AbstractTitanService extends NotificationBroadcasterSuppor
     }
 
     /**
-     * Get the {@link BeehiveNode} instance of this Service.
+     * Get the {@link TitanNodeImpl} instance of this Service.
      */
     public TitanNode getNode() {
         return this.node;

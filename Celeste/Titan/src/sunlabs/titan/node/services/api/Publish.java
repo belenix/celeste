@@ -67,7 +67,7 @@ public interface Publish {
         public NodeAddress getPublisherAddress();
 
         /**
-         * Return a {@link Map<BeehiveObjectId,BeehiveObject.Metadata>} indexed by the object identifier
+         * Return a {@link Map<TitanGuid,TitanObject.Metadata>} indexed by the object identifier
          * of the object to publish and the corresponding object metadata as the value.
          */
         public Map<TitanGuid,TitanObject.Metadata> getObjects();

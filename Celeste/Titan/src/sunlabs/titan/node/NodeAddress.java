@@ -1,5 +1,5 @@
 /*
- * Copyright 2007-2009 Sun Microsystems, Inc. All Rights Reserved.
+ * Copyright 2007-2010 Oracle. All Rights Reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER
  *
  * This code is free software; you can redistribute it and/or modify
@@ -17,9 +17,9 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
  * 02110-1301 USA
  *
- * Please contact Sun Microsystems, Inc., 16 Network Circle, Menlo
- * Park, CA 94025 or visit www.sun.com if you need additional
- * information or have any questions.
+ * Please contact Oracle Corporation, 500 Oracle Parkway, Redwood Shores, CA 94065
+ * or visit www.oracle.com if you need additional information or
+ * have any questions.
  */
 package sunlabs.titan.node;
 
@@ -32,10 +32,10 @@ import java.net.UnknownHostException;
 import sunlabs.titan.api.TitanNodeId;
 
 /**
- * Every Beehive node has three addresses, each for a different purpose.
+ * Every Titan node has three addresses, each for a different purpose.
  * <ol>
  * <li>The first is simply the Node object-id which is meaningful only in the
- * context of Beehive routing.
+ * context of Titan routing.
  * Messages are routed to these object-ids by the Beehive nodes.
  * </li>
  * <li>
@@ -44,7 +44,7 @@ import sunlabs.titan.api.TitanNodeId;
  * </li>
  * <li>
  * The third is the TCP port number of the node's Beehive client interface.
- * The BeehiveNode's client interface is an HTTP-protocol interface to the Beehive Node.
+ * The TitanNode's client interface is an HTTP-protocol interface to the Beehive Node.
  * </li>
  * </ol>
  *

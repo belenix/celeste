@@ -63,7 +63,7 @@ public class ExtensibleObject {
          * </p>
          * @param message
          * @return The reply {@link sunlabs.titan.node.BeehiveMessage BeehiveMessage} containing the entire result of the operation.
-         * @see ExtensibleObject#extensibleOperation(BeehiveObjectHandler, BeehiveMessage)
+         * @see ExtensibleObject#extensibleOperation(BeehiveObjectHandler, TitanMessage)
          */
         public TitanMessage extensibleOperation(TitanMessage message);
 
@@ -77,7 +77,7 @@ public class ExtensibleObject {
          *
          * @throws ClassCastException
          * @throws ClassNotFoundException
-         * @throws TitanMessage 
+         * @throws TitanMessage.RemoteException
          * @see ExtensibleObject#extension(Handler, Class, TitanGuid, ExtensibleObject.Operation.Request)
          */
         public <C> C extension(Class<? extends C> resultClass, TitanGuid objectId, ExtensibleObject.Operation.Request operation) throws ClassCastException, ClassNotFoundException, TitanMessage.RemoteException;
@@ -98,7 +98,7 @@ public class ExtensibleObject {
      * A {@link ClassLoader} that loads classes from a Jar file named by a {@link URL}.
      * The class loader of an instance of this class is set as the parent.
      *
-     * @See java.net.URLClassLoader
+     * @see java.net.URLClassLoader
      */
     public static class JarClassLoader extends URLClassLoader {
         private JarURLConnection jarConnection;
@@ -112,7 +112,7 @@ public class ExtensibleObject {
          * </p>
          *
          * @param urls
-         * @See URLClassLoader
+         * @see URLClassLoader
          */
         public JarClassLoader(URL[] urls) {
             super(urls, JarClassLoader.class.getClassLoader());

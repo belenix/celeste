@@ -52,7 +52,7 @@ import sunlabs.asdf.web.http.HttpMessage;
 import sunlabs.titan.TitanGuidImpl;
 import sunlabs.titan.api.TitanGuid;
 import sunlabs.titan.api.TitanNode;
-import sunlabs.titan.node.BeehiveNode;
+import sunlabs.titan.node.TitanNodeImpl;
 import sunlabs.titan.node.Dossier;
 import sunlabs.titan.node.NodeAddress;
 import sunlabs.titan.node.Publishers;
@@ -533,10 +533,10 @@ public final class RoutingDaemon extends AbstractTitanService implements Routing
             this.log.config("%s", this.node.getConfiguration().get(RoutingDaemon.IntroductionRateSeconds));
             this.log.config("%s", this.node.getConfiguration().get(RoutingDaemon.ReunionRateSeconds));
             this.log.config("%s", this.node.getConfiguration().get(RoutingDaemon.DossierTimeToLiveSeconds));
-            if (this.node.getConfiguration().get(BeehiveNode.ClientTimeoutSeconds).asLong() < this.node.getConfiguration().get(RoutingDaemon.IntroductionRateSeconds).asLong()
-                    && this.node.getConfiguration().get(BeehiveNode.ClientTimeoutSeconds).asLong() < this.node.getConfiguration().get(RoutingDaemon.ReunionRateSeconds).asLong()) {
+            if (this.node.getConfiguration().get(TitanNodeImpl.ClientTimeoutSeconds).asLong() < this.node.getConfiguration().get(RoutingDaemon.IntroductionRateSeconds).asLong()
+                    && this.node.getConfiguration().get(TitanNodeImpl.ClientTimeoutSeconds).asLong() < this.node.getConfiguration().get(RoutingDaemon.ReunionRateSeconds).asLong()) {
                 this.log.config("Warning %s is less than %s or %s and will result in unnecessary close and reopen of connections.",
-                        BeehiveNode.ClientTimeoutSeconds,
+                        TitanNodeImpl.ClientTimeoutSeconds,
                         RoutingDaemon.IntroductionRateSeconds,
                         RoutingDaemon.ReunionRateSeconds);
             }

@@ -56,7 +56,7 @@ import sunlabs.titan.TitanGuidImpl;
 import sunlabs.titan.api.TitanGuid;
 import sunlabs.titan.api.TitanNode;
 import sunlabs.titan.api.TitanNodeId;
-import sunlabs.titan.node.BeehiveNode;
+import sunlabs.titan.node.TitanNodeImpl;
 import sunlabs.titan.node.NodeAddress;
 import sunlabs.titan.node.TitanMessage;
 import sunlabs.titan.node.TitanMessage.RemoteException;
@@ -298,7 +298,7 @@ public final class CensusDaemon extends AbstractTitanService implements Census, 
     }
 
     /**
-     * Receive a {@link Report.Request} from a {@link BeehiveNode}.
+     * Receive a {@link Report.Request} from a {@link TitanNodeImpl}.
      * The report must contain a positive value for the {@link Census#TimeToLive} property.
      * <p>
      * If a report does not exist, create one.  If a report already exists, this will

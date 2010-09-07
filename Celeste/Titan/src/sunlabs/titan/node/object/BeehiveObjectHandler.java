@@ -78,22 +78,6 @@ public interface BeehiveObjectHandler/*<T extends BeehiveObjectHandler.ObjectAPI
     public interface ObjectAPI extends TitanObject {
 
     }
-    
-    /**
-     * Classes implementing this interface and providing request/response communication between instances on different {@link BeehiveNodes}
-     * implement this interface for requests sent to a {@code BeehiveObjectHandler}.
-     */
-    public interface Request extends Serializable {
-    	
-    }
-
-    /**
-     * Classes implementing this interface and providing request/response communication between instances on different {@link BeehiveNodes}
-     * implement this interface for requests sent from a {@code BeehiveObjectHandler}.
-     */
-    public interface Response extends Serializable {
-    	
-    }
 
     /**
      * Receive and process a {@link PublishObjectMessage} for a {@link BeehiveObjectHandler.ObjectAPI} instance.

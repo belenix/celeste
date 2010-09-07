@@ -42,7 +42,7 @@ import sunlabs.titan.api.TitanGuid;
 import sunlabs.titan.api.TitanNode;
 import sunlabs.titan.api.TitanNodeId;
 import sunlabs.titan.api.TitanObject;
-import sunlabs.titan.node.BeehiveNode;
+import sunlabs.titan.node.TitanNodeImpl;
 import sunlabs.titan.node.BeehiveObjectPool;
 import sunlabs.titan.node.BeehiveObjectStore;
 import sunlabs.titan.node.TitanMessage;
@@ -156,7 +156,7 @@ public final class StorableObject {
      * <p>
      * The returned {@link TitanMessage} is the message from the object's root node indicating the status of the publish operation of the stored object.
      * The payload of the returned message is either an instance of {@link PublishDaemon.PublishObject.PublishUnpublishResponseImpl}
-     * or an {@link Exception} (see {@link TitanMessage#getPayload(Class, BeehiveNode)}.
+     * or an {@link Exception} (see {@link TitanMessage#getPayload(Class, TitanNodeImpl)}.
      * </p>
      * @param handler The instance implementing {@link StorableObject.Handler<? extends StorableObject.Handler.Object>} invoking this method.
      * @param object An instance implementing {@link StorableObject.Handler.Object} to store.
@@ -394,7 +394,7 @@ public final class StorableObject {
                 this.object = object;
             }
 
-            public TitanMessage call() throws BeehiveNode.NoSuchNodeException, ClassCastException, ClassNotFoundException, TitanMessage.RemoteException {
+            public TitanMessage call() throws TitanNodeImpl.NoSuchNodeException, ClassCastException, ClassNotFoundException, TitanMessage.RemoteException {
                 try {
                     TitanMessage reply = this.handler.getNode().sendToNodeExactly(this.destination, this.handler.getName(), "storeLocalObject", this.object);
               

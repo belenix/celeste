@@ -57,7 +57,7 @@ public class TitanNodeIdImpl extends TitanGuidImpl implements TitanNodeId {
     }
     
     /**
-     * Construct a new BeehiveObjectId instance from a String representation of the identifier in hex.
+     * Construct a new {@code TitanNodeIdImpl} instance from a {@code String} representation of the identifier in hex.
      * <p>
      * The given value must be a contiguous string of hexadecimal numerals {@link TitanGuidImpl.n_digits} in length.
      * </p>

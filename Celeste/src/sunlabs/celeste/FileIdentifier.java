@@ -1,5 +1,5 @@
 /*
- * Copyright 2007-2009 Sun Microsystems, Inc. All Rights Reserved.
+ * Copyright 2007-2010 Oracle. All Rights Reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER
  *
  * This code is free software; you can redistribute it and/or modify
@@ -17,9 +17,9 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
  * 02110-1301 USA
  *
- * Please contact Sun Microsystems, Inc., 16 Network Circle, Menlo
- * Park, CA 94025 or visit www.sun.com if you need additional
- * information or have any questions.
+ * Please contact Oracle Corporation, 500 Oracle Parkway, Redwood Shores, CA 94065
+ * or visit www.oracle.com if you need additional information or
+ * have any questions.
  */
 package sunlabs.celeste;
 
@@ -33,14 +33,14 @@ import sunlabs.titan.api.TitanGuid;
 /**
  * A Celeste File Identifier.
  * <p>
- * A File Identifier is a {@link BeehiveObjectId} that represents a single Celeste file.
- * The object-id is the composite of two {@code BeehiveObjectId} instances.  The first is
- * the {@code nameSpaceId}, the {@code BeehiveObjectId} of a {@link Credential}
+ * A File Identifier is a {@link TitanGuid} that represents a single Celeste file.
+ * The object-id is the composite of two {@code TitanGuid} instances.  The first is
+ * the {@code nameSpaceId}, the {@code TitanGuid} of a {@link Credential}
  * (stored in the Celeste object pool).
  *
- * The second is the {@code fileId}, another {@code BeehiveObjectId} generated from user supplied data.
+ * The second is the {@code fileId}, another {@code TitanGuid} generated from user supplied data.
  * A typical example is a String consisting of a name for the file, converted into bytes and converted
- * into a {@code BeehiveObjectId} by the {@link BeehiveObjectId#BeehiveObjectId(byte[])} method.
+ * into a {@code TitanGuid} by the {@link TitanGuidImpl#TitanGuidImpl(byte[])} method.
  * </p>
  * @author Glenn Scott - Sun Microsystems Laboratories
  */
@@ -66,21 +66,21 @@ public class FileIdentifier implements Serializable {
     }
 
     /**
-     * Return the {@link BeehiveObjectId} of this FileIdentifier's name-space.
+     * Return the {@link TitanGuid} of this FileIdentifier's name-space.
      */
     public TitanGuid getNameSpaceId() {
         return nameSpaceId;
     }
 
     /**
-     * Return the {@link BeehiveObjectId} of this FileIdentifier's file-id.
+     * Return the {@link TitanGuid} of this FileIdentifier's file-id.
      */
     public TitanGuid getFileId() {
         return fileId;
     }
 
     /**
-     * Return the {@link BeehiveObjectId} of the {@link AnchorObject.Object} representing the
+     * Return the {@link TitanGuid} of the {@link AnchorObject.Object} representing the
      * file named by the combination of the {@code nameSpaceId} and {@code fileId}.
      */
     public TitanGuid getObjectId() {

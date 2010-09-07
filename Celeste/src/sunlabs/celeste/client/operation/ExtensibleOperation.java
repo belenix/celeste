@@ -1,5 +1,5 @@
 /*
- * Copyright 2008-2009 Sun Microsystems, Inc. All Rights Reserved.
+ * Copyright 2007-2010 Oracle. All Rights Reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER
  *
  * This code is free software; you can redistribute it and/or modify
@@ -17,11 +17,10 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
  * 02110-1301 USA
  *
- * Please contact Sun Microsystems, Inc., 16 Network Circle, Menlo
- * Park, CA 94025 or visit www.sun.com if you need additional
- * information or have any questions.
+ * Please contact Oracle Corporation, 500 Oracle Parkway, Redwood Shores, CA 94065
+ * or visit www.oracle.com if you need additional information or
+ * have any questions.
  */
-
 package sunlabs.celeste.client.operation;
 
 import java.io.IOException;
@@ -48,7 +47,7 @@ public class ExtensibleOperation extends AbstractCelesteOperation {
      * Creates a {@code ExtensibleOperation} object encapsulating the fields given as arguments.
      *
      * @param fileIdentifier the {@link FileIdentifier} of the file
-     * @param credentialId   the {@link BeehiveObjectId} of the {@link Credential} authorised to perform this operation
+     * @param credentialId   the {@link TitanGuid} of the {@link Credential} authorised to perform this operation
      * @param jarFileURLs    an array of {@link URL} instances refering to Java Jar files to load classes
      * @param args           an array of arbitrary, user-supplied Strings passed to the extension when it is started.
      */

@@ -37,7 +37,7 @@ import sunlabs.asdf.web.XML.XHTML;
 import sunlabs.asdf.web.XML.XML;
 import sunlabs.asdf.web.http.HTTP;
 import sunlabs.titan.node.ApplicationFramework;
-import sunlabs.titan.node.BeehiveNode.NoSuchNodeException;
+import sunlabs.titan.node.TitanNodeImpl.NoSuchNodeException;
 import sunlabs.titan.node.BeehiveObjectStore;
 import sunlabs.titan.node.NeighbourMap;
 import sunlabs.titan.node.NodeAddress;

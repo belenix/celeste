@@ -1,7 +1,7 @@
 <body>
 <h1>Starting a Titan Node</h1>
 Start a Titan Node by invoking the Java VM with the <code>titan.jar</code>
-specifying the class to run as <code>sunlabs.titan.node.TitanNodeImpl</code>.
+specifying the class to run as <code>sunlabs.titan.node.TitanNodeImpl</code>, and the URL of a configuration file.
 <pre>
 /usr/bin/java -cp titan.jar sunlabs.titan.node.TitanNodeImpl file:///var/tmp/titan.cf
 </pre>
@@ -25,8 +25,8 @@ or my extending the <code>sunlabs.titan.node.TitanNodeImpl</code> may have other
 <h2>Configuring a Titan Node</h2>
 <p>
 Every instance of Titan (a node) is configured by a set of attribute/value pairs (Configuration Properties).
-Each Titan node takes a single command-line argument consisting of a URL of a configuration file,
-the contents of which is a formatted text file containing comments and name/value pairs.
+Each Titan node takes one or more command-line arguments each a URL of a configuration file to be loaded (from left-to-right).
+The contents of each configuration file is formatted text containing comments and name/value pairs.
 </p>
 <p>
 For example, invoking Titan in the example above uses the local file /var/tmp/titan.cf as the source of the configuration values.
@@ -35,11 +35,11 @@ For example, invoking Titan in the example above uses the local file /var/tmp/ti
 The configuration information could be stored on a web server and the node is capable of using the HTTP protocol to obtain the configuration data.
 </p>
 <pre>
-/usr/bin/java -cp titan.jar sunlabs.titan.node.TitanNodeImpl http://webserver.com/titan//node-10.0.1.6-12300-3.cf
+/usr/bin/java -cp titan.jar sunlabs.titan.node.TitanNodeImpl http://webserver.com/titan//global.cf file:///var/tmp/titan/local.cf
 </pre>
 
 <h2>Configuration Properties</h2>
-If there are no Configuration Properties specified in the configuration file, each node is configured from a default value.
+If there are no Configuration Properties specified in the configuration file (ie. it is empty), each property is assigned a default value.
 These default values have been chosen arbitrarily and generally produce reasonable results.
 
 <h2>Format</h2>

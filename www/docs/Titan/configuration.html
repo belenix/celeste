@@ -1,6 +1,7 @@
 <body>
 <h1>Starting a Titan Node</h1>
-Start a Titan Node by invoking the Java VM with the <code>titan.jar</code> specifying the class to run as sunlabs.titan.node.TitanNodeImpl.
+Start a Titan Node by invoking the Java VM with the <code>titan.jar</code>
+specifying the class to run as <code>sunlabs.titan.node.TitanNodeImpl</code>.
 <pre>
 /usr/bin/java -cp titan.jar sunlabs.titan.node.TitanNodeImpl file:///var/tmp/titan.cf
 </pre>
@@ -22,6 +23,7 @@ Applications that embed Titan, by creating internal instances of <code>sunlabs.t
 or my extending the <code>sunlabs.titan.node.TitanNodeImpl</code> may have other means to start and configure the embedded Titan.
 
 <h2>Configuring a Titan Node</h2>
+<p>
 Every instance of Titan (a node) is configured by a set of attribute/value pairs (Configuration Properties).
 Each Titan node takes a single command-line argument consisting of a URL of a configuration file,
 the contents of which is a formatted text file containing comments and name/value pairs.
@@ -37,8 +39,8 @@ The configuration information could be stored on a web server and the node is ca
 </pre>
 
 <h2>Configuration Properties</h2>
-If there are no Properties specified in the configuration, each node is configured from a default value.
-These default values have been chosen arbitrarily chosen (generally).
+If there are no Configuration Properties specified in the configuration file, each node is configured from a default value.
+These default values have been chosen arbitrarily and generally produce reasonable results.
 
 <h2>Format</h2>
 <pre>

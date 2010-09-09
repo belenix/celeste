@@ -1,0 +1,163 @@
+Starting a Titan Node
+
+Start a Titan Node by invoking the Java VM with the <code>titan.jar</code> specifying the class to run as sunlabs.titan.node.TitanNodeImpl.
+
+/usr/bin/java -cp titan.jar sunlabs.titan.node.TitanNodeImpl file:///var/tmp/titan.cf
+
+In production environments, there are other command line options that you might find helpful.  For example:
+/usr/bin/java -Dtitan-node \
+    -server \
+    -Xmx12m \
+    -XX:+UseParallelGC \
+    -Dcom.sun.management.jmxremote \
+    -Djava.util.logging.config.file=./etc/logging.properties \
+    -Dcom.sun.management.jmxremote.password.file=./etc/jmxremote.password.template \
+    -Dcom.sun.management.jmxremote.port=16001 \
+    -cp titan.jar sunlabs.titan.node.TitanNodeImpl file:///var/tmp/titan.cf
+
+Applications that embed Titan, by creating internal instances of <code>sunlabs.titan.node.TitanNodeImpl</code>
+or my extending the <code>sunlabs.titan.node.TitanNodeImpl</code> may have other means to start and configure the embedded Titan.
+
+Configuring a Titan Node
+
+Every instance of Titan (a node) is configured by a set of attribute/value pairs (Configuration Properties).
+Each Titan node takes a single command-line argument consisting of a URL of a configuration file,
+the contents of which is a formatted text file containing comments and name/value pairs.
+
+For example, invoking Titan in the example above uses the local file /var/tmp/titan.cf as the source of the configuration values.
+
+The configuration information could be stored on a web server and the node is capable of using the HTTP protocol to obtain the configuration data.
+
+/usr/bin/java -cp titan.jar sunlabs.titan.node.TitanNodeImpl http://webserver.com/titan//node-10.0.1.6-12300-3.cf
+
+Configuration Properties
+
+If there are no Properties specified in the configuration, each node is configured from a default value.
+These default values have been chosen arbitrarily chosen (generally).
+
+Format
+
+#
+#
+sunlabs.beehive.node.services.WebDAVDaemon.InspectorCSS=/css/BeehiveStyle.css,/css/BeehiveColours-grey.css
+sunlabs.titan.node.BeehiveNode.ConnectionType=plain
+sunlabs.titan.node.BeehiveNode.LocalFileSystemRoot=/var/tmp/titan/
+sunlabs.titan.node.BeehiveNode.ObjectStoreMaximum=500M
+sunlabs.titan.node.TitanNodeImpl.ConnectionType=ssl
+sunlabs.titan.node.TitanNodeImpl.GatewayRetryDelaySeconds=30
+sunlabs.titan.node.TitanNodeImpl.GatewayURL=http\://10.0.1.6\:12001
+sunlabs.titan.node.TitanNodeImpl.InterNetworkAddress=10.0.1.6
+sunlabs.titan.node.TitanNodeImpl.KeyStoreFileName=/tmp/k8
+sunlabs.titan.node.TitanNodeImpl.LocalFileSystemRoot=/tmp/titan/
+sunlabs.titan.node.TitanNodeImpl.Port=12600
+sunlabs.titan.node.services.WebDAVDaemon.Port=12601
+
+Lines begining with '#' are comments.
+Other lines are in the form of name=value.
+Values are escaped with the '\' character
+
+Configuration Properties
+Here is the list of Configuration Properties:
+
+#
+# The maximum number of of simultaneous neighbour connections.
+sunlabs.titan.node.TitanNodeImpl.ClientMaximum=20
+#
+# The maximum number of seconds a client connection can be idle before it is considered unused and can be closed.
+sunlabs.titan.node.TitanNodeImpl.ClientTimeoutSeconds=660
+#
+# The inter-node connection type. Either 'plain' or 'ssl'.
+sunlabs.titan.node.TitanNodeImpl.ConnectionType=plain
+#
+# The number of seconds to wait before retrying to contact the gateway.
+sunlabs.titan.node.TitanNodeImpl.GatewayRetryDelaySeconds=30
+#
+# The local IP address to use.
+sunlabs.titan.node.TitanNodeImpl.InterNetworkAddress=10.0.1.6
+#
+# The full pathname of a Java KeyStore file containing this TitanNode's keys and credential.
+sunlabs.titan.node.TitanNodeImpl.KeyStoreFileName=/var/tmp/titan//keys-10.0.1.6_12000.jks
+#
+# The local directory to use for this TitanNode's data.
+sunlabs.titan.node.TitanNodeImpl.LocalFileSystemRoot=/var/tmp/titan/
+#
+# The maximum number of turned-over logfiles to keep.
+sunlabs.titan.node.TitanNodeImpl.LogFileCount=10
+#
+# The maximum size a logfile is allowed to grow before being 'turned-over.'
+sunlabs.titan.node.TitanNodeImpl.LogFileSize=1048576
+#
+# This node's NodeAddress. This Attribute is generated and is not configurable.
+sunlabs.titan.node.TitanNodeImpl.NodeAddress=BB1B17170E2C325CA08018E6D8C7006E049C38158F155A7C1318805B38A3DF59\:12000\:12001\:10.0.1.6
+#
+# The maximum allowed size for the local object-store.
+sunlabs.titan.node.TitanNodeImpl.ObjectStoreMaximum=500M
+#
+# The TCP port number that this TitanNode listens on for incoming TitanMessages.
+sunlabs.titan.node.TitanNodeImpl.Port=12000
+#
+# The local start time of this node.  This Attribute is generated and is not configurable.
+sunlabs.titan.node.TitanNodeImpl.StartTime=1284049839933
+#
+# The number of Threads to allocate to provide processing of inbound internode requests.
+sunlabs.titan.node.TitanNodeImpl.TitanNodeClientPoolSize=10
+#
+# The number of Threads to allocate to provide processing of asynchronous activities.
+sunlabs.titan.node.TitanNodeImpl.TitanNodeTaskPoolSize=20
+#
+# The build version.
+sunlabs.titan.node.TitanNodeImpl.Version=68\:81M
+#
+# The maximum number of log files to keep for each TitanService.
+sunlabs.titan.node.services.AbstractTitanService.LogFileCount=10
+#
+# The maximum number of bytes to allow a TitanService log file to grow before it is turned over.
+sunlabs.titan.node.services.AbstractTitanService.LogFileSize=8388608
+#
+# The number of seconds between each Census report transmitted by this node.
+sunlabs.titan.node.services.CensusDaemon.ReportRateSeconds=10
+#
+# The number of seconds to delay after completing an publish record expiration cycle, to starting the next one.
+sunlabs.titan.node.services.PublishDaemon.ExpirePeriodSeconds=600
+#
+# The number of milliseconds to delay between each publish message from this node.
+sunlabs.titan.node.services.PublishDaemon.PublishObjectInterstitialSleepMillis=0
+#
+# The number of seconds to delay after completing an object publish cycle, to starting the next one.
+sunlabs.titan.node.services.PublishDaemon.PublishPeriodSeconds=600
+#
+# The number of seconds until a Dossier.Entry becomes old and is removed.
+sunlabs.titan.node.services.RoutingDaemon.DossierTimeToLiveSeconds=2592000
+#
+# The number of seconds between iterations of the neighbour map introduction.
+sunlabs.titan.node.services.RoutingDaemon.IntroductionRateSeconds=600
+#
+# The number of seconds between iterations of the neighbour map reunion.
+sunlabs.titan.node.services.RoutingDaemon.ReunionRateSeconds=3600
+#
+# The maximum number of concurrent clients.
+sunlabs.titan.node.services.WebDAVDaemon.ClientMaximum=4
+#
+# The number of milliseconds a connection may be idle before it is closed.
+sunlabs.titan.node.services.WebDAVDaemon.ClientTimeoutMillis=60000
+#
+# The relative path of the Dojo script.
+sunlabs.titan.node.services.WebDAVDaemon.DojoJavascript=dojo/dojo.xd.js
+#
+# The URL of the base location of a Dojo installation.
+sunlabs.titan.node.services.WebDAVDaemon.DojoRoot=http\://o.aolcdn.com/dojo/1.4.1
+#
+# The Dojo theme name.
+sunlabs.titan.node.services.WebDAVDaemon.DojoTheme=tundra
+#
+# The css file to use for the node inspector interface.
+sunlabs.titan.node.services.WebDAVDaemon.InspectorCSS=/css/BeehiveStyle.css,/css/BeehiveColours-grey.css
+#
+# The JavaScript file to load for the node inspector interface.
+sunlabs.titan.node.services.WebDAVDaemon.InspectorJS=/js/DOLRScript.js
+#
+# The TCP port number this node listens on for incoming HTTP connections.
+sunlabs.titan.node.services.WebDAVDaemon.Port=12001
+#
+# The pathname prefix for the HTTP server to use when serving files.
+sunlabs.titan.node.services.WebDAVDaemon.Root=web

@@ -23,7 +23,7 @@
 
 CELESTEHOME=${CELESTEHOME:="unset"}
 if [[ ${CELESTEHOME} == "unset" ]]; then
-    if [[ -x ./bin/celeste && -x ./bin/celestesh && -e ./dist/celeste.jar ]]; then
+    if [[ -x ./bin/celeste && -x ./bin/celestesh ]]; then
 	echo "NOTICE: The current directory looks like a Celeste runtime installation."
 	echo "        Using the current directory instead of /opt/celeste"
 	echo "        Explicitly set the environment variable CELESTEHOME to override this."
@@ -78,7 +78,6 @@ fi
 # etc/celeste.cf.  Note that default values are documented there, so a change
 # here must have a corresponding documentation change there.
 #
-#celeste_root="${CELESTEHOME}"
 export BEEHIVEHOME=${CELESTEHOME}
 
 spool_root="/tmp/celeste"

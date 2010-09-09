@@ -87,9 +87,9 @@ public abstract class AbstractTitanService extends NotificationBroadcasterSuppor
     protected final static WeakMBeanRegistrar registrar = new WeakMBeanRegistrar(ManagementFactory.getPlatformMBeanServer());
 
     public final static Attributes.Prototype LogFileSize = new Attributes.Prototype(AbstractTitanService.class, "LogFileSize", 8*1024*1024,
-            "The maximum number of bytes to allow a log file to grow before it is turned over");
+            "The maximum number of bytes to allow a TitanService log file to grow before it is turned over.");
     public final static Attributes.Prototype LogFileCount = new Attributes.Prototype(AbstractTitanService.class, "LogFileCount", 10,
-            "The maximum number log files to keep.");
+            "The maximum number of log files to keep for each TitanService.");
 
     /** The {@code Node} instance that this Application belongs to. */
     protected final TitanNode node;

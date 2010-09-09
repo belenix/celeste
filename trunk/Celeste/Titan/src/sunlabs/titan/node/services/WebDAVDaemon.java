@@ -100,7 +100,7 @@ import sunlabs.titan.node.services.api.Reflection;
 import sunlabs.titan.util.OrderedProperties;
 
 /**
- * This class implements the Beehive HTTP management interface.
+ * This class implements the Titan HTTP management interface.
  * <p>
  * Although this is named "webdav" it is not (yet).
  * </p>
@@ -206,12 +206,12 @@ public final class WebDAVDaemon extends AbstractTitanService implements WebDAVDa
 //            }
 //        }
 
-        public class BeehiveNodeNameSpace implements HTTP.NameSpace {
+        public class TitanNodeNameSpace implements HTTP.NameSpace {
             private Map<HTTP.Request.Method,HTTP.Request.Method.Handler> methods;
             private HTTP.Server server;
             private WebDAV.Backend backend;
 
-            public BeehiveNodeNameSpace(HTTP.Server server, WebDAV.Backend backend) {
+            public TitanNodeNameSpace(HTTP.Server server, WebDAV.Backend backend) {
                 this.server = server;
                 this.backend = backend;
 
@@ -286,7 +286,7 @@ public final class WebDAVDaemon extends AbstractTitanService implements WebDAVDa
                     
                     server.setName(WebDAVDaemon.this.node.getNodeId().toString() + ":" + server.getName());
                     
-                    HTTP.NameSpace handler = new BeehiveNodeNameSpace(server, null);
+                    HTTP.NameSpace handler = new TitanNodeNameSpace(server, null);
                     HTTP.NameSpace fileHandler = new WebDAVNameSpace(server, backend);
                     server.addNameSpace(new URI("/"), handler);
                     server.addNameSpace(new URI("/xsl"), fileHandler);
@@ -350,7 +350,7 @@ public final class WebDAVDaemon extends AbstractTitanService implements WebDAVDa
     private static String revision = Release.ThisRevision();
 
     public final static Attributes.Prototype Port = new Attributes.Prototype(WebDAVDaemon.class, "Port", 12001,
-            "The port number this node listens for incoming HTTP connections.");
+            "The TCP port number this node listens on for incoming HTTP connections.");
     public final static Attributes.Prototype ServerRoot = new Attributes.Prototype(WebDAVDaemon.class, "Root", "web",
             "The pathname prefix for the HTTP server to use when serving files.");
     public final static Attributes.Prototype ClientMaximum = new Attributes.Prototype(WebDAVDaemon.class, "ClientMaximum", 4,

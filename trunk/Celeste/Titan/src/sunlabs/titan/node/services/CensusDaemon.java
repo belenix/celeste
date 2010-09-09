@@ -44,7 +44,6 @@ import javax.management.JMException;
 import sunlabs.asdf.jmx.JMX;
 import sunlabs.asdf.jmx.ThreadMBean;
 import sunlabs.asdf.util.Attributes;
-import sunlabs.asdf.util.Time;
 import sunlabs.asdf.util.TimeProfiler;
 import sunlabs.asdf.web.XML.XHTML;
 import sunlabs.asdf.web.XML.XML;
@@ -56,11 +55,11 @@ import sunlabs.titan.TitanGuidImpl;
 import sunlabs.titan.api.TitanGuid;
 import sunlabs.titan.api.TitanNode;
 import sunlabs.titan.api.TitanNodeId;
-import sunlabs.titan.node.TitanNodeImpl;
 import sunlabs.titan.node.NodeAddress;
 import sunlabs.titan.node.TitanMessage;
 import sunlabs.titan.node.TitanMessage.RemoteException;
 import sunlabs.titan.node.TitanNodeIdImpl;
+import sunlabs.titan.node.TitanNodeImpl;
 import sunlabs.titan.node.services.api.Census;
 import sunlabs.titan.util.OrderedProperties;
 
@@ -79,10 +78,10 @@ public final class CensusDaemon extends AbstractTitanService implements Census, 
     private final static long serialVersionUID = 1L;
     private final static String name = AbstractTitanService.makeName(CensusDaemon.class, CensusDaemon.serialVersionUID);
 
-    public final static Attributes.Prototype ReportRateMillis = new Attributes.Prototype(CensusDaemon.class,
-            "ReportRateMillis",
-            Time.minutesInMilliseconds(10),
-            "The number of milliseconds between each Census report transmitted by this node.");
+    public final static Attributes.Prototype ReportRateSeconds = new Attributes.Prototype(CensusDaemon.class,
+            "ReportRateSeconds",
+            10,
+            "The number of seconds between each Census report transmitted by this node.");
 
     private static String release = Release.ThisRevision();
 
@@ -288,10 +287,10 @@ public final class CensusDaemon extends AbstractTitanService implements Census, 
     public CensusDaemon(TitanNode node) throws JMException {
         super(node, CensusDaemon.name, "Catalogue all Nodes");
 
-        node.getConfiguration().add(CensusDaemon.ReportRateMillis);
+        node.getConfiguration().add(CensusDaemon.ReportRateSeconds);
 
         if (this.log.isLoggable(Level.CONFIG)) {
-            this.log.config("%s",node.getConfiguration().get(CensusDaemon.ReportRateMillis));
+            this.log.config("%s",node.getConfiguration().get(CensusDaemon.ReportRateSeconds));
         }
 
         this.catalogue = Collections.synchronizedSortedMap(new TreeMap<TitanNodeId,OrderedProperties>());
@@ -457,11 +456,11 @@ public final class CensusDaemon extends AbstractTitanService implements Census, 
         }
 
         public long getRefreshRate() {
-            return CensusDaemon.this.node.getConfiguration().asLong(CensusDaemon.ReportRateMillis);
+            return CensusDaemon.this.node.getConfiguration().asLong(CensusDaemon.ReportRateSeconds);
         }
 
         public void setRefreshRate(long refreshPeriodMillis) {
-            CensusDaemon.this.node.getConfiguration().set(CensusDaemon.ReportRateMillis, refreshPeriodMillis);
+            CensusDaemon.this.node.getConfiguration().set(CensusDaemon.ReportRateSeconds, refreshPeriodMillis);
         }
     }
 
@@ -638,7 +637,7 @@ public final class CensusDaemon extends AbstractTitanService implements Census, 
             .add(new XHTML.Table.Body(
                     new XHTML.Table.Row(new XHTML.Table.Data(""), new XHTML.Table.Data(controlButton, XHTML.CharacterEntity.nbsp, go, XHTML.CharacterEntity.nbsp, resetButton)),
                     new XHTML.Table.Row(new XHTML.Table.Data("Logging Level"), new XHTML.Table.Data(Xxhtml.selectJavaUtilLoggingLevel("LoggerLevel", this.log.getEffectiveLevel()), XHTML.CharacterEntity.nbsp, this.log.getName())),
-                    new XHTML.Table.Row(new XHTML.Table.Data("Refresh Rate (ms)"), new XHTML.Table.Data(this.node.getConfiguration().asLong(CensusDaemon.ReportRateMillis))),
+                    new XHTML.Table.Row(new XHTML.Table.Data("Refresh Rate (ms)"), new XHTML.Table.Data(this.node.getConfiguration().asLong(CensusDaemon.ReportRateSeconds))),
                     new XHTML.Table.Row(new XHTML.Table.Data("Set Configuration"), new XHTML.Table.Data(setButton)),
                     new XHTML.Table.Row(new XHTML.Table.Data("Add"), new XHTML.Table.Data(addButton), new XHTML.Table.Data(addressField))
             )));

@@ -6,9 +6,12 @@ By using distributed hash table (DHT) techniques, this service reliably routes m
 an environment where the participating components (nodes) are heterogeneous, casually participating, potentially unavailable, and even to some degrees malicious.
 </p>
 <p>
-In addition to routing messages among the nodes comprising the Titan overlay network,Titan models a pool in which Titan objects (object or objects) exist and are named by unique names.
-While these objects are fundamentally hosted on, or in some cases bound to, nodes comprising the system (and recursively include the nodes themselves as objects in the pool),
-Titan abstracts away the details of which node is hosting which object and instead provides interfaces where messages are sent to and from objects solely by their names and not by their location.
+In addition to routing messages among the nodes comprising the Titan overlay network,
+Titan models a pool in which Titan objects (object or objects) exist and are named by unique names.
+While these objects are fundamentally hosted on, or in some cases bound to,
+nodes comprising the system (and recursively include the nodes themselves as objects in the pool),
+Titan abstracts away the details of which node is hosting which object and instead provides interfaces where messages are sent to and from objects solely
+by their names and not by their location.
 </p>
 <p>
 A Titan node periodically advertises the availability of objects that it hosts, and the unavailability of objects that it previously hosted but no longer.
@@ -22,17 +25,28 @@ the more replicas of an object that exist in the object pool a message will prob
 Thus the more object replicas there are, the more the load is distributed and the better the system performs.
 </p>
 <p>
-Objects are free to implement their own behaviour corresponding to the messages they receive as well as specifying to the pool how to manage the object?s life-cycle,
+Objects are free to implement their own behaviour corresponding to the messages they receive as well as specifying to the pool how to manage
+the object's life-cycle,
 such as the degree of replication in the pool, the time-to-live of an object replica, any caching, and even controlled deletion.
-Each message received by an object induces some operation by the object and necessarily produces a response message which is returned to the sender of the original message.
-Example operations are to return some stored data, send messages to other objects, or interface to some external component such as a sensor, actuator, or independent application.
-In practice, the vast majority of objects are immutable and represent a service (and the vast majority of these have been services that simply encapsulate some stored data),
+Each message received by an object induces some operation by the object and necessarily produces a response message which is returned to the sender
+of the original message.
+Example operations are to return some stored data, send messages to other objects, or interface to some external component such as a sensor, actuator,
+or independent application.
+In practice, the vast majority of objects are immutable and represent a service (and the vast majority of these have been services that simply
+encapsulate some stored data),
 and any single object found in the set of replicas is sufficient to respond to a message.
-For objects that are not immutable, that is to say messages can modify their persistent state, Titan provides a Byzantine Quorum service for implementing strict consistency mutable objects in the pool.
+For objects that are not immutable, that is to say messages can modify their persistent state,
+Titan provides a Byzantine Quorum service for implementing strict consistency mutable objects in the pool.
 </p>
 <p>
 As alluded to above, objects can represent practically anything.
-From simple stored data, to applications, services, programming platforms, users and computers a Titan object models the service and is the interface between Titan messages and the effects of these messages on the objects in the pool.
+From simple stored data, to applications, services, programming platforms,
+users and computers a Titan object models the service and is the interface between Titan messages and the effects of these messages on the objects in the pool.
 </p>
+<p>
+Writing an application that uses Titan consists of a minimum of one or more classes that implement the interface {@link sunlabs.titan.api.TitanService}
+(perhaps using {@link sunlabs.titan.node.services.AbstractTitanService} as an aid to implementing the common methods),
+and writing a class that instantiates an instance of {@link TitanNode} (see {@link sunlabs.titan.node.TitanNodeImpl}) 
+and adds the new classes to the running node via {@link sunlabs.titan.api.TitanNode sunlabs.titan.api.TitanNode#getService(Class)}.
 </body>
 </html>

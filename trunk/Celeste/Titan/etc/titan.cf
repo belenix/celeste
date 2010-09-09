@@ -49,6 +49,7 @@ case $config_key in
 
     asdf)
 	titan_log="/var/tmp/titan-$config_key.log"
+ 	spool_root="/var/tmp/titan/"
 
 	JAVA_ARGUMENTS="-Dtitan-node -server -Xmx8m -XX:+UseParallelGC \
  -Djava.util.logging.config.file=./etc/logging.properties \
@@ -63,7 +64,7 @@ case $config_key in
  --http-port 12001,100 \
  --jmx-port 16000,1  \
  --delay-time 2 \
- -Dsunlabs.titan.node.BeehiveNode.LocalFileSystemRoot=/var/tmp/titan/ \
+ -Dsunlabs.titan.node.BeehiveNode.LocalFileSystemRoot=${spool_root} \
  -Dsunlabs.titan.node.BeehiveNode.ObjectStoreMaximum=500M \
  -Dsunlabs.titan.node.BeehiveNode.ConnectionType=plain \
  -Dsunlabs.beehive.node.services.WebDAVDaemon.InspectorCSS=/css/BeehiveStyle.css,/css/BeehiveColours-grey.css"

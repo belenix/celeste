@@ -4,8 +4,9 @@ byzantine and fault-tolerant mutable data store.
 Use ant 1.7, or newer, to build the system.
 
 % (cd Phidoux ; ant clean all)
-% cp Phidoux/Phidoux.jar Titan/lib
+% cp Phidoux/Phidoux.jar Titan/lib/
 % (cd Titan ; ant )
+% cp Titan/lib/titan*.tar dist/
 % ant clean all
 
 See http://hub.opensolaris.org/bin/view/Project+celeste/WebHome

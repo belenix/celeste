@@ -149,15 +149,15 @@ public final class VersionObjectHandler extends AbstractObjectHandler implements
          * A reference to an object is all that is needed to discriminate
          * the function or relationship of object from all other objects like this one.
          *
-         * For example, a BObject has an object-id, which is sufficient to
+         * For example, a {@link BlockObject} has an object-id, which is sufficient to
          * discriminate it from all other objects in the object pool, but it
          * also has an offset and a length which discriminates it from all
-         * other BObjects that comprise the original file version.
+         * other {@code BlockObject}s that comprise the original file version.
          *
-         * As another example, a VObject has an object-id, which is sufficient
+         * As another example, a {@link VersionObject} has an object-id, which is sufficient
          * to discriminate it from all other objects in the pool, but it also
          * has a generation number and serial number which discriminates it
-         * rom all other VObjects that comprise the original file.
+         * rom all other {@code VersionObject}s that comprise the original file.
          */
         public static class Reference implements VersionObject.Object.Reference, Serializable {
             public final static long serialVersionUID = 1L;

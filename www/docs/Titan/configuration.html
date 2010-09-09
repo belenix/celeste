@@ -1,10 +1,13 @@
-Starting a Titan Node
-
+<body>
+<h1>Starting a Titan Node</h1>
 Start a Titan Node by invoking the Java VM with the <code>titan.jar</code> specifying the class to run as sunlabs.titan.node.TitanNodeImpl.
-
+<pre>
 /usr/bin/java -cp titan.jar sunlabs.titan.node.TitanNodeImpl file:///var/tmp/titan.cf
-
+</pre>
+<p>
 In production environments, there are other command line options that you might find helpful.  For example:
+</p>
+<pre>
 /usr/bin/java -Dtitan-node \
     -server \
     -Xmx12m \
@@ -14,29 +17,31 @@ In production environments, there are other command line options that you might 
     -Dcom.sun.management.jmxremote.password.file=./etc/jmxremote.password.template \
     -Dcom.sun.management.jmxremote.port=16001 \
     -cp titan.jar sunlabs.titan.node.TitanNodeImpl file:///var/tmp/titan.cf
-
+</pre>
 Applications that embed Titan, by creating internal instances of <code>sunlabs.titan.node.TitanNodeImpl</code>
 or my extending the <code>sunlabs.titan.node.TitanNodeImpl</code> may have other means to start and configure the embedded Titan.
 
-Configuring a Titan Node
-
+<h2>Configuring a Titan Node</h2>
 Every instance of Titan (a node) is configured by a set of attribute/value pairs (Configuration Properties).
 Each Titan node takes a single command-line argument consisting of a URL of a configuration file,
 the contents of which is a formatted text file containing comments and name/value pairs.
-
+</p>
+<p>
 For example, invoking Titan in the example above uses the local file /var/tmp/titan.cf as the source of the configuration values.
-
+</p>
+<p>
 The configuration information could be stored on a web server and the node is capable of using the HTTP protocol to obtain the configuration data.
-
+</p>
+<pre>
 /usr/bin/java -cp titan.jar sunlabs.titan.node.TitanNodeImpl http://webserver.com/titan//node-10.0.1.6-12300-3.cf
+</pre>
 
-Configuration Properties
-
+<h2>Configuration Properties</h2>
 If there are no Properties specified in the configuration, each node is configured from a default value.
 These default values have been chosen arbitrarily chosen (generally).
 
-Format
-
+<h2>Format</h2>
+<pre>
 #
 #
 sunlabs.beehive.node.services.WebDAVDaemon.InspectorCSS=/css/BeehiveStyle.css,/css/BeehiveColours-grey.css
@@ -51,7 +56,7 @@ sunlabs.titan.node.TitanNodeImpl.KeyStoreFileName=/tmp/k8
 sunlabs.titan.node.TitanNodeImpl.LocalFileSystemRoot=/tmp/titan/
 sunlabs.titan.node.TitanNodeImpl.Port=12600
 sunlabs.titan.node.services.WebDAVDaemon.Port=12601
-
+</pre>
 Lines begining with '#' are comments.
 Other lines are in the form of name=value.
 Values are escaped with the '\' character
@@ -59,6 +64,7 @@ Values are escaped with the '\' character
 Configuration Properties
 Here is the list of Configuration Properties:
 
+<pre>
 #
 # The maximum number of of simultaneous neighbour connections.
 sunlabs.titan.node.TitanNodeImpl.ClientMaximum=20
@@ -161,3 +167,5 @@ sunlabs.titan.node.services.WebDAVDaemon.Port=12001
 #
 # The pathname prefix for the HTTP server to use when serving files.
 sunlabs.titan.node.services.WebDAVDaemon.Root=web
+</pre>
+</body>

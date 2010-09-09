@@ -42,7 +42,6 @@
     <property name="build.classes.dir" location="${build.dir}/classes" />
 
     <property name="javadoc.dir" location="${basedir}/web/javadoc" />
-    <!-- <property name="dist.dir" location="${basedir}/dist" /> -->
 
     <property name="build.test.dir"         location="${build.dir}/test" />
     <property name="build.test.classes.dir" location="${build.test.dir}/classes" />
@@ -98,8 +97,7 @@
         <tstamp/>
         <mkdir dir="${build.dir}"/>
         <!-- mkdir dir="${dist.dir}"/ -->
-        <!-- Read the contents of copyright-mini.html into a property,
-             for javadoc commands -->
+        <!-- Read the contents of copyright-mini.html into a property, for javadoc commands -->
         <loadfile property="copyright.mini" srcFile="${doc.dir}/copyright-mini.html" />
     </target>
 
@@ -143,7 +141,7 @@
             <fileset dir="${build.classes.dir}" includes="sunlabs/titan/** sunlabs/asdf/**" />
             <fileset dir="" includes="web/**" />
             <manifest>
-                <attribute name="Main-Class" value="sunlabs.titan.node.Beehive" />
+                <attribute name="Main-Class" value="sunlabs.titan.node.Titan" />
                 <attribute name="Class-Path" value="${Phidoux.jar}" />
                 <attribute name="Built-By" value="${user.name}.${DSTAMP}" />
                 <attribute name="Sealed" value="true" />
@@ -274,53 +272,7 @@
             <link href="${j2se.doc.api.url}" offline="false" packagelistLoc="${jdk.package.list}" />
         </javadoc>
         <touch file="${javadoc.dir}/doctimestamp" />
-    	
-    	<!--
-    	 <jar destfile="${dist.dir}/javadoc.jar" filesonly="true" >
-    	            <fileset dir="${javadoc.dir}" />
-    	            <!-manifest>
-    	                <attribute name="Main-Class"             value="sunlabs.celeste.extension.WordCount" />
-    	                <attribute name="Built-By"               value="${user.name}.${DSTAMP}" />
-    	                <attribute name="Sealed"                 value="true" />
-    	                <attribute name="Specification-Title"    value="Sun Labs Celeste" />
-    	                <attribute name="Specification-Version"  value="${manifest.celeste.spec.version}" />
-    	                <attribute name="Specification-Vendor"   value="${manifest.vendor}" />
-    	                <attribute name="Implementation-Title"   value="sunlabs.celeste" />
-    	                <attribute name="Implementation-Version" value="${scm_version}" />
-    	                <attribute name="Implementation-Vendor"  value="${manifest.vendor}" />
-    	            </manifest->
-    	         </jar>
-    	-->
-        	
     </target>
-
-    <!-- =================================
-          target: findbugs
-
-          N.B. Commented out.  After installing findbugs (and patching up
-               the version number as needed), feel free to restore.
-         ================================= -->
-    <!--
-    <property name="findbugs.home" value="${lib.dir}/findbugs-1.3.4" />
-    <taskdef name="findbugs"
-             classname="edu.umd.cs.findbugs.anttask.FindBugsTask" >
-        <classpath location="${findbugs.home}/lib/findbugs-ant.jar" />
-    </taskdef>
-    <target name="findbugs" depends="celeste"
-            description="==> run findbugs on celeste.jar">
-        <echo message="This could take several minutes." />
-        <findbugs home="${findbugs.home}"
-                  jvmargs="-Xmx384m"
-                  effort="max"
-                  reportLevel="low"
-                  output="xml"
-                  outputFile="${build.dir}/celeste-fb.xml" >
-            <sourcePath path="${src.dir}" />
-            <class location="${dist.dir}/celeste.jar" />
-        </findbugs>
-        <echo message="To view analysis, open the GUI program ${findbugs.home}/bin/findbugs and choose File->Load Analysis.  Select ${build.dir}/celeste-fb.xml." />
-    </target>
-    -->
 
     <!-- =================================
           target: clean
@@ -354,8 +306,7 @@
     <target name="proxyHost.arg"
             depends="set.proxyHost.arg, unset.proxyHost.arg" />
     <target name="set.proxyHost.arg" if="http.proxyHost" >
-        <property name="option.proxyHost"
-                value="-J-Dhttp.proxyHost=${http.proxyHost}" />
+        <property name="option.proxyHost" value="-J-Dhttp.proxyHost=${http.proxyHost}" />
     </target>
     <target name="unset.proxyHost.arg" unless="http.proxyHost" >
         <property name="option.proxyHost" value="" />
@@ -364,8 +315,7 @@
     <target name="proxyPort.arg"
             depends="set.proxyPort.arg, unset.proxyPort.arg" />
     <target name="set.proxyPort.arg" if="http.proxyPort" >
-        <property name="option.proxyPort"
-                value="-J-Dhttp.proxyPort=${http.proxyPort}" />
+        <property name="option.proxyPort" value="-J-Dhttp.proxyPort=${http.proxyPort}" />
     </target>
     <target name="unset.proxyPort.arg" unless="http.proxyPort" >
         <property name="option.proxyPort" value="" />
@@ -374,8 +324,7 @@
     <target name="nonProxyHosts.arg"
             depends="set.nonProxyHosts.arg, unset.nonProxyHosts.arg" />
     <target name="set.nonProxyHosts.arg" if="http.nonProxyHosts" >
-        <property name="option.nonProxyHosts"
-                value="-J-Dhttp.nonProxyHosts=${http.nonProxyHosts}" />
+        <property name="option.nonProxyHosts" value="-J-Dhttp.nonProxyHosts=${http.nonProxyHosts}" />
     </target>
     <target name="unset.nonProxyHosts.arg" unless="http.nonProxyHosts" >
         <property name="option.nonProxyHosts" value="" />

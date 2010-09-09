@@ -106,12 +106,12 @@ import sunlabs.titan.util.DOLRStatus;
  * if a new system is built on top of the object pool (say, Neuromancer, a research
  * project that needed an always-available, distributed lookup service), and
  * if the Neuromancer system had a specialized Application
- * but no specialized Node, and there were Celeste nodes
- * all over the world, why not use the Celeste nodes to service the
+ * but no specialized Node, and there were Titan nodes
+ * all over the world, why not use the Titan nodes to service the
  * Neuromancer needs?  This line of thinking falls apart, though, when
  * we consider the converse:  why not have a Neuromancer system also
- * service Celeste Applications?  The problem is that Celeste Applications
- * assume a backing Celeste Node which wouldn't be satisified by the
+ * service Titan Applications?  The problem is that Titan Applications
+ * assume a backing Titan Node which wouldn't be satisified by the
  * Neuromancer system.
  * </p>
  *
@@ -519,11 +519,11 @@ import sunlabs.titan.util.DOLRStatus;
  * <p>
  * I'm currently working on this test.
  * <p>
- * For testing with a live Beehive, I copy my celeste.jar to some known location
+ * For testing with a live Titan, I copy my titan.jar to some known location
  * and start up several nodes.   I then change an application version and regenerate
- * celeste.jar (this is why the original celeste.jar needs to be copied;  it would
- * confuse the running Nodes if the celeste.jar file is replaced from under them),
- * and start a new Node with that new celeste.jar, using one of the running nodes
+ * titan.jar (this is why the original titan.jar needs to be copied;  it would
+ * confuse the running Nodes if the titan.jar file is replaced from under them),
+ * and start a new Node with that new titan.jar, using one of the running nodes
  * as a gateway to the running system.  Cause an application message to be sent,
  * either through the web interface or by changing the version of an app that sends
  * out periodic messages automatically, and watch the changes propagate through the
@@ -548,8 +548,7 @@ public final class ApplicationFramework implements XHTMLInspectable {
     //      comment?  Probably not; it's a knob we don't want users to have to
     //      concern themselves with.
     //
-    static final private String loadOnlyFromObjectStoreValue = System.getProperty(
-        "sunlabs.celeste.beehive.node.ApplicationFramework.loadOnlyFromObjectStore");
+    static final private String loadOnlyFromObjectStoreValue = System.getProperty("sunlabs.titan.node.ApplicationFramework.loadOnlyFromObjectStore");
     final private boolean loadOnlyFromObjectStore;
     //
     // The flip side of loadOnlyFromObjectStore:  When true, this property
@@ -1249,7 +1248,7 @@ public final class ApplicationFramework implements XHTMLInspectable {
             //      Back to jar files:  One difficulty is that the Jar class
             //      is not serializable.  That will make storing jar files in
             //      the object pool difficult; although they could be stored as files
-            //      using the Celeste interface, doing so would pre-suppose
+            //      using the Titan interface, doing so would pre-suppose
             //      much of the machinery being implemented here.  Grumble!
             //
             // XXX: Note that we're searching for a specific version of the
@@ -1790,7 +1789,7 @@ public final class ApplicationFramework implements XHTMLInspectable {
             //
             // XXX: This version uses a package prefix to hard-wire its
             //      decision about what classes it will intervene on.  When
-            //      Celeste starts getting and supporting third party
+            //      Titan starts getting and supporting third party
             //      applications, this technique will become inadequate.  At
             //      that point, switching to having a complementary
             //      ObjectOutputStream class annotate classes with whether or
@@ -1883,7 +1882,7 @@ public final class ApplicationFramework implements XHTMLInspectable {
     // As noted elsewhere, only the class for the application itself and its
     // (recursively) nested classes are captured.  Ideally, we should have a
     // way to find all the classes an application needs that aren't part of
-    // the "Celeste core" or the Java platform and capture those.
+    // the "Titan core" or the Java platform and capture those.
     //
 //    private static class AppClassInfoList implements
 //            Serializable, Iterable<AppClassInfoList.AppClassLoadingInfo> {

@@ -1,5 +1,5 @@
 /*
- * Copyright 2008-2009 Sun Microsystems, Inc. All Rights Reserved.
+ * Copyright 2007-2010 Oracle. All Rights Reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER
  *
  * This code is free software; you can redistribute it and/or modify
@@ -17,9 +17,9 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
  * 02110-1301 USA
  *
- * Please contact Sun Microsystems, Inc., 16 Network Circle, Menlo
- * Park, CA 94025 or visit www.sun.com if you need additional
- * information or have any questions.
+ * Please contact Oracle Corporation, 500 Oracle Parkway, Redwood Shores, CA 94065
+ * or visit www.oracle.com if you need additional information or
+ * have any questions.
  */
 package sunlabs.asdf.util;
 
@@ -102,10 +102,10 @@ public class Attributes extends TreeMap<String,Attributes.Attribute> {
         protected Object value;
         protected String description;
 
-        @Deprecated
-        public Attribute(String name, Object value) {
-            this(name, value, null);
-        }
+//        @Deprecated
+//        public Attribute(String name, Object value) {
+//            this(name, value, null);
+//        }
         
         public Attribute(String name, Object value, String description) {
             this.fullName = name;
@@ -157,7 +157,7 @@ public class Attributes extends TreeMap<String,Attributes.Attribute> {
 
         @Override
         public String toString() {
-            StringBuilder result = new StringBuilder(this.fullName).append("=").append(this.value);
+            StringBuilder result = new StringBuilder("# \n").append(this.fullName).append("=").append(this.value);
             return result.toString();
         }
     }
@@ -167,14 +167,14 @@ public class Attributes extends TreeMap<String,Attributes.Attribute> {
     }
 
     /**
-     * Override any {@link Attribute} already stored.
+     * Take each property from the given Properties object and add its value to this Attribute object.
      *
      * @param props
      */
     public void update(Properties props) {
         for (Object key : props.keySet()) {
             String fullName = String.valueOf(key);
-            this.put(fullName, new Attribute(key.toString(), props.get(key)));
+            this.put(fullName, new Attribute(key.toString(), props.get(key), ""));
         }
     }
 
@@ -218,10 +218,20 @@ public class Attributes extends TreeMap<String,Attributes.Attribute> {
     private String addFullName(String fullName, Attribute attr) {
         if (!this.containsKey(fullName)) {
             this.put(fullName, attr);
+        } else {
+            Attribute a = this.get(fullName);
+            a.description = attr.description;
         }
         return fullName;
     }
-
+    
+    /**
+     * Add the given {@link Attribute} overriding any previous value.
+     *
+     * @param proto
+     * @param value
+     * @return the full-name of the {@code Attribute}.
+     */
     public String set(Prototype proto, Object value) {
         Attribute a = this.get(proto.fullName);
         if (a != null) {
@@ -255,6 +265,7 @@ public class Attributes extends TreeMap<String,Attributes.Attribute> {
             Attribute a = this.get(key);
             if (a != null) {
                 if (a.value != null) {
+                    s.append("#\n# ").append(a.description).append("\n");
                     s.append(Attributes.saveConvert(key, true)).append("=").append(Attributes.saveConvert(String.valueOf(this.get(key).value), false)).append("\n");
                 }
             }
@@ -296,10 +307,10 @@ public class Attributes extends TreeMap<String,Attributes.Attribute> {
          * @param name
          * @param defaultValue
          */
-        @Deprecated
-        public Prototype(Class<?> klasse, String name, Object defaultValue) {
-            this(klasse.getCanonicalName() + "." + name, defaultValue, null);
-        }
+//        @Deprecated
+//        public Prototype(Class<?> klasse, String name, Object defaultValue) {
+//            this(klasse.getCanonicalName() + "." + name, defaultValue, null);
+//        }
         
 
         /**
@@ -325,17 +336,19 @@ public class Attributes extends TreeMap<String,Attributes.Attribute> {
          * @param value
          */
         public Attribute newAttribute(Object value) {
-            return new Attribute(this.fullName, value == null ? this.defaultValue : value);
+            return new Attribute(this.fullName, value == null ? this.defaultValue : value, this.description);
         }
 
         /**
-         * Generate a new {@link Attribute} instance from this {@code Prototype}.
+         * Factory method that generates a new {@link Attribute} instance from this {@code Prototype}.
          * <p>
          * The value of new attribute is set to the default value of this {@link Prototype}.
          * </p>
          */
         public Attribute newAttribute() {
-            return this.newAttribute(this.defaultValue);
+            Attribute a = this.newAttribute(this.defaultValue);
+            a.description = this.description;
+            return a;
         }
 
         public String getName() {
@@ -372,8 +385,8 @@ public class Attributes extends TreeMap<String,Attributes.Attribute> {
     public static void main(String[] args) {
         Attributes attr = new Attributes();
 
-        Attributes.Prototype Foo = new Attributes.Prototype(Attributes.class, "Foo", "bar");
-        Attributes.Prototype Bar = new Attributes.Prototype(Attributes.class, "Bar", "a");
+        Attributes.Prototype Foo = new Attributes.Prototype(Attributes.class, "Foo", "bar", "");
+        Attributes.Prototype Bar = new Attributes.Prototype(Attributes.class, "Bar", "a", "");
 
         attr.add(Foo.newAttribute("fubar"));
         attr.add(Bar.newAttribute(null));

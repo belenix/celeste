@@ -77,7 +77,6 @@ fi
 # Note that default values are documented there, so a change
 # here must have a corresponding documentation change there.
 #
-#celeste_root="${TITANHOME}"
 export TITANHOME=${TITANHOME}
 
 spool_root="/tmp/titan"

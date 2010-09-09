@@ -34,9 +34,8 @@ import sunlabs.titan.api.TitanNodeId;
 /**
  * Every Titan node has three addresses, each for a different purpose.
  * <ol>
- * <li>The first is simply the Node object-id which is meaningful only in the
- * context of Titan routing.
- * Messages are routed to these object-ids by the Beehive nodes.
+ * <li>The first is simply the Node {@link TitanNodeId} which is meaningful only in the context of Titan routing.
+ * Messages are routed to these object-ids by the Titan nodes.
  * </li>
  * <li>
  * The second is the IP address and TCP port number of a Beehive Node's server.

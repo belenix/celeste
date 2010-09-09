@@ -58,7 +58,7 @@ import sunlabs.titan.util.OrderedProperties;
  * </p>
  * <p>
  * If the CelesteNode instances are run in separate threads,
- * each instance of CelesteNode is programmatically independant
+ * each instance of CelesteNode is programmatically independent
  * from the others and shares only static class variables.
  * </p>
  * <p>
@@ -163,7 +163,7 @@ public class Celeste {
         properties.setProperty(TitanNodeImpl.ConnectionType.getName(), "ssl");
         properties.setProperty(WebDAVDaemon.Port.getName(), 12001);
         properties.setProperty(TitanNodeImpl.InterNetworkAddress.getName(), "127.0.0.1");
-        properties.setProperty(TitanNodeImpl.GatewayRetryDelayMillis.getName(), Time.secondsInMilliseconds(30));
+        properties.setProperty(TitanNodeImpl.GatewayRetryDelaySeconds.getName(), 30);
         properties.setProperty(TitanNodeImpl.ObjectStoreCapacity.getName(), "unlimited");
         properties.setProperty(CelesteClientDaemon.Port.getName(), 14000);
 
@@ -259,7 +259,7 @@ public class Celeste {
                         System.err.printf("--gateway-retry %s: retry time cannot be less than 10 seconds.", value);
                         throw new IllegalArgumentException();
                     }
-                    properties.setProperty(TitanNodeImpl.GatewayRetryDelayMillis.getName(), value);
+                    properties.setProperty(TitanNodeImpl.GatewayRetryDelaySeconds.getName(), value);
                 } else if (args[i].equals("--local-address") || args[i].equals("--node-address")) {
                     String value = args[++i];
 //                    properties.setProperty(TitanNodeImpl.LocalNetworkAddress.getName(), value);
@@ -313,11 +313,13 @@ public class Celeste {
                     System.out.println(Copyright.miniNotice);
                 } else if (args[i].equals("--help") ) {
                     System.out.println("Usage: defaults are in parenthesis.");
+                    System.out.printf(" [--version]%n");
+                    System.out.printf(" [-D<name>=<value>]%n");
                     System.out.printf(" [--delay-time <integer>] (%d)%n", interprocessStartupDelayTimeSeconds);
                     System.out.printf(" [--n-nodes <integer>] (%d)%n", n_nodes);
                     System.out.printf(" [--threads] (do not use threads)%n");
                     System.out.printf(" [--gateway <URL>] (%s)%n", String.valueOf(gatewayArgument));
-                    System.out.printf(" [--gateway-retry <seconds>] (%s)%n", properties.getPropertyAsInt(TitanNodeImpl.GatewayRetryDelayMillis.getName()));
+                    System.out.printf(" [--gateway-retry <seconds>] (%s)%n", properties.getPropertyAsInt(TitanNodeImpl.GatewayRetryDelaySeconds.getName()));
                     System.out.printf(" [--http-port <integer>[,<integer>]] (%d,%d)%n", properties.getPropertyAsInt(WebDAVDaemon.Port.getName()), webdavPortIncrement);
                     System.out.printf(" [--jar <file name>] (%s)%n", String.valueOf(jarFile));
                     System.out.printf(" [--java <file name>] (%s)%n", javaFile);

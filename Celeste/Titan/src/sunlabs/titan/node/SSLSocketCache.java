@@ -169,6 +169,11 @@ public final class SSLSocketCache extends SocketCache {
     
     public static void main(String[] args) throws NumberFormatException, Exception {
 
+        // The name of a local java key store file containing a key.
+        // keytool -genkeypair \
+        //   -dname 'CN=129.146.73.39, DC=beehive.sun.com, DNQ=v1, OU=Sun Microsystems Laboratories, O=Sun Microsystems, C=US, IP=129.146.73.39:12000' \
+        //   -keyalg RSA -alias PrivateKey -keypass celesteKey -keystore celeste.jks -storepass celesteStore
+        //
         String keyStore = "celeste.jks";
         
         try {

@@ -84,11 +84,11 @@ public interface TitanNode {
     public TitanMessage sendToNode(TitanNodeId nodeId, TitanGuid objectId, String klasse, String method, Serializable data);
 
     /**
-     * Transmit a {@link TitanMessage.Type#RouteToNode}
-     * message to the specified node object-id.
+     * Transmit a {@link TitanMessage.Type#RouteToNode} message to the specified {@link TitanNodeId}.
+     * If the node cannot be found, throw {@link TitanNodeImpl.NoSuchNodeException}.
      *
      * @param nodeId the {@link TitanNodeId} of the destination node.
-     * @param objectClass the {@link String} name of the destination object handler class.
+     * @param klasse the {@link String} class name of the destination {@link TitanService}.
      * @param method the {@link String} name of the method to invoke.
      * @param payload the payload of this message.
      * @throws NoSuchNodeException if the receiver cannot route the message further and is not the specified destination nodeId.
@@ -151,6 +151,16 @@ public interface TitanNode {
     public TitanGuid getNetworkObjectId();
 
 
+    /**
+     * Get (instantiating, if necessary) an instance of the named class cast to the given {@link TitanService}.
+     *
+     * @param <C>
+     * @param klasse
+     * @param serviceName
+     * @return an instance of the named class cast to the given {@link TitanService}
+     * @throws ClassCastException if the loaded class is <em>not</em> an instance of {@code klasse}.
+     * @throws ClassNotFoundException if the class cannot be found.
+     */
     public <C> C getService(Class<? extends C> klasse);
 
 

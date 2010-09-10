@@ -28,6 +28,7 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.URL;
 import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.util.Date;
 
 import sunlabs.celeste.node.services.CelesteClientDaemon;
@@ -40,7 +41,7 @@ import sunlabs.titan.util.OrderedProperties;
  * A {@code CelesteNode} instance provides access to a low level file
  * abstraction through a specific Titan node.  At this level, there is no
  * notion of a hierarchical file system name space.  Files act simply as data
- * containers.  File names are simply the object-id of their
+ * containers.  File names are simply the object-ids of their
  * {@link sunlabs.celeste.node.services.object.AnchorObjectHandler.AObject}s.
  * </p>
  * <p>
@@ -61,25 +62,29 @@ public final class CelesteNode extends TitanNodeImpl /*implements CelesteAPI*/ {
     public final static String OBJECT_PKG = "sunlabs.celeste.node.services.object";
     public final static String BEEHIVE_OBJECT_PKG = "sunlabs.titan.node.services.object";
 
-    //    public static final boolean bObjectPrefetchNext = true;
-    //    public static final boolean bObjectCacheRetrieved = false;
-
+    /**
+     * Construct a new instance of CelesteNode, extending {@link TitanNodeImpl},
+     * and adding {@link CelesteClientDaemon} as an additional {@link TitanService}.
+     * @param properties The configuration properties for this node.
+     * @throws IOException If {@link TitanNodeImpl} throws an {@code IOException}.
+     * @throws ConfigurationException If {@link TitanNodeImpl} throws an {@code ConfigurationException}.
+     */
     public CelesteNode(OrderedProperties properties) throws IOException, ConfigurationException {
         super(properties);
 
-        // Load and start any applications that have long-running operations.
-        // Any other applications will be loaded lazily as needed.
-
-        CelesteClientDaemon clientProtocolDaemon = (CelesteClientDaemon) this.getService(CelesteClientDaemon.class);
+        this.getService(CelesteClientDaemon.class);
     }
 
     public static void main(String[] args) {
         // Read this command line argument as a URL to fetch configuration properties.
 
-        DateFormat dateFormat = DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.LONG);
+        DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss"); // ISO 8601    
+        OrderedProperties configurationProperties = new OrderedProperties();
         try {
-            OrderedProperties p = new OrderedProperties(new URL(args[0]));
-            CelesteNode node = new CelesteNode(p);
+            for (int i = 0; i < args.length; i++) {
+                configurationProperties.load(new URL(args[i]));
+            }
+            CelesteNode node = new CelesteNode(configurationProperties);
             Thread thread = node.start();
 
             System.out.printf("%s [%d ms] %s%n", dateFormat.format(new Date()),

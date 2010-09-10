@@ -56,7 +56,7 @@ public interface Publish {
         /**
          * If {@code true} this {@code Publish.Request} is a backup for the root of the object's
          * {@link TitanGuid}.
-         * @see {@link AbstractObjectHandler#publishObjectBackup(AbstractObjectHandler, Request)}
+         * @see {@link AbstractObjectHandler#publishObjectBackup(AbstractObjectHandler, PublishUnpublishRequest)}.
          */
         public boolean isBackup();
         

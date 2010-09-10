@@ -24,17 +24,17 @@
 TITANHOME=${TITANHOME:="unset"}
 if [[ ${TITANHOME} == "unset" ]]; then
     if [[ -x ./bin/titan && -e ./lib/titan.jar ]]; then
-	echo "NOTICE: The current directory looks like a Titan runtime installation."
+	echo "NOTICE: The current directory looks like a TITAN runtime installation."
 	echo "        Using the current directory instead of /opt/titan"
 	echo "        Explicitly set the environment variable TITANHOME to override this."
 	TITANHOME=`pwd`
     else
-	TITANHOME="/opt/titan"
+	TITANHOME="/opt/celeste"
     fi
 fi
 
 #
-# Report the process ids of JVMs that are running Titan nodes.
+# Report the process ids of JVMs that are running Celeste nodes.
 #
 getpids() {
     case $(uname -s) in
@@ -45,7 +45,7 @@ getpids() {
             #
             # XXX:  pgrep considers only the first 80 bytes of the command line
             #       so this test is vulnerable to false positives.  In
-            #       particular, the string "titan.jar" doesn't appear within
+            #       particular, the string "celeste.jar" doesn't appear within
             #       the 80 byte window.  Sigh...
             #
             pidlist=$(pgrep -f 'java.*-Djava.util.logging.config.file')
@@ -57,7 +57,7 @@ getpids() {
         # at working on other systems.
         #
         *)
-            pidlist=$(/bin/ps axww | grep Dtitan-node | grep -v grep |  awk '{print $1}')
+            pidlist=$(/bin/ps axww | grep Dtitan-node | grep -v grep | awk '{print $1}')
             echo $pidlist
             ;;
     esac
@@ -73,19 +73,19 @@ if [[ ${TITANCONFIG_URL} == "unset" ]]; then
 fi
 
 #
-# Establish defaults for variables documented as being settable in etc/titan.cf.
-# Note that default values are documented there, so a change
+# Establish defaults for variables documented as being settable in
+# etc/celeste.cf.  Note that default values are documented there, so a change
 # here must have a corresponding documentation change there.
 #
-export TITANHOME=${TITANHOME}
+export BEEHIVEHOME=${TITANHOME}
 
-spool_root="/tmp/titan"
+spool_root="/tmp/celeste"
 n_nodes="6"
 use_processes=""
 threads=""
 gateway=""
 logging_config_file="${TITANHOME}/etc/logging.properties"
-titan_log="/tmp/titan-$config_key.log"
+logfile="/tmp/titan-${TITANCONFIG}"
 beehive_port=""
 celeste_client_port=""
 http_port=""
@@ -95,6 +95,8 @@ enable_jmx="false"
 jmx_password_file="${TITANHOME}/etc/jmxremote.password.template"
 jmx_port="16000"
 server_option="-server"
+heap_options="-Xmx128m -Xms128m -XX:+UseParallelGC"
+java_options="-ea"
 additional_options=""
 
 
@@ -119,11 +121,7 @@ DOJOOPTS="${DOJOBASE} ${DOJO}"
 # JMX configuration:
 #
 if [[ $enable_jmx = true ]]; then
-#    JMXOPTS="-Dcom.sun.management.jmxremote \
-#	-Dcom.sun.management.jmxremote.port=$jmx_port \
-#	-Dcom.sun.management.jmxremote.password.file=$jmx_password_file"
-    JMXOPTS="-Dcom.sun.management.jmxremote \
-	-Dcom.sun.management.jmxremote.password.file=$jmx_password_file"
+    JMXOPTS="-Dcom.sun.management.jmxremote -Dcom.sun.management.jmxremote.password.file=$jmx_password_file"
     jmx_port_option="--jmx-port $jmx_port"
     if [[ -r $jmx_password_file ]]; then
         chmod 600 $jmx_password_file
@@ -135,7 +133,7 @@ fi
 
 #
 # Hack for conveying the "-server" option to JVMs invoked from within the
-# titan.jar main class.  If "-server" is set at this level, set the "server"
+# celeste.jar main class.  If "-server" is set at this level, set the "server"
 # Java property, so that the class can find it and set it for JVMs that it
 # starts.
 #
@@ -145,24 +143,60 @@ else
     server_property=""
 fi
 
+LOGGINGOPTS="-Djava.util.logging.config.file=${logging_config_file}"
+
+java_option=${java_options:+${java_options}}
+#
+# LOGGINGOPTS comes early so that the "status" command can find the
+# command line pattern it's looking for (which has to occur in the
+# first 80 bytes of command line arguments).
+#
+JAVA_ARGUMENTS="\
+    -Dceleste-node \
+    ${server_option} \
+    ${LOGGINGOPTS} \
+    ${heap_options} \
+    ${JMXOPTS} \
+    ${server_property} \
+    ${java_option}"
+
+spool_root_option=${spool_root:+--root ${spool_root}}
+gateway_option=${gateway:+--gateway http://${gateway}}
+n_nodes_option="${n_nodes:+--n-nodes ${n_nodes}}"
+beehive_port_option=${beehive_port:+--beehive-port ${beehive_port}}
+http_port_option=${http_port:+--http-port ${http_port}}
+celeste_client_port_option=${celeste_client_port:+--celeste-client-port ${celeste_client_port}}
+local_address_option=${node_address:+--ip-address ${node_address}}
+threads_option=${threads:+--threads}
+connection_type_option=${connection_type:+--beehive-connection-type ${connection_type}}
+
+
+celeste_arguments=" \
+    ${n_nodes_option} \
+    ${gateway_option} \
+    ${beehive_port_option} \
+    ${http_port_option} \
+    ${celeste_client_port_option} \
+    ${jmx_port_option} \
+    ${local_address_option} \
+    ${socket_cache_option} \
+    ${use_processes_option} \
+    ${connection_type_option} \
+    ${additional_options}"
+
+
 start() {
-    if [[ ${TITANCONFIG_URL} == "unset" ]]; then
-        echo ${JAVA} ${JAVA_ARGUMENTS} -jar ${TITANHOME}/lib/titan.jar ${titan_arguments} '>' ${titan_log} '2>&1'
-        ${JAVA} ${JAVA_ARGUMENTS} -jar ${TITANHOME}/lib/titan.jar ${titan_arguments} > ${titan_log} 2>&1 &
-    else
-        echo ${JAVA} ${JAVA_ARGUMENTS} -jar ${TITANHOME}/lib/titan.jar ${TITANCONFIG_URL} '>' ${titan_log} '2>&1'
-        ${JAVA} ${JAVA_ARGUMENTS} -jar ${TITANHOME}/lib/titan.jar ${TITANCONFIG_URL} > ${titan_log} 2>&1 &
-    fi
+	echo ${JAVA} -Dtitan-node ${supervisor_vm_options} -jar ${TITANHOME}/lib/titan.jar  ${supervisor_options} -V="${node_vm_options}" ${node_options} '>' ${logfile} '2>&1' 
+	${JAVA} -Dtitan-node ${supervisor_vm_options} -jar ${TITANHOME}/lib/titan.jar  ${supervisor_options} -V="${node_vm_options}" ${node_options} > ${logfile} 2>&1  &
 }
 
 stop() {
     pidlist=$(getpids)
-    echo Stopping Titan: ${pidlist}
+    echo Stopping Titan ${TITANCONFIG}: ${pidlist}
     if [[ -n "$pidlist" ]]; then
         kill -9 $(getpids)
     fi
 }
-
 
 restart() {
 	stop
@@ -198,14 +232,15 @@ bgclobber() {
 
 config() {
 	echo Java Parameters ${JAVA_ARGUMENTS}
-	echo Titan Parameters ${titan_arguments}
-	echo Titan Log File ${titan_log}
+	echo Celeste Parameters ${celeste_arguments}
+	echo Celeste Log File ${celeste_log}
+	echo AVGateway Log File ${avgateway_log}
 }
 
 status() {
     pidlist=$(getpids)
     if [[ -z "$pidlist" ]]; then
-        echo "Titan not running"
+        echo "Celeste not running"
     else
         #
         # XXX:  Really ought to discriminate on whether ps is BSD-style
@@ -253,7 +288,7 @@ for command in $*; do
 			status
 			;;
 		*|help|-help|--help)
-			echo "titan clean"
+			echo "celeste clean"
 			echo "        clobber"
 			echo "        start"
 			echo "        stop"

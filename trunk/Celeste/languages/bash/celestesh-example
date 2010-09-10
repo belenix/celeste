@@ -73,8 +73,8 @@ ${CELESTEHOME}/bin/celestesh read            ${clientName} ${clientPassword} ${n
 echo "Do you like my hat?" | ${CELESTEHOME}/bin/celestesh write-file      ${clientName} ${clientPassword} ${nameSpaceName} ${fileName} 0 -
 ${CELESTEHOME}/bin/celestesh read            ${clientName} ${clientPassword} ${nameSpaceName} ${fileName} 4 0 -1 -
 
-#${CELESTEHOME}/bin/celestesh delete-file     ${clientName} ${clientPassword} ${nameSpaceName} ${fileName} ${deleteToken} 15
-${CELESTEHOME}/bin/celestesh delete-file     ${clientName} ${clientPassword} ${nameSpaceName} ${fileName} ${deleteToken}XXX 15
+${CELESTEHOME}/bin/celestesh delete-file     ${clientName} ${clientPassword} ${nameSpaceName} ${fileName} ${deleteToken} 15
+#${CELESTEHOME}/bin/celestesh delete-file     ${clientName} ${clientPassword} ${nameSpaceName} ${fileName} ${deleteToken}XXX 15
 
 echo The following command MUST fail.
 ${CELESTEHOME}/bin/celestesh read            ${clientName} ${clientPassword} ${nameSpaceName} ${fileName} 4 0 -1 -

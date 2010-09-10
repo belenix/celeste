@@ -157,7 +157,7 @@ public class Attributes extends TreeMap<String,Attributes.Attribute> {
 
         @Override
         public String toString() {
-            StringBuilder result = new StringBuilder("# \n").append(this.fullName).append("=").append(this.value);
+            StringBuilder result = new StringBuilder().append(this.fullName).append("=").append(this.value);
             return result.toString();
         }
     }

@@ -17,11 +17,10 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
  * 02110-1301 USA
  *
- * Please contact Oracle, 16 Network Circle, Menlo Park, CA 94025
- * or visit www.oracle.com if you need additionalinformation or
- * have any questions.
+ * Please contact Oracle, 16 Network Circle, MenloPark, CA 94025
+ * or visit www.oracle.com if you need additional information or have any questions.
  */
-package sunlabs.celeste.node;
+package sunlabs.titan.node;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -36,29 +35,29 @@ import java.net.UnknownHostException;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 
 import sunlabs.asdf.util.Time;
-import sunlabs.celeste.node.services.CelesteClientDaemon;
 import sunlabs.titan.Copyright;
-import sunlabs.titan.node.TitanNodeImpl;
 import sunlabs.titan.node.TitanNodeImpl.ConfigurationException;
 import sunlabs.titan.node.services.WebDAVDaemon;
 import sunlabs.titan.util.OrderedProperties;
 
 /**
  * <p>
- * Primary command line startup of a Celeste node.
+ * Primary command line startup and supervisor of a Titan node.
  * </p>
  * <p>
  * This class has no instance and serves only to construct one or more
- * instances of CelesteNode and run each of them either in a separate
+ * instances of TitanNode and run each of them either in a separate
  * thread or in separate processes.
  * </p>
  * <p>
- * If the CelesteNode instances are run in separate threads,
- * each instance of CelesteNode is programmatically independent
+ * If the TitanNode instances are run in separate threads,
+ * each instance of TitanNode is programmatically independant
  * from the others and shares only static class variables.
  * </p>
  * <p>
@@ -83,17 +82,22 @@ import sunlabs.titan.util.OrderedProperties;
  * </style>
  *
  * <table class='Titan-options'>
- * <tr><td>--delay &lt;seconds&gt;</td><td>The number of seconds to delay when starting multiple nodes on this host.</td><td></td></tr>ectoryRoot)</td></tr>
+ * <tr><td>--delay-time &lt;seconds&gt;</td><td>The number of seconds to delay when starting multiple nodes on this host.</td><td></td></tr>
+ * <tr><td>--local-address &lt;ip-addr&gt;</td><td>The NodeAddress for this node (ip-addr:dolr-port:node-id).</td><td> (nodeAddress)</td></tr>
+ * <tr><td>--dolr-server-port &lt;number&gt;</td><td>The TCP port number to use for the DOLR server of this Node.</td><td> (dolrServerPort)</td></tr>
+ * <tr><td>--dolr-client-port &lt;number&gt;</td><td>The TCP port number to use for the DOLR client of this Node.</td><td> (dolrClientPort)</td></tr>
  * <tr><td>--n-nodes &lt;number&gt;</td><td>The number of nodes to start.</td><td>(n_nodes)</td></tr>
+ * <tr><td>--dossier</td><td>Enable fast-startup using cached data on neighbours.</td><td>(false)</td></tr>
  * </table>
  * <p>
- * Options to create CelesteNode instances in separate processes:
+ * Options to create TitanNode instances in separate processes:
  * </p>
  * <table class='Titan-options'>
- * <tr><td>-jar &ltfile-name&gt</td><td>Use filename as the Java jar file to run each node./td><td>dist/celeste.jar</td></tr>
+ * <tr><td>--use-processes</td><td>Use separate processes for each Titan Node</td><td>(false)</td></tr>
+ * <tr><td>-jar &ltfile-name&gt</td><td>Use filename as the Java jar file to run each node./td><td>dist/titan.jar</td></tr>
  * </table>
  */
-public class Celeste {
+public class Titan {
 
     private static class SuperviseProcess implements Runnable {
         protected String command;
@@ -113,7 +117,7 @@ public class Celeste {
                 String line;
                 while ((line = input.readLine()) != null) {
                     System.out.println(line);
-                }
+                } 
                 System.out.println(new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss").format(new Date()) + ": " + this.command + " died.");
                 input.close();
                 proc.waitFor();
@@ -128,14 +132,15 @@ public class Celeste {
             }
         }
     }
+    
 
-    private static String release = String.valueOf(Celeste.class.getPackage().getImplementationVersion());
+    private static String release = String.valueOf(Titan.class.getPackage().getImplementationVersion());
 
     /**
      *
      */
     public static void main(String[] args) {
-        System.out.println(Celeste.release);
+        System.out.println(Titan.release);
         System.out.println(Copyright.miniNotice);
         
         //
@@ -144,24 +149,22 @@ public class Celeste {
     	//
     	OrderedProperties properties = new OrderedProperties();
 
+        String gatewayArgument = null;
 
-        // This way to construct the spool directory is very UNIX-centric.
-        properties.setProperty(TitanNodeImpl.LocalFileSystemRoot.getName(), File.listRoots()[0] + "tmp" + File.separator + "celeste" + File.separator);
+        // This way to construct the default spool directory is very UNIX-centric.
+        properties.setProperty(TitanNodeImpl.LocalFileSystemRoot.getName(), File.listRoots()[0] + "tmp" + File.separator + "titan" + File.separator);
 
+        properties.setProperty(WebDAVDaemon.Port.getName(), 12001);
         properties.setProperty(TitanNodeImpl.Port.getName(), 12000);
         properties.setProperty(TitanNodeImpl.ConnectionType.getName(), "plain");
-        properties.setProperty(WebDAVDaemon.Port.getName(), 12001);
         properties.setProperty(TitanNodeImpl.InterNetworkAddress.getName(), "127.0.0.1");
         properties.setProperty(TitanNodeImpl.GatewayRetryDelaySeconds.getName(), 30);
-        properties.setProperty(TitanNodeImpl.ObjectStoreCapacity.getName(), "unlimited");
-        
-        properties.setProperty(CelesteClientDaemon.Port.getName(), 14000);
 
         String javaFile = System.getenv("JAVA");
         if (javaFile == null)
             javaFile = "/usr/bin/java";
 
-        String jarFile = "dist/celeste.jar";
+        String jarFile = "lib/titan.jar";
 
         String keyStoreNames[] = null;
 
@@ -187,10 +190,9 @@ public class Celeste {
         
         int n_nodes = 1;
         int interprocessStartupDelayTimeSeconds = 5;
-        // These are for computing the allocated ports for multiple instances of a node (if any).
+
         int titanPortIncrement = 2;
         int webdavPortIncrement = 2;
-        int celestePortIncrement = 1;
         
         boolean useThreads = false;
 
@@ -216,18 +218,15 @@ public class Celeste {
                     } catch (IOException e) {
                         e.printStackTrace();
                         System.exit(1);
-                    }                 
+                    }
                 } else if (args[i].equals("--threads")) {
                     useThreads = true;
-                } else if (args[i].equals("--delay") || args[i].equals("--delay-time")) {
+                } else if (args[i].equals("--delay")) {
                     interprocessStartupDelayTimeSeconds = Integer.parseInt(args[++i]);
                     if (interprocessStartupDelayTimeSeconds < 1) {
-                        System.err.printf("--delay-time %d: time must be greater than 1%n", interprocessStartupDelayTimeSeconds);
+                        System.err.printf("--delay %d: time must be greater than 1%n", interprocessStartupDelayTimeSeconds);
                         throw new IllegalArgumentException();
                     }
-                } else if (args[i].equals("--root") || args[i].equals("--localfs-root") || args[i].equals("--spool-root")) {
-                    String value = args[++i];
-                    properties.setProperty(TitanNodeImpl.LocalFileSystemRoot.getName(), value + File.separator);
                 } else if (args[i].equals("--n-nodes")) {
                     n_nodes = Integer.parseInt(args[++i]);
                     if (n_nodes < 1) {
@@ -246,12 +245,6 @@ public class Celeste {
                     if (tokens.length > 1)
                         webdavPortIncrement = Integer.parseInt(tokens[1]);
                     properties.setProperty(WebDAVDaemon.Port.getName(), port);
-                } else if (args[i].equals("--celeste-port") || args[i].equals("--celeste-client-port")) {
-                    String[] tokens = args[++i].split(",");
-                    String port = tokens[0];
-                    if (tokens.length > 1)
-                        celestePortIncrement = Integer.parseInt(tokens[1]);
-                    properties.setProperty(CelesteClientDaemon.Port.getName(), port);
                 } else if (args[i].equals("--jmx-port")) {
                     String[] tokens = args[++i].split(",");
                     String port = tokens[0];
@@ -277,12 +270,14 @@ public class Celeste {
                     System.out.printf(" [-D<name>=<value>]%n");
                     System.out.printf(" [--delay <integer>] (%d)%n", interprocessStartupDelayTimeSeconds);
                     System.out.printf(" [--n-nodes <integer>] (%d)%n", n_nodes);
-                    System.out.printf(" [--threads] (use threads)%n");
+                    System.out.printf(" [--threads] (use threads instead of spawning a JVM for each node)%n");
                     System.out.printf(" [--http-port <integer>[,<integer>]] (%d,%d)%n", properties.getPropertyAsInt(WebDAVDaemon.Port.getName()), webdavPortIncrement);
                     System.out.printf(" [--jar <file name>] (%s)%n", String.valueOf(jarFile));
                     System.out.printf(" [--java <file name>] (%s)%n", javaFile);
                     System.out.printf(" [--jmx-port <integer>[,<integer>]] (%d,%d)%n] (%d)%n", jmxPort, jmxPortIncrement);
                     System.out.printf(" [--titan-port <integer>[,<integer>]] (%d,%d)%n", properties.getPropertyAsInt(TitanNodeImpl.Port.getName()), titanPortIncrement);
+                    System.out.printf(" [--V<option>]%n");
+                    System.out.printf(" [--D<option>]%n");
                     System.exit(0);
                 } else {
                     System.out.println("Ignoring unknown option: " + args[i]);
@@ -301,7 +296,7 @@ public class Celeste {
                 nodeVMArguments.append(v);
             } else {
                 // Read this command line argument as a URL to fetch configuration properties.
-                // These properties are then overridden by options subsequent on the command line.
+                // These properties are overridden by options subsequent on the command line.
                 try {
                     OrderedProperties p = new OrderedProperties(new URL(args[i]));
                     properties.putAll(p);
@@ -326,25 +321,23 @@ public class Celeste {
                 System.exit(-1);
             }
         }
-        
+
         DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss"); // ISO 8601    
         
         // Start all of the nodes as threads in one JVM.
         if (useThreads) {
-            CelesteNode[] node = new CelesteNode[n_nodes];
+            TitanNodeImpl[] node = new TitanNodeImpl[n_nodes];
             Thread[] thread = new Thread[n_nodes];
 
             try {
                 for (int i = 0; i < n_nodes; i++) {
                     OrderedProperties configurationProperties = new OrderedProperties();
-                    // Copy all of the properties into this node's properties.
-                    // Customise this node's properties.
                     configurationProperties.putAll(properties);
                     if (keyStoreNames != null) {
                         configurationProperties.setProperty(TitanNodeImpl.KeyStoreFileName.getName(), keyStoreNames[i]);
                     }
 
-                    node[i] = new CelesteNode(configurationProperties);
+                    node[i] = new TitanNodeImpl(configurationProperties);
 
                     thread[i] = node[i].start();
 
@@ -361,7 +354,6 @@ public class Celeste {
                     properties.setProperty(TitanNodeImpl.GatewayURL.getName(), node[0].getNodeAddress().getHTTPInterface());
                     properties.setProperty(TitanNodeImpl.Port.getName(), properties.getPropertyAsInt(TitanNodeImpl.Port.getName()) + titanPortIncrement);
                     properties.setProperty(WebDAVDaemon.Port.getName(), properties.getPropertyAsInt(WebDAVDaemon.Port.getName()) + webdavPortIncrement);
-                    properties.setProperty(CelesteClientDaemon.Port.getName(), properties.getPropertyAsInt(CelesteClientDaemon.Port.getName()) + celestePortIncrement);
                 }
                 if (n_nodes > 1) {
                     System.out.printf("%s All node threads running.%n", dateFormat.format(new Date()));
@@ -375,9 +367,9 @@ public class Celeste {
                     }
                 }
             } catch (java.net.BindException e) {
-                System.out.printf("%s titan-port=%d http-port=%d celeste-port=%d jmx-port=%d%n",
-                        e.toString(), properties.getPropertyAsInt(TitanNodeImpl.Port.getName()), properties.getPropertyAsInt(WebDAVDaemon.Port.getName()),
-                        properties.getPropertyAsInt(CelesteClientDaemon.Port.getName()), jmxPort);
+                System.out.printf("%s titan-port=%d http-port=%d jmx-port=%d%n",
+                        e.toString(),  properties.getPropertyAsInt(TitanNodeImpl.Port.getName()), properties.getPropertyAsInt(WebDAVDaemon.Port.getName()),
+                        jmxPort);
             } catch (IOException e) {
                 e.printStackTrace();
             } catch (ConfigurationException e) {
@@ -386,13 +378,12 @@ public class Celeste {
             System.err.println(dateFormat.format(new Date()) + " EXITED");
             System.exit(1);
         }
-
+        
         // Use separate processes for each Node instance.
         Executor executors = Executors.newCachedThreadPool();
 
-        String applicationSpecification = " -cp " + jarFile + " sunlabs.celeste.node.CelesteNode";
+        String applicationSpecification = " -cp " + jarFile + " sunlabs.titan.node.TitanNodeImpl";
 
-        String gatewayArgument = null;
         for (int i = 0; i < n_nodes; i++) {
             String jmxPortProperty = jmxPort == null ? "" : String.format(" -Dcom.sun.management.jmxremote.port=%d", jmxPort);
 
@@ -421,8 +412,8 @@ public class Celeste {
                 if (fout != null) try { fout.close(); } catch (IOException e) { /**/ }
             }
             String configurationURL = " file://" + configurationFileName;
-            
-            String command = javaFile + " -Dceleste-node" + nodeVMArguments.toString() + jmxPortProperty + applicationSpecification + configurationURL;
+
+            String command = javaFile + " -Dtitan-node" +  nodeVMArguments.toString() + jmxPortProperty + applicationSpecification + configurationURL;
             System.out.println(command);
 
             try {
@@ -434,10 +425,11 @@ public class Celeste {
             try {
                 Thread.sleep(Time.secondsInMilliseconds(interprocessStartupDelayTimeSeconds));
             } catch (InterruptedException e) {
+                e.printStackTrace();
             }
 
             //
-            // If the first node created a new Celeste confederation, have
+            // If the first node created a new Titan confederation, have
             // subsequent nodes use it as a gateway.
             //
             if (i == 0) {
@@ -447,7 +439,6 @@ public class Celeste {
 
             properties.setProperty(TitanNodeImpl.Port.getName(), properties.getPropertyAsInt(TitanNodeImpl.Port.getName()) + titanPortIncrement);
             properties.setProperty(WebDAVDaemon.Port.getName(), properties.getPropertyAsInt(WebDAVDaemon.Port.getName()) + webdavPortIncrement);
-            properties.setProperty(CelesteClientDaemon.Port.getName(), properties.getPropertyAsInt(CelesteClientDaemon.Port.getName()) + celestePortIncrement);
             if (jmxPort != null) {
                 jmxPort += jmxPortIncrement;
             }
@@ -458,6 +449,6 @@ public class Celeste {
     //
     // Prevent instantiation.
     //
-    private Celeste() {
+    private Titan() {
     }
 }

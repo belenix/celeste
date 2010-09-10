@@ -65,7 +65,7 @@ public interface Census {
     /**
      * The number of milliseconds for this record to live.
      */
-    public final static String TimeToLive = "Census.TimeToLive";
+    public final static String TimeToLiveMillis = "Census.TimeToLiveMillis";
 
     public final static String NodeAddress = "Census.NodeAddress";
     public final static String Version = "Census.Version";

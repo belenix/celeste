@@ -1915,7 +1915,7 @@ public class MutableObject {
                 if (histories[i] == null) {
                     TitanGuid replicaId = objectId.add(i);
                     if (nodeIds.size() == 0)
-                    	throw new MutableObject.InsufficientResourcesException();
+                    	throw new MutableObject.InsufficientResourcesException("No nodes available to create the object history.");
                     // XXX Note that nodeIds may not contain histories.length elements and this will throw an exception.
                     TitanNodeId nodeId = nodeIds.remove();
 

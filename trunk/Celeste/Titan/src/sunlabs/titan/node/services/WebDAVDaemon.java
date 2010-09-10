@@ -306,7 +306,6 @@ public final class WebDAVDaemon extends AbstractTitanService implements WebDAVDa
         }
     }
 
-
     /**
      * Produce an {@link XHTML.Anchor} element that links to a XHTML document that
      * inspects the {@link TitanObject} identified by the given {@link TitanGuidImpl}.

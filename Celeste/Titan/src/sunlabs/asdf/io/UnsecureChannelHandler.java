@@ -46,7 +46,7 @@ public abstract class UnsecureChannelHandler implements ChannelHandler {
     protected ByteBuffer inApplicationData;
     /** The number of milliseconds that this ChannelHandler may be unused before it is eligible to be closed and eliminated. */
     protected long timeoutMillis;
-    /** The time, expressed in milliseconds since midnight, January 1, 1970 UTC, that this ChannelHandler will be closed and eliminated. See {@link #setExpirationTime(long). */
+    /** The time, expressed in milliseconds since midnight, January 1, 1970 UTC, that this ChannelHandler will be closed and eliminated. See {@link #setExpirationTime(long)}. */
     protected long expireTime;
     protected SelectionKey selectionKey;
 

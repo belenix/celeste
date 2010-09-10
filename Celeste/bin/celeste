@@ -165,22 +165,19 @@ JAVA_ARGUMENTS="\
     ${server_property} \
     ${java_option}"
 
-#celeste_root_option=${celeste_root:+--celeste-root ${celeste_root}}
-spool_root_option=${spool_root:+--localfs-root ${spool_root}}
+spool_root_option=${spool_root:+--root ${spool_root}}
 gateway_option=${gateway:+--gateway http://${gateway}}
 n_nodes_option="${n_nodes:+--n-nodes ${n_nodes}}"
 beehive_port_option=${beehive_port:+--beehive-port ${beehive_port}}
 http_port_option=${http_port:+--http-port ${http_port}}
 celeste_client_port_option=${celeste_client_port:+--celeste-client-port ${celeste_client_port}}
-local_address_option=${node_address:+--local-address ${node_address}}
-use_processes_option=${use_processes:+--use-processes}
+local_address_option=${node_address:+--ip-address ${node_address}}
 threads_option=${threads:+--threads}
 connection_type_option=${connection_type:+--beehive-connection-type ${connection_type}}
 
 
 celeste_arguments=" \
     ${n_nodes_option} \
-    ${spool_root_option} \
     ${gateway_option} \
     ${beehive_port_option} \
     ${http_port_option} \
@@ -195,8 +192,10 @@ celeste_arguments=" \
 
 start() {
     if [[ ${CELESTECONFIG_URL} == "unset" ]]; then
-        echo ${JAVA} ${JAVA_ARGUMENTS} -jar ${CELESTEHOME}/dist/celeste.jar ${celeste_arguments} '>' ${celeste_log} '2>&1'
-        ${JAVA} ${JAVA_ARGUMENTS} -jar ${CELESTEHOME}/dist/celeste.jar ${celeste_arguments} > ${celeste_log} 2>&1 &
+	echo ${JAVA} -Dceleste-node ${supervisor_vm_options} -jar /Users/glennscott/Development/Celeste/celeste/Celeste/dist/celeste.jar ${supervisor_options} -V="${node_vm_options}" ${node_options} '>' ${celeste_log} '2>&1' 
+	${JAVA} -Dceleste-node ${supervisor_vm_options} -jar /Users/glennscott/Development/Celeste/celeste/Celeste/dist/celeste.jar ${supervisor_options} -V="${node_vm_options}" ${node_options} > ${celeste_log} 2>&1 &
+        #echo ${JAVA} ${JAVA_ARGUMENTS} -jar ${CELESTEHOME}/dist/celeste.jar ${supervisor_options} -JVM="${celeste_vm_options}" ${celeste_arguments} '>' ${celeste_log} '2>&1'
+        #${JAVA} ${JAVA_ARGUMENTS} -jar ${CELESTEHOME}/dist/celeste.jar ${supervisor_options} -JVM="${celeste_vm_options}" ${celeste_arguments} > ${celeste_log} 2>&1 &
     else
         echo ${JAVA} ${JAVA_ARGUMENTS} -jar ${CELESTEHOME}/dist/celeste.jar ${CELESTECONFIG_URL} '>' ${celeste_log} '2>&1'
         ${JAVA} ${JAVA_ARGUMENTS} -jar ${CELESTEHOME}/dist/celeste.jar ${CELESTECONFIG_URL} > ${celeste_log} 2>&1 &

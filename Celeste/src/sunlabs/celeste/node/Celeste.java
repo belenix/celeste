@@ -129,6 +129,8 @@ public class Celeste {
         }
     }
 
+    private static final String copyrightMiniNotice = Copyright.miniNotice;
+
     private static String release = String.valueOf(Celeste.class.getPackage().getImplementationVersion());
 
     /**
@@ -137,12 +139,12 @@ public class Celeste {
     public static void main(String[] args) {
         System.out.println(Celeste.release);
         System.out.println(Copyright.miniNotice);
-        
+
         //
         // Establish default values.  The argument processing code below can
         // override them.
-    	//
-    	OrderedProperties properties = new OrderedProperties();
+        //
+        OrderedProperties properties = new OrderedProperties();
 
 
         // This way to construct the spool directory is very UNIX-centric.
@@ -154,7 +156,7 @@ public class Celeste {
         properties.setProperty(TitanNodeImpl.InterNetworkAddress.getName(), "127.0.0.1");
         properties.setProperty(TitanNodeImpl.GatewayRetryDelaySeconds.getName(), 30);
         properties.setProperty(TitanNodeImpl.ObjectStoreCapacity.getName(), "unlimited");
-        
+
         properties.setProperty(CelesteClientDaemon.Port.getName(), 14000);
 
         String javaFile = System.getenv("JAVA");
@@ -184,14 +186,14 @@ public class Celeste {
         //
         Integer jmxPort = null; // null signifies that the jmxPort has not been set.
         int jmxPortIncrement = 1;
-        
+
         int n_nodes = 1;
         int interprocessStartupDelayTimeSeconds = 5;
         // These are for computing the allocated ports for multiple instances of a node (if any).
         int titanPortIncrement = 2;
         int webdavPortIncrement = 2;
         int celestePortIncrement = 1;
-        
+
         boolean useThreads = false;
 
         RuntimeMXBean mxbean = ManagementFactory.getRuntimeMXBean();
@@ -270,7 +272,7 @@ public class Celeste {
                     keyStoreNames = args[++i].split(",");
                 } else if (args[i].equals("--version")) {
                     System.out.println(release);
-                    System.out.println(Copyright.miniNotice);
+                    System.out.println(Celeste.copyrightMiniNotice);
                 } else if (args[i].equals("--help") ) {
                     System.out.println("Usage: defaults are in parenthesis.");
                     System.out.printf(" [--version]%n");
@@ -326,9 +328,9 @@ public class Celeste {
                 System.exit(-1);
             }
         }
-        
+
         DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss"); // ISO 8601    
-        
+
         // Start all of the nodes as threads in one JVM.
         if (useThreads) {
             CelesteNode[] node = new CelesteNode[n_nodes];
@@ -409,7 +411,7 @@ public class Celeste {
                     configurationProperties.getProperty(TitanNodeImpl.InterNetworkAddress.getName()),
                     configurationProperties.getProperty(TitanNodeImpl.Port.getName()),
                     i);
-            
+
             FileOutputStream fout = null;
             try {
                 fout = new FileOutputStream(configurationFileName);
@@ -421,7 +423,7 @@ public class Celeste {
                 if (fout != null) try { fout.close(); } catch (IOException e) { /**/ }
             }
             String configurationURL = " file://" + configurationFileName;
-            
+
             String command = javaFile + " -Dceleste-node" + nodeVMArguments.toString() + jmxPortProperty + applicationSpecification + configurationURL;
             System.out.println(command);
 
@@ -430,7 +432,7 @@ public class Celeste {
             } catch(Exception e) {
                 e.printStackTrace();
             }
-            
+
             try {
                 Thread.sleep(Time.secondsInMilliseconds(interprocessStartupDelayTimeSeconds));
             } catch (InterruptedException e) {

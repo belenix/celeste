@@ -680,23 +680,7 @@ public class TitanNodeImpl implements TitanNode, NodeMBean {
 
     }
 
-    public static class NoSuchNodeException extends Exception {
-        private static final long serialVersionUID = 1L;
-
-        public NoSuchNodeException() {
-            super();
-        }
-
-        public NoSuchNodeException(String format, Object...args) {
-            super(String.format(format, args));
-        }
-
-        public NoSuchNodeException(Throwable cause) {
-            super(cause);
-        }
-    }
-
-    public static class ConfigurationException extends Exception {
+    public static class ConfigurationException extends java.lang.Exception {
         private static final long serialVersionUID = 1L;
 
         public ConfigurationException() {
@@ -1262,7 +1246,7 @@ public class TitanNodeImpl implements TitanNode, NodeMBean {
                 if (request.isExactRouting() && !destinationNodeId.equals(this.getNodeId())) {
                     TitanNodeImpl.this.log.finest("routed to nonexistent node %s%n", destinationNodeId);
                     
-                    return request.composeReply(this.address, new TitanNodeImpl.NoSuchNodeException("%s: %s", this.address, destinationNodeId.toString()));
+                    return request.composeReply(this.address, new TitanNode.NoSuchNodeException(destinationNodeId, "%s->%s", this.address.format(), destinationNodeId.toString()));
                 }
                 TitanMessage result = this.services.sendMessageToApp(request);
 
@@ -1660,15 +1644,15 @@ public class TitanNodeImpl implements TitanNode, NodeMBean {
             try {
                 reply.getPayload(Serializable.class, this);
             } catch (RemoteException e) {
-                if (e.getCause() instanceof TitanNodeImpl.NoSuchNodeException) {
-                    throw (TitanNodeImpl.NoSuchNodeException) e.getCause();
+                if (e.getCause() instanceof TitanNode.NoSuchNodeException) {
+                    throw (TitanNode.NoSuchNodeException) e.getCause();
                 }
                 throw e;
             }            
         }
         if (reply.getStatus().equals(DOLRStatus.SERVICE_UNAVAILABLE)) {
             this.getLogger().info("NoSuchNodeException: %5.5s...", nodeId);
-            throw new TitanNodeImpl.NoSuchNodeException("%s %s", nodeId, reply.getStatus());
+            throw new TitanNode.NoSuchNodeException(nodeId, "%s %s", nodeId, reply.getStatus());
         }
         return reply;
     }

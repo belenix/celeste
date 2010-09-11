@@ -1,5 +1,5 @@
 /*
- * Copyright 2007-2009 Sun Microsystems, Inc. All Rights Reserved.
+ * Copyright 2007-2010 Oracle. All Rights Reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER
  *
  * This code is free software; you can redistribute it and/or modify
@@ -17,8 +17,8 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
  * 02110-1301 USA
  *
- * Please contact Sun Microsystems, Inc., 16 Network Circle, Menlo
- * Park, CA 94025 or visit www.sun.com if you need additional
+ * Please contact Oracle, 16 Network Circle, Menlo
+ * Park, CA 94025 or visit www.oracle.com if you need additional
  * information or have any questions.
  */
 package sunlabs.titan.node.object;
@@ -394,7 +394,7 @@ public final class StorableObject {
                 this.object = object;
             }
 
-            public TitanMessage call() throws TitanNodeImpl.NoSuchNodeException, ClassCastException, ClassNotFoundException, TitanMessage.RemoteException {
+            public TitanMessage call() throws TitanNode.NoSuchNodeException, ClassCastException, ClassNotFoundException, TitanMessage.RemoteException {
                 try {
                     TitanMessage reply = this.handler.getNode().sendToNodeExactly(this.destination, this.handler.getName(), "storeLocalObject", this.object);
               

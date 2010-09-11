@@ -1,25 +1,27 @@
 #!/bin/bash -
-# Copyright 2007-2009 Sun Microsystems, Inc. All Rights Reserved.
-# DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER
-# 
-# This code is free software; you can redistribute it and/or modify
-# it under the terms of the GNU General Public License version 2
-# only, as published by the Free Software Foundation.
-# 
-# This code is distributed in the hope that it will be useful, but
-# WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
-# General Public License version 2 for more details (a copy is
-# included in the LICENSE file that accompanied this code).
-# 
-# You should have received a copy of the GNU General Public License
-# version 2 along with this work; if not, write to the Free Software
-# Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
-# 02110-1301 USA
-# 
-# Please contact Sun Microsystems, Inc., 16 Network Circle, Menlo
-# Park, CA 94025 or visit www.sun.com if you need additional
-# information or have any questions.
+#
+#* Copyright 2007-2010 Oracle. All Rights Reserved.
+#* DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER
+#*
+#* This code is free software; you can redistribute it and/or modify
+#* it under the terms of the GNU General Public License version 2
+#* only, as published by the Free Software Foundation.
+#*
+#* This code is distributed in the hope that it will be useful, but
+#* WITHOUT ANY WARRANTY; without even the implied warranty of
+#* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+#* General Public License version 2 for more details (a copy is
+#* included in the LICENSE file that accompanied this code).
+#*
+#* You should have received a copy of the GNU General Public License
+#* version 2 along with this work; if not, write to the Free Software
+#* Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
+#* 02110-1301 USA
+#*
+#* Please contact Oracle Corporation, 500 Oracle Parkway, Redwood Shores, CA 94065
+#* or visit www.oracle.com if you need additional information or
+#* have any questions.
+
 
 TITANHOME=${TITANHOME:="unset"}
 if [[ ${TITANHOME} == "unset" ]]; then
@@ -29,7 +31,7 @@ if [[ ${TITANHOME} == "unset" ]]; then
 	echo "        Explicitly set the environment variable TITANHOME to override this."
 	TITANHOME=`pwd`
     else
-	TITANHOME="/opt/celeste"
+	TITANHOME="/opt/titan"
     fi
 fi
 
@@ -77,28 +79,10 @@ fi
 # etc/celeste.cf.  Note that default values are documented there, so a change
 # here must have a corresponding documentation change there.
 #
-export BEEHIVEHOME=${TITANHOME}
 
-spool_root="/tmp/celeste"
-n_nodes="6"
-use_processes=""
-threads=""
-gateway=""
+spool_root="/tmp/titan"
 logging_config_file="${TITANHOME}/etc/logging.properties"
 logfile="/tmp/titan-${TITANCONFIG}"
-beehive_port=""
-celeste_client_port=""
-http_port=""
-node_address=""
-connection_type=""
-enable_jmx="false"
-jmx_password_file="${TITANHOME}/etc/jmxremote.password.template"
-jmx_port="16000"
-server_option="-server"
-heap_options="-Xmx128m -Xms128m -XX:+UseParallelGC"
-java_options="-ea"
-additional_options=""
-
 
 JAVA=${JAVA:=/usr/bin/java}
 
@@ -112,78 +96,9 @@ JAVA=${JAVA:=/usr/bin/java}
 # DOJO Configuration
 #
 #
-#DOJOBASE="-Dsunlabs.asdf.xhtml.ajax.dojo.baseURL=http://o.aolcdn.com/dojo/1.1.1"
 DOJOBASE="-Dsunlabs.asdf.xhtml.ajax.dojo.rootURL=http://o.aolcdn.com/dojo/1.4.1"
 DOJO="-Dsunlabs.asdf.xhtml.ajax.dojo.dojoJs=dojo/dojo.xd.js"
 DOJOOPTS="${DOJOBASE} ${DOJO}"
-
-#
-# JMX configuration:
-#
-if [[ $enable_jmx = true ]]; then
-    JMXOPTS="-Dcom.sun.management.jmxremote -Dcom.sun.management.jmxremote.password.file=$jmx_password_file"
-    jmx_port_option="--jmx-port $jmx_port"
-    if [[ -r $jmx_password_file ]]; then
-        chmod 600 $jmx_password_file
-    fi
-else
-    JMXOPTS=""
-    jmx_port_option=""
-fi
-
-#
-# Hack for conveying the "-server" option to JVMs invoked from within the
-# celeste.jar main class.  If "-server" is set at this level, set the "server"
-# Java property, so that the class can find it and set it for JVMs that it
-# starts.
-#
-if [[ "x${server_option}" = "x-server" ]]; then
-    server_property="-Dserver=true"
-else
-    server_property=""
-fi
-
-LOGGINGOPTS="-Djava.util.logging.config.file=${logging_config_file}"
-
-java_option=${java_options:+${java_options}}
-#
-# LOGGINGOPTS comes early so that the "status" command can find the
-# command line pattern it's looking for (which has to occur in the
-# first 80 bytes of command line arguments).
-#
-JAVA_ARGUMENTS="\
-    -Dceleste-node \
-    ${server_option} \
-    ${LOGGINGOPTS} \
-    ${heap_options} \
-    ${JMXOPTS} \
-    ${server_property} \
-    ${java_option}"
-
-spool_root_option=${spool_root:+--root ${spool_root}}
-gateway_option=${gateway:+--gateway http://${gateway}}
-n_nodes_option="${n_nodes:+--n-nodes ${n_nodes}}"
-beehive_port_option=${beehive_port:+--beehive-port ${beehive_port}}
-http_port_option=${http_port:+--http-port ${http_port}}
-celeste_client_port_option=${celeste_client_port:+--celeste-client-port ${celeste_client_port}}
-local_address_option=${node_address:+--ip-address ${node_address}}
-threads_option=${threads:+--threads}
-connection_type_option=${connection_type:+--beehive-connection-type ${connection_type}}
-
-
-celeste_arguments=" \
-    ${n_nodes_option} \
-    ${gateway_option} \
-    ${beehive_port_option} \
-    ${http_port_option} \
-    ${celeste_client_port_option} \
-    ${jmx_port_option} \
-    ${local_address_option} \
-    ${socket_cache_option} \
-    ${use_processes_option} \
-    ${connection_type_option} \
-    ${additional_options}"
-
 
 start() {
 	echo ${JAVA} -Dtitan-node ${supervisor_vm_options} -jar ${TITANHOME}/lib/titan.jar  ${supervisor_options} -V="${node_vm_options}" ${node_options} '>' ${logfile} '2>&1' 
@@ -231,10 +146,11 @@ bgclobber() {
 }
 
 config() {
-	echo Java Parameters ${JAVA_ARGUMENTS}
-	echo Celeste Parameters ${celeste_arguments}
-	echo Celeste Log File ${celeste_log}
-	echo AVGateway Log File ${avgateway_log}
+	echo ${JAVA} 
+	echo ${supervisor_vm_options}
+	echo ${supervisor_options} 
+	echo "${node_vm_options}"
+	echo ${node_options}
 }
 
 status() {
@@ -288,7 +204,7 @@ for command in $*; do
 			status
 			;;
 		*|help|-help|--help)
-			echo "celeste clean"
+			echo "titan clean"
 			echo "        clobber"
 			echo "        start"
 			echo "        stop"

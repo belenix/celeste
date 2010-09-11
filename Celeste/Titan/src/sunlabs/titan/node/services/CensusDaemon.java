@@ -93,6 +93,10 @@ public final class CensusDaemon extends AbstractTitanService implements Census, 
 
     /**
      * A single Census report.
+     * <p>
+     * Every {@link TitanNode} periodically transmits an instance of {@link Report.Request}
+     * reporting on various properties and receiving {@link Report.Response} in reply.
+     * </p>
      */
     private static class Report {
     	private static class Request implements Serializable {
@@ -241,8 +245,8 @@ public final class CensusDaemon extends AbstractTitanService implements Census, 
     }
 
     /**
-     * Randomly select {@code count} nodes, excluding those specified by {@link TitanGuid}
-     * in the {@link Set} {@code exclude}, that match properties specified in the {@link OrderedProperties} instance.
+     * Randomly select {@code count} nodes, excluding those present in the  {@link Set} {@code exclude},
+     * that match properties specified in the {@link OrderedProperties} instance.
      *
      * @param count the number of nodes to select. A count of zero means to return the entire set of nodes.
      * @param exclude the {@code Set} of nodes to exclude from the result, or {@code null}.
@@ -258,7 +262,6 @@ public final class CensusDaemon extends AbstractTitanService implements Census, 
             synchronized (this.catalogue) {
                 List<TitanNodeId> nodes = new LinkedList<TitanNodeId>(this.catalogue.keySet());
                 Collections.shuffle(nodes, new Random(System.currentTimeMillis()));
-                System.out.printf("selectFromCatalogue: count=%d size=%d catalogue.size=%d%n", count, nodes.size(), this.catalogue.size());
 
                 if (exclude != null) {
                     for (TitanNodeId id : nodes) {

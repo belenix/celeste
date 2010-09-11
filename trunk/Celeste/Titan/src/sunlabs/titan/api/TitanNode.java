@@ -37,7 +37,6 @@ import sunlabs.asdf.web.XML.XHTML;
 import sunlabs.asdf.web.XML.XML;
 import sunlabs.asdf.web.http.HTTP;
 import sunlabs.titan.node.ApplicationFramework;
-import sunlabs.titan.node.TitanNodeImpl.NoSuchNodeException;
 import sunlabs.titan.node.BeehiveObjectStore;
 import sunlabs.titan.node.NeighbourMap;
 import sunlabs.titan.node.NodeAddress;
@@ -49,6 +48,43 @@ import sunlabs.titan.node.services.AbstractTitanService;
 import sunlabs.titan.node.util.DOLRLogger;
 
 public interface TitanNode {
+    /**
+     * 
+     *
+     */
+    public interface NoSuchNode {
+        /**
+         * Get the {@link TitanNodeId} of the missing {@link TitanNode}.
+         * @return the {@link TitanNodeId} of the missing {@link TitanNode}.
+         */
+        public TitanNodeId getNodeId();
+    }
+
+    public static class NoSuchNodeException extends java.lang.Exception implements TitanNode.NoSuchNode {
+        private static final long serialVersionUID = 1L;
+        
+        private TitanNodeId nodeId;
+
+        public NoSuchNodeException(TitanNodeId nodeId) {
+            super();
+            this.nodeId = nodeId;
+        }
+
+        public NoSuchNodeException(TitanNodeId nodeId, String format, Object...args) {
+            super(String.format(format, args));
+            this.nodeId = nodeId;
+        }
+
+        public NoSuchNodeException(TitanNodeId nodeId, Throwable cause) {
+            super(cause);
+        }
+
+        public TitanNodeId getNodeId() {
+           return this.nodeId;
+        }
+    }
+    
+    
     /**
      * Start the node.
      * This consists of initialising all of the listening sockets,
@@ -85,7 +121,7 @@ public interface TitanNode {
 
     /**
      * Transmit a {@link TitanMessage.Type#RouteToNode} message to the specified {@link TitanNodeId}.
-     * If the node cannot be found, throw {@link TitanNodeImpl.NoSuchNodeException}.
+     * If the node cannot be found, throw {@link TitanNode.NoSuchNodeException}.
      *
      * @param nodeId the {@link TitanNodeId} of the destination node.
      * @param klasse the {@link String} class name of the destination {@link TitanService}.

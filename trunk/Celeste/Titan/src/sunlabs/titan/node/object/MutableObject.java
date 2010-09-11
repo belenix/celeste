@@ -57,9 +57,9 @@ import sunlabs.asdf.web.XML.XML;
 import sunlabs.asdf.web.http.HTTP;
 import sunlabs.titan.TitanGuidImpl;
 import sunlabs.titan.api.TitanGuid;
+import sunlabs.titan.api.TitanNode;
 import sunlabs.titan.api.TitanNodeId;
 import sunlabs.titan.api.XHTMLInspectable;
-import sunlabs.titan.node.TitanNodeImpl;
 import sunlabs.titan.node.TitanMessage;
 import sunlabs.titan.node.TitanMessage.RemoteException;
 import sunlabs.titan.node.services.CensusDaemon;
@@ -1798,9 +1798,9 @@ public class MutableObject {
          *
          * @throws ObjectHistory.ValidationException
          * @throws MutableObject.ExistenceException if the {@link ObjectHistory} already exists in the object pool.
-         * @throws TitanNodeImpl.NoSuchNodeException
+         * @throws TitanNode.NoSuchNodeException
          */
-        public MutableObject.ObjectHistory call() throws ObjectHistory.ValidationException, MutableObject.ExistenceException, TitanNodeImpl.NoSuchNodeException {
+        public MutableObject.ObjectHistory call() throws ObjectHistory.ValidationException, MutableObject.ExistenceException, TitanNode.NoSuchNodeException {
 
             if (handler.getLogger().isLoggable(Level.FINEST)) {
                 handler.getLogger().finest("replica[%d] %s on node %s", this.replicaIndex, this.replicaId, this.destinationNodeId);

@@ -88,11 +88,11 @@ public final class StorableFragmentedObject {
          * @param object
          * @return The {@link TitanMessage} response from the destination selected to store the object.
          * @throws BeehiveObjectStore.NoSpaceException
-         * @throws TitanNodeImpl.NoSuchNodeException
+         * @throws TitanNode.NoSuchNodeException
          * @throws ErasureCode.UnsupportedAlgorithmException
          */
         public FragmentMap store(TitanGuid destination, ErasureCode erasureCodeName, T object)
-        throws BeehiveObjectStore.NoSpaceException, TitanNodeImpl.NoSuchNodeException, ErasureCode.UnsupportedAlgorithmException;
+        throws BeehiveObjectStore.NoSpaceException, TitanNode.NoSuchNodeException, ErasureCode.UnsupportedAlgorithmException;
 
         /**
          * <p>
@@ -108,12 +108,12 @@ public final class StorableFragmentedObject {
          * @param erasureCodeName
          * @param object
          * @return The {@link TitanMessage} response from the destination selected to store the object.
-         * @throws BeehiveObjectStore.NoSpaceException<
-         * @throws TitanNodeImpl.NoSuchNodeException
+         * @throws BeehiveObjectStore.NoSpaceException
+         * @throws TitanNode.NoSuchNodeException
          * @throws ErasureCode.UnsupportedAlgorithmException
          */
         public FragmentMap store(ErasureCode erasureCodeName, T object)
-        throws BeehiveObjectStore.NoSpaceException, TitanNodeImpl.NoSuchNodeException, ErasureCode.UnsupportedAlgorithmException;
+        throws BeehiveObjectStore.NoSpaceException, TitanNode.NoSuchNodeException, ErasureCode.UnsupportedAlgorithmException;
 
         /**
          * <p>
@@ -283,13 +283,13 @@ public final class StorableFragmentedObject {
      * @param maxAttempts
      * @return
      * @throws BeehiveObjectStore.NoSpaceException
-     * @throws TitanNodeImpl.NoSuchNodeException
+     * @throws TitanNode.NoSuchNodeException
      * @throws ErasureCode.UnsupportedAlgorithmException
      */
     public static FragmentMap storeObjectRemotely(BeehiveObjectHandler objectType, TitanNodeId destination, ErasureCode erasureCode,
             StorableFragmentedObject.Handler.Object object,
             int maxAttempts)
-    throws BeehiveObjectStore.NoSpaceException, TitanNodeImpl.NoSuchNodeException, ErasureCode.UnsupportedAlgorithmException {
+    throws BeehiveObjectStore.NoSpaceException, TitanNode.NoSuchNodeException, ErasureCode.UnsupportedAlgorithmException {
         object.setProperty(StorableFragmentedObject.Handler.ERASURECODER, erasureCode).setProperty(ObjectStore.METADATA_TYPE, objectType.getName());
 
         if (destination == TitanGuidImpl.ANY) {

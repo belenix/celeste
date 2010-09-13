@@ -102,9 +102,10 @@ public interface TitanNode {
     public NodeAddress getNodeAddress();
     
     /**
-     * Send the given {@link Serializable} {@code data} via a {@link TitanMessage.Type#RouteToNode} to the {@link TitanNode}
-     * that is the root of the {@link TitanNodeId} {@code nodeId}.
+     * Send the given {@link Serializable} {@code data} via a {@link TitanMessage.Type#RouteToNode}
+     * to the {@link TitanNode} that is the root of the {@link TitanNodeId} {@code nodeId}.
      *
+     * @param nodeId The {@link TitanNodeId} of the destination.
      * @param klasse The name of the {@link AbstractTitanService} to handle the reception of this message.
      * @param method The name of the method to invoke in {@code klasse} on the receiving node.
      * @param payload Serializable data as the input parameter to the {@code method} method.
@@ -115,6 +116,12 @@ public interface TitanNode {
     /**
      * Send to a specific object-id on a specific node.
      * This directly violates the separation of nodes and objects.
+     * 
+     * @param nodeId The {@link TitanNodeId} of the destination.
+     * @param objectId The {@link TitanGuid} of the destination object.
+     * @param klasse The name of the {@link AbstractTitanService} to handle the reception of this message.
+     * @param method The name of the method to invoke in {@code klasse} on the receiving node.
+     * @param payload Serializable data as the input parameter to the {@code method} method.
      */
     @Deprecated
     public TitanMessage sendToNode(TitanNodeId nodeId, TitanGuid objectId, String klasse, String method, Serializable data);

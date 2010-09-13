@@ -35,8 +35,6 @@ import java.net.UnknownHostException;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
-import java.util.HashSet;
-import java.util.Set;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 
@@ -51,13 +49,12 @@ import sunlabs.titan.util.OrderedProperties;
  * Primary command line startup and supervisor of a Titan node.
  * </p>
  * <p>
- * This class has no instance and serves only to construct one or more
- * instances of TitanNode and run each of them either in a separate
- * thread or in separate processes.
+ * The static {@link #main(String[])} method constructs one or more
+ * instances of {@link TitanNode} and runs each of them either in their own {@link Thread} or in separate processes.
  * </p>
  * <p>
- * If the TitanNode instances are run in separate threads,
- * each instance of TitanNode is programmatically independant
+ * If the {@code TitanNode} instances are run in there own {@code Thread},
+ * each instance of {@code TitanNode} is programmatically independent
  * from the others and shares only static class variables.
  * </p>
  * <p>
@@ -99,7 +96,7 @@ import sunlabs.titan.util.OrderedProperties;
  */
 public class Titan {
 
-    private static class SuperviseProcess implements Runnable {
+    public static class SuperviseProcess implements Runnable {
         protected String command;
 
         public SuperviseProcess(String command) {
@@ -446,9 +443,7 @@ public class Titan {
         System.out.println(dateFormat.format(new Date()) + ": " + "done.");
     }
 
-    //
-    // Prevent instantiation.
-    //
-    private Titan() {
+    public Titan() {
+        
     }
 }

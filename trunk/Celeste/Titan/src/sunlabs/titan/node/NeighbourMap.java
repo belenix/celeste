@@ -168,7 +168,7 @@ public final class NeighbourMap {
     private Map<String,Integer> mapReputationRequirements;
     private final TitanNodeImpl node;
 
-    /** Dossier on every neighbour ever known by this {@code TitanNode}. */
+    /** Dossier on all neighbours ever known by this {@code TitanNode}. */
     private Dossier dossier;
 
 //    private ObjectName jmxObjectName;

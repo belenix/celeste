@@ -735,9 +735,11 @@ public class TitanNodeImpl implements TitanNode, NodeMBean {
     public final static Attributes.Prototype LocalFileSystemRoot = new Attributes.Prototype(TitanNodeImpl.class, "LocalFileSystemRoot", "/tmp/titan",
             "The local directory to use for this TitanNode's data.");
     
+    /** The maximum number of turned-over logfiles to keep. */
     public final static Attributes.Prototype LogFileCount = new Attributes.Prototype(TitanNodeImpl.class, "LogFileCount", 10,
             "The maximum number of turned-over logfiles to keep.");
     
+    /** The maximum size a logfile is allowed to grow before being 'turned-over.' */
     public final static Attributes.Prototype LogFileSize = new Attributes.Prototype(TitanNodeImpl.class, "LogFileSize", 1024*1024,
             "The maximum size a logfile is allowed to grow before being 'turned-over.'");
 
@@ -760,9 +762,10 @@ public class TitanNodeImpl implements TitanNode, NodeMBean {
     public final static Attributes.Prototype Port = new Attributes.Prototype(TitanNodeImpl.class, "Port", 12000,
             "The TCP port number that this TitanNode listens on for incoming TitanMessages.");
 
+    /** The full HTTP URL of the gateway TitanNode for this TitanNode to use to join the system. */
     public final static Attributes.Prototype GatewayURL = new Attributes.Prototype(TitanNodeImpl.class, "GatewayURL",
             null,
-            "The full HTTP URL of the gateway TitanNode for this TitanNode to use.");
+            "The full HTTP URL of the gateway TitanNode for this TitanNode to use to join the system.");
 
     /** The number of seconds to wait before retrying to contact the gateway. */
     public final static Attributes.Prototype GatewayRetryDelaySeconds = new Attributes.Prototype(TitanNodeImpl.class, "GatewayRetryDelaySeconds",
@@ -777,17 +780,25 @@ public class TitanNodeImpl implements TitanNode, NodeMBean {
     public final static Attributes.Prototype TaskPoolSize = new Attributes.Prototype(TitanNodeImpl.class, "TitanNodeTaskPoolSize", 20,
             "The number of Threads to allocate to provide processing of asynchronous activities.");
 
-    /** This node's {@link NodeAddress}. This Attribute is generated and is not configurable.  See {@link TitanNodeImpl#InterNetworkAddress}. */
+    /** This {@link TitanNode}'s {@link NodeAddress}. This Attribute is generated and is not configurable.  See {@link TitanNodeImpl#InterNetworkAddress}. */
     public final static Attributes.Prototype NodeAddress = new Attributes.Prototype(TitanNodeImpl.class, "NodeAddress", null,
-            "This TitanNode's NodeAddress. This Attribute is generated and is not configurable.");
+            "This TitanNode's NodeAddress. This Attribute is generated and is not configurable. See TitanNodeImpl#InterNetworkAddress");
 
+    /** The maximum allowed size for the local object-store. */
     public final static Attributes.Prototype ObjectStoreCapacity = new Attributes.Prototype(TitanNodeImpl.class, "ObjectStoreMaximum", "unlimited",
             "The maximum allowed size for the local object-store.");
 
-    public final static Attributes.Prototype DojoRoot = new Attributes.Prototype(WebDAVDaemon.class, "DojoRoot", "http://o.aolcdn.com/dojo/1.4.1", "The URL of the base location of a Dojo installation.");
+    /** The URL of the base location of a Dojo installation. */
+    public final static Attributes.Prototype DojoRoot = new Attributes.Prototype(WebDAVDaemon.class, "DojoRoot", "http://o.aolcdn.com/dojo/1.4.1",
+            "The URL of the base location of a Dojo installation.");
+    
+    /** The relative path of the Dojo script. */
     public final static Attributes.Prototype DojoJavascript = new Attributes.Prototype(WebDAVDaemon.class, "DojoJavascript", "dojo/dojo.xd.js", "The relative path of the Dojo script.");
+
+    /** The Dojo theme name. */
     public final static Attributes.Prototype DojoTheme = new Attributes.Prototype(WebDAVDaemon.class, "DojoTheme", "tundra", "The Dojo theme name.");
     
+    /** The local start time of this TitanNode.  This Attribute is generated and is not configurable. */
     public final static Attributes.Prototype StartTime = new Attributes.Prototype(TitanNodeImpl.class, "StartTime", 0,
             "The local start time of this TitanNode.  This Attribute is generated and is not configurable.");
     

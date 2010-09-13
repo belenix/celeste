@@ -109,7 +109,6 @@ public class BackedObjectMap<K,V> implements Serializable {
     private Set<K> getAll(String dir) {
         Set<K> list = new HashSet<K>();
 
-        // XXX Should lock this.
         File d = new File(dir);
         if (d.exists()) {
             for (File file : d.listFiles()) {
@@ -133,8 +132,6 @@ public class BackedObjectMap<K,V> implements Serializable {
     }
 
     public BackedObjectMap(String directory, boolean initialise) throws AccessException {
-
-//        this.locks = new ObjectLock<String>();
 
         File path = new File(directory);
         path.mkdirs();
@@ -308,8 +305,6 @@ public class BackedObjectMap<K,V> implements Serializable {
     /**
      */
     public Set<Map.Entry<K,V>> entrySet() {
-
-        // XXX Lock this
         Set<Map.Entry<K,V>> set = new BackedSet();
 
         for (K key: this.keySet()) {

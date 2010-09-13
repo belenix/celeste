@@ -29,11 +29,15 @@ import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.Executors;
+import java.util.concurrent.FutureTask;
+import java.util.concurrent.ThreadPoolExecutor;
 
 import sunlabs.asdf.util.ObjectLock;
 import sunlabs.asdf.web.XML.XHTML;
 import sunlabs.titan.TitanGuidImpl;
 import sunlabs.titan.api.TitanGuid;
+
 public class Dossier {
     private final static long serialVersionUID = 1L;
 
@@ -269,11 +273,14 @@ public class Dossier {
     public BackedObjectMap<TitanGuid,Dossier.Entry> entries;
 
     private ObjectLock<TitanGuid> locks;
+    private ThreadPoolExecutor executor;
 
     public Dossier(String name) throws BackedObjectMap.AccessException {
         this.entries = new BackedObjectMap<TitanGuid,Dossier.Entry>(name + File.separator + "dossier", false);
         this.locks = new ObjectLock<TitanGuid>();
+        this.executor = (ThreadPoolExecutor) Executors.newFixedThreadPool(1);
     }
+    
 
     /**
      * Get the {@link Dossier.Entry} for the given {@link NodeAddress}.
@@ -330,7 +337,7 @@ public class Dossier {
         return this.locks.unlock(e.address.getObjectId());
     }
 
-    protected static class BeehiveObjectIdFilter implements FilenameFilter {
+    private static class BeehiveObjectIdFilter implements FilenameFilter {
         public boolean accept(File dir, String name) {
             return TitanGuidImpl.IsValid(name);
         }
@@ -346,20 +353,16 @@ public class Dossier {
         }
     }
 
-    public long getTimestamp(NodeAddress address) {
-        Dossier.Entry e = this.getEntryAndLock(address);
-        try {
-            return e.timestamp;
-        } finally {
-            this.unlockEntry(e);
-        }
-    }
+//    public long getTimestamp(NodeAddress address) {
+//        Dossier.Entry e = this.getEntryAndLock(address);
+//        try {
+//            return e.timestamp;
+//        } finally {
+//            this.unlockEntry(e);
+//        }
+//    }
 
     public Set<Map.Entry<TitanGuid,Dossier.Entry>> entrySet() {
         return this.entries.entrySet();
-    }
-
-    public Set<TitanGuid> keySet() {
-        return this.entries.keySet();
     }
 }

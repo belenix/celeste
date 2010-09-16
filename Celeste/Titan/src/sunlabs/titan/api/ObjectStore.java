@@ -44,7 +44,7 @@ public interface ObjectStore extends XHTMLInspectable, Iterable<TitanGuid> {
     public final static String METADATA_UNCACHABLE = "ObjectStore.Uncachable";
 
     /** The {@link TitanObjectHandler} that controls this object. Mandatory. */
-    public final static String METADATA_TYPE = "ObjectStore.Type";
+    public final static String METADATA_CLASS = "ObjectStore.Type";
 
 //    /** If set, this object is a persistent object. */
 //    @Deprecated

@@ -339,7 +339,7 @@ public class CelesteClientDaemon extends AbstractTitanService {
                             oos.flush();
                             oos.reset();
                         } catch (Exception e) {
-                            e.printStackTrace();
+//                            e.printStackTrace();
                             // The CelesteExceptions are just sent back to the client.
                             if (!(e instanceof CelesteException))
                                 e.printStackTrace();

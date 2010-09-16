@@ -397,7 +397,7 @@ public class TitanMessage implements Serializable, XHTMLInspectable {
             }
             this.loadPayloadObject(resultClass.getClassLoader(), node);
             if (this.dataObject == null) {
-                System.err.printf("NULL DATAOBJECT?%n");
+                System.err.printf("TitanMessage payload is null: %s%n", this.toString());
             }
             return resultClass.cast(this.dataObject);
         } catch (ClassCastException e) {
@@ -551,7 +551,9 @@ public class TitanMessage implements Serializable, XHTMLInspectable {
      * automatically set Message parameters in the reply with subsequent
      * calls to Message setter methods.
      */
-    public TitanMessage composeReply(NodeAddress source, DOLRStatus replyStatus, Serializable serializable) {
+    public TitanMessage composeReply(NodeAddress source, DOLRStatus replyStatus, Serializable payload) {
+        if (payload == null)
+            throw new NullPointerException("Payload cannot be null");
         TitanMessage message = new TitanMessage(TitanMessage.Type.Reply,
                 source,
                 this.source.getObjectId(),
@@ -560,7 +562,7 @@ public class TitanMessage implements Serializable, XHTMLInspectable {
                 this.subjectClassMethod,
                 this.isMulticast,
                 this.isExactRouting,
-                serializable);
+                payload);
         message.setStatus(replyStatus);
         return message;
     }
@@ -585,22 +587,6 @@ public class TitanMessage implements Serializable, XHTMLInspectable {
                 serializable);
         message.setStatus(DOLRStatus.OK);
         return message;
-    }
-
-//    /**
-//     * Compose a reply message indicating success.
-//     * 
-//     * @param source
-//     * @return
-//     */
-//    @Deprecated
-//    public TitanMessage composeReply(NodeAddress source) {
-//        return this.composeReply(source, DOLRStatus.OK, null);
-//    }
-    
-    @Deprecated
-    public TitanMessage composeReply(NodeAddress source, DOLRStatus replyStatus) {
-        return this.composeReply(source, replyStatus, null);
     }
 
     public TitanMessage composeReply(NodeAddress source, Throwable throwable) {
@@ -651,18 +637,11 @@ public class TitanMessage implements Serializable, XHTMLInspectable {
     }
 
     /**
-     * Set the flag indicating that this Message should be traced
+     * Set the flag indicating that this {@link TitanMessage} should be traced
      * as it traverses the system.
      */
     public void setTraced(boolean v) {
         this.trace = v;
-    }
-
-    /**
-     * Set the transmission mode of this message.
-     */
-    public void setMulticast(boolean multicast) {
-        this.isMulticast = multicast;
     }
 
     /**
@@ -720,13 +699,6 @@ public class TitanMessage implements Serializable, XHTMLInspectable {
      */
     public TitanGuid getObjectId() {
         return this.subjectId;
-    }
-
-    /**
-     * Set the {@link TitanGuidImpl} of this message's "subject."
-     */
-    public void setObjectId(TitanGuidImpl id) {
-        this.subjectId = id;
     }
 
     /**

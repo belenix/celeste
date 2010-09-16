@@ -34,8 +34,10 @@ import java.nio.channels.SocketChannel;
 import java.util.Stack;
 import java.util.logging.Logger;
 
+import sunlabs.asdf.Copyright;
+
 /**
- * This is a basic WebDAV server that can use files in the local filesytem or in the jar file that contains this class.
+ * This is a basic WebDAV server that can use files in the local filesystem or in the jar file that contains this class.
  *
  * @author Glenn Scott - Sun Labs, Oracle 
  */
@@ -78,9 +80,10 @@ public class WebDAVServerMain {
 
             String localAddress = InetAddress.getLocalHost().getHostAddress();
 
-            System.out.printf("WebDAV Server. http://%s:%d%n", localAddress, httpPort);
+            System.out.println(Copyright.miniNotice);
+            System.out.printf("WebDAV Server. http://%s:%d (Invoke with --help for a help message.)%n", localAddress, httpPort);
             
-            WebDAV.Backend backend ;
+            WebDAV.Backend backend;
             
             URL root = WebDAVServerMain.class.getClass().getResource("/");
             if (root == null) {

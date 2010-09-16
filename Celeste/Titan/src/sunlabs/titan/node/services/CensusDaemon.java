@@ -26,8 +26,6 @@ package sunlabs.titan.node.services;
 import java.io.Serializable;
 import java.net.URI;
 import java.net.UnknownHostException;
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
@@ -67,7 +65,7 @@ import sunlabs.titan.node.services.api.Census;
 import sunlabs.titan.util.OrderedProperties;
 
 /**
- * The TitanNode census service.
+ * The {@link TitanNode} census service.
  * <p>
  * Periodically transmit this node's census information to the
  * root node of object-id {@link Census#CensusKeeper}.
@@ -391,8 +389,6 @@ public final class CensusDaemon extends AbstractTitanService implements Census, 
 
         @Override
         public void run() {
-            DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss"); // ISO 8601
-            
             while (!interrupted()) {
                 this.lastReportTime = System.currentTimeMillis();
 
@@ -443,7 +439,7 @@ public final class CensusDaemon extends AbstractTitanService implements Census, 
 
                 long now = System.currentTimeMillis();
 
-                CensusDaemon.this.setStatus(String.format("Report @ %s", dateFormat.format(new Date(now + this.getReportRateSeconds()))));
+                CensusDaemon.this.setStatus(String.format("Report @ %s", Time.ISO8601(now + this.getReportRateSeconds())));
 
                 synchronized (this) {
                     long wakeupTimeMillis = System.currentTimeMillis() + Time.secondsInMilliseconds(this.getReportRateSeconds());

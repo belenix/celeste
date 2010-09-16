@@ -24,21 +24,22 @@
 package sunlabs.titan.node;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.FilenameFilter;
+import java.io.IOException;
 import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.Executors;
-import java.util.concurrent.FutureTask;
 import java.util.concurrent.ThreadPoolExecutor;
 
+import sunlabs.asdf.util.AbstractStoredMap;
 import sunlabs.asdf.util.ObjectLock;
 import sunlabs.asdf.web.XML.XHTML;
 import sunlabs.titan.TitanGuidImpl;
 import sunlabs.titan.api.TitanGuid;
 
-public class Dossier {
+public class Dossier extends AbstractStoredMap<TitanGuid,Dossier.Entry> {
     private final static long serialVersionUID = 1L;
 
     public final static int SCALE = 1000;
@@ -270,13 +271,11 @@ public class Dossier {
         }
     }
 
-    public BackedObjectMap<TitanGuid,Dossier.Entry> entries;
-
     private ObjectLock<TitanGuid> locks;
     private ThreadPoolExecutor executor;
 
-    public Dossier(String name) throws BackedObjectMap.AccessException {
-        this.entries = new BackedObjectMap<TitanGuid,Dossier.Entry>(name + File.separator + "dossier", false);
+    public Dossier(String name) throws BackedObjectMap.AccessException, IOException {
+        super(new File(name + File.separator + "dossier"), Long.MAX_VALUE);
         this.locks = new ObjectLock<TitanGuid>();
         this.executor = (ThreadPoolExecutor) Executors.newFixedThreadPool(1);
     }
@@ -295,18 +294,12 @@ public class Dossier {
 
         this.locks.lock(objectId);
         try {
-            Dossier.Entry entry = this.entries.get(objectId);
-            if (entry == null) {
-                Dossier.Entry e = new Dossier.Entry(address);
-                this.entries.put(objectId, e);
-                entry = this.entries.get(objectId);
-                if (entry == null) {
-                    System.out.printf("unable to put and get %s: file %s%n", objectId, this.entries.makePath(objectId));
-                }
+            try {
+                return super.get(objectId);// !!!
+            } catch (FileNotFoundException e) {
+                this.put(objectId, new Dossier.Entry(address));
+                return super.get(objectId);// !!!
             }
-
-            assert(entry != null);
-            return entry;
         } catch (AssertionError e) {
             this.locks.unlock(objectId);
             throw e;
@@ -318,18 +311,31 @@ public class Dossier {
             throw e;
         } catch (Exception e) {
         	e.printStackTrace();
+            this.locks.unlock(objectId);
         	throw new RuntimeException(e);
         }
     }
 
-    public void put(Dossier.Entry e) {
+    public void put(Dossier.Entry e) throws AbstractStoredMap.OutOfSpace {
         this.locks.assertLock(e.address.getObjectId());
-        this.entries.put(e.address.getObjectId(), e);
+        try {
+            super.put(e.address.getObjectId(), e);
+        } catch (IllegalStateException e1) {
+            // TODO Auto-generated catch block
+            e1.printStackTrace();
+        } catch (IOException e1) {
+            // TODO Auto-generated catch block
+            e1.printStackTrace();
+        } catch (sunlabs.asdf.util.AbstractStoredMap.OutOfSpace e1) {
+            // TODO Auto-generated catch block
+            e1.printStackTrace();
+        }
     }
 
     public void removeEntry(Dossier.Entry e) {
         this.locks.assertLock(e.address.getObjectId());
-        this.entries.remove(e.address.getObjectId());
+        super.remove(e.address.getObjectId());
+//        this.entries.remove(e.address.getObjectId());
     }
 
     public boolean unlockEntry(Dossier.Entry e) {
@@ -343,26 +349,26 @@ public class Dossier {
         }
     }
 
-    public void failure(NodeAddress address, String virtue) {
+    public void failure(NodeAddress address, String virtue) throws AbstractStoredMap.OutOfSpace {
         Dossier.Entry e = this.getEntryAndLock(address);
         try {
             e.getProbability(virtue).failure();
-            this.entries.put(address.getObjectId(), e);
+            this.put(e);
         } finally {
             this.unlockEntry(e);
         }
     }
 
-//    public long getTimestamp(NodeAddress address) {
-//        Dossier.Entry e = this.getEntryAndLock(address);
-//        try {
-//            return e.timestamp;
-//        } finally {
-//            this.unlockEntry(e);
-//        }
-//    }
+    @Override
+    public File keyToFile(File root, TitanGuid key) {
+        String s = key.toString();
+        StringBuilder result = new StringBuilder();
+        result.append(s.substring(0, 5)).append(File.separatorChar).append(s);
+        return new File(root, result.toString());
+    }   
 
-    public Set<Map.Entry<TitanGuid,Dossier.Entry>> entrySet() {
-        return this.entries.entrySet();
+    @Override
+    public TitanGuid fileToKey(File file) {
+        return new TitanGuidImpl(file.getName());       
     }
 }

@@ -203,7 +203,8 @@ public class AppClassObjectType extends AbstractObjectHandler implements AppClas
     }
     
     public  Publish.PublishUnpublishResponse storeLocalObject(TitanMessage message) throws ClassCastException, ClassNotFoundException,
-    BeehiveObjectStore.UnacceptableObjectException, BeehiveObjectStore.DeleteTokenException, BeehiveObjectStore.InvalidObjectIdException, NoSpaceException, InvalidObjectException {
+    BeehiveObjectStore.UnacceptableObjectException, BeehiveObjectStore.DeleteTokenException, BeehiveObjectStore.InvalidObjectIdException, NoSpaceException,
+    InvalidObjectException, BeehiveObjectPool.Exception, BeehiveObjectStore.Exception {
         try {
             AppClassObjectType.AppClassObject aObject = message.getPayload(AppClassObjectType.AppClassObject.class, this.node);
             Publish.PublishUnpublishResponse reply = StorableObject.storeLocalObject(this, aObject, message);

@@ -1,5 +1,5 @@
 /*
- * Copyright 2007-2008 Sun Microsystems, Inc. All Rights Reserved.
+ * Copyright 2007-2010 Oracle. All Rights Reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER
  *
  * This code is free software; you can redistribute it and/or modify
@@ -17,17 +17,15 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
  * 02110-1301 USA
  *
- * Please contact Sun Microsystems, Inc., 16 Network Circle, Menlo
- * Park, CA 94025 or visit www.sun.com if you need additional
- * information or have any questions.
+ * Please contact Oracle Corporation, 500 Oracle Parkway, Redwood Shores, CA 94065
+ * or visit www.oracle.com if you need additional information or
+ * have any questions.
  */
 package sunlabs.titan.node;
 
 import java.io.Serializable;
-import java.text.DateFormat;
 import java.util.Arrays;
 import java.util.Comparator;
-import java.util.Date;
 import java.util.Enumeration;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -37,17 +35,19 @@ import java.util.TreeSet;
 import javax.net.ssl.SSLPeerUnverifiedException;
 import javax.net.ssl.SSLSession;
 
+import sunlabs.asdf.util.Time;
 import sunlabs.asdf.web.XML.XHTML;
 
 /**
  * Keeping alive SSL Sessions
- *
+ * <p>
  * This code supplements the SSL-internal session context, which caches
  * sessions only with soft references. Since it is important for us that
  * ssl sessions do *not* get garbage collected all the time, we keep hard
  * references around as well. The cache is limited in size, and periodically
  * discards invalidated or otherwise unreferenced sessions.
- * 
+ * </p>
+ * <p>
  * This 'RealSSLSessionCache' was done to cover up a deficiency in the normal 
  * SSL session cache. The normal cache uses weak pointers to remember the 
  * individual sessions, and thus the garbage collector can squeeze out the 
@@ -58,7 +58,8 @@ import sunlabs.asdf.web.XML.XHTML;
  * would go away, ours prevent the sessions from being collected, and thus make
  * the weak ones linger. This is good, and keeps the sessions visible to the
  * SSL engine, allowing them to be reused.
- * 
+ * </p>
+ * <p>
  * One must however note that the 'weak' caches also have a size limitation.
  * If you make them too small, then sessions will be pushed out, and by virtue
  * of this be invalidated (and not accessible to SSL in the future). This is
@@ -66,6 +67,7 @@ import sunlabs.asdf.web.XML.XHTML;
  * be cleaned out from here eventually since they are not associated with a
  * context anymore (and additionally have isValid() == false).
  * So, keep the weak caches as large as you can!
+ * </p>
  */
 public class RealSSLSessionCache {
     private HashSet<SSLSession> allSessions;
@@ -233,10 +235,9 @@ public class RealSSLSessionCache {
 
     	SSLSession oldest = getOldestSession();
     	SSLSession newest = getNewestSession();
-        DateFormat dateFormat = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ssZ");
 
-        String oldest_time = (oldest == null) ? "never" : dateFormat.format(new Date(oldest.getCreationTime()));
-        String newest_time = (newest == null) ? "never" : dateFormat.format(new Date(newest.getCreationTime()));
+        String oldest_time = (oldest == null) ? "never" : Time.ISO8601(oldest.getCreationTime());
+        String newest_time = (newest == null) ? "never" : Time.ISO8601(newest.getCreationTime());
         
         int clientSize = 0;
         HashSet<SSLSession> clientSet = new HashSet<SSLSession>();
@@ -269,8 +270,8 @@ public class RealSSLSessionCache {
 
     	oldest = getOldestSession(clientSet);
     	newest = getNewestSession(clientSet); 
-    	oldest_time = (oldest == null) ? "never" : dateFormat.format(new Date(oldest.getCreationTime())); 
-    	newest_time = (newest == null) ? "never" : dateFormat.format(new Date(newest.getCreationTime()));
+    	oldest_time = (oldest == null) ? "never" : Time.ISO8601(oldest.getCreationTime()); 
+    	newest_time = (newest == null) ? "never" : Time.ISO8601(newest.getCreationTime());
         
         XHTML.Table table2 = new XHTML.Table(
         		new XHTML.Table.Caption("Weak Client Cache"),
@@ -287,8 +288,8 @@ public class RealSSLSessionCache {
        	         
     	oldest = getOldestSession(serverSet);
     	newest = getNewestSession(serverSet); 
-    	oldest_time = (oldest == null) ? "never" : dateFormat.format(new Date(oldest.getCreationTime())); 
-       	newest_time = (newest == null) ? "never" : dateFormat.format(new Date(newest.getCreationTime()));
+    	oldest_time = (oldest == null) ? "never" : Time.ISO8601(oldest.getCreationTime()); 
+       	newest_time = (newest == null) ? "never" : Time.ISO8601(newest.getCreationTime());
         
         XHTML.Table table3 = new XHTML.Table(
         		new XHTML.Table.Caption("Weak Server Cache"),
@@ -338,8 +339,8 @@ public class RealSSLSessionCache {
     	            new XHTML.Table.Row(
     	                    new XHTML.Table.Data(new XHTML.Anchor("%s", sess.getPeerHost()).setHref("?action=explore-ssl&inspect=" + toHex(sess.getId()))),
     	                    new XHTML.Table.Data(sess.getPeerPort()),
-    	                    new XHTML.Table.Data(dateFormat.format(new Date(sess.getCreationTime()))),
-    	                    new XHTML.Table.Data(dateFormat.format(new Date(sess.getLastAccessedTime()))),
+    	                    new XHTML.Table.Data(Time.ISO8601(sess.getCreationTime())),
+    	                    new XHTML.Table.Data(Time.ISO8601(sess.getLastAccessedTime())),
     	                    new XHTML.Table.Data(sess.isValid()),
     	                    new XHTML.Table.Data(strong),
     	                    new XHTML.Table.Data(weakC),

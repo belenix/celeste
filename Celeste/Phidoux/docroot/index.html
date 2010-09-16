@@ -5,7 +5,7 @@
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
 <link rel="stylesheet" href="common.css" type="text/css" media="screen" /> 
-<title>Insert title here</title>
+<title>The Phidoux Embedded Web Server</title>
 </head>
 <body>
 <img src="logo.png" style="float: right"/>
@@ -15,7 +15,9 @@ Phidoux is an embeddeable WebDAV server that can provide WebDAV level-1, level-2
 The application that is displaying this web page is a tiny example.
 </p>
 <p>
-To use this server in your application, you must address three components, either by implementing them, or using the default instances already available.
+To use this server in your application, you must address three components, either by implementing them,
+or using the default instances already available in abstract and regular Java classes.
+Here is a link <a href="javadoc/index.html">to the javadoc.</a>
 <ol>
 <li>The main <a href="http://java.sun.com/javase/6/docs/api/java/nio/channels/ServerSocketChannel.html?is-external=true">ServerSocketChannel</a> accept loop.
 <p>This consists of iteratively accepting inbound connection requests and constructing a new instance of <code>HTTPServer</code> to handle each one.
@@ -37,17 +39,13 @@ To use this server in your application, you must address three components, eithe
 <p>
 A simple example:
 <pre class="code">
+// Construct a backend handler using the filesystem or the Jar file as the source of documents.
 WebDAV.Backend backend = new FileBackend("docroot/");
-            
+
 while (true) {
    SocketChannel socketChannel = serverSocketChannel.accept();
-   Socket socket = socketChannel.socket();
-   socket.setSoTimeout(clientTimeOutMillis);
-   socket.setReceiveBufferSize(8192);
-   socket.setSendBufferSize(8192);
 
    HTTPServer server = new HTTPServer(socketChannel);
-   server.setTrace(true);
    HTTP.NameSpace nameSpace = new WebDAVNameSpace(server, backend);
 
    server.addNameSpace(new URI("/"), nameSpace);

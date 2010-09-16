@@ -23,12 +23,14 @@
  */
 package sunlabs.titan.node.object;
 
+import java.io.IOException;
 import java.util.Map;
 import java.util.SortedSet;
 import java.util.logging.Level;
 
 import javax.management.JMException;
 
+import sunlabs.asdf.util.AbstractStoredMap.OutOfSpace;
 import sunlabs.titan.api.TitanGuid;
 import sunlabs.titan.api.TitanNode;
 import sunlabs.titan.api.TitanObject;
@@ -73,7 +75,16 @@ public abstract class AbstractObjectHandler extends AbstractTitanService impleme
     			}
     			Publishers.PublishRecord record =
     				new Publishers.PublishRecord(entry.getKey(), publishRequest.getPublisherAddress(), entry.getValue(), publishRequest.getSecondsToLive());
-    			handler.getNode().getObjectPublishers().update(entry.getKey(), record);
+    			try {
+                    handler.getNode().getObjectPublishers().update(entry.getKey(), record);
+                } catch (IllegalStateException e) {
+                    e.printStackTrace();
+                    handler.getNode().getObjectPublishers().remove(entry.getKey());
+                } catch (IOException e) {
+                    handler.getNode().getObjectPublishers().remove(entry.getKey());
+                } catch (OutOfSpace e) {
+                    handler.getNode().getObjectPublishers().remove(entry.getKey());
+                }
     		}
     	} else {
     		SortedSet<NodeAddress> successorSet = handler.getNode().getNeighbourMap().successorSet();

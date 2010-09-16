@@ -145,9 +145,11 @@ public final class StorableObject {
          * @throws BeehiveObjectStore.NoSpaceException 
          * @throws BeehiveObjectStore.InvalidObjectException 
          * @throws BeehiveObjectStore.InvalidObjectIdException 
+         * @throws BeehiveObjectStore.Exception 
          */
         public Publish.PublishUnpublishResponse storeLocalObject(TitanMessage message) throws ClassNotFoundException, ClassCastException,
-            BeehiveObjectStore.NoSpaceException, BeehiveObjectStore.DeleteTokenException, BeehiveObjectStore.UnacceptableObjectException, BeehiveObjectPool.Exception, BeehiveObjectStore.InvalidObjectIdException, BeehiveObjectStore.InvalidObjectException;
+            BeehiveObjectStore.NoSpaceException, BeehiveObjectStore.DeleteTokenException, BeehiveObjectStore.UnacceptableObjectException,
+            BeehiveObjectPool.Exception, BeehiveObjectStore.InvalidObjectIdException, BeehiveObjectStore.InvalidObjectException, BeehiveObjectStore.Exception;
     }
     
     /**
@@ -165,11 +167,13 @@ public final class StorableObject {
      * @throws TitanMessage.RemoteException encapsulating an Exception thrown by this node.
      */
     public static Publish.PublishUnpublishResponse storeLocalObject(StorableObject.Handler<? extends StorableObject.Handler.Object> handler, StorableObject.Handler.Object object, TitanMessage message) throws
-    BeehiveObjectStore.UnacceptableObjectException, BeehiveObjectStore.DeleteTokenException, BeehiveObjectStore.InvalidObjectIdException, BeehiveObjectStore.NoSpaceException, BeehiveObjectStore.InvalidObjectException {
+    ClassNotFoundException, BeehiveObjectStore.UnacceptableObjectException, BeehiveObjectStore.DeleteTokenException,
+    BeehiveObjectStore.InvalidObjectIdException, BeehiveObjectStore.NoSpaceException, BeehiveObjectStore.InvalidObjectException,
+    BeehiveObjectPool.Exception, BeehiveObjectStore.Exception {
         TitanNode node = handler.getNode();
 
         // Ensure that that the object's METADATA_TYPE is set in its metadata.
-        object.setProperty(ObjectStore.METADATA_TYPE, handler.getName());
+        object.setProperty(ObjectStore.METADATA_CLASS, handler.getName());
 
         node.getObjectStore().lock(BeehiveObjectStore.ObjectId(object));
         Publish.PublishUnpublishResponse response = null;
@@ -181,16 +185,20 @@ public final class StorableObject {
             } catch (ClassNotFoundException e) {
                 // TODO Auto-generated catch block
                 e.printStackTrace();
+                throw e;
             } catch (sunlabs.titan.node.BeehiveObjectStore.Exception e) {
                 // TODO Auto-generated catch block
                 e.printStackTrace();
+                throw e;
             } catch (sunlabs.titan.node.BeehiveObjectPool.Exception e) {
+                //System.err.printf("%s: cannot store the object, and response is null%n", e);
                 // TODO Auto-generated catch block
-                e.printStackTrace();
+                //e.printStackTrace();
+                throw e;
             }
         }
 
-        if (message.isTraced() && handler.getLogger().isLoggable(Level.FINEST)) {
+        if (message.isTraced() || handler.getLogger().isLoggable(Level.FINEST)) {
             handler.getLogger().finest("recv(%5.5s...) stored %s", message.getMessageId(), object.getObjectId());
         }
         return response;
@@ -243,7 +251,7 @@ public final class StorableObject {
      * @param handler The instance of the {@link StorableObject.Handler} that is invoking this method.
      * @param object The {@link StorableObject.Handler} to store.
      * @param nReplicas The number of replicas to store.
-     * @param exclude The {@code Set} of nodes to exclude from the candidate set of nodes to store the object.
+     * @param nodesToExclude The {@code Set} of nodes to exclude from the candidate set of nodes to store the object.
      * @param executorService An instance of {@link ExecutorService} to use to store the {@code nReplicas} in parallel, or {@code null} to store the objects serially.
      * @throws IOException
      * @throws BeehiveObjectStore.NoSpaceException
@@ -253,15 +261,16 @@ public final class StorableObject {
     public static StorableObject.Handler.Object storeObject(StorableObject.Handler<? extends StorableObject.Handler.Object> handler,
             StorableObject.Handler.Object object,
             int nReplicas,
-            Set<TitanNodeId> exclude,
+            Set<TitanNodeId> nodesToExclude,
             ExecutorService executorService)
     throws BeehiveObjectStore.NoSpaceException, BeehiveObjectStore.UnacceptableObjectException, BeehiveObjectPool.Exception {
-        object.setProperty(ObjectStore.METADATA_TYPE, handler.getName());
+        object.setProperty(ObjectStore.METADATA_CLASS, handler.getName());
         object.setProperty(ObjectStore.METADATA_DATAHASH, object.getDataId());
 
         Census census = (Census) handler.getNode().getService(CensusDaemon.class);
 
-        Set<TitanNodeId> excludedNodes = new HashSet<TitanNodeId>(exclude);
+        // Make a local copy to be modified below.
+        Set<TitanNodeId> excludedNodes = new HashSet<TitanNodeId>(nodesToExclude);
 
         for (int successfulStores = 0; successfulStores < nReplicas; /**/) {
             // Get enough nodes from Census to store the object.
@@ -315,17 +324,18 @@ public final class StorableObject {
                             // XXX Strictly speaking, the publish response will contain either specific Titan exceptions, or other Java exceptions.  The test
                             // XXX for BeehiveObjectPool.Exception below is overbroad and should be replaced with tests for the specific exceptions known to be
                             // XXX thrown by the publishObject() method.
-                            PublishDaemon.PublishObject.PublishUnpublishResponseImpl response = publishResult.getPayload(PublishDaemon.PublishObject.PublishUnpublishResponseImpl.class, handler.getNode());
+                            Publish.PublishUnpublishResponse response = publishResult.getPayload(Publish.PublishUnpublishResponse.class, handler.getNode());
                             for (TitanGuid objectId : response.getObjectIds()) { // should only be one object-id.
                                 object.setObjectId(objectId);
+                                break;
                             }
                             successfulStores++;
-                        } catch (RemoteException e) {
-                            java.lang.Exception cause = (java.lang.Exception) e.getCause();
-                            if (cause instanceof BeehiveObjectPool.Exception) {
+                        } catch (TitanMessage.RemoteException e) {
+                            System.err.printf("StoreObject %s%n", e.getCause());
+                            if (e.getCause() instanceof BeehiveObjectPool.Exception) {
                                 // These exceptions are fatal to the whole store, so immediately get out of here throwing the rest away.
-                                throw (BeehiveObjectPool.Exception) cause;
-                            } else if (cause instanceof BeehiveObjectStore.Exception) {
+                                throw (BeehiveObjectPool.Exception) e.getCause();
+                            } else if (e.getCause() instanceof BeehiveObjectStore.Exception) {
                                 // These exceptions are related just to the node we asked to store the object.  Continue.
                                 
                             } else {
@@ -347,7 +357,29 @@ public final class StorableObject {
                         successfulStores++;
                     }
                 } catch (ExecutionException e) {
-                    e.printStackTrace();
+                    // The Exceptions here are wrapped at least two deep.  The ExecutionException from the Task, and the embedded TitanMessage.RemoteException.
+                    System.err.printf("StoreObject:ExecutionException %s %s%n", e.getCause(), e.getCause().getClass());
+                    if (e.getCause() instanceof TitanMessage.RemoteException) {
+                        if (e.getCause().getCause() instanceof BeehiveObjectPool.Exception) {
+                            // These exceptions are fatal to the whole store, so immediately get out of here throwing the rest away.
+                            throw (BeehiveObjectPool.Exception) e.getCause().getCause();
+                        } else if (e.getCause().getCause() instanceof BeehiveObjectStore.Exception) {
+                            // These exceptions are related just to the node we asked to store the object.  Continue.
+                        } else {
+                            e.getCause().printStackTrace();
+                        }
+                    } else if (e.getCause() instanceof BeehiveObjectPool.DisallowedDuplicateException) {
+                        System.err.printf("StoreObject:ExecutionException DisallowedDuplicateException%n");                        
+                    } else if (e.getCause() instanceof BeehiveObjectPool.Exception) {
+                        System.err.printf("StoreObject:ExecutionException BeehiveObjectPool.Exception%n");
+                        // These exceptions are fatal to the whole store, so immediately get out of here throwing the rest away.
+                        throw (BeehiveObjectPool.Exception) e.getCause();
+                    } else if (e.getCause() instanceof BeehiveObjectStore.Exception) {
+                        // These exceptions are related just to the node we asked to store the object.  Continue.
+                        
+                    } else {
+                        e.printStackTrace();
+                    }
                 } catch (InterruptedException e) {
                     // the task was interrupted and did not complete.
                     e.printStackTrace();

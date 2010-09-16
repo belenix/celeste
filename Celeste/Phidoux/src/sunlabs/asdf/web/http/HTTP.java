@@ -1,5 +1,5 @@
 /*
- * Copyright 2008-2009 Sun Microsystems, Inc. All Rights Reserved.
+ * Copyright 2007-2010 Oracle. All Rights Reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER
  *
  * This code is free software; you can redistribute it and/or modify
@@ -17,9 +17,9 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
  * 02110-1301 USA
  *
- * Please contact Sun Microsystems, Inc., 16 Network Circle, Menlo
- * Park, CA 94025 or visit www.sun.com if you need additional
- * information or have any questions.
+ * Please contact Oracle Corporation, 500 Oracle Parkway, Redwood Shores, CA 94065
+ * or visit www.oracle.com if you need additional information or
+ * have any questions.
  */
 package sunlabs.asdf.web.http;
 
@@ -39,8 +39,6 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.logging.Logger;
-
-import sunlabs.asdf.web.http.HTTP.Message.Header.If.Conditional;
 
 /**
  * The HTTP class contains interfaces, definitions and helper classes for implementing an 
@@ -161,7 +159,7 @@ public class HTTP {
      */
     public interface Server extends Runnable {
         /**
-         * Get the set of {@link HTTP.Request.Methods} that this server will respond to.
+         * Get the set of {@link HTTP.Request.Methods} that this HTTP.Server instance will respond to.
          */
         public Collection<HTTP.Request.Method> getAccessAllowed();
         
@@ -190,8 +188,8 @@ public class HTTP {
     }
     
     /**
-     * Classes implementing this interface are responsible of taking a single, complete {@link HTTP.Request} instance
-     * and producing a corresponding complete {@link HTTP.Response} instance.
+     * Classes implementing the {@code NameSpace} interface represent a URI namespace and are responsible for taking single,
+     * complete {@link HTTP.Request} instances and producing a corresponding complete {@link HTTP.Response} instances.
      * <p>
      * An HTTP server partitions it's URI name-space into different sub-name-spaces, each with it's own set of methods used to manipulate it.
      * For example, a server may synthesize a URI name-space of {@code /rfc2616/} and {@code /rfc4918/} and correspondingly setup a basic HTTP
@@ -218,7 +216,7 @@ public class HTTP {
         /**
          * Get the {@link HTTP.Request.Method.Handler} that this name-space will use to handle the given {@link HTTP.Request.Method}.
          * @param method The {@link HTTP.Request.Method} to get the {@link HTTP.Request.Method.Handler} object.
-         * @returnTthe {@link HTTP.Request.Method.Handler} that this name-space will use to handle the given {@link HTTP.Request.Method}
+         * @return The {@link HTTP.Request.Method.Handler} that this name-space will use to handle the given {@link HTTP.Request.Method}
          */
         public HTTP.Request.Method.Handler get(HTTP.Request.Method method);
         
@@ -226,18 +224,24 @@ public class HTTP {
          * Dispatch the given {@link HTTP.Request} to this URI handler and return the resulting {@link HTTP.Response}.
          * 
          * @param request
-         * @return
+         * @return The resulting {@link HTTP.Response}
          */
         public HTTP.Response dispatch(HTTP.Request request, HTTP.Identity identity);        
 
         /**
-         * Get the set of {@link HTTP.Request.Methods} that this server will respond to.
+         * Get the set of {@link HTTP.Request.Method} instances that this server will respond to.
+         * 
+         * @return the set of {@link HTTP.Request.Method} instances that this server will respond to.
          */
         public Collection<HTTP.Request.Method> getAccessAllowed();
     }
   
     /**
-     * Classes implementing this interface provide the prescribed methods to abstract access to "resources" (See {@link HTTP.Resource}).
+     * Classes implementing this interface provide the methods to abstract access to resources (See {@link HTTP.Resource}).
+     * <p>
+     * For example to access files in a filesystem as an HTTP.Resource, a class providing the access methods must be implemented
+     * (@see FileSystemBackend.java).
+     * </p>
      * 
      * @author Glenn Scott, Sun Microsystems Laboratories, Sun Microsystems, Inc.
      */
@@ -319,8 +323,9 @@ public class HTTP {
         
         
         /**
-         * An {@code HTTP.Method}, as part of an {@link HTTP.Request}, indicates the operation that is to be performed on the resource identified by the request URI.
-         * Other uses of the HTTP.Method are in HTTP.Response messages indicating what methods are permitted on a particular resource.
+         * An {@code HTTP.Request.Method}, as part of an {@link HTTP.Request},
+         * indicates the operation that is to be performed on the resource identified by the request URI.
+         * Other uses of the {@code HTTP.Request.Method} are in {@link HTTP.Response} messages indicating what methods are permitted on a particular resource.
          * <p>
          * The proper use of this class is to get the method from the pre-defined set of methods:
          * </p>
@@ -429,7 +434,7 @@ public class HTTP {
              */
             public interface Handler {
                 /**
-                 * Produce an {@link HTTP.Response} as the result of processing an {@link HTTP.Request} specifying a matching {@link HTTP.Method}.
+                 * Produce an {@link HTTP.Response} as the result of processing an {@link HTTP.Request} specifying a matching {@link HTTP.Request.Method}.
                  * <p>
                  * Developers of classes that implement this interface must adhere to the semantics of the
                  * Exceptions thrown in order to ensure that correct error result are returned to the client. 
@@ -682,7 +687,6 @@ public class HTTP {
 
             /**
              * 
-             * @return
              */
             public Set<State.Token> getStateTokens() {
                 return this.stateTags;                
@@ -881,7 +885,7 @@ public class HTTP {
          * Write the head of this response as a well formed HTTP response message.
          * 
          * @param out
-         * @return
+         * @return the {@link DataOutputStream} that this response was written.
          * @throws IOException
          */
         public DataOutputStream writeHeadTo(DataOutputStream out) throws IOException;
@@ -1158,7 +1162,7 @@ public class HTTP {
         /**
          * Get the body of this message.
          * 
-         * @return
+         * @return the body of this message.
          */
         public HTTP.Message.Body getBody();
 
@@ -1473,7 +1477,7 @@ public class HTTP {
                      * Get the {@link HTTP.Message.Header.If.ConditionSet} for the named {@link URI} {@code resourceTag}.
                      * 
                      * @param resourceTag
-                     * @return
+                     * @return The {@link HTTP.Message.Header.If.ConditionSet} for the named {@link URI} {@code resourceTag}.
                      */
                     public HTTP.Message.Header.If.ConditionSet getConditionSet(URI resourceTag);
 
@@ -1488,7 +1492,7 @@ public class HTTP {
                      * For a condition set to evaluate to true, only one of the conditions in the set must evaluate to true.
                      * 
                      * @param resourceState
-                     * @return
+                     * @return {@code true} if one of the conditions in the set evaluates to true.
                      */
                     public boolean matches(HTTP.Resource.State resourceState);
 
@@ -1532,8 +1536,8 @@ public class HTTP {
                      * and any state token on the identified resource. A lock state token is considered to match if
                      * the resource is anywhere in the scope of the lock.
                      * </p>
-                     * @param other
-                     * @return
+                     * @param resourceState
+                     * @return {@code true} if this Condition matches the given {@code Resource.State}.
                      */
                     public boolean matches(HTTP.Resource.State resourceState);
                 }
@@ -2612,7 +2616,8 @@ public class HTTP {
      * An HTTP Exception signals a failure of an HTTP method as applied to a resource.
      * <p>
      * If classes extending this abstract class do not provide an
-     * {@link HTTP.Response} instance to be used to transmit to the client (see {@link #setResponse(Response)} and {@link #getResponse()}),
+     * {@link HTTP.Response} instance to be used to transmit to the client (see {@link HTTP.Exception#setResponse(Response)}
+     * and {@link HTTP.Exception#getResponse()}),
      * a default {@code HTTP.Response} is generated.
      * </p>
      * 
@@ -2688,9 +2693,9 @@ public class HTTP {
         }
         
         /**
-         * Get the {@link HTTP.Status} corresponding to this Exception.
+         * Get the {@link HTTP.Response.Status} corresponding to this Exception.
          * 
-         * @return the {@link HTTP.Status} corresponding to this Exception.
+         * @return the {@link HTTP.Response.Status} corresponding to this Exception.
          */
         public HTTP.Response.Status getStatus() {
             return this.status;

@@ -159,9 +159,25 @@ abstract public class AbstractStoredMap<K,V extends Serializable> implements Ite
     public long getSpoolAvailable() {
     	return this.maxCapacity - this.currentSpoolSize;
     }
-	
+
+    /**
+     * Given a {@link File} instance, representing the root directory of this {@code AbstractStoredMap}, and a key (an instance of {@code K}),
+     * return a {@link File} instance containing the Serialized form of the value of the key.
+     * @see {@link #fileToKey(File)}
+     * 
+     * @param file The root directory of this {@code AbstractStoredMap}
+     * @param key The key of the value in this map.
+     * @return return a key (an instance of {@code K}).
+     */
     abstract public File keyToFile(File root, K key);
 	
+    /**
+     * Given a {@link File} instance, return a key (an instance of {@code K}).
+     * @see {@link #keyToFile(File, Object)}
+     * 
+     * @param file 
+     * @return return a key (an instance of {@code K}).
+     */
 	abstract public K fileToKey(File file);
 
 	/**

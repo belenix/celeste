@@ -1822,8 +1822,8 @@ public class WebDAV {
         /**
          * Copy this resource to another named by {@code destination}.
          *
-         * @return {@link HTTP.Resource.Status.CREATED} if the source was successfully copied after the successful creation of a new destination resource.<br/>
-         *         {@link HTTP.Resource.Status.NO_CONTENT} if the source was successfully copied to a preexisting destination resource.
+         * @return {@link HTTP.Resource.Status#CREATED} if the source was successfully copied after the successful creation of a new destination resource.<br/>
+         *         {@link HTTP.Resource.Status#NO_CONTENT} if the source was successfully copied to a preexisting destination resource.
          * 
          * @throws HTTP.InternalServerErrorException if this method encounters an irrecoverable processing error that cannot be expressed more completely.
          * @throws HTTP.InsufficientStorageException the server is unable to store data needed to successfully complete the request.
@@ -1846,7 +1846,7 @@ public class WebDAV {
          * Move this resource to another name.
          * 
          * @param destination the URI (from which only the path component is used) of the new resource.
-         * @return {@link HTTP.Response.Status.CREATED} upon successful creation of the new resource.
+         * @return {@link HTTP.Response.Status#CREATED} upon successful creation of the new resource.
          * 
          * @throws HTTP.MethodNotAllowedException if the operation is not allowed for the resource.
          * @throws HTTP.InternalServerErrorException if this method encounters an irrecoverable processing error that cannot be expressed more completely.
@@ -2316,7 +2316,7 @@ public class WebDAV {
              *  
              * @see #canonicalisePropertyName(String, String)
              * @param canonicalName
-             * @return
+             * @return a String containing the property's name-space and name components
              * 
              * @author Glenn Scott, Sun Microsystems Laboratories, Sun Microsystems, Inc.
              */

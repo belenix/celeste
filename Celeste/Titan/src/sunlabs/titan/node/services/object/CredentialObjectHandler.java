@@ -42,6 +42,7 @@ import sunlabs.titan.api.TitanObject.Metadata;
 import sunlabs.titan.node.BeehiveObjectPool;
 import sunlabs.titan.node.BeehiveObjectPool.DisallowedDuplicateException;
 import sunlabs.titan.node.BeehiveObjectStore;
+import sunlabs.titan.node.BeehiveObjectStore.Exception;
 import sunlabs.titan.node.Publishers.PublishRecord;
 import sunlabs.titan.node.TitanMessage;
 import sunlabs.titan.node.TitanMessage.RemoteException;
@@ -89,7 +90,7 @@ public final class CredentialObjectHandler extends AbstractObjectHandler impleme
                     for (PublishRecord record : alreadyPublishedObjects) {
                         String dataHash = record.getMetadataProperty(BeehiveObjectStore.METADATA_DATAHASH, "error");
                         if (dataHash.compareTo(object.getValue().getProperty(BeehiveObjectStore.METADATA_DATAHASH)) != 0) {
-                            throw new BeehiveObjectPool.DisallowedDuplicateException("Credential already exists");
+                            throw new BeehiveObjectPool.DisallowedDuplicateException(String.format("Credential %s already exists", object.getKey()));
                         }
                         break;
                     }
@@ -135,8 +136,8 @@ public final class CredentialObjectHandler extends AbstractObjectHandler impleme
     // Methods from CredentialObject's StorableObjectType super-interface
     //
 
-    public Publish.PublishUnpublishResponse storeLocalObject(TitanMessage message) throws ClassNotFoundException, ClassCastException, BeehiveObjectStore.NoSpaceException, BeehiveObjectStore.DeleteTokenException,
-    BeehiveObjectStore.UnacceptableObjectException, BeehiveObjectPool.Exception, BeehiveObjectStore.InvalidObjectIdException, BeehiveObjectStore.InvalidObjectException {
+    public Publish.PublishUnpublishResponse storeLocalObject(TitanMessage message) throws ClassNotFoundException, ClassCastException,
+    BeehiveObjectPool.Exception, BeehiveObjectStore.InvalidObjectIdException, BeehiveObjectStore.Exception {
         if (this.log.isLoggable(Level.FINER)) {
             this.log.finest("%s", message.traceReport());
         }

@@ -107,7 +107,7 @@ public interface Publish {
      * The message travels across the network until it reaches the root of the object's {@link TitanGuid}.
      * When the root receives the message, the {@link AbstractObjectHandler} specified by name in the
      * meta-data accompanying the {@link PublishObjectMessage} (using the meta-data name
-     * {@link ObjectStore#METADATA_TYPE}).
+     * {@link ObjectStore#METADATA_CLASS}).
      * </p>
      * <p>
      * The {@link TitanMessage} returned from the {@link AbstractObjectHandler#publishObject} method is propagated back as a reply to the original

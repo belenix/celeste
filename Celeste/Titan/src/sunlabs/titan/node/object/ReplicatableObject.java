@@ -169,7 +169,7 @@ public class ReplicatableObject {
 	                    if (handler.getLogger().isLoggable(Level.FINE)) {
 	                        handler.getLogger().fine("best publisher=%s object ttl=%d", bestPublisher.getNodeId(), bestPublisher.getObjectTTL());
 	                    }
-	                    handler.getNode().sendToNodeExactly(bestPublisher.getNodeId(), bestPublisher.getObjectType(), "replicateObject", new Replicate.Request(objectId, publisherSet));
+	                    handler.getNode().sendToNodeExactly(bestPublisher.getNodeId(), bestPublisher.getObjectClass(), "replicateObject", new Replicate.Request(objectId, publisherSet));
 	                    break;
 	                } catch (TitanNode.NoSuchNodeException e) {
 	                    e.printStackTrace();

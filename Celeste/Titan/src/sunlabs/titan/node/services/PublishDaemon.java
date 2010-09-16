@@ -186,11 +186,11 @@ public final class PublishDaemon extends AbstractTitanService implements Publish
 
         public void run() {
         	try {
+        	    // We don't permit this method to be run more than once at a time.
         		synchronized (this.busy) {
         			if (this.busy) {
         				if (PublishDaemon.this.log.isLoggable(Level.WARNING)) {
         					PublishDaemon.this.log.warning("already busy");
-        					System.err.println("already busy");
         				}
         				return;                         
         			}
@@ -201,43 +201,9 @@ public final class PublishDaemon extends AbstractTitanService implements Publish
         		}
         		
         		this.startTime = System.currentTimeMillis();
+        		
+        		this.objectCount = PublishDaemon.this.node.getObjectPublishers().expire(PublishDaemon.this.log);
 
-        		// For each object-id in the ObjectPublisher back-pointer list, examine
-        		// the list of publishers, decrementing the time-to-live for each by
-        		// the frequency in seconds of this repeating process.  If the
-        		// time-to-live is zero or negative, remove that publisher from the list of
-        		// publishers.
-        		long count = 0;
-        		for (TitanGuid objectId : PublishDaemon.this.node.getObjectPublishers().keySet()) {
-        			Set<Publishers.PublishRecord> publishers = PublishDaemon.this.node.getObjectPublishers().getPublishersAndLock(objectId);
-        			try {
-                        if (PublishDaemon.this.log.isLoggable(Level.FINEST)) {
-                            PublishDaemon.this.log.finest("begin %s %d publishers", objectId, publishers.size());
-                        }
-        				boolean modified = false;
-        				Set<Publishers.PublishRecord> newPublishers = new HashSet<Publishers.PublishRecord>(publishers);
-        				for (Publishers.PublishRecord record : publishers) {
-        					long secondsUntilExpired = record.getExpireTimeSeconds() - Time.currentTimeInSeconds();
-        					if (PublishDaemon.this.log.isLoggable(Level.FINEST)) {
-        						PublishDaemon.this.log.finest("%s %s expireTime=%d dt=%+d", objectId, record.getNodeAddress().getObjectId(), record.getExpireTimeSeconds(), secondsUntilExpired);
-        					}
-        					if (secondsUntilExpired <= 0) {
-        						newPublishers.remove(record);
-        						modified = true;
-        					}
-        				}
-        				if (modified) {
-        					if (PublishDaemon.this.log.isLoggable(Level.FINEST)) {
-        						PublishDaemon.this.log.finest("end %s %d publishers", objectId, newPublishers.size());
-        					}
-        					PublishDaemon.this.node.getObjectPublishers().put(objectId, newPublishers);
-        				}
-        			} finally {
-        				PublishDaemon.this.node.getObjectPublishers().unlock(objectId);
-        			}
-        		}
-
-        		this.objectCount = count;
         		this.elapsedMillis = (System.currentTimeMillis() - startTime);
         		
         		if (PublishDaemon.this.log.isLoggable(Level.FINEST)) {
@@ -502,10 +468,6 @@ public final class PublishDaemon extends AbstractTitanService implements Publish
 
         PublishDaemon.PublishObject.PublishUnpublishRequestImpl publishRequest = new PublishDaemon.PublishObject.PublishUnpublishRequestImpl(this.node.getNodeAddress(), publishRecordSecondsToLive, object);
 
-        // this.node.sendPublishObjectMessage(BeehiveObject object);
-        // this.node.sendPublishObjectMessage(object.getObjectId(), object.getProperty(BeehiveObjectStore.METADATA_TYPE),
-        //      "publishObject",
-        //      new AbstractBeehiveObject(BeehiveObjectId.ANY, metaData));
         PublishObjectMessage message = new PublishObjectMessage(this.node.getNodeAddress(), object.getObjectId(), object.getObjectType(), "publishObject", publishRequest);
 
         TitanMessage reply = this.node.receive(message);
@@ -641,7 +603,8 @@ public final class PublishDaemon extends AbstractTitanService implements Publish
     	XHTML.Table.Body tbody = new XHTML.Table.Body();
     	for (String name : this.node.getConfiguration().keySet()) {
     		if (name.startsWith(PublishDaemon.class.getCanonicalName())) {
-    			tbody.add(new XHTML.Table.Row(new XHTML.Table.Data(name), new XHTML.Table.Data(String.valueOf(this.node.getConfiguration().get(name).getValue()))));
+    			tbody.add(new XHTML.Table.Row(new XHTML.Table.Data(name),
+    			        new XHTML.Table.Data(String.valueOf(this.node.getConfiguration().get(name).getValue()))));
     		}
     	}
     	XHTML.Table configurationTable = new XHTML.Table(new XHTML.Table.Caption("Configuration Values"), tbody).addClass("striped");
@@ -651,7 +614,7 @@ public final class PublishDaemon extends AbstractTitanService implements Publish
     					new XHTML.Table.Row(new XHTML.Table.Data("Next Publish Time"),
     							new XHTML.Table.Data(this.publishDaemonFuture == null
     									? "manual"
-    									: WebDAVDaemon.formatTime(this.publishDaemonFuture.getDelay(TimeUnit.MILLISECONDS) + System.currentTimeMillis()))),
+    									: Time.ISO8601(this.publishDaemonFuture.getDelay(TimeUnit.MILLISECONDS) + System.currentTimeMillis()))),
 						new XHTML.Table.Row(new XHTML.Table.Data("&Delta; Time"),
 								new XHTML.Table.Data(this.publishDaemonFuture == null
 										? ""
@@ -670,8 +633,7 @@ public final class PublishDaemon extends AbstractTitanService implements Publish
     					new XHTML.Table.Row(new XHTML.Table.Data("Next Expire Time"),
     							new XHTML.Table.Data(this.expireDaemonFuture == null
     									? "manual"
-    									: WebDAVDaemon.formatTime(this.expireDaemonFuture.getDelay(TimeUnit.MILLISECONDS) + System.currentTimeMillis())
-    							)),
+    									: Time.ISO8601(this.expireDaemonFuture.getDelay(TimeUnit.MILLISECONDS) + System.currentTimeMillis()))),
     					new XHTML.Table.Row(new XHTML.Table.Data("&Delta; Time"),
     							new XHTML.Table.Data(this.expireDaemonFuture == null
     									? ""
@@ -825,56 +787,4 @@ public final class PublishDaemon extends AbstractTitanService implements Publish
             }
         }
     }
-
-    /**
-     * 
-     *
-     */
-//    public static class UnpublishObject {
-//        public enum  Type { OPTIONAL, REQUIRED };
-//        /**
-//         * A message from a node unpublishing the availability of a {@link TitanObject}.
-//         */
-//        public static class Request implements Serializable {
-//            private final static long serialVersionUID = 1L;
-//
-////          private UnpublishObject.Type type;
-//            private Collection<TitanGuid> objectIds;
-//
-//            private NodeAddress publisher;
-//            
-//            public Request(NodeAddress publisher, TitanGuid objectId, UnpublishObject.Type type) {
-//                this.publisher = publisher;
-////              this.type = type;
-//                this.objectIds = new LinkedList<TitanGuid>();
-//                this.objectIds.add(objectId);
-//            }
-//            
-////          public UnpublishObject.Type getType() {
-////              return this.type;
-////          }
-//            
-//            public Collection<TitanGuid> getObjectIds() {
-//                return this.objectIds;
-//            }
-//            
-//            public NodeAddress getPublisherAddress() {
-//                return this.publisher;
-//            }
-//        }
-//        
-//        public static class Response implements Serializable {
-//            private final static long serialVersionUID = 1L;
-//            private NodeAddress rootNodeAddress;
-//            
-//            public Response(NodeAddress rootNodeAddress) {
-//                this.rootNodeAddress = rootNodeAddress;             
-//            }
-//
-//            public NodeAddress getRootNodeAddress() {
-//                return this.rootNodeAddress;
-//            }
-//        }
-//    }
-    
 }

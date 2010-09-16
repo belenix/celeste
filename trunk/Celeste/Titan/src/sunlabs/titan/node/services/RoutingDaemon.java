@@ -24,12 +24,12 @@
 package sunlabs.titan.node.services;
 
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.Serializable;
 import java.lang.management.ManagementFactory;
 import java.net.URI;
 import java.net.UnknownHostException;
-import java.text.DateFormat;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -43,6 +43,7 @@ import javax.management.ObjectName;
 
 import sunlabs.asdf.jmx.JMX;
 import sunlabs.asdf.jmx.ThreadMBean;
+import sunlabs.asdf.util.AbstractStoredMap;
 import sunlabs.asdf.util.Attributes;
 import sunlabs.asdf.util.Time;
 import sunlabs.asdf.web.XML.XHTML;
@@ -52,13 +53,13 @@ import sunlabs.asdf.web.http.HttpMessage;
 import sunlabs.titan.TitanGuidImpl;
 import sunlabs.titan.api.TitanGuid;
 import sunlabs.titan.api.TitanNode;
-import sunlabs.titan.node.TitanNodeImpl;
 import sunlabs.titan.node.Dossier;
 import sunlabs.titan.node.NodeAddress;
 import sunlabs.titan.node.Publishers;
 import sunlabs.titan.node.Reputation;
 import sunlabs.titan.node.TitanMessage;
 import sunlabs.titan.node.TitanMessage.RemoteException;
+import sunlabs.titan.node.TitanNodeImpl;
 
 /**
  * A Titan Node routing table maintenance daemon.
@@ -204,9 +205,7 @@ public final class RoutingDaemon extends AbstractTitanService implements Routing
                     long sleepTime = Math.max(this.currentIntroductionRate - this.lastRunDuration, 0);
                     this.wakeUpTime = currentTime + sleepTime;
 
-                    RoutingDaemon.this.setStatus("Wakeup " + DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT).format(new Date(this.wakeUpTime)));
-
-                    RoutingDaemon.this.setStatus(String.format("Wakeup %1$td/%1$tm/%1$ty %1$tH:%1$tM:%1$tS", new Date(this.wakeUpTime)));
+                    RoutingDaemon.this.setStatus(String.format("Wakeup %s", Time.ISO8601(this.wakeUpTime)));
 
                     RoutingDaemon.this.log.fine(String.format("Desired introductionRate=%ss currentIntroductionRate=%dms elasped time=%dms, sleepTime=%dms",
                             RoutingDaemon.this.node.getConfiguration().asLong(RoutingDaemon.IntroductionRateSeconds),
@@ -403,60 +402,125 @@ public final class RoutingDaemon extends AbstractTitanService implements Routing
                     }
 
                     this.lastRunTime = System.currentTimeMillis();
-                    for (Map.Entry<TitanGuid,Dossier.Entry> mapEntry : RoutingDaemon.this.node.getNeighbourMap().getDossier().entrySet()) {
-                        // Since we don't lock the Dossier, the next statement may fail to produce the Entry because it's been deleted.
-                        Dossier.Entry entry = mapEntry.getValue();
-                        if (entry != null) {
-                            NodeAddress address = entry.getNodeAddress();
-                            if (address != null) {
-                                if (RoutingDaemon.this.log.isLoggable(Level.FINE)) {
-                                    RoutingDaemon.this.log.fine("Reunion %s", address.format());
-                                }
+                    for (TitanGuid objectId : RoutingDaemon.this.node.getNeighbourMap().getDossier()) {
+                        try {
+                            Dossier.Entry entry = RoutingDaemon.this.node.getNeighbourMap().getDossier().get(objectId);
+                            // Since we don't lock the Dossier, the next statement may fail to produce the Entry because it's been deleted.
+                            if (entry != null) {
+                                NodeAddress address = entry.getNodeAddress();
+                                if (address != null) {
+                                    if (RoutingDaemon.this.log.isLoggable(Level.FINE)) {
+                                        RoutingDaemon.this.log.fine("Reunion %s", address.format());
+                                    }
 
-                                //  Reunite only with nodes that we're not already connected to.
-                                if (!RoutingDaemon.this.node.getNeighbourMap().keySet().contains(address)) {
-                                    if (!address.getObjectId().equals(RoutingDaemon.this.node.getNodeId())) {
-                                        try {
-                                            if (RoutingDaemon.this.ping(address, new PingOperation.Request(new byte[0])) != null) {
-                                                /**/
-                                            } else {
-                                                if (RoutingDaemon.this.log.isLoggable(Level.FINE)) {
-                                                    RoutingDaemon.this.log.fine("fail %s", address.format());
-                                                }
-                                                // Get dossier entry: if it is too old, then delete it
-                                                long tooOld = Time.millisecondsToSeconds(System.currentTimeMillis()) - RoutingDaemon.this.node.getConfiguration().asLong(RoutingDaemon.DossierTimeToLiveSeconds);
-                                                Dossier.Entry e = RoutingDaemon.this.node.getNeighbourMap().getDossier().getEntryAndLock(address);
-                                                try {
-                                                    if (e.getTimestamp() < tooOld) {
-                                                        if (RoutingDaemon.this.log.isLoggable(Level.FINEST)) {
-                                                            RoutingDaemon.this.log.finest("Removing old Dossier %s", address.format());
-                                                        }
-                                                        RoutingDaemon.this.node.getNeighbourMap().getDossier().removeEntry(e);
+                                    //  Reunite only with nodes that we're not already connected to.
+                                    if (!RoutingDaemon.this.node.getNeighbourMap().keySet().contains(address)) {
+                                        if (!address.getObjectId().equals(RoutingDaemon.this.node.getNodeId())) {
+                                            try {
+                                                if (RoutingDaemon.this.ping(address, new PingOperation.Request(new byte[0])) != null) {
+                                                    /**/
+                                                } else {
+                                                    if (RoutingDaemon.this.log.isLoggable(Level.FINE)) {
+                                                        RoutingDaemon.this.log.fine("fail %s", address.format());
                                                     }
-                                                } finally {
-                                                    RoutingDaemon.this.node.getNeighbourMap().getDossier().unlockEntry(e);
+                                                    // Get dossier entry: if it is too old, then delete it
+                                                    long tooOld = Time.millisecondsToSeconds(System.currentTimeMillis()) - RoutingDaemon.this.node.getConfiguration().asLong(RoutingDaemon.DossierTimeToLiveSeconds);
+                                                    Dossier.Entry e = RoutingDaemon.this.node.getNeighbourMap().getDossier().getEntryAndLock(address);
+                                                    try {
+                                                        if (e.getTimestamp() < tooOld) {
+                                                            if (RoutingDaemon.this.log.isLoggable(Level.FINEST)) {
+                                                                RoutingDaemon.this.log.finest("Removing old Dossier %s", address.format());
+                                                            }
+                                                            RoutingDaemon.this.node.getNeighbourMap().getDossier().removeEntry(e);
+                                                        }
+                                                    } finally {
+                                                        RoutingDaemon.this.node.getNeighbourMap().getDossier().unlockEntry(e);
+                                                    }
                                                 }
-                                            }
-                                        } catch (Exception reportAndIgnore) {
-                                            reportAndIgnore.printStackTrace();
-                                            if (RoutingDaemon.this.log.isLoggable(Level.FINE)) {
-                                                RoutingDaemon.this.log.fine("fail %s %s", address.format(), reportAndIgnore.toString());
+                                            } catch (Exception reportAndIgnore) {
+                                                reportAndIgnore.printStackTrace();
+                                                if (RoutingDaemon.this.log.isLoggable(Level.FINE)) {
+                                                    RoutingDaemon.this.log.fine("fail %s %s", address.format(), reportAndIgnore.toString());
+                                                }
                                             }
                                         }
                                     }
-                                }
-                            } else {
-                                if (RoutingDaemon.this.log.isLoggable(Level.WARNING)) {
-                                    RoutingDaemon.this.log.warning("Dossier entry for %s had no address.", mapEntry.getKey());
+                                } else {
+                                    if (RoutingDaemon.this.log.isLoggable(Level.WARNING)) {
+                                        RoutingDaemon.this.log.warning("Dossier entry for %s had no address.", objectId);
+                                    }
                                 }
                             }
-                        }
-                        this.lastRunDuration = System.currentTimeMillis() - this.lastRunTime;
+                            this.lastRunDuration = System.currentTimeMillis() - this.lastRunTime;
 
-                        synchronized (this) {
-                            this.wait(Time.minutesInMilliseconds(1));
+                            synchronized (this) {
+                                this.wait(Time.minutesInMilliseconds(1));
+                            }
+                        } catch (FileNotFoundException e) {
+                            // it's okay, just skip it.
+                        } catch (ClassCastException e) {
+                            RoutingDaemon.this.node.getNeighbourMap().getDossier().remove(objectId);
+                        } catch (IOException e) {
+                            RoutingDaemon.this.node.getNeighbourMap().getDossier().remove(objectId);
+                        } catch (ClassNotFoundException e) {
+                            RoutingDaemon.this.node.getNeighbourMap().getDossier().remove(objectId);
                         }
                     }
+                    
+//                    for (Map.Entry<TitanGuid,Dossier.Entry> mapEntry : RoutingDaemon.this.node.getNeighbourMap().getDossier().entrySet()) {
+//                        // Since we don't lock the Dossier, the next statement may fail to produce the Entry because it's been deleted.
+//                        Dossier.Entry entry = mapEntry.getValue();
+//                        if (entry != null) {
+//                            NodeAddress address = entry.getNodeAddress();
+//                            if (address != null) {
+//                                if (RoutingDaemon.this.log.isLoggable(Level.FINE)) {
+//                                    RoutingDaemon.this.log.fine("Reunion %s", address.format());
+//                                }
+//
+//                                //  Reunite only with nodes that we're not already connected to.
+//                                if (!RoutingDaemon.this.node.getNeighbourMap().keySet().contains(address)) {
+//                                    if (!address.getObjectId().equals(RoutingDaemon.this.node.getNodeId())) {
+//                                        try {
+//                                            if (RoutingDaemon.this.ping(address, new PingOperation.Request(new byte[0])) != null) {
+//                                                /**/
+//                                            } else {
+//                                                if (RoutingDaemon.this.log.isLoggable(Level.FINE)) {
+//                                                    RoutingDaemon.this.log.fine("fail %s", address.format());
+//                                                }
+//                                                // Get dossier entry: if it is too old, then delete it
+//                                                long tooOld = Time.millisecondsToSeconds(System.currentTimeMillis()) - RoutingDaemon.this.node.getConfiguration().asLong(RoutingDaemon.DossierTimeToLiveSeconds);
+//                                                Dossier.Entry e = RoutingDaemon.this.node.getNeighbourMap().getDossier().getEntryAndLock(address);
+//                                                try {
+//                                                    if (e.getTimestamp() < tooOld) {
+//                                                        if (RoutingDaemon.this.log.isLoggable(Level.FINEST)) {
+//                                                            RoutingDaemon.this.log.finest("Removing old Dossier %s", address.format());
+//                                                        }
+//                                                        RoutingDaemon.this.node.getNeighbourMap().getDossier().removeEntry(e);
+//                                                    }
+//                                                } finally {
+//                                                    RoutingDaemon.this.node.getNeighbourMap().getDossier().unlockEntry(e);
+//                                                }
+//                                            }
+//                                        } catch (Exception reportAndIgnore) {
+//                                            reportAndIgnore.printStackTrace();
+//                                            if (RoutingDaemon.this.log.isLoggable(Level.FINE)) {
+//                                                RoutingDaemon.this.log.fine("fail %s %s", address.format(), reportAndIgnore.toString());
+//                                            }
+//                                        }
+//                                    }
+//                                }
+//                            } else {
+//                                if (RoutingDaemon.this.log.isLoggable(Level.WARNING)) {
+//                                    RoutingDaemon.this.log.warning("Dossier entry for %s had no address.", mapEntry.getKey());
+//                                }
+//                            }
+//                        }
+//                        this.lastRunDuration = System.currentTimeMillis() - this.lastRunTime;
+//
+//                        synchronized (this) {
+//                            this.wait(Time.minutesInMilliseconds(1));
+//                        }
+//                    }
 
 
                 } // while
@@ -574,7 +638,8 @@ public final class RoutingDaemon extends AbstractTitanService implements Routing
             // This clause is executed on the root node of the joining object-id.
             Map<TitanGuid,Set<Publishers.PublishRecord>> objectRoots = new Hashtable<TitanGuid,Set<Publishers.PublishRecord>>();
 
-            for (TitanGuid objectId : this.node.getObjectPublishers().keySet()) {
+            //for (TitanGuid objectId : this.node.getObjectPublishers().keySet()) {
+            for (TitanGuid objectId: this.node.getObjectPublishers()) {
                 if (this.node.getNeighbourMap().isRoot(objectId)) {
                     objectRoots.put(objectId, this.node.getObjectPublishers().getPublishers(objectId));
                 }
@@ -623,7 +688,11 @@ public final class RoutingDaemon extends AbstractTitanService implements Routing
             for (TitanGuid objectId : publishRecords.keySet()) {
                 Set<Publishers.PublishRecord> publishers = publishRecords.get(objectId);
                 this.log.finest("Adding publish record %s", publishers);
-                this.node.getObjectPublishers().update(objectId, publishers);
+                try {
+                    this.node.getObjectPublishers().update(objectId, publishers);
+                } catch (AbstractStoredMap.OutOfSpace e) {
+                    this.node.getObjectPublishers().remove(objectId);                    
+                }
             }
 
             // For each NodeAddress in the reply, add it to our local neighbour-map.
@@ -705,7 +774,8 @@ public final class RoutingDaemon extends AbstractTitanService implements Routing
             //
             Map<TitanGuid,Set<Publishers.PublishRecord>> publishers = new HashMap<TitanGuid,Set<Publishers.PublishRecord>>();
 
-            for (TitanGuid objectId : this.node.getObjectPublishers().keySet()) {
+            for (TitanGuid objectId : this.node.getObjectPublishers()) {
+            //for (TitanGuid objectId : this.node.getObjectPublishers().keySet()) {
                 HashSet<Publishers.PublishRecord> includedPublishers = new HashSet<Publishers.PublishRecord>();
                 publishers.put(objectId, includedPublishers);
             }
@@ -736,17 +806,23 @@ public final class RoutingDaemon extends AbstractTitanService implements Routing
                 try {
                     PingOperation.Response response = reply.getPayload(PingOperation.Response.class, this.node);
 
-                    Dossier.Entry e = RoutingDaemon.this.node.getNeighbourMap().getDossier().getEntryAndLock(target);
+                    Dossier.Entry entry = RoutingDaemon.this.node.getNeighbourMap().getDossier().getEntryAndLock(target);
                     try {
-                        e.setTimestamp().addSample(Dossier.LATENCY, latency).success(Dossier.AVAILABLE);
-                        RoutingDaemon.this.node.getNeighbourMap().getDossier().put(e);
+                        entry.setTimestamp().addSample(Dossier.LATENCY, latency).success(Dossier.AVAILABLE);
+                        RoutingDaemon.this.node.getNeighbourMap().getDossier().put(entry);
+                    } catch (AbstractStoredMap.OutOfSpace e) {
+                        RoutingDaemon.this.node.getNeighbourMap().getDossier().removeEntry(entry);
                     } finally {
-                        RoutingDaemon.this.node.getNeighbourMap().getDossier().unlockEntry(e);
+                        RoutingDaemon.this.node.getNeighbourMap().getDossier().unlockEntry(entry);
                     }
 
                     for (TitanGuid objectId : response.getPublishRecords().keySet()) {
                         Set<Publishers.PublishRecord> publisherSet = response.getPublishRecords().get(objectId);
-                        this.node.getObjectPublishers().update(objectId, publisherSet);
+                        try {
+                            this.node.getObjectPublishers().update(objectId, publisherSet);
+                        } catch (AbstractStoredMap.OutOfSpace e) {
+                            this.node.getObjectPublishers().remove(objectId);
+                        }
                     }
                     return response;
                 } catch (ClassNotFoundException e) {
@@ -757,7 +833,11 @@ public final class RoutingDaemon extends AbstractTitanService implements Routing
             }
         }
 
-        RoutingDaemon.this.node.getNeighbourMap().getDossier().failure(target, Dossier.AVAILABLE);
+        try {
+            RoutingDaemon.this.node.getNeighbourMap().getDossier().failure(target, Dossier.AVAILABLE);
+        } catch (AbstractStoredMap.OutOfSpace e) {
+            RoutingDaemon.this.node.getNeighbourMap().getDossier().remove(target.getObjectId());
+        }
         return null;
     }
 

@@ -24,29 +24,30 @@
 package sunlabs.titan.node;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.Serializable;
 import java.net.URI;
-import java.util.Collections;
-import java.util.ConcurrentModificationException;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
+import java.util.logging.Level;
 
+import sunlabs.asdf.util.AbstractStoredMap;
 import sunlabs.asdf.util.ObjectLock;
 import sunlabs.asdf.util.Time;
 import sunlabs.asdf.web.XML.XHTML;
 import sunlabs.asdf.web.http.HTTP;
 import sunlabs.titan.TitanGuidImpl;
-import sunlabs.titan.api.TitanObject;
 import sunlabs.titan.api.ObjectStore;
 import sunlabs.titan.api.TitanGuid;
 import sunlabs.titan.api.TitanNodeId;
+import sunlabs.titan.api.TitanObject;
 import sunlabs.titan.node.object.DeleteableObject;
 import sunlabs.titan.node.services.WebDAVDaemon;
+import sunlabs.titan.node.util.DOLRLogger;
 
 /**
  * Object location in the Titan Object Pool.
@@ -74,17 +75,15 @@ import sunlabs.titan.node.services.WebDAVDaemon;
  * to the originally received RouteToObjectMessage.
  * </p>
  *
- * @author Glenn Scott - Sun Microsystems Laboratories
+ * @author Glenn Scott - Oracle Sun Labs
  */
-public class Publishers {
+public class Publishers extends AbstractStoredMap<TitanGuid, HashSet<Publishers.PublishRecord>> {
     private final static long serialVersionUID = 1L;
 
     public final static String METADATA_PUBLISHERTTL = "Publishers.PublisherTimeToLive";
 
     private ObjectLock<TitanGuid> locks;
 
-    private BackedObjectMap<TitanGuid,Set<Publishers.PublishRecord>> publishers;
-    private Map<TitanGuid,Set<Publishers.PublishRecord>> byObjectId;
     private TitanNodeImpl node;
 
     /**
@@ -107,8 +106,8 @@ public class Publishers {
         	XHTML.Table.Heading[] result = new XHTML.Table.Heading[4];
         	result[0] = new XHTML.Table.Heading("Node Identifier");
         	result[1] = new XHTML.Table.Heading("Expire(&Delta)");
-        	result[2] = new XHTML.Table.Heading("Object TTL");
-        	result[3] = new XHTML.Table.Heading("Object Type");
+        	result[2] = new XHTML.Table.Heading("TTL");
+        	result[3] = new XHTML.Table.Heading("Class");
         	return result;            
         }
         
@@ -161,12 +160,16 @@ public class Publishers {
         }
 
         /**
-         * Get the {@link TitanGuidImpl} of the publishing node.
+         * Get the {@link TitanNodeId} of the publishing node.
          */
         public TitanNodeId getNodeId() {
             return this.publisher.getObjectId();
         }
 
+        /**
+         * Get the published {@link TitanObject.Metadata} for this object.
+         * @return the published {@link TitanObject.Metadata} for this object.
+         */
         public TitanObject.Metadata getMetadata() {
             return this.metaData;
         }
@@ -184,7 +187,8 @@ public class Publishers {
 
         /**
          * Get the absolute time (in milliseconds) that this {@code PublishRecord} instance will expire.
-         * @return
+         * @see System#currentTimeMillis()
+         * @return the absolute time (in milliseconds) that this {@code PublishRecord} instance will expire.
          */
         public long getExpireTimeSeconds() {
             return this.expireTimeSeconds;
@@ -197,12 +201,19 @@ public class Publishers {
             return Long.parseLong(this.getMetadataProperty(ObjectStore.METADATA_SECONDSTOLIVE, "-1"));
         }
 
+        /**
+         * Return {@code true} if this Publishers.Record is a deleted object.
+         * <p>
+         * The published metadata contains a valid delete-token.
+         * </p>
+         * @return {@code true} if this Publishers.Record is a deleted object.
+         */
         public boolean isDeleted() {
             return DeleteableObject.deleteTokenIsValid(this.metaData);
         }
 
-        public String getObjectType() {
-            return this.metaData.getProperty(ObjectStore.METADATA_TYPE, null);
+        public String getObjectClass() {
+            return this.metaData.getProperty(ObjectStore.METADATA_CLASS, null);
         }
 
         /**
@@ -217,44 +228,90 @@ public class Publishers {
 
         @Override
         public String toString() {
-        	return this.objectId + "->" + this.getNodeId() + " " + this.getExpireTimeSeconds() + " " + this.getObjectTTL() + " " + this.getObjectType();
+            StringBuilder result = new StringBuilder("objectId=");
+            result.append(this.objectId).append(" node=").append(this.getNodeId()).append(" ").append(this.getExpireTimeSeconds()).append(" ").append(this.getObjectTTL()).append(" ").append(this.getObjectClass());
+            return result.toString();
         }
 
         public XHTML.Table.Data[] toXHTMLTableData() {
         	XHTML.Anchor a = WebDAVDaemon.inspectNodeXHTML(this.publisher);
 
-        	String secondsToLive = (this.getObjectTTL() == TitanObject.INFINITE_TIME_TO_LIVE) ? "forever" : Long.toString(this.getObjectTTL());
+        	String secondsToLive = (this.getObjectTTL() == TitanObject.INFINITE_TIME_TO_LIVE) ? "&infin;" : Long.toString(this.getObjectTTL());
         	String xmlClass = DeleteableObject.deleteTokenIsValid(this.metaData) ? "deleted" : "undeleted";
         	XHTML.Table.Data[] result = new XHTML.Table.Data[4];
 
         	result[0] = new XHTML.Table.Data(a).setClass(xmlClass);
 
-        	result[1] = new XHTML.Table.Data("%d(%+ds)", this.getExpireTimeSeconds(), this.getExpireTimeSeconds() - Time.currentTimeInSeconds());
+        	result[1] = new XHTML.Table.Data("%s (%+ds)", Time.ISO8601(Time.secondsInMilliseconds(this.getExpireTimeSeconds())),
+        	        this.getExpireTimeSeconds() - Time.currentTimeInSeconds());
         	result[2] = new XHTML.Table.Data("%s", secondsToLive);
-        	result[3] = new XHTML.Table.Data(WebDAVDaemon.inspectServiceXHTML(this.getObjectType()));
+        	result[3] = new XHTML.Table.Data(WebDAVDaemon.inspectServiceXHTML(this.getObjectClass()));
         	return result;
         }
     }
 
-    public Publishers(TitanNodeImpl node, String spoolDirectory) throws IOException {
+    public Publishers(TitanNodeImpl node, String spoolDirectory) throws IOException, IllegalStateException, AbstractStoredMap.OutOfSpace {
+        super(new File(spoolDirectory + File.separatorChar + "object-publishers"), Long.MAX_VALUE);
         this.node = node;
-
-        this.byObjectId = Collections.synchronizedMap(new HashMap<TitanGuid,Set<Publishers.PublishRecord>>());
-
-        // Load from the backed map.
-        this.publishers = new BackedObjectMap<TitanGuid,Set<Publishers.PublishRecord>>(spoolDirectory + File.separatorChar + "object-publishers", true);
-        
-        for (TitanGuid objectId : this.publishers.keySet()) {
-            Set<Publishers.PublishRecord> publishers = this.getPublishersAndLock(objectId);
-            this.byObjectId.put(objectId, publishers);
-        }
 
         this.locks = new ObjectLock<TitanGuid>();
     }
 
     /**
+     * For each object-id in the ObjectPublisher back-pointer list,
+     * examine the list of publishers,
+     * decrementing the time-to-live for each by the frequency in seconds of this repeating process.
+     * If the time-to-live is zero or negative, remove that publisher from the list of publishers.
+     * @param log
+     * @return
+     */
+    public long expire(DOLRLogger log) {
+        long count = 0;
+        for (TitanGuid objectId : this) {
+            Set<Publishers.PublishRecord> publishers = this.getPublishersAndLock(objectId);
+            try {
+                if (log.isLoggable(Level.FINEST)) {
+                    log.finest("begin %s %d publishers", objectId, publishers.size());
+                }
+                boolean modified = false;
+                HashSet<Publishers.PublishRecord> newPublishers = new HashSet<Publishers.PublishRecord>(publishers);
+                for (Publishers.PublishRecord record : publishers) {
+                    long secondsUntilExpired = record.getExpireTimeSeconds() - Time.currentTimeInSeconds();
+                    if (log.isLoggable(Level.FINEST)) {
+                        log.finest("%s %s expireTime=%d dt=%+d", objectId, record.getNodeAddress().getObjectId(), record.getExpireTimeSeconds(), secondsUntilExpired);
+                    }
+                    if (secondsUntilExpired <= 0) {
+                        newPublishers.remove(record);
+                        modified = true;
+                    }
+                }
+                if (modified) {
+                    if (log.isLoggable(Level.FINEST)) {
+                        log.finest("end %s %d publishers", objectId, newPublishers.size());
+                    }
+                    try {
+                        this.put(objectId, newPublishers);
+                    } catch (IllegalStateException e) {
+                        e.printStackTrace();
+                    } catch (IOException e) {
+                        log.severe("IOException when storing.");
+                        this.remove(objectId);
+                    } catch (AbstractStoredMap.OutOfSpace e) {
+                        log.severe("Out of storage space");
+                        this.remove(objectId);
+                    }
+                }
+            } finally {
+                this.unlock(objectId);
+            }
+        }
+
+        return count;
+    }
+    
+    /**
      * <p>
-     * Get the {@link Set} of {@link Publishers.PublishRecord} instances for the given {@link TitanGuid}.
+     * Get the {@link HashSet} of {@link Publishers.PublishRecord} instances for the given {@link TitanGuid}.
      * <em>There result is NOT locked.</em>
      * </p>
      * <p>
@@ -263,11 +320,11 @@ public class Publishers {
      *
      * @param objectId the {@code TitanGuid} of the published object.
      *
-     * @return  a {@code Set} consisting of all the {@code Publishers.Publisher}
+     * @return  a {@code HashSet} consisting of all the {@code Publishers.Publisher}
      * instances for the given {@code TitanGuid}.
      */
-    public Set<Publishers.PublishRecord> getPublishers(TitanGuid objectId) {
-        Set<Publishers.PublishRecord> set = this.getPublishersAndLock(objectId);
+    public HashSet<Publishers.PublishRecord> getPublishers(TitanGuid objectId) {
+        HashSet<Publishers.PublishRecord> set = this.getPublishersAndLock(objectId);
         try {
             return set;
         } finally {
@@ -277,7 +334,7 @@ public class Publishers {
 
     /**
      * <p>
-     * Get the {@link Set} of {@link Publishers.PublishRecord} instances of the given {@link TitanGuid}.
+     * Get the {@link HashSet} of {@link Publishers.PublishRecord} instances of the given {@link TitanGuid}.
      * <em>There result is locked and MUST be unlocked when the caller has finished manipulating.</em>
      * </p>
      * <p>
@@ -285,18 +342,23 @@ public class Publishers {
      * </p>
      * @param objectId the {@code TitanGuid} of the published object.
      *
-     * @return  a {@code Set} consisting of all the {@code Publishers.Publisher} instances for the given {@code TitanGuid}.
+     * @return  a {@code HashSet} consisting of all the {@code Publishers.Publisher} instances for the given {@code TitanGuid}.
      *
      * @throws IllegalStateException if an attempt to lock a {@code TitanGuid}} more than once.
      */
-    public Set<Publishers.PublishRecord> getPublishersAndLock(TitanGuid objectId) throws IllegalStateException {
+    private HashSet<Publishers.PublishRecord> getPublishersAndLock(TitanGuid objectId) throws IllegalStateException {
         this.locks.lock(objectId);
         try {
-            Set<Publishers.PublishRecord> set = this.byObjectId.get(objectId);
-            if (set == null) {
-                set = new HashSet<Publishers.PublishRecord>();
+            try {
+                return super.get(objectId);
+            } catch (FileNotFoundException e) {
+                return new HashSet<Publishers.PublishRecord>();                
+            } catch (IOException e) {
+                this.remove(objectId);
+                return new HashSet<Publishers.PublishRecord>();                
+            } catch (ClassNotFoundException e) {
+                throw new RuntimeException(e);
             }
-            return set;
         } catch (ClassCastException e) {
             this.locks.unlock(objectId);
             throw e;
@@ -308,7 +370,7 @@ public class Publishers {
      * The {@code objectId} must already be locked by the current {@link Thread}.
      * @throws IllegalStateException if the {@code objectId} is not locked.
      */
-    public boolean unlock(TitanGuid objectId) {
+    private boolean unlock(TitanGuid objectId) {
         return this.locks.unlock(objectId);
     }
 
@@ -325,30 +387,21 @@ public class Publishers {
      *
      * @param objectId the {@link TitanGuid} of the object.
      * @param set the {@link Set} containing all of the publishers of {@code objectId}.
+     * @throws AbstractStoredMap.OutOfSpace 
+     * @throws IOException 
      * @throws IllegalStateException if the {@code objectId} is not locked.
      */
-    public void put(TitanGuid objectId, Set<Publishers.PublishRecord> set) {
+    public void put(TitanGuid objectId, HashSet<Publishers.PublishRecord> set) throws IllegalStateException, IOException, AbstractStoredMap.OutOfSpace {
         synchronized (this.locks) {
             this.locks.assertLock(objectId);
-
+            
             if (set.size() != 0) {
-                this.byObjectId.put(objectId, set);
-                this.publishers.put(objectId, set);
+                super.put(objectId, set);
+//                this.publishers.put(objectId, set);
             } else {
-                this.byObjectId.remove(objectId);
-                this.publishers.remove(objectId);
+                super.remove(objectId);
+//                this.publishers.remove(objectId);
             }
-        }
-    }
-
-    /**
-     * Return a new {@link Set} containing the {@link TitanGuid}s of the objects that this node has seen advertised.
-     *  The returned {@code Set} is unique and not subject to {@link ConcurrentModificationException} from an updated publisher record.
-     */
-    public Set<TitanGuid> keySet() {
-        synchronized (this.byObjectId) {
-            Set<TitanGuid> set = new HashSet<TitanGuid>(this.byObjectId.keySet());
-            return set;
         }
     }
 
@@ -360,9 +413,12 @@ public class Publishers {
      * <p>
      * Unlock the lock on this publisher object-id.
      * </p>
+     * @throws AbstractStoredMap.OutOfSpace 
+     * @throws IOException 
+     * @throws IllegalStateException 
      */
-    public void update(Publishers.PublishRecord publisher) {
-        Set<Publishers.PublishRecord> oldSet = this.getPublishersAndLock(publisher.getObjectId());
+    public void update(Publishers.PublishRecord publisher) throws IllegalStateException, IOException, AbstractStoredMap.OutOfSpace {
+        HashSet<Publishers.PublishRecord> oldSet = (HashSet<Publishers.PublishRecord>) this.getPublishersAndLock(publisher.getObjectId());
         try {
         	oldSet.remove(publisher);
             if (oldSet.add(publisher)) {
@@ -373,7 +429,7 @@ public class Publishers {
         }
     }
     
-    public void update(TitanGuid objectId, Publishers.PublishRecord record) {
+    public void update(TitanGuid objectId, Publishers.PublishRecord record) throws IllegalStateException, IOException, AbstractStoredMap.OutOfSpace {
     	// XXX Should ensure that objectId is the same as record.getObjectId()
     	this.update(record);
     }
@@ -387,9 +443,12 @@ public class Publishers {
      * </p>
      * @param objectId
      * @param publisherSet
+     * @throws AbstractStoredMap.OutOfSpace 
+     * @throws IOException 
+     * @throws IllegalStateException 
      */
-    public void update(TitanGuid objectId, Set<Publishers.PublishRecord> publisherSet) {
-        Set<Publishers.PublishRecord> set = this.getPublishersAndLock(objectId);
+    public void update(TitanGuid objectId, Set<Publishers.PublishRecord> publisherSet) throws IllegalStateException, IOException, AbstractStoredMap.OutOfSpace {
+        HashSet<Publishers.PublishRecord> set = (HashSet<Publishers.PublishRecord>) this.getPublishersAndLock(objectId);
         try {
             if (set.addAll(publisherSet)) {
                 this.put(objectId, set);
@@ -406,9 +465,12 @@ public class Publishers {
      * </p>
      * @param objectId
      * @param publisherId
+     * @throws AbstractStoredMap.OutOfSpace 
+     * @throws IOException 
+     * @throws IllegalStateException 
      */
-    public void remove(TitanGuid objectId, TitanGuid publisherId) {
-        Set<Publishers.PublishRecord> newSet = new HashSet<Publishers.PublishRecord>();
+    public void remove(TitanGuid objectId, TitanNodeId publisherId) throws IllegalStateException, IOException, AbstractStoredMap.OutOfSpace {
+        HashSet<Publishers.PublishRecord> newSet = new HashSet<Publishers.PublishRecord>();
         Set<Publishers.PublishRecord> set = this.getPublishersAndLock(objectId);
         try {
             for (PublishRecord p : set) {
@@ -424,12 +486,14 @@ public class Publishers {
 
     public XHTML.EFlow toXHTML(URI uri, Map<String,HTTP.Message> props) {
         SortedSet<TitanGuid> objectIds = new TreeSet<TitanGuid>();
-        objectIds.addAll(this.keySet());
+        for (TitanGuid objectId : this) {
+            objectIds.add(objectId);
+        }
 
         XHTML.Table.Data emptyCell = new XHTML.Table.Data();
 
         XHTML.Table.Head thead = new XHTML.Table.Head();
-        thead.add(new XHTML.Table.Row(new XHTML.Table.Heading("Object Identifier")).add(PublishRecord.toXHTMLTableHeading()));
+        thead.add(new XHTML.Table.Row(new XHTML.Table.Heading("Titan Guid")).add(PublishRecord.toXHTMLTableHeading()));
         
         XHTML.Table.Body tbody = new XHTML.Table.Body();
         for (TitanGuid objectId : objectIds) {
@@ -455,8 +519,21 @@ public class Publishers {
                 objectCell = emptyCell;
             }
         }
-        XHTML.Table publishers = new XHTML.Table(new XHTML.Table.Caption("Publish Records"), thead, tbody).setId("objectPublishers").setClass("Publishers");
+        XHTML.Table publishers = new XHTML.Table(new XHTML.Table.Caption("Published Object Records"), thead, tbody).setId("objectPublishers").setClass("Publishers");
 
         return publishers;
+    }
+
+    @Override
+    public File keyToFile(File root, TitanGuid key) {
+        String s = key.toString();
+        StringBuilder result = new StringBuilder();
+        result.append(s.substring(0, 5)).append(File.separatorChar).append(s);
+        return new File(root, result.toString());
+    }   
+
+    @Override
+    public TitanGuid fileToKey(File file) {
+        return new TitanGuidImpl(file.getName());       
     }
 }

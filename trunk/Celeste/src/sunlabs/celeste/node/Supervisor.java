@@ -30,13 +30,12 @@ import java.lang.management.ManagementFactory;
 import java.lang.management.RuntimeMXBean;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.text.DateFormat;
-import java.util.Date;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 
+import sunlabs.asdf.util.AbstractStoredMap;
 import sunlabs.asdf.util.Attributes;
 import sunlabs.asdf.util.Time;
 import sunlabs.titan.Copyright;
@@ -175,8 +174,6 @@ public class Supervisor {
             }
         }
 
-        DateFormat dateFormat = DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.LONG);
-
         Executor executors = Executors.newCachedThreadPool();
 
         // Start all of the nodes as threads in one JVM.
@@ -194,7 +191,7 @@ public class Supervisor {
                     thread[i] = node[i].start();
 
                     System.out.printf("%s [%d ms] %s%n",
-                            dateFormat.format(new Date()),
+                            Time.ISO8601(System.currentTimeMillis()),
                             System.currentTimeMillis() - Long.parseLong(node[i].getProperty(TitanNodeImpl.StartTime.getName())),
                             node[i].getNodeAddress().format());
 
@@ -209,12 +206,15 @@ public class Supervisor {
                 } catch (ConfigurationException e) {
                     e.printStackTrace();
                     System.exit(1);
+                } catch (AbstractStoredMap.OutOfSpace e) {
+                    // TODO Auto-generated catch block
+                    e.printStackTrace();
                 }
                 i++;
             }
 
             if (configuration.size() > 1) {
-                System.out.printf("%s All node threads running.%n", dateFormat.format(new Date()));
+                System.out.printf("%s All node threads running.%n", Time.ISO8601(System.currentTimeMillis()));
             }
 
             // Wait for all the threads to terminate.
@@ -224,7 +224,7 @@ public class Supervisor {
                     j = -1; // Make this loop start over again.
                 }
             }
-            System.err.println(dateFormat.format(new Date()) + " EXITED");
+            System.err.println(Time.ISO8601(System.currentTimeMillis()) + " EXITED");
             System.exit(1);
         }
 
@@ -279,7 +279,7 @@ public class Supervisor {
                 e.printStackTrace();
             }
         }
-        System.out.println(dateFormat.format(new Date()) + ": " + "done.");
+        System.out.println(Time.ISO8601(System.currentTimeMillis()) + ": " + "done.");
     }
 
     private Supervisor(String[] configurationURLs) {

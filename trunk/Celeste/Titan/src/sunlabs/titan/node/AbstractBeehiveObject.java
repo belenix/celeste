@@ -162,7 +162,7 @@ public abstract class AbstractBeehiveObject implements TitanObject {
         this.objectId = TitanGuidImpl.ANY;
 
         this.metaData = new AbstractBeehiveObject.Metadata();
-        this.setProperty(ObjectStore.METADATA_TYPE, handler.getName());
+        this.setProperty(ObjectStore.METADATA_CLASS, handler.getName());
 
         this.setDeleteTokenId(deleteTokenId);
         if (this.getDeleteTokenId() == null) {
@@ -246,7 +246,7 @@ public abstract class AbstractBeehiveObject implements TitanObject {
     }
 
     public String getObjectType() {
-        String type = this.getProperty(ObjectStore.METADATA_TYPE);
+        String type = this.getProperty(ObjectStore.METADATA_CLASS);
         return type;
     }
 

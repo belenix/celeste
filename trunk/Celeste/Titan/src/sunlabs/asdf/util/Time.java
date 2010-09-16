@@ -24,6 +24,7 @@
 package sunlabs.asdf.util;
 
 
+
 public class Time {
     /** The number of seconds in 1 minute */
     public final static long MINUTES_IN_SECONDS = 60L;
@@ -142,5 +143,16 @@ public class Time {
         }
         
         return String.format("%d.%03ds", seconds, milliseconds);
+    }
+
+    public static String ISO8601(long timeInMillis) {
+//        DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ"); // ISO 8601
+//        return dateFormat.format(timeInMillis);
+        
+        return String.format("%1$tFT%1$tT.%1$tL%1$tz", timeInMillis);
+    }
+    
+    public static void main(String[] args) {
+        System.out.printf("%s%n", Time.ISO8601(System.currentTimeMillis()));
     }
 }

@@ -33,12 +33,10 @@ import java.lang.management.RuntimeMXBean;
 import java.net.InetAddress;
 import java.net.URL;
 import java.net.UnknownHostException;
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
-import java.util.Date;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 
+import sunlabs.asdf.util.AbstractStoredMap.OutOfSpace;
 import sunlabs.asdf.util.Time;
 import sunlabs.celeste.node.services.CelesteClientDaemon;
 import sunlabs.titan.Copyright;
@@ -114,7 +112,7 @@ public class Celeste {
                 while ((line = input.readLine()) != null) {
                     System.out.println(line);
                 }
-                System.out.println(new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss").format(new Date()) + ": " + this.command + " died.");
+                System.out.println(Time.ISO8601(System.currentTimeMillis()) + ": " + this.command + " died.");
                 input.close();
                 proc.waitFor();
             } catch (RuntimeException weDidAllWeCouldDo) {
@@ -329,8 +327,6 @@ public class Celeste {
             }
         }
 
-        DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss"); // ISO 8601    
-
         // Start all of the nodes as threads in one JVM.
         if (useThreads) {
             CelesteNode[] node = new CelesteNode[n_nodes];
@@ -350,7 +346,7 @@ public class Celeste {
 
                     thread[i] = node[i].start();
 
-                    System.out.printf("%s [%d ms] %s%n", dateFormat.format(new Date()),
+                    System.out.printf("%s [%d ms] %s%n", Time.ISO8601(System.currentTimeMillis()),
                             System.currentTimeMillis() - Long.parseLong(node[i].getProperty(TitanNodeImpl.StartTime.getName())),
                             node[i].getNodeAddress().format());
 
@@ -366,7 +362,7 @@ public class Celeste {
                     properties.setProperty(CelesteClientDaemon.Port.getName(), properties.getPropertyAsInt(CelesteClientDaemon.Port.getName()) + celestePortIncrement);
                 }
                 if (n_nodes > 1) {
-                    System.out.printf("%s All node threads running.%n", dateFormat.format(new Date()));
+                    System.out.printf("%s All node threads running.%n", Time.ISO8601(System.currentTimeMillis()));
                 }
 
                 // Wait for all the threads to terminate.
@@ -384,8 +380,10 @@ public class Celeste {
                 e.printStackTrace();
             } catch (ConfigurationException e) {
                 e.printStackTrace();
+            } catch (OutOfSpace e) {
+                e.printStackTrace();
             }
-            System.err.println(dateFormat.format(new Date()) + " EXITED");
+            System.err.println(Time.ISO8601(System.currentTimeMillis()) + " EXITED");
             System.exit(1);
         }
 
@@ -454,7 +452,7 @@ public class Celeste {
                 jmxPort += jmxPortIncrement;
             }
         }
-        System.out.println(dateFormat.format(new Date()) + ": " + "done.");
+        System.out.println(Time.ISO8601(System.currentTimeMillis()) + ": " + "done.");
     }
 
     //

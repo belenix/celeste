@@ -23,6 +23,7 @@
  */
 package sunlabs.titan.node;
 
+import java.io.IOException;
 import java.io.Serializable;
 import java.net.URI;
 import java.util.Arrays;
@@ -190,6 +191,8 @@ public final class NeighbourMap {
         try {
             this.dossier = new Dossier(node.getSpoolDirectory());
         } catch (BackedObjectMap.AccessException e) {
+            throw new RuntimeException(e);
+        } catch (IOException e) {
             throw new RuntimeException(e);
         }
 

@@ -139,7 +139,7 @@ public final class FragmentObject extends AbstractObjectHandler implements FObje
     }
 
     public Publish.PublishUnpublishResponse storeLocalObject(TitanMessage message)  throws ClassNotFoundException, ClassCastException, BeehiveObjectStore.NoSpaceException, BeehiveObjectStore.DeleteTokenException,
-    BeehiveObjectStore.UnacceptableObjectException, BeehiveObjectPool.Exception, BeehiveObjectStore.InvalidObjectIdException, BeehiveObjectStore.InvalidObjectException  {
+    BeehiveObjectStore.UnacceptableObjectException, BeehiveObjectPool.Exception, BeehiveObjectStore.InvalidObjectIdException, BeehiveObjectStore.InvalidObjectException, BeehiveObjectStore.Exception {
         try {
             FObjectType.FObject fObject = message.getPayload(FObjectType.FObject.class, this.node);
             Publish.PublishUnpublishResponse reply = StorableObject.storeLocalObject(this, fObject, message);

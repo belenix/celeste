@@ -24,11 +24,10 @@ package sunlabs.titan.node.util;
 
 import java.io.IOException;
 import java.io.PrintStream;
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
-import java.util.Date;
 import java.util.logging.Formatter;
 import java.util.logging.LogRecord;
+
+import sunlabs.asdf.util.Time;
 
 /**
  * A simple formatter to help log output from multiple nodes to a single
@@ -44,15 +43,12 @@ import java.util.logging.LogRecord;
  */
 public class DOLRLogFormatter extends Formatter {
     private static final String LINESEP = System.getProperty("line.separator");
-
-    private DateFormat dateFormat;
     
     /**
      * Create a new DOLRLogFormatter.
      */
     public DOLRLogFormatter() {
         super();         
-        this.dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
     }
     
 //    /**
@@ -102,7 +98,7 @@ public class DOLRLogFormatter extends Formatter {
      * {@inheritDoc}
      */
     @Override public String format(LogRecord record) {        
-        String now = this.dateFormat.format(new Date());
+        String now = Time.ISO8601(System.currentTimeMillis());
         StringBuilder sb = new StringBuilder(now).append(" ").append(record.getLevel()).append(" ");
         sb.append(Thread.currentThread().getName());
         sb.append(": ");

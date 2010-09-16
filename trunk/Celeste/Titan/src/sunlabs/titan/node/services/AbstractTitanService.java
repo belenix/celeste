@@ -50,28 +50,22 @@ import sunlabs.titan.node.util.DOLRLoggerMBean;
 import sunlabs.titan.util.WeakMBeanRegistrar;
 
 /**
- * A TitanService invoked by the reception of a {@link TitanMessage}
- * is responsible for interpreting and processing that message, and
- * ultimately returning a {@link TitanMessage} reply.
- *
+ * A class implementing the {@code TitanService} interface has methods that are invoked by the reception of a {@link TitanMessage}.
+ * Each of these methods  is responsible for interpreting and processing that message, and
+ * ultimately returning a reply.
  * </p><p>
- *
  * Each {@code TitanService} has a name which is specified in the body of
  * each {@link TitanMessage}.
  * [NB:  In the Tapestry paper, each Applications has a "GUID", just like the Nodes
  * and stored Objects, but in this implementation Applications are simply identified
  * with a String (with no whitespace) as a name.]
- *
  * </p><p>
- *
  * Every {@code TitanService} has an associated filesystem directory in which it may
  * store private data for the application's use.  Example uses of the
  * filesystem directory are to store data which is persistent across restarts
  * of the {@code TitanService} (or Titan Node), keeping a log file of the application's
  * activities, and so forth.
- *
  * </p><p>
- *
  * Similarly, each {@code TitanService} has a HTTP URL which it can use to interact
  * with an administrator.  Example uses of the HTTP URL is to produce a HTML
  * web page to display the current state of the application, setting and
@@ -106,7 +100,7 @@ public abstract class AbstractTitanService extends NotificationBroadcasterSuppor
     /** A human-readable description of this {@code Service}. */
     private String description;
 
-    private byte[] applicationData;
+    private byte[] serviceData;
 
     protected final DOLRLogger log;
 
@@ -169,10 +163,9 @@ public abstract class AbstractTitanService extends NotificationBroadcasterSuppor
             return request.composeReply(this.node.getNodeAddress(), e);
         } catch (InvocationTargetException e) {
             // The invoked method threw an Exception so package it up as a reply to the requestor.
-            this.log.info("%s.%s threw %s%n", this.getClass(), methodName, e.getCause());
+            this.log.info("%s.%s(...) threw %s", this.getClass().getName(), methodName, e.getCause());
             return request.composeReply(this.node.getNodeAddress(), e.getCause());
         } catch (NoSuchMethodException e) {
-            e.printStackTrace();
             return request.composeReply(this.node.getNodeAddress(), e);
         }
     }
@@ -231,14 +224,14 @@ public abstract class AbstractTitanService extends NotificationBroadcasterSuppor
      * Get the arbitrary data associated with this Service.
      */
     public byte[] getData() {
-        return this.applicationData;
+        return this.serviceData;
     }
 
     /**
      * Set the arbitrary data associated with this Service.
      */
     public void setData(byte[] d) {
-        this.applicationData = d;
+        this.serviceData = d;
     }
 
     /**

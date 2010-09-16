@@ -53,7 +53,7 @@ fileName=extension-example-file
 
 deleteToken=delete
 blockSize=`expr 2 \* 1024 \* 1024` 
-timeToLive=60000
+timeToLive=180
 signWrites="--signed-writes"
 
 echo Using Block Size ${blockSize}

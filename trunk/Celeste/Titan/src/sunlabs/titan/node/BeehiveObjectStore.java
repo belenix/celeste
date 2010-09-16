@@ -335,6 +335,7 @@ public final class BeehiveObjectStore implements ObjectStore {
     		super(root, capacity.compareTo("unlimited") == 0 ? AbstractStoredMap.CAPACITY_UNLIMITED : Units.parseByte(capacity));
     	}
 
+        @Override
     	public File keyToFile(File root, TitanGuid key) {
     		String s = key.toString();
     		StringBuilder result = new StringBuilder();
@@ -342,6 +343,7 @@ public final class BeehiveObjectStore implements ObjectStore {
     		return new File(root, result.toString());
     	}	
 
+        @Override
     	public TitanGuid fileToKey(File file) {
     		return new TitanGuidImpl(file.getName());		
     	}

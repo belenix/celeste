@@ -1,5 +1,5 @@
 /*
- * Copyright 2007-2009 Sun Microsystems, Inc. All Rights Reserved.
+ * Copyright 2007-2010 Oracle. All Rights Reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER
  *
  * This code is free software; you can redistribute it and/or modify
@@ -17,11 +17,10 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
  * 02110-1301 USA
  *
- * Please contact Sun Microsystems, Inc., 16 Network Circle, Menlo
- * Park, CA 94025 or visit www.sun.com if you need additional
- * information or have any questions.
+ * Please contact Oracle Corporation, 500 Oracle Parkway, Redwood Shores, CA 94065
+ * or visit www.oracle.com if you need additional information or
+ * have any questions.
  */
-
 package sunlabs.celeste.client.application;
 
 import java.io.ByteArrayOutputStream;
@@ -1545,6 +1544,7 @@ public class CelesteSh {
     public static void main(String[] args) {
         String celesteAddress = "127.0.0.1:14000";
         boolean verboseFlag = false;
+        boolean ignoreError = false;
         long timeOutSeconds = 300;
 
         Stack<String> options = new Stack<String>();
@@ -1569,6 +1569,8 @@ public class CelesteSh {
                     System.exit(0);
                 } else if (option.equals("--verbose")) {
                     verboseFlag = true;
+                } else if (option.equals("--ignore-error")) {
+                    ignoreError = true;
                 }
             } else {
                 options.push(option);
@@ -1645,12 +1647,14 @@ public class CelesteSh {
                     Usage();
                     System.exit(-1);
                 }
-                System.err.printf("%1$tF %1$tT %1$tZ [%2$.4f s] %3$s %4$s%n",
+                System.err.printf("%1$tF %1$tT %1$tZ [%2$.4f s] %3$s %4$s %5$s%n",
                         System.currentTimeMillis(),
                                 (System.currentTimeMillis() - startTime) / 1000.0,
                                 option,
-                                stats.getMessage());
-                System.exit(status);
+                                stats.getMessage(),
+                                status != 0 && ignoreError == true ? "(ignored error)" : "");
+
+                System.exit(ignoreError ? 0 : status);
             }
         } catch (Exception e) {
             System.err.printf("%s%n", e.toString());

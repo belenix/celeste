@@ -28,11 +28,12 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.URL;
 import java.text.DateFormat;
-import java.text.SimpleDateFormat;
-import java.util.Date;
 
+import sunlabs.asdf.util.AbstractStoredMap;
+import sunlabs.asdf.util.Time;
 import sunlabs.celeste.node.services.CelesteClientDaemon;
 import sunlabs.titan.api.Credential;
+import sunlabs.titan.api.TitanService;
 import sunlabs.titan.node.TitanNodeImpl;
 import sunlabs.titan.util.OrderedProperties;
 
@@ -68,8 +69,9 @@ public final class CelesteNode extends TitanNodeImpl /*implements CelesteAPI*/ {
      * @param properties The configuration properties for this node.
      * @throws IOException If {@link TitanNodeImpl} throws an {@code IOException}.
      * @throws ConfigurationException If {@link TitanNodeImpl} throws an {@code ConfigurationException}.
+     * @throws AbstractStoredMap.OutOfSpace 
      */
-    public CelesteNode(OrderedProperties properties) throws IOException, ConfigurationException {
+    public CelesteNode(OrderedProperties properties) throws IOException, ConfigurationException, AbstractStoredMap.OutOfSpace {
         super(properties);
 
         this.getService(CelesteClientDaemon.class);
@@ -78,7 +80,6 @@ public final class CelesteNode extends TitanNodeImpl /*implements CelesteAPI*/ {
     public static void main(String[] args) {
         // Read this command line argument as a URL to fetch configuration properties.
 
-        DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss"); // ISO 8601    
         OrderedProperties configurationProperties = new OrderedProperties();
         try {
             for (int i = 0; i < args.length; i++) {
@@ -87,8 +88,8 @@ public final class CelesteNode extends TitanNodeImpl /*implements CelesteAPI*/ {
             CelesteNode node = new CelesteNode(configurationProperties);
             Thread thread = node.start();
 
-            System.out.printf("%s [%d ms] %s%n", dateFormat.format(new Date()),
-                    System.currentTimeMillis() - Long.parseLong(node.getProperty(TitanNodeImpl.StartTime.getName())), node.toString());
+            System.out.printf("%s [%s] %s%n", Time.ISO8601(System.currentTimeMillis()),
+                    Time.formattedElapsedTime(System.currentTimeMillis() - Long.parseLong(node.getProperty(TitanNodeImpl.StartTime.getName()))), node.toString());
             while (true) {
                 try {
                     thread.join();
@@ -103,6 +104,9 @@ public final class CelesteNode extends TitanNodeImpl /*implements CelesteAPI*/ {
         } catch (ConfigurationException e) {
             e.printStackTrace();
             System.exit(1);
+        } catch (AbstractStoredMap.OutOfSpace e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
         }
         System.exit(0);
     }

@@ -24,13 +24,11 @@
 package sunlabs.titan.node;
 
 import java.io.BufferedOutputStream;
-import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
 import java.io.EOFException;
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.io.InterruptedIOException;
 import java.io.Serializable;
 import java.lang.management.ManagementFactory;
@@ -45,8 +43,6 @@ import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.ServerSocketChannel;
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
 import java.util.ConcurrentModificationException;
 import java.util.Date;
 import java.util.HashSet;
@@ -77,6 +73,8 @@ import sunlabs.asdf.io.UnsecureChannelHandler;
 import sunlabs.asdf.jmx.JMX;
 import sunlabs.asdf.jmx.ServerSocketMBean;
 import sunlabs.asdf.jmx.ThreadMBean;
+import sunlabs.asdf.util.AbstractStoredMap;
+import sunlabs.asdf.util.AbstractStoredMap.OutOfSpace;
 import sunlabs.asdf.util.Attributes;
 import sunlabs.asdf.util.Time;
 import sunlabs.asdf.util.Units;
@@ -86,11 +84,11 @@ import sunlabs.asdf.web.http.HTTP;
 import sunlabs.titan.Copyright;
 import sunlabs.titan.Release;
 import sunlabs.titan.TitanGuidImpl;
-import sunlabs.titan.api.TitanObject;
 import sunlabs.titan.api.ObjectStore;
 import sunlabs.titan.api.TitanGuid;
 import sunlabs.titan.api.TitanNode;
 import sunlabs.titan.api.TitanNodeId;
+import sunlabs.titan.api.TitanObject;
 import sunlabs.titan.api.TitanService;
 import sunlabs.titan.api.management.NodeMBean;
 import sunlabs.titan.node.TitanMessage.RemoteException;
@@ -846,7 +844,7 @@ public class TitanNodeImpl implements TitanNode, NodeMBean {
 
     public final static String copyright = Copyright.miniNotice;
 
-    public TitanNodeImpl(Properties properties) throws IOException, ConfigurationException {
+    public TitanNodeImpl(Properties properties) throws IOException, ConfigurationException, AbstractStoredMap.OutOfSpace {
         this.configuration = new Attributes();
         this.configuration.update(properties);
         this.configuration.add(TitanNodeImpl.LocalFileSystemRoot);
@@ -1005,6 +1003,8 @@ public class TitanNodeImpl implements TitanNode, NodeMBean {
             this.getService(CensusDaemon.class);
             this.getService(WebDAVDaemon.class);
         } catch (JMException e) {
+            throw new RuntimeException(e);
+        } catch (IllegalStateException e) {
             throw new RuntimeException(e);
         }
 
@@ -1174,7 +1174,7 @@ public class TitanNodeImpl implements TitanNode, NodeMBean {
      * </p>
      * <p>
      * If the {@code TitanMessage} is a multicast RouteToObject message, then process it
-     * via the receiveRouteToObject() method and return the result.
+     * via the {@link #receiveRouteToObject(TitanMessage)} method and return the result.
      * </p>
      * <p>
      * If it is any other type of multicast {@code TitanMessage}, just process it by
@@ -1308,13 +1308,12 @@ public class TitanNodeImpl implements TitanNode, NodeMBean {
      * @param message The incoming {@link PublishObjectMessage}
      */
     private TitanMessage receivePublishObject(TitanMessage message) {
-        TitanMessage rootReply;
-
-        if (message.isTraced()) {
+        if (message.isTraced() || TitanNodeImpl.this.getLogger().isLoggable(Level.FINE)) {
             TitanNodeImpl.this.log.info("recv: %s", message.traceReport());
         }
 
         // If this message can be routed further, transmit it and simply return the reply.
+        TitanMessage rootReply;
         if (this.map.getRoute(message.getDestinationNodeId()) != null) {
             rootReply = this.transmit(message);
         } else {
@@ -1334,8 +1333,16 @@ public class TitanNodeImpl implements TitanNode, NodeMBean {
                 Publish.PublishUnpublishRequest request = message.getPayload(Publish.PublishUnpublishRequest.class, this);
                 for (Map.Entry<TitanGuid,TitanObject.Metadata> entry : request.getObjects().entrySet()) {
                     TitanNodeImpl.this.log.finest("%s->%s ttl=%ds", entry.getKey(), request.getPublisherAddress(), request.getSecondsToLive());
-                    this.objectPublishers.update(entry.getKey(),
-                            new Publishers.PublishRecord(entry.getKey(), request.getPublisherAddress(), entry.getValue(), request.getSecondsToLive()));
+                    try {
+                        this.objectPublishers.update(entry.getKey(),
+                                new Publishers.PublishRecord(entry.getKey(), request.getPublisherAddress(), entry.getValue(), request.getSecondsToLive()));
+                    } catch (IllegalStateException e) {
+                        this.objectPublishers.remove(entry.getKey());
+                    } catch (IOException e) {
+                        this.objectPublishers.remove(entry.getKey());
+                    } catch (AbstractStoredMap.OutOfSpace e) {
+                        this.objectPublishers.remove(entry.getKey());
+                    }
                 }
             } catch (ClassNotFoundException e) {
                 // bad request...
@@ -1385,9 +1392,7 @@ public class TitanNodeImpl implements TitanNode, NodeMBean {
      * </ol>
      */
     private TitanMessage receiveRouteToObject(TitanMessage request) {
-        TitanMessage response;
-
-        if (request.isTraced()) {
+        if (request.isTraced() || TitanNodeImpl.this.getLogger().isLoggable(Level.FINE)) {
             TitanNodeImpl.this.log.info("recv: %s", request.traceReport());
         }
 
@@ -1415,7 +1420,6 @@ public class TitanNodeImpl implements TitanNode, NodeMBean {
         // a serialized object with a class not known to every node JVM, send the class name as a string
         // and have the object contain a ClassLoader that understands where to get the class.  See the note in BeehiveMessage.
         //
-
         TitanMessage proxyMessage = new TitanMessage(TitanMessage.Type.RouteToNode,
                 request.getSource(),
                 TitanNodeIdImpl.ANY,
@@ -1433,7 +1437,8 @@ public class TitanNodeImpl implements TitanNode, NodeMBean {
         
         Set<Publishers.PublishRecord> publishers = new HashSet<Publishers.PublishRecord>();
         publishers.addAll(this.objectPublishers.getPublishers(request.subjectId));
-        
+
+        TitanMessage response;
         for (Publishers.PublishRecord publisher : publishers) {
             proxyMessage.setDestinationNodeId(publisher.getNodeId());
             if (request.isTraced()) {
@@ -1441,34 +1446,15 @@ public class TitanNodeImpl implements TitanNode, NodeMBean {
             }
 
             // These checks need to be updated in synchrony with the results and exceptions embodied in the new form of TitanMessages,
-            // where the status contains less information and more information is expressed in execptions and return values.
+            // where the status contains less information and more information is expressed in exceptions and return values.
 
             if ((response = this.transmit(proxyMessage)) != null) {
                 if (response.getStatus().isSuccessful()) {
                     return response;
-                    //              TitanMessage reply;
-                    //              // The idea here is to convey the serialized data from the replying node,
-                    //              // without having to deserialize it and reserialize it just to retransmit
-                    //              // it to the original requestor.  Also, as a result of not deserializing
-                    //              // the data, we don't have to worry about having a class loader that understands
-                    //              // the serialized data.
-                    //              // reply = request.proxyReply(this.getNodeAddress(), response.getStatus(), response.getRawPayLoad());
-                    //              reply = request.composeReply(this.getNodeAddress(), response.getStatus());
-                    //              reply.setRawPayload(response.getRawPayLoad());
-                    //              reply.setMulticast(Boolean.FALSE);
-                    //              //this.log.exiting("RouteToObject(2) done: " + request.getSubjectClass() + " " + request.subjectId + " from " + request.getSource().getObjectId() + " from " + request.getSource().getObjectId() + " " + reply.getStatus());
-                    //              return reply;
-//                } else if (response.getStatus() == DOLRStatus.SERVICE_UNAVAILABLE) {
-//                    this.log.info("Unavailable publisher: " + publisher);
-//                } else if (response.getStatus() == DOLRStatus.NOT_FOUND) {
-//                    // The object was not found at the node we expected.
-//                    // XXX We should reduce our reputation assessment of that node for not informing us of the object's removal.
-//                    // Delete that node from the publisher list and try again.
-//                    // this.objectPublishers.remove(request.subjectId, publisher.getNodeId());
-//                    // Don't delete it.  Rely on the node issuing an unpublish.
-//                    this.log.info("Bad publisher: " + publisher + " responder=" + response.getSource().format());
                 } else {
                     this.log.info("%5.5s...: %s failed. %s", request.getMessageId(), publisher, response.getStatus());
+                    // We don't remove the bad publisher here because we are expecting the node
+                    // that doesn't have the object to issue a remedial unpublish object. 
                 }
                 // The response did not signal success, so keep trying.
             }
@@ -1503,15 +1489,22 @@ public class TitanNodeImpl implements TitanNode, NodeMBean {
      * @param request The received {@link UnpublishObjectMessage}
      */
     private TitanMessage receiveUnpublishObject(TitanMessage request) throws ClassCastException, ClassNotFoundException, TitanMessage.RemoteException {
-        if (request.isTraced()) {
+        if (request.isTraced() || TitanNodeImpl.this.getLogger().isLoggable(Level.FINE)) {
             TitanNodeImpl.this.log.info("recv %s: objectId=%s", request.traceReport(), request.getObjectId());
         }
 
-        //PublishDaemon.UnpublishObject.Request unpublishRequest = request.getPayload(PublishDaemon.UnpublishObject.Request.class, this);
         Publish.PublishUnpublishRequest unpublishRequest = request.getPayload(Publish.PublishUnpublishRequest.class, this);
         for (TitanGuid objectId : unpublishRequest.getObjects().keySet()) {
             // Remove the unpublished object from this node's publisher records.
-            this.getObjectPublishers().remove(objectId, request.getSource().getObjectId());
+            try {
+                this.getObjectPublishers().remove(objectId, request.getSource().getObjectId());
+            } catch (IllegalStateException e) {
+                this.getObjectPublishers().remove(objectId);
+            } catch (IOException e) {
+                this.getObjectPublishers().remove(objectId);
+            } catch (AbstractStoredMap.OutOfSpace e) {
+                this.getObjectPublishers().remove(objectId);
+            }
         }
         if (this.map.getRoute(request.getDestinationNodeId()) != null) {
             // Route the message on to the root.
@@ -2011,43 +2004,6 @@ public class TitanNodeImpl implements TitanNode, NodeMBean {
         }
     }
     
-    
-
-
-    private static class SuperviseProcess implements Runnable {
-        protected String command;
-
-        public SuperviseProcess(String command) {
-            this.command = command;
-        }
-
-        public void run() {
-            ProcessBuilder p = new ProcessBuilder(this.command.split(" "));
-            p.redirectErrorStream(true);
-            BufferedReader input = null;
-            try {
-                Process proc = p.start();
-
-                input = new BufferedReader(new InputStreamReader(proc.getInputStream()));
-                String line;
-                while ((line = input.readLine()) != null) {
-                    System.out.println(line);
-                } 
-                System.out.println(new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss").format(new Date()) + ": " + this.command + " died.");
-                input.close();
-                proc.waitFor();
-            } catch (RuntimeException weDidAllWeCouldDo) {
-                throw weDidAllWeCouldDo;
-            } catch (IOException e) {
-
-            } catch (InterruptedException e) {
-
-            } finally {
-                if (input != null) try { input.close(); } catch (IOException ignore) { }
-            }
-        }
-    }
-
     /**
      * Run a single node.
      * Configuration parameters from the node are fetched from a URL supplied as the first argument to this class method.
@@ -2056,7 +2012,6 @@ public class TitanNodeImpl implements TitanNode, NodeMBean {
 
         // Read this command line argument as a URL to fetch configuration properties.
 
-        DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss"); // ISO 8601  
         OrderedProperties configurationProperties = new OrderedProperties();
         
         try {
@@ -2067,7 +2022,7 @@ public class TitanNodeImpl implements TitanNode, NodeMBean {
             TitanNodeImpl node = new TitanNodeImpl(configurationProperties);
             Thread thread = node.start();
 
-            System.out.printf("%s [%d ms] %s%n", dateFormat.format(new Date()),
+            System.out.printf("%s [%d ms] %s%n", Time.ISO8601(System.currentTimeMillis()),
                     System.currentTimeMillis() - Long.parseLong(node.getProperty(TitanNodeImpl.StartTime.getName())), node.toString());
             while (true) {
                 try {
@@ -2081,6 +2036,9 @@ public class TitanNodeImpl implements TitanNode, NodeMBean {
             e.printStackTrace();
             System.exit(1);
         } catch (ConfigurationException e) {
+            e.printStackTrace();
+            System.exit(1);
+        } catch (OutOfSpace e) {
             e.printStackTrace();
             System.exit(1);
         }

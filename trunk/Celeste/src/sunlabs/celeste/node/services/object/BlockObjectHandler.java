@@ -342,7 +342,7 @@ public final class BlockObjectHandler extends AbstractObjectHandler implements B
     }
 
     public Publish.PublishUnpublishResponse storeLocalObject(TitanMessage message)  throws ClassNotFoundException, ClassCastException, BeehiveObjectStore.NoSpaceException, BeehiveObjectStore.DeleteTokenException,
-    BeehiveObjectStore.UnacceptableObjectException, BeehiveObjectPool.Exception, BeehiveObjectStore.InvalidObjectIdException, BeehiveObjectStore.InvalidObjectException {
+    BeehiveObjectStore.UnacceptableObjectException, BeehiveObjectPool.Exception, BeehiveObjectStore.InvalidObjectIdException, BeehiveObjectStore.InvalidObjectException, BeehiveObjectStore.Exception {
         try {
             BlockObject.Object bObject = message.getPayload(BlockObject.Object.class, this.node);
             Publish.PublishUnpublishResponse reply = StorableObject.storeLocalObject(this, bObject, message);

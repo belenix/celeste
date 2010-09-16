@@ -40,21 +40,20 @@ import sunlabs.celeste.node.erasurecode.ErasureCode;
 import sunlabs.celeste.node.erasurecode.ErasureCodeIdentity;
 import sunlabs.celeste.node.services.object.FObjectType;
 import sunlabs.titan.TitanGuidImpl;
-import sunlabs.titan.api.TitanObject;
 import sunlabs.titan.api.ObjectStore;
 import sunlabs.titan.api.TitanGuid;
 import sunlabs.titan.api.TitanNode;
 import sunlabs.titan.api.TitanNodeId;
+import sunlabs.titan.api.TitanObject;
 import sunlabs.titan.api.TitanService;
 import sunlabs.titan.api.XHTMLInspectable;
-import sunlabs.titan.node.BeehiveObjectStore.Exception;
-import sunlabs.titan.node.TitanMessage;
-import sunlabs.titan.node.TitanMessage.RemoteException;
-import sunlabs.titan.node.TitanNodeImpl;
 import sunlabs.titan.node.BeehiveObjectPool;
 import sunlabs.titan.node.BeehiveObjectStore;
+import sunlabs.titan.node.BeehiveObjectStore.Exception;
 import sunlabs.titan.node.BeehiveObjectStore.InvalidObjectException;
 import sunlabs.titan.node.BeehiveObjectStore.UnacceptableObjectException;
+import sunlabs.titan.node.TitanMessage;
+import sunlabs.titan.node.TitanMessage.RemoteException;
 import sunlabs.titan.node.TitanNodeIdImpl;
 import sunlabs.titan.node.object.BeehiveObjectHandler;
 import sunlabs.titan.node.services.WebDAVDaemon;
@@ -290,7 +289,7 @@ public final class StorableFragmentedObject {
             StorableFragmentedObject.Handler.Object object,
             int maxAttempts)
     throws BeehiveObjectStore.NoSpaceException, TitanNode.NoSuchNodeException, ErasureCode.UnsupportedAlgorithmException {
-        object.setProperty(StorableFragmentedObject.Handler.ERASURECODER, erasureCode).setProperty(ObjectStore.METADATA_TYPE, objectType.getName());
+        object.setProperty(StorableFragmentedObject.Handler.ERASURECODER, erasureCode).setProperty(ObjectStore.METADATA_CLASS, objectType.getName());
 
         if (destination == TitanGuidImpl.ANY) {
             return StorableFragmentedObject.storeObjectRemotely(objectType, erasureCode, object, maxAttempts);
@@ -320,7 +319,7 @@ public final class StorableFragmentedObject {
             int maxAttempts)
     throws BeehiveObjectStore.NoSpaceException, ErasureCode.UnsupportedAlgorithmException {
 
-        object.setProperty(StorableFragmentedObject.Handler.ERASURECODER, erasureCode).setProperty(ObjectStore.METADATA_TYPE, objectType.getName());
+        object.setProperty(StorableFragmentedObject.Handler.ERASURECODER, erasureCode).setProperty(ObjectStore.METADATA_CLASS, objectType.getName());
 
         for (int attempt = 0; attempt < maxAttempts; attempt++) {
             TitanMessage reply = objectType.getNode().sendToNode(new TitanNodeIdImpl(), objectType.getName(), "storeLocalObject", object);
@@ -359,12 +358,11 @@ public final class StorableFragmentedObject {
         TitanNode node = objectType.getNode();
 
         if (message.isTraced()) {
-            objectType.getLogger().info("recv(%5.5s...)",
-                 message.getMessageId());
+            objectType.getLogger().info("recv(%5.5s...)", message.getMessageId());
         }
 
         // Ensure that that the object's TYPE is set in the metadata.
-        object.setProperty(ObjectStore.METADATA_TYPE, objectType.getName());
+        object.setProperty(ObjectStore.METADATA_CLASS, objectType.getName());
 
         try {
             node.getObjectStore().store(object);

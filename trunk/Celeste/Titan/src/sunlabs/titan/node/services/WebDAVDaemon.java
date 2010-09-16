@@ -92,9 +92,9 @@ import sunlabs.titan.api.TitanGuid;
 import sunlabs.titan.api.TitanNode;
 import sunlabs.titan.api.TitanNodeId;
 import sunlabs.titan.api.TitanObject;
-import sunlabs.titan.node.TitanNodeImpl;
 import sunlabs.titan.node.BeehiveObjectStore;
 import sunlabs.titan.node.NodeAddress;
+import sunlabs.titan.node.TitanNodeImpl;
 import sunlabs.titan.node.services.api.Census;
 import sunlabs.titan.node.services.api.Reflection;
 import sunlabs.titan.util.OrderedProperties;
@@ -102,7 +102,7 @@ import sunlabs.titan.util.OrderedProperties;
 /**
  * This class implements the Titan HTTP management interface.
  * <p>
- * Although this is named "webdav" it is not (yet).
+ * Although this is named "webdav" it is not really a webdav interface (yet).
  * </p>
  *
  */
@@ -111,7 +111,7 @@ public final class WebDAVDaemon extends AbstractTitanService implements WebDAVDa
 
     private class Daemon extends Thread  {
         /**
-         * Instances of this class are invoked to process an
+         * Instances of this class are invoked by the Phidoux web server to process an
          * HTTP protocol GET request from a client.
          */
         private class HttpGet implements HTTP.Request.Method.Handler {
@@ -130,7 +130,7 @@ public final class WebDAVDaemon extends AbstractTitanService implements WebDAVDa
         }
 
         /**
-         * Instances of this class are invoked to process an
+         * Instances of this class are invoked by the Phidoux web server to process an
          * HTTP protocol POST request from a client.
          */
         private class HttpPost implements HTTP.Request.Method.Handler {
@@ -206,12 +206,12 @@ public final class WebDAVDaemon extends AbstractTitanService implements WebDAVDa
 //            }
 //        }
 
-        public class TitanNodeNameSpace implements HTTP.NameSpace {
+        public class TitanNodeURLNameSpace implements HTTP.NameSpace {
             private Map<HTTP.Request.Method,HTTP.Request.Method.Handler> methods;
             private HTTP.Server server;
             private WebDAV.Backend backend;
 
-            public TitanNodeNameSpace(HTTP.Server server, WebDAV.Backend backend) {
+            public TitanNodeURLNameSpace(HTTP.Server server, WebDAV.Backend backend) {
                 this.server = server;
                 this.backend = backend;
 
@@ -286,14 +286,14 @@ public final class WebDAVDaemon extends AbstractTitanService implements WebDAVDa
                     
                     server.setName(WebDAVDaemon.this.node.getNodeId().toString() + ":" + server.getName());
                     
-                    HTTP.NameSpace handler = new TitanNodeNameSpace(server, null);
+                    HTTP.NameSpace handler = new TitanNodeURLNameSpace(server, null);
                     HTTP.NameSpace fileHandler = new WebDAVNameSpace(server, backend);
                     server.addNameSpace(new URI("/"), handler);
-                    server.addNameSpace(new URI("/xsl"), fileHandler);
-                    server.addNameSpace(new URI("/css"), fileHandler);
-                    server.addNameSpace(new URI("/js"), fileHandler);
-                    server.addNameSpace(new URI("/images"), fileHandler);
-                    server.addNameSpace(new URI("/dojo"), fileHandler);
+                    server.addNameSpace(new URI("/xsl"), fileHandler); // This namespace is in the filesystem/jar file
+                    server.addNameSpace(new URI("/css"), fileHandler); // This namespace is in the filesystem/jar file
+                    server.addNameSpace(new URI("/js"), fileHandler); // This namespace is in the filesystem/jar file
+                    server.addNameSpace(new URI("/images"), fileHandler); // This namespace is in the filesystem/jar file
+                    server.addNameSpace(new URI("/dojo"), fileHandler); // This namespace is in the filesystem/jar file
                     server.start();
                     //executor.submit(server);
                 }
@@ -338,29 +338,26 @@ public final class WebDAVDaemon extends AbstractTitanService implements WebDAVDa
     public static XHTML.Anchor inspectNodeXHTML(NodeAddress address) {
     	return new XHTML.Anchor("%s", address.getObjectId()).setHref(address.getHTTPInterface()).setClass("NodeId");
     }
-    
-    /**
-     * Return a formatted String containing {@code timeInMillis} represented as a readable time.
-     */
-    public static String formatTime(long timeInMillis) {
-    	return String.format("%1$tFZ%1$tT", timeInMillis);
-    }
-    
+        
     private static String revision = Release.ThisRevision();
 
+    /** The TCP port number this node listens on for incoming HTTP connections. */
     public final static Attributes.Prototype Port = new Attributes.Prototype(WebDAVDaemon.class, "Port", 12001,
             "The TCP port number this node listens on for incoming HTTP connections.");
+    /** The pathname prefix for the HTTP server to use when serving files. */
     public final static Attributes.Prototype ServerRoot = new Attributes.Prototype(WebDAVDaemon.class, "Root", "web",
             "The pathname prefix for the HTTP server to use when serving files.");
+    /** The maximum number of concurrent clients. */
     public final static Attributes.Prototype ClientMaximum = new Attributes.Prototype(WebDAVDaemon.class, "ClientMaximum", 4,
             "The maximum number of concurrent clients.");
+    /** The number of milliseconds a connection may be idle before it is closed. */
     public final static Attributes.Prototype ClientTimeoutMillis = new Attributes.Prototype(WebDAVDaemon.class, "ClientTimeoutMillis", Time.secondsInMilliseconds(60),
             "The number of milliseconds a connection may be idle before it is closed.");
 
     /** CSS files to be loaded by the Node inspector */
     public final static Attributes.Prototype InspectorCSS = new Attributes.Prototype(WebDAVDaemon.class, "InspectorCSS", "/css/DOLRStyle.css,/css/BeehiveColours.css",
             "The css file to use for the node inspector interface.");
-    /** JavaScript files to be loaded by the Node inspector */
+    /** JavaScript files to be loaded by the node inspector interface */
     public final static Attributes.Prototype InspectorJS = new Attributes.Prototype(WebDAVDaemon.class, "InspectorJS", "/js/DOLRScript.js",
             "The JavaScript file to load for the node inspector interface.");
     

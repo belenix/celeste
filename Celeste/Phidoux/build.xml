@@ -261,8 +261,8 @@ information or have any questions.
     </target>
 
     <target name="scmversion">
-        <exec executable="hg" outputproperty="scm_version" failifexecutionfails="false" error="/dev/null">
-            <arg line="log -rtip --template 'Revision: {branches}{rev} of {date|isodate}. Built {localdate|isodate}'"/>
+        <exec executable="svnversion" outputproperty="scm_version" failifexecutionfails="false" error="/dev/null">
+            <!-- arg line="log -rtip - -template 'Revision: {branches}{rev} of {date|isodate}. Built {localdate|isodate}'"/ -->
         </exec>
     </target>
 </project>

@@ -117,7 +117,7 @@ public final class NodeAddress implements Serializable {
         return this.nodeId;
     }
 
-    public int getBeehivePort() {
+    public int getPort() {
         return this.internetworkAddress.getPort();
     }
 

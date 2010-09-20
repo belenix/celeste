@@ -52,10 +52,11 @@ import sunlabs.titan.util.DOLRStatus;
 /**
  * The basic unit of {@link TitanNode} discourse is the {@code TitanMessage}.
  * <p>
- * @code TitanMessage} instances are transmitted from {@code TitanNode} to {@code TitanNode}
- * via the underlying DHT routing mechanism of Titan.  Each message contains several
- * fields used to control routing of the message as well as a serialized object as a general parameter.
+ * {@code TitanMessage} instances are transmitted from {@code TitanNode} to {@code TitanNode}
+ * via the underlying DHT routing mechanism of the system.  Each message contains several
+ * fields used to control the routing of the message and a payload consisting of a {@link Serializable} Java object.
  * </p>
+ * @see MessageService
  */
 public class TitanMessage implements Serializable, XHTMLInspectable {
     private final static long serialVersionUID = 1L;
@@ -228,7 +229,7 @@ public class TitanMessage implements Serializable, XHTMLInspectable {
             Serializable payLoad) {
         this.type = type;
         this.status = DOLRStatus.OK;
-        this.timeToLive = 0;
+        this.timeToLive = TitanGuidImpl.n_digits;
 
         this.source = source;
         this.messageId = new TitanGuidImpl();

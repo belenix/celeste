@@ -70,6 +70,8 @@ public interface Census {
     public final static String NodeAddress = "Census.NodeAddress";
     public final static String Version = "Census.Version";
     public final static String NodeRevision = "Census.NodeRevision";
+    public final static String AdministrativeContact = "Census.AdministrativeContact";
+    public final static String Location = "Census.Location";
 
     /**
      * Put all of the entries in the given {@link Map} {@code census} into the census data kept by this node.

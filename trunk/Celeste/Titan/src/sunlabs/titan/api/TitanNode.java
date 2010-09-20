@@ -40,6 +40,7 @@ import sunlabs.titan.node.ApplicationFramework;
 import sunlabs.titan.node.BeehiveObjectStore;
 import sunlabs.titan.node.NeighbourMap;
 import sunlabs.titan.node.NodeAddress;
+import sunlabs.titan.node.NodeKey;
 import sunlabs.titan.node.Publishers;
 import sunlabs.titan.node.TitanMessage;
 import sunlabs.titan.node.TitanMessage.RemoteException;
@@ -157,7 +158,9 @@ public interface TitanNode {
 
     public Attributes getConfiguration();
 
-
+    /**
+     * Return this Node's object-id.
+     */
     public TitanNodeId getNodeId();
 
 
@@ -172,27 +175,21 @@ public interface TitanNode {
     public ThreadGroup getThreadGroup();
 
 
-    public TitanMessage transmit(sunlabs.titan.node.NodeAddress gateway, TitanMessage message);
-    public TitanMessage transmit(TitanMessage message);
-
+//    public TitanMessage transmit(sunlabs.titan.node.NodeAddress gateway, TitanMessage message);
+    
+//    public TitanMessage transmit(TitanMessage message);
 
     public Publishers getObjectPublishers();
 
-
     public ObjectStore getObjectStore();
-
 
     public TitanMessage receive(TitanMessage message);
 
-
     public NeighbourMap getNeighbourMap();
-
 
     public TitanMessage replyTo(TitanMessage message, Serializable payload);
 
-
     public TitanGuid getNetworkObjectId();
-
 
     /**
      * Get (instantiating, if necessary) an instance of the named class cast to the given {@link TitanService}.
@@ -205,7 +202,6 @@ public interface TitanNode {
      * @throws ClassNotFoundException if the class cannot be found.
      */
     public <C> C getService(Class<? extends C> klasse);
-
 
     /**
      * Get (dynamically loading and instantiating, if necessary) an instance of the named class cast to the given {@link TitanService}.
@@ -247,4 +243,7 @@ public interface TitanNode {
      * @throws RejectedExecutionException if {@code runnable} cannot be accepted for execution
      */
     public void execute(Runnable runnable) throws RejectedExecutionException;
+
+
+    public NodeKey getNodeKey();
 }

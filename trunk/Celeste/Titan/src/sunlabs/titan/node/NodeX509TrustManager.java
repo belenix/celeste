@@ -37,7 +37,7 @@ import java.security.cert.X509Certificate;
 import javax.net.ssl.X509TrustManager;
 
 public class NodeX509TrustManager implements X509TrustManager {
-    NodeX509TrustManager() { 
+    public NodeX509TrustManager() { 
         //System.out.println("NodeX509TrustManager constructor");
     }
     public void checkServerTrusted(X509Certificate[] chain, String authType) {

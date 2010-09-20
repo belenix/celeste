@@ -23,56 +23,30 @@
  */
 package sunlabs.titan.node;
 
-import java.io.BufferedOutputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.DataOutputStream;
-import java.io.EOFException;
 import java.io.File;
 import java.io.IOException;
-import java.io.InterruptedIOException;
 import java.io.Serializable;
 import java.lang.management.ManagementFactory;
 import java.net.InetAddress;
 import java.net.MalformedURLException;
-import java.net.ServerSocket;
-import java.net.Socket;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
-import java.nio.ByteBuffer;
-import java.nio.channels.ClosedChannelException;
-import java.nio.channels.SelectionKey;
-import java.nio.channels.ServerSocketChannel;
-import java.util.ConcurrentModificationException;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.ThreadFactory;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 
 import javax.management.JMException;
 import javax.management.ObjectName;
-import javax.net.ssl.KeyManager;
-import javax.net.ssl.KeyManagerFactory;
-import javax.net.ssl.SSLContext;
-import javax.net.ssl.SSLEngine;
-import javax.net.ssl.TrustManager;
 
-import sunlabs.asdf.io.AsynchronousMBean;
-import sunlabs.asdf.io.ChannelHandler;
-import sunlabs.asdf.io.SSLContextChannelHandler;
-import sunlabs.asdf.io.UnsecureChannelHandler;
 import sunlabs.asdf.jmx.JMX;
-import sunlabs.asdf.jmx.ServerSocketMBean;
-import sunlabs.asdf.jmx.ThreadMBean;
 import sunlabs.asdf.util.AbstractStoredMap;
 import sunlabs.asdf.util.AbstractStoredMap.OutOfSpace;
 import sunlabs.asdf.util.Attributes;
@@ -95,6 +69,7 @@ import sunlabs.titan.node.TitanMessage.RemoteException;
 import sunlabs.titan.node.object.AbstractObjectHandler;
 import sunlabs.titan.node.object.BeehiveObjectHandler;
 import sunlabs.titan.node.services.CensusDaemon;
+import sunlabs.titan.node.services.MessageService;
 import sunlabs.titan.node.services.PublishDaemon;
 import sunlabs.titan.node.services.ReflectionService;
 import sunlabs.titan.node.services.RetrieveObjectService;
@@ -118,565 +93,565 @@ import sunlabs.titan.util.WeakMBeanRegistrar;
  */
 public class TitanNodeImpl implements TitanNode, NodeMBean {
     
-    private static class PlainChannelHandler extends UnsecureChannelHandler implements ChannelHandler {
-        private static class Factory implements ChannelHandler.Factory {
-            private TitanNodeImpl node;
-            private long timeoutMillis;
-
-            public Factory(TitanNodeImpl node) {
-                this.node = node;
-                this.timeoutMillis = Time.secondsInMilliseconds(this.node.configuration.asInt(TitanNodeImpl.ClientTimeoutSeconds));
-            }
-            
-            public ChannelHandler newChannelHandler(SelectionKey selectionKey) {
-                return new PlainChannelHandler(this.node, selectionKey, this.timeoutMillis);
-            }            
-        }
-
-        private enum ParserState {
-            READ_HEADER_LENGTH,
-            READ_HEADER,
-            READ_PAYLOAD_LENGTH,
-            READ_PAYLOAD,            
-        };
-        private ParserState state;
-        private TitanNodeImpl node;
-        private ByteBuffer header;
-        private ByteBuffer payload;
-        
-        public PlainChannelHandler(TitanNodeImpl node, SelectionKey selectionKey, long timeoutMillis) {
-            super(selectionKey, 4096, 4096, 4096, 4096, timeoutMillis);
-            this.node = node;
-            this.state = ParserState.READ_HEADER_LENGTH;
-        }
-
-        public void input(ByteBuffer data) {
-            while (data.hasRemaining()) {
-                switch (this.state) {
-                case READ_HEADER_LENGTH:
-                    if (data.remaining() < 4)
-                        return;
-
-                    int headerLength = data.getInt();
-                    this.header = ByteBuffer.wrap(new byte[headerLength]);
-                    this.state = ParserState.READ_PAYLOAD_LENGTH;                    
-                    break;
-
-                case READ_HEADER:
-                    ByteBuffer subBuffer = data.slice();
-                    int newLimit = Math.min(this.header.remaining(), data.remaining());
-                    subBuffer.limit(newLimit);
-
-                    this.header.put(subBuffer);                        
-
-                    // Advance the position of data past the bytes copied.
-                    int newPosition = data.position() + newLimit;
-                    data.position(newPosition);
-                    if (this.header.remaining() == 0) {
-                        this.state = ParserState.READ_PAYLOAD;
-                    }
-                    break;
-
-                case READ_PAYLOAD_LENGTH:
-                    if (data.remaining() < 4)
-                        return;
-
-                    int payLoadLength = data.getInt();
-                    this.payload = ByteBuffer.wrap(new byte[payLoadLength]);
-                    this.state = ParserState.READ_HEADER;
-                    break;
-
-                case READ_PAYLOAD:
-                    subBuffer = data.slice();
-                    newLimit = Math.min(this.payload.remaining(), data.remaining());
-                    subBuffer.limit(newLimit);
-
-                    this.payload.put(subBuffer);                        
-
-                    // Advance the position of data past the bytes copied.
-                    newPosition = data.position() + newLimit;
-                    data.position(newPosition);
-                    if (this.payload.remaining() == 0) {
-                        try {
-                            TitanMessage request = new TitanMessage(this.header.array(), this.payload.array());
-                            RequestHandler service = new RequestHandler(this.node, request, this);
-                            service.start();
-                            this.state = ParserState.READ_HEADER_LENGTH; 
-                        } catch (IOException e) {
-                            // TODO Auto-generated catch block
-                            e.printStackTrace();
-                        } catch (ClassNotFoundException e) {
-                            // TODO Auto-generated catch block
-                            e.printStackTrace();
-                        }
-                    }
-                    break;
-                }
-            }
-        }
-    }
-    
-    public interface ConnectionServer {
-        public XHTML.EFlow toXHTML();
-
-        public void start();
-
-        public void terminate();
-    }
-    
-    private static class RequestHandler extends Thread implements Runnable {
-        private TitanMessage request;
-        private ChannelHandler channel;
-        private TitanNodeImpl node;
-        
-        public RequestHandler(TitanNodeImpl node, TitanMessage request, ChannelHandler channel) {
-            super(String.format("%s.RequestHandler", node.getNodeId()));
-            this.node = node;
-            this.request = request;
-            this.channel = channel;                
-        }
-
-        public void run() {
-            try {
-                // The client-side puts its end of this connection into its socket cache.
-                // So we setup a timeout on our side such that if the timeout expires, we simply terminate this connection.
-                // The client will figure that out once it tries to reuse this connection and it is closed and must setup a new connection.
-
-                if (this.node.log.isLoggable(Level.FINEST)) {
-                    this.node.log.finest("Request: %s", request);
-                }
-                
-                TitanMessage myResponse = this.node.receive(this.request);
-                
-                if (this.node.log.isLoggable(Level.FINEST)) {
-                    this.node.log.finest("Response: %s", myResponse);
-                }
-
-                ByteArrayOutputStream bos = new ByteArrayOutputStream();
-                DataOutputStream dos = new DataOutputStream(bos);
-                myResponse.writeObject(dos);
-                dos.flush();
-                this.channel.output(ByteBuffer.wrap(bos.toByteArray()));
-            } catch (ClosedChannelException e) {
-                
-            } catch (EOFException exception) {
-                if (this.node.log.isLoggable(Level.FINE)) {
-                    this.node.log.fine("Closed by client.%n");
-                }
-                // ignore this exception, just abandon this connection,
-            } catch (IOException exception) {
-                if (this.node.log.isLoggable(Level.WARNING)) {
-                    this.node.log.warning("%s", exception);
-                }
-                // ignore this exception, just abandon this connection,
-            } catch (Exception e) {
-                if (this.node.log.isLoggable(Level.WARNING)) {
-                    this.node.log.warning("%s", e);
-                    e.printStackTrace();
-                }
-            } finally {
-                // Done with this Channel, so set it backup for a timeout.
-                this.channel.resetExpirationTime(System.currentTimeMillis());
-            }
-        }
-    }
-
-    public interface PlainServerMBean extends ThreadMBean {
-        public long getConnectionCount();        
-    }
-    
-    private class PlainServer extends sunlabs.asdf.io.Asynchronous implements ConnectionServer, PlainServerMBean {
-        private ObjectName jmxObjectName;
-
-        public PlainServer(ChannelHandler.Factory handlerFactory) throws IOException, JMException {
-            super(connMgr.getServerSocketChannel(), handlerFactory);
-
-            if (TitanNodeImpl.this.jmxObjectName != null) {
-                this.jmxObjectName = JMX.objectName(TitanNodeImpl.this.jmxObjectName, "PlainServer");
-                TitanNodeImpl.registrar.registerMBean(this.jmxObjectName, this, PlainServerMBean.class);
-            }
-        }
-
-        public XHTML.Table toXHTML() {
-            // TODO Auto-generated method stub
-            return null;
-        }
-
-        public void terminate() {
-            try {
-                this.close();
-            } catch (IOException e) {
-
-            }
-        }
-
-        public long getConnectionCount() {
-            return this.getConnections().size();            
-        }
-    }
-    
-    private static class SSLChannelHandler extends SSLContextChannelHandler implements ChannelHandler {
-        private static class Factory implements ChannelHandler.Factory {
-            private TitanNodeImpl node;
-            private SSLContext sslContext;
-            private long timeoutMillis;
-            private ExecutorService executor;
-
-            public Factory(TitanNodeImpl node, SSLContext sslContext) {
-                this.node = node;
-                this.sslContext = sslContext;
-                this.timeoutMillis = Time.secondsInMilliseconds(this.node.configuration.asInt(TitanNodeImpl.ClientTimeoutSeconds));
-                this.executor = node.tasks; // Use the node thread pool
-            }
-            
-            public ChannelHandler newChannelHandler(SelectionKey selectionKey) throws IOException {
-                SSLEngine engine = sslContext.createSSLEngine();
-                engine.setUseClientMode(false);
-                engine.setNeedClientAuth(true);
-                ChannelHandler handler = new SSLChannelHandler(this.node, selectionKey, engine, this.executor, this.timeoutMillis);
-                return handler;
-            }            
-        }
-
-        private enum ParserState {
-            READ_HEADER_LENGTH,
-            READ_HEADER,
-            READ_PAYLOAD_LENGTH,
-            READ_PAYLOAD,            
-        };
-        private ParserState state;
-        private TitanNodeImpl node;
-        private ByteBuffer header;
-        private ByteBuffer payload;
-        
-        public SSLChannelHandler(TitanNodeImpl node, SelectionKey selectionKey, SSLEngine engine, ExecutorService executor, long timeoutMillis) throws IOException {
-            super(selectionKey, engine, executor, timeoutMillis);
-            this.node = node;
-            this.state = ParserState.READ_HEADER_LENGTH;
-        }
-
-        public void input(ByteBuffer data) {
-//            if (true) {
-//                try {
-//                    java.security.cert.Certificate[] certificates = this.sslEngine.getSession().getPeerCertificates();
-//                    //System.out.printf("input from %s%n", new BeehiveObjectId(certificates[0].getPublicKey()));
-//                } catch (SSLPeerUnverifiedException e) {
-//                    e.printStackTrace();
+//    public static class PlainChannelHandler extends UnsecureChannelHandler implements ChannelHandler {
+//        public static class Factory implements ChannelHandler.Factory {
+//            private TitanNode node;
+//            private long timeoutMillis;
+//
+//            public Factory(TitanNode node) {
+//                this.node = node;
+//                this.timeoutMillis = Time.secondsInMilliseconds(this.node.getConfiguration().asInt(TitanNodeImpl.ClientTimeoutSeconds));
+//            }
+//            
+//            public ChannelHandler newChannelHandler(SelectionKey selectionKey) {
+//                return new PlainChannelHandler(this.node, selectionKey, this.timeoutMillis);
+//            }            
+//        }
+//
+//        private enum ParserState {
+//            READ_HEADER_LENGTH,
+//            READ_HEADER,
+//            READ_PAYLOAD_LENGTH,
+//            READ_PAYLOAD,            
+//        };
+//        private ParserState state;
+//        private TitanNode node;
+//        private ByteBuffer header;
+//        private ByteBuffer payload;
+//        
+//        public PlainChannelHandler(TitanNode node, SelectionKey selectionKey, long timeoutMillis) {
+//            super(selectionKey, 4096, 4096, 4096, 4096, timeoutMillis);
+//            this.node = node;
+//            this.state = ParserState.READ_HEADER_LENGTH;
+//        }
+//
+//        public void input(ByteBuffer data) {
+//            while (data.hasRemaining()) {
+//                switch (this.state) {
+//                case READ_HEADER_LENGTH:
+//                    if (data.remaining() < 4)
+//                        return;
+//
+//                    int headerLength = data.getInt();
+//                    this.header = ByteBuffer.wrap(new byte[headerLength]);
+//                    this.state = ParserState.READ_PAYLOAD_LENGTH;                    
+//                    break;
+//
+//                case READ_HEADER:
+//                    ByteBuffer subBuffer = data.slice();
+//                    int newLimit = Math.min(this.header.remaining(), data.remaining());
+//                    subBuffer.limit(newLimit);
+//
+//                    this.header.put(subBuffer);                        
+//
+//                    // Advance the position of data past the bytes copied.
+//                    int newPosition = data.position() + newLimit;
+//                    data.position(newPosition);
+//                    if (this.header.remaining() == 0) {
+//                        this.state = ParserState.READ_PAYLOAD;
+//                    }
+//                    break;
+//
+//                case READ_PAYLOAD_LENGTH:
+//                    if (data.remaining() < 4)
+//                        return;
+//
+//                    int payLoadLength = data.getInt();
+//                    this.payload = ByteBuffer.wrap(new byte[payLoadLength]);
+//                    this.state = ParserState.READ_HEADER;
+//                    break;
+//
+//                case READ_PAYLOAD:
+//                    subBuffer = data.slice();
+//                    newLimit = Math.min(this.payload.remaining(), data.remaining());
+//                    subBuffer.limit(newLimit);
+//
+//                    this.payload.put(subBuffer);                        
+//
+//                    // Advance the position of data past the bytes copied.
+//                    newPosition = data.position() + newLimit;
+//                    data.position(newPosition);
+//                    if (this.payload.remaining() == 0) {
+//                        try {
+//                            TitanMessage request = new TitanMessage(this.header.array(), this.payload.array());
+//                            RequestHandler service = new RequestHandler(this.node, request, this);
+//                            service.start();
+//                            this.state = ParserState.READ_HEADER_LENGTH; 
+//                        } catch (IOException e) {
+//                            // TODO Auto-generated catch block
+//                            e.printStackTrace();
+//                        } catch (ClassNotFoundException e) {
+//                            // TODO Auto-generated catch block
+//                            e.printStackTrace();
+//                        }
+//                    }
+//                    break;
 //                }
 //            }
-
-            // This code works because it understands the layout of the transmitted BeehiveMessage.
-            while (data.hasRemaining()) {
-                switch (this.state) {
-                case READ_HEADER_LENGTH:
-                    if (data.remaining() < 4)
-                        return;
-
-                    int headerLength = data.getInt();
-                    this.header = ByteBuffer.wrap(new byte[headerLength]);
-                    this.state = ParserState.READ_PAYLOAD_LENGTH;                    
-                    break;
-
-                case READ_HEADER:
-                    ByteBuffer subBuffer = data.slice();
-                    int newLimit = Math.min(this.header.remaining(), data.remaining());
-                    subBuffer.limit(newLimit);
-
-                    this.header.put(subBuffer);                        
-
-                    // Advance the position of data past the bytes copied.
-                    int newPosition = data.position() + newLimit;
-                    data.position(newPosition);
-                    if (this.header.remaining() == 0) {
-                        this.state = ParserState.READ_PAYLOAD;
-                    }
-
-                    break;
-
-                case READ_PAYLOAD_LENGTH:
-                    if (data.remaining() < 4)
-                        return;
-
-                    int payLoadLength = data.getInt();
-                    this.payload = ByteBuffer.wrap(new byte[payLoadLength]);
-                    this.state = ParserState.READ_HEADER;
-
-                    break;
-
-                case READ_PAYLOAD:
-                    subBuffer = data.slice();
-                    newLimit = Math.min(this.payload.remaining(), data.remaining());
-                    subBuffer.limit(newLimit);
-
-                    this.payload.put(subBuffer);                        
-
-                    // Advance the position of data past the bytes copied.
-                    newPosition = data.position() + newLimit;
-                    data.position(newPosition);
-                    if (this.payload.remaining() == 0) {
-                        try {
-                            TitanMessage request = new TitanMessage(this.header.array(), this.payload.array());
-                            RequestHandler service = new RequestHandler(this.node, request, this);
-                            this.node.clientTasks.execute(service);
-                            //service.start();
-                        } catch (IOException e) {
-                            // TODO Auto-generated catch block
-                            e.printStackTrace();
-                        } catch (ClassNotFoundException e) {
-                            // TODO Auto-generated catch block
-                            e.printStackTrace();
-                        }
-                        this.state = ParserState.READ_HEADER_LENGTH; 
-                    }
-
-                    break;
-                }
-            }
-        }
-    }
+//        }
+//    }
     
-    public interface SSLServerMBean extends ThreadMBean, AsynchronousMBean {
-    }
+//    public interface ConnectionServer {
+//        public XHTML.EFlow toXHTML();
+//
+//        public void start();
+//
+//        public void terminate();
+//    }
     
-    private class SSLServer extends sunlabs.asdf.io.Asynchronous implements ConnectionServer, SSLServerMBean {
-        private ObjectName jmxObjectName;
-
-        public SSLServer(ServerSocketChannel socketChannel, ChannelHandler.Factory handlerFactory) throws IOException, JMException {
-            super(socketChannel, handlerFactory);
-            
-            this.setName(Thread.currentThread().getName() + ".SSLServer");
-            
-            if (TitanNodeImpl.this.jmxObjectName != null) {
-                this.jmxObjectName = JMX.objectName(TitanNodeImpl.this.jmxObjectName, SSLServer.class.getName());
-                TitanNodeImpl.registrar.registerMBean(this.jmxObjectName, this, SSLServerMBean.class);
-            }
-        }
-
-        public XHTML.Table toXHTML() {
-            // TODO Auto-generated method stub
-            return null;
-        }
-
-        public void terminate() {
-            try {
-                this.close();
-            } catch (IOException e) {
-
-            }
-        }  
-    }
-    
-    
-    /**
-     * Each {@code TitanNode} has a server dispatching a new BeehiveService to
-     * handle each inbound connection.
-     * 
-     * Initiators of connections to this Node may place their sockets into a cache
-     * (see {@link TitanNodeImpl#transmit(TitanMessage)} leaving the socket open and ready for use for a subsequent message. 
-     */
-    private class BeehiveServer2 extends Thread implements ConnectionServer, BeehiveServer2MBean {
-
-        /**
-         * Per thread Socket handling, reads messages from the input
-         * socket and dispatches each to the local node for processing.
-         *
-         */
-        public class BeehiveService2 implements Runnable, BeehiveService2MBean {
-            private Socket socket;
-            private ObjectName jmxObjectName;
-            private long lastActivityMillis;
-
-            public BeehiveService2(ObjectName jmxObjectNameRoot, final Socket socket) throws JMException {
-                this.socket = socket;
-
-//                if (jmxObjectNameRoot != null) {
-//                    this.jmxObjectName = JMX.objectName(jmxObjectNameRoot, this.socket.hashCode());
-//                    TitanNode.registrar.registerMBean(this.jmxObjectName, this, BeehiveService2MBean.class);
+//    private static class RequestHandler extends Thread implements Runnable {
+//        private TitanMessage request;
+//        private ChannelHandler channel;
+//        private TitanNode node;
+//        
+//        public RequestHandler(TitanNode node, TitanMessage request, ChannelHandler channel) {
+//            super(String.format("%s.RequestHandler", node.getNodeId()));
+//            this.node = node;
+//            this.request = request;
+//            this.channel = channel;                
+//        }
+//
+//        public void run() {
+//            try {
+//                // The client-side puts its end of this connection into its socket cache.
+//                // So we setup a timeout on our side such that if the timeout expires, we simply terminate this connection.
+//                // The client will figure that out once it tries to reuse this connection and it is closed and must setup a new connection.
+//
+//                if (this.node.getLogger().isLoggable(Level.FINEST)) {
+//                    this.node.getLogger().finest("Request: %s", request);
 //                }
-            }
+//                
+//                TitanMessage myResponse = this.node.receive(this.request);
+//                
+//                if (this.node.getLogger().isLoggable(Level.FINEST)) {
+//                    this.node.getLogger().finest("Response: %s", myResponse);
+//                }
+//
+//                ByteArrayOutputStream bos = new ByteArrayOutputStream();
+//                DataOutputStream dos = new DataOutputStream(bos);
+//                myResponse.writeObject(dos);
+//                dos.flush();
+//                this.channel.output(ByteBuffer.wrap(bos.toByteArray()));
+//            } catch (ClosedChannelException e) {
+//                
+//            } catch (EOFException exception) {
+//                if (this.node.getLogger().isLoggable(Level.FINE)) {
+//                    this.node.getLogger().fine("Closed by client.%n");
+//                }
+//                // ignore this exception, just abandon this connection,
+//            } catch (IOException exception) {
+//                if (this.node.getLogger().isLoggable(Level.WARNING)) {
+//                    this.node.getLogger().warning("%s", exception);
+//                }
+//                // ignore this exception, just abandon this connection,
+//            } catch (Exception e) {
+//                if (this.node.getLogger().isLoggable(Level.WARNING)) {
+//                    this.node.getLogger().warning("%s", e);
+//                    e.printStackTrace();
+//                }
+//            } finally {
+//                // Done with this Channel, so set it backup for a timeout.
+//                this.channel.resetExpirationTime(System.currentTimeMillis());
+//            }
+//        }
+//    }
 
-            public void run() {
-                try {
-                    this.socket.setSoTimeout((int) Time.secondsInMilliseconds(TitanNodeImpl.this.configuration.asInt(TitanNodeImpl.ClientTimeoutSeconds)));
-
-                    while (!this.socket.isClosed()) {
-                        // The client-side puts its end of this connection into its socket cache.
-                        // So we setup a timeout on our side such that if the timeout expires, we simply terminate this connection.
-                    	// The client will figure that out once it tries to reuse this connection and it is closed and must setup a new connection.
-
-                        try {
-                            TitanMessage request = TitanMessage.newInstance(this.socket.getInputStream());
-
-                            this.lastActivityMillis = System.currentTimeMillis();
-
-                            TitanMessage myResponse = TitanNodeImpl.this.receive(request);
-                            DataOutputStream dos = new DataOutputStream(this.socket.getOutputStream());
-                            try {
-                                myResponse.writeObject(dos);
-                            } catch (ConcurrentModificationException e) {
-                                e.printStackTrace();
-                                System.err.printf("message %s%n", myResponse.toString());
-                            }
-                            dos.flush();
-                        } catch (ClassNotFoundException e) {
-                            e.printStackTrace();
-                            this.socket.close();
-                        }
-                        // If the executor pool is full and there are client requests in the queue, then exit freeing up this Thread.
-                        synchronized (BeehiveServer2.this.executor) {
-                            if (BeehiveServer2.this.executor.getActiveCount() == BeehiveServer2.this.executor.getMaximumPoolSize() && BeehiveServer2.this.executor.getQueue().size() > 0) {
-                            	if (TitanNodeImpl.this.log.isLoggable(Level.WARNING)) {
-                            		TitanNodeImpl.this.log.warning("Inbound connection congestion: active=%d max=%d queue=%d",
-                            				BeehiveServer2.this.executor.getActiveCount(),
-                            				BeehiveServer2.this.executor.getMaximumPoolSize(),
-                            				BeehiveServer2.this.executor.getQueue().size());
-                            	}
-                                break;
-                            }
-                        }
-                    }
-                } catch (java.net.SocketTimeoutException exception) {
-                    // ignore this exception, just abandon this connection.
-                    if (TitanNodeImpl.this.log.isLoggable(Level.FINE)) {
-                        TitanNodeImpl.this.log.fine("Closing idle connection: %s", exception);
-                    }
-                } catch (EOFException exception) {
-                	if (TitanNodeImpl.this.log.isLoggable(Level.FINE)) {
-                		TitanNodeImpl.this.log.fine("Closed by client. Idle %s.", Time.formattedElapsedTime(System.currentTimeMillis() - this.lastActivityMillis));
-                	}
-                	// ignore this exception, just abandon this connection,
-                } catch (IOException exception) {
-                    if (TitanNodeImpl.this.log.isLoggable(Level.WARNING)) {
-                        TitanNodeImpl.this.log.warning("%s", exception);
-                        exception.printStackTrace();
-                    }
-                    // ignore this exception, just abandon this connection,
-                } catch (Exception e) {
-                    if (TitanNodeImpl.this.log.isLoggable(Level.WARNING)) {
-                        TitanNodeImpl.this.log.warning("%s", e);
-                        e.printStackTrace();
-                    }
-                } finally {
-                	try { this.socket.close(); } catch (IOException ignore) { /**/ }
-                	// If the accept() loop is waiting because the executor is full, this will notify it to try again.
-                	synchronized (BeehiveServer2.this.executor) {
-                		BeehiveServer2.this.executor.notify();
-                	}
-                }
-            }
-        }
-
-        private class SimpleThreadFactory implements ThreadFactory {
-            private String name;
-            private long counter;
-
-            public SimpleThreadFactory(String name) {
-                this.name = name;
-                this.counter = 0;
-            }
-
-            public Thread newThread(Runnable r) {
-                Thread thread = new Thread(r);
-                thread.setName(String.format("%s-beehive-%d", this.name, this.counter));
-                this.counter++;
-                return thread;
-            }
-        }
-
-        private ThreadPoolExecutor executor;
-        private ObjectName jmxObjectName;
-
-        public BeehiveServer2() throws IOException, JMException {
-            super(new ThreadGroup(TitanNodeImpl.this.getThreadGroup(), "Beehive Server2"), TitanNodeImpl.this.getThreadGroup().getName());
-
-            this.executor = (ThreadPoolExecutor) Executors.newFixedThreadPool(TitanNodeImpl.this.configuration.asInt(TitanNodeImpl.ClientMaximum),
-                    new SimpleThreadFactory(TitanNodeImpl.this.getThreadGroup().getName()));
-
-            if (TitanNodeImpl.this.jmxObjectName != null) {
-                this.jmxObjectName = JMX.objectName(TitanNodeImpl.this.jmxObjectName, "BeehiveServer2");
-                TitanNodeImpl.registrar.registerMBean(this.jmxObjectName, this, BeehiveServer2MBean.class);
-            }
-        }
-
-        @Override
-        public void run() {
-            ServerSocket serverSocket = null;
-            try {
-                serverSocket = TitanNodeImpl.this.connMgr.getServerSocket();
-            } catch (IOException e) {
-                e.printStackTrace();
-                return;
-            }
-            for (;;) {
-//                TitanNode.this.log.info("BeehiveServer2 pool %d threads.", this.executor.getActiveCount());
-                synchronized (this.executor) {
-                    while (this.executor.getActiveCount() == this.executor.getMaximumPoolSize()) {
-                        try {
-                            TitanNodeImpl.this.log.info("BeehiveServer2 pool full with %d active threads (%d maximum).  Waiting on %s.", this.executor.getActiveCount(), this.executor.getMaximumPoolSize(), this);
-                            this.executor.wait();
-                        } catch (InterruptedException e) {}
-                    }
-                }
-                Socket socket = null;
-//                TitanNode.this.log.info("Accepting new connection on %s", serverSocket);
-                try {
-                    socket = connMgr.accept(serverSocket);
-
-//                    TitanNode.this.log.info("Accepted connection %s serverClosed=%b", socket, serverSocket.isClosed());
-
-                    synchronized (this.executor) {
-                        this.executor.submit(new BeehiveService2(this.jmxObjectName, socket));
-                    }
-//                    TitanNode.this.log.info("Submitted connection %s serverClosed=%b", socket, serverSocket.isClosed());
-                } catch (IOException e) {
-                    TitanNodeImpl.this.log.info("Error on %s serverClosed=%b", serverSocket, serverSocket.isClosed());
-                    e.printStackTrace();
-                    return;
-                } catch (JMException e) {
-                    // TODO Auto-generated catch block
-                    e.printStackTrace();
-                    return;
-                } finally {
-                    // Should close the connection manager's server socket.
-                }
-            }
-        }
-
-        public void terminate() {
-
-        }
-        
-        public XHTML.EFlow toXHTML() {
-        	XHTML.Table.Body tbody = new XHTML.Table.Body();
-        	tbody.add(new XHTML.Table.Row(new XHTML.Table.Data("Maximum Clients"), new XHTML.Table.Data(this.executor.getMaximumPoolSize())));
-        	tbody.add(new XHTML.Table.Row(new XHTML.Table.Data("Active Clients"), new XHTML.Table.Data(this.executor.getActiveCount())));
-        	tbody.add(new XHTML.Table.Row(new XHTML.Table.Data("High Water Mark"), new XHTML.Table.Data(this.executor.getLargestPoolSize())));
-        	
-        	return new XHTML.Table(tbody);
-        }
-
-        public long getJMXActiveCount() {
-            return this.executor.getActiveCount();
-        }
-
-        public long getJMXKeepAliveTime() {
-            return this.executor.getKeepAliveTime(TimeUnit.MILLISECONDS);
-        }
-
-        public long getJMXLargestPoolSize() {
-            return this.executor.getLargestPoolSize();
-        }
-    }
+//    public interface PlainServerMBean extends ThreadMBean {
+//        public long getConnectionCount();        
+//    }
     
-    public interface BeehiveServer2MBean extends ThreadMBean, ServerSocketMBean {
-        public long getJMXActiveCount();
-        public long getJMXKeepAliveTime();
-        public long getJMXLargestPoolSize();
-    }
-
-    public interface BeehiveService2MBean extends ServerSocketMBean {
-
-    }
+//    public class PlainServer extends sunlabs.asdf.io.Asynchronous implements ConnectionServer, PlainServerMBean {
+//        private ObjectName jmxObjectName;
+//
+//        public PlainServer(ChannelHandler.Factory handlerFactory) throws IOException, JMException {
+//            super(connMgr.getServerSocketChannel(), handlerFactory);
+//
+//            if (TitanNodeImpl.this.jmxObjectName != null) {
+//                this.jmxObjectName = JMX.objectName(TitanNodeImpl.this.jmxObjectName, "PlainServer");
+//                TitanNodeImpl.registrar.registerMBean(this.jmxObjectName, this, PlainServerMBean.class);
+//            }
+//        }
+//
+//        public XHTML.Table toXHTML() {
+//            // TODO Auto-generated method stub
+//            return null;
+//        }
+//
+//        public void terminate() {
+//            try {
+//                this.close();
+//            } catch (IOException e) {
+//
+//            }
+//        }
+//
+//        public long getConnectionCount() {
+//            return this.getConnections().size();            
+//        }
+//    }
+    
+//    private static class SSLChannelHandler extends SSLContextChannelHandler implements ChannelHandler {
+//        private static class Factory implements ChannelHandler.Factory {
+//            private TitanNodeImpl node;
+//            private SSLContext sslContext;
+//            private long timeoutMillis;
+//            private ExecutorService executor;
+//
+//            public Factory(TitanNodeImpl node, SSLContext sslContext) {
+//                this.node = node;
+//                this.sslContext = sslContext;
+//                this.timeoutMillis = Time.secondsInMilliseconds(this.node.configuration.asInt(TitanNodeImpl.ClientTimeoutSeconds));
+//                this.executor = node.tasks; // Use the node thread pool
+//            }
+//            
+//            public ChannelHandler newChannelHandler(SelectionKey selectionKey) throws IOException {
+//                SSLEngine engine = sslContext.createSSLEngine();
+//                engine.setUseClientMode(false);
+//                engine.setNeedClientAuth(true);
+//                ChannelHandler handler = new SSLChannelHandler(this.node, selectionKey, engine, this.executor, this.timeoutMillis);
+//                return handler;
+//            }            
+//        }
+//
+//        private enum ParserState {
+//            READ_HEADER_LENGTH,
+//            READ_HEADER,
+//            READ_PAYLOAD_LENGTH,
+//            READ_PAYLOAD,            
+//        };
+//        private ParserState state;
+//        private TitanNodeImpl node;
+//        private ByteBuffer header;
+//        private ByteBuffer payload;
+//        
+//        public SSLChannelHandler(TitanNodeImpl node, SelectionKey selectionKey, SSLEngine engine, ExecutorService executor, long timeoutMillis) throws IOException {
+//            super(selectionKey, engine, executor, timeoutMillis);
+//            this.node = node;
+//            this.state = ParserState.READ_HEADER_LENGTH;
+//        }
+//
+//        public void input(ByteBuffer data) {
+////            if (true) {
+////                try {
+////                    java.security.cert.Certificate[] certificates = this.sslEngine.getSession().getPeerCertificates();
+////                    //System.out.printf("input from %s%n", new BeehiveObjectId(certificates[0].getPublicKey()));
+////                } catch (SSLPeerUnverifiedException e) {
+////                    e.printStackTrace();
+////                }
+////            }
+//
+//            // This code works because it understands the layout of the transmitted BeehiveMessage.
+//            while (data.hasRemaining()) {
+//                switch (this.state) {
+//                case READ_HEADER_LENGTH:
+//                    if (data.remaining() < 4)
+//                        return;
+//
+//                    int headerLength = data.getInt();
+//                    this.header = ByteBuffer.wrap(new byte[headerLength]);
+//                    this.state = ParserState.READ_PAYLOAD_LENGTH;                    
+//                    break;
+//
+//                case READ_HEADER:
+//                    ByteBuffer subBuffer = data.slice();
+//                    int newLimit = Math.min(this.header.remaining(), data.remaining());
+//                    subBuffer.limit(newLimit);
+//
+//                    this.header.put(subBuffer);                        
+//
+//                    // Advance the position of data past the bytes copied.
+//                    int newPosition = data.position() + newLimit;
+//                    data.position(newPosition);
+//                    if (this.header.remaining() == 0) {
+//                        this.state = ParserState.READ_PAYLOAD;
+//                    }
+//
+//                    break;
+//
+//                case READ_PAYLOAD_LENGTH:
+//                    if (data.remaining() < 4)
+//                        return;
+//
+//                    int payLoadLength = data.getInt();
+//                    this.payload = ByteBuffer.wrap(new byte[payLoadLength]);
+//                    this.state = ParserState.READ_HEADER;
+//
+//                    break;
+//
+//                case READ_PAYLOAD:
+//                    subBuffer = data.slice();
+//                    newLimit = Math.min(this.payload.remaining(), data.remaining());
+//                    subBuffer.limit(newLimit);
+//
+//                    this.payload.put(subBuffer);                        
+//
+//                    // Advance the position of data past the bytes copied.
+//                    newPosition = data.position() + newLimit;
+//                    data.position(newPosition);
+//                    if (this.payload.remaining() == 0) {
+//                        try {
+//                            TitanMessage request = new TitanMessage(this.header.array(), this.payload.array());
+//                            RequestHandler service = new RequestHandler(this.node, request, this);
+//                            this.node.clientTasks.execute(service);
+//                            //service.start();
+//                        } catch (IOException e) {
+//                            // TODO Auto-generated catch block
+//                            e.printStackTrace();
+//                        } catch (ClassNotFoundException e) {
+//                            // TODO Auto-generated catch block
+//                            e.printStackTrace();
+//                        }
+//                        this.state = ParserState.READ_HEADER_LENGTH; 
+//                    }
+//
+//                    break;
+//                }
+//            }
+//        }
+//    }
+    
+//    public interface SSLServerMBean extends ThreadMBean, AsynchronousMBean {
+//    }
+    
+//    private class SSLServer extends sunlabs.asdf.io.Asynchronous implements ConnectionServer, SSLServerMBean {
+//        private ObjectName jmxObjectName;
+//
+//        public SSLServer(ServerSocketChannel socketChannel, ChannelHandler.Factory handlerFactory) throws IOException, JMException {
+//            super(socketChannel, handlerFactory);
+//            
+//            this.setName(Thread.currentThread().getName() + ".SSLServer");
+//            
+//            if (TitanNodeImpl.this.jmxObjectName != null) {
+//                this.jmxObjectName = JMX.objectName(TitanNodeImpl.this.jmxObjectName, SSLServer.class.getName());
+//                TitanNodeImpl.registrar.registerMBean(this.jmxObjectName, this, SSLServerMBean.class);
+//            }
+//        }
+//
+//        public XHTML.Table toXHTML() {
+//            // TODO Auto-generated method stub
+//            return null;
+//        }
+//
+//        public void terminate() {
+//            try {
+//                this.close();
+//            } catch (IOException e) {
+//
+//            }
+//        }  
+//    }
+//    
+//    
+//    /**
+//     * Each {@code TitanNode} has a server dispatching a new BeehiveService to
+//     * handle each inbound connection.
+//     * 
+//     * Initiators of connections to this Node may place their sockets into a cache
+//     * (see {@link TitanNodeImpl#transmit(TitanMessage)} leaving the socket open and ready for use for a subsequent message. 
+//     */
+//    public class BeehiveServer2 extends Thread implements ConnectionServer, BeehiveServer2MBean {
+//
+//        /**
+//         * Per thread Socket handling, reads messages from the input
+//         * socket and dispatches each to the local node for processing.
+//         *
+//         */
+//        public class BeehiveService2 implements Runnable, BeehiveService2MBean {
+//            private Socket socket;
+//            private ObjectName jmxObjectName;
+//            private long lastActivityMillis;
+//
+//            public BeehiveService2(ObjectName jmxObjectNameRoot, final Socket socket) throws JMException {
+//                this.socket = socket;
+//
+////                if (jmxObjectNameRoot != null) {
+////                    this.jmxObjectName = JMX.objectName(jmxObjectNameRoot, this.socket.hashCode());
+////                    TitanNode.registrar.registerMBean(this.jmxObjectName, this, BeehiveService2MBean.class);
+////                }
+//            }
+//
+//            public void run() {
+//                try {
+//                    this.socket.setSoTimeout((int) Time.secondsInMilliseconds(TitanNodeImpl.this.configuration.asInt(TitanNodeImpl.ClientTimeoutSeconds)));
+//
+//                    while (!this.socket.isClosed()) {
+//                        // The client-side puts its end of this connection into its socket cache.
+//                        // So we setup a timeout on our side such that if the timeout expires, we simply terminate this connection.
+//                    	// The client will figure that out once it tries to reuse this connection and it is closed and must setup a new connection.
+//
+//                        try {
+//                            TitanMessage request = TitanMessage.newInstance(this.socket.getInputStream());
+//
+//                            this.lastActivityMillis = System.currentTimeMillis();
+//
+//                            TitanMessage myResponse = TitanNodeImpl.this.receive(request);
+//                            DataOutputStream dos = new DataOutputStream(this.socket.getOutputStream());
+//                            try {
+//                                myResponse.writeObject(dos);
+//                            } catch (ConcurrentModificationException e) {
+//                                e.printStackTrace();
+//                                System.err.printf("message %s%n", myResponse.toString());
+//                            }
+//                            dos.flush();
+//                        } catch (ClassNotFoundException e) {
+//                            e.printStackTrace();
+//                            this.socket.close();
+//                        }
+//                        // If the executor pool is full and there are client requests in the queue, then exit freeing up this Thread.
+//                        synchronized (BeehiveServer2.this.executor) {
+//                            if (BeehiveServer2.this.executor.getActiveCount() == BeehiveServer2.this.executor.getMaximumPoolSize() && BeehiveServer2.this.executor.getQueue().size() > 0) {
+//                            	if (TitanNodeImpl.this.log.isLoggable(Level.WARNING)) {
+//                            		TitanNodeImpl.this.log.warning("Inbound connection congestion: active=%d max=%d queue=%d",
+//                            				BeehiveServer2.this.executor.getActiveCount(),
+//                            				BeehiveServer2.this.executor.getMaximumPoolSize(),
+//                            				BeehiveServer2.this.executor.getQueue().size());
+//                            	}
+//                                break;
+//                            }
+//                        }
+//                    }
+//                } catch (java.net.SocketTimeoutException exception) {
+//                    // ignore this exception, just abandon this connection.
+//                    if (TitanNodeImpl.this.log.isLoggable(Level.FINE)) {
+//                        TitanNodeImpl.this.log.fine("Closing idle connection: %s", exception);
+//                    }
+//                } catch (EOFException exception) {
+//                	if (TitanNodeImpl.this.log.isLoggable(Level.FINE)) {
+//                		TitanNodeImpl.this.log.fine("Closed by client. Idle %s.", Time.formattedElapsedTime(System.currentTimeMillis() - this.lastActivityMillis));
+//                	}
+//                	// ignore this exception, just abandon this connection,
+//                } catch (IOException exception) {
+//                    if (TitanNodeImpl.this.log.isLoggable(Level.WARNING)) {
+//                        TitanNodeImpl.this.log.warning("%s", exception);
+//                        exception.printStackTrace();
+//                    }
+//                    // ignore this exception, just abandon this connection,
+//                } catch (Exception e) {
+//                    if (TitanNodeImpl.this.log.isLoggable(Level.WARNING)) {
+//                        TitanNodeImpl.this.log.warning("%s", e);
+//                        e.printStackTrace();
+//                    }
+//                } finally {
+//                	try { this.socket.close(); } catch (IOException ignore) { /**/ }
+//                	// If the accept() loop is waiting because the executor is full, this will notify it to try again.
+//                	synchronized (BeehiveServer2.this.executor) {
+//                		BeehiveServer2.this.executor.notify();
+//                	}
+//                }
+//            }
+//        }
+//
+//        private class SimpleThreadFactory implements ThreadFactory {
+//            private String name;
+//            private long counter;
+//
+//            public SimpleThreadFactory(String name) {
+//                this.name = name;
+//                this.counter = 0;
+//            }
+//
+//            public Thread newThread(Runnable r) {
+//                Thread thread = new Thread(r);
+//                thread.setName(String.format("%s-beehive-%d", this.name, this.counter));
+//                this.counter++;
+//                return thread;
+//            }
+//        }
+//
+//        private ThreadPoolExecutor executor;
+//        private ObjectName jmxObjectName;
+//
+//        public BeehiveServer2() throws IOException, JMException {
+//            super(new ThreadGroup(TitanNodeImpl.this.getThreadGroup(), "Beehive Server2"), TitanNodeImpl.this.getThreadGroup().getName());
+//
+//            this.executor = (ThreadPoolExecutor) Executors.newFixedThreadPool(TitanNodeImpl.this.configuration.asInt(TitanNodeImpl.ClientMaximum),
+//                    new SimpleThreadFactory(TitanNodeImpl.this.getThreadGroup().getName()));
+//
+//            if (TitanNodeImpl.this.jmxObjectName != null) {
+//                this.jmxObjectName = JMX.objectName(TitanNodeImpl.this.jmxObjectName, "BeehiveServer2");
+//                TitanNodeImpl.registrar.registerMBean(this.jmxObjectName, this, BeehiveServer2MBean.class);
+//            }
+//        }
+//
+//        @Override
+//        public void run() {
+//            ServerSocket serverSocket = null;
+//            try {
+//                serverSocket = TitanNodeImpl.this.connMgr.getServerSocket();
+//            } catch (IOException e) {
+//                e.printStackTrace();
+//                return;
+//            }
+//            for (;;) {
+////                TitanNode.this.log.info("BeehiveServer2 pool %d threads.", this.executor.getActiveCount());
+//                synchronized (this.executor) {
+//                    while (this.executor.getActiveCount() == this.executor.getMaximumPoolSize()) {
+//                        try {
+//                            TitanNodeImpl.this.log.info("BeehiveServer2 pool full with %d active threads (%d maximum).  Waiting on %s.", this.executor.getActiveCount(), this.executor.getMaximumPoolSize(), this);
+//                            this.executor.wait();
+//                        } catch (InterruptedException e) {}
+//                    }
+//                }
+//                Socket socket = null;
+////                TitanNode.this.log.info("Accepting new connection on %s", serverSocket);
+//                try {
+//                    socket = connMgr.accept(serverSocket);
+//
+////                    TitanNode.this.log.info("Accepted connection %s serverClosed=%b", socket, serverSocket.isClosed());
+//
+//                    synchronized (this.executor) {
+//                        this.executor.submit(new BeehiveService2(this.jmxObjectName, socket));
+//                    }
+////                    TitanNode.this.log.info("Submitted connection %s serverClosed=%b", socket, serverSocket.isClosed());
+//                } catch (IOException e) {
+//                    TitanNodeImpl.this.log.info("Error on %s serverClosed=%b", serverSocket, serverSocket.isClosed());
+//                    e.printStackTrace();
+//                    return;
+//                } catch (JMException e) {
+//                    // TODO Auto-generated catch block
+//                    e.printStackTrace();
+//                    return;
+//                } finally {
+//                    // Should close the connection manager's server socket.
+//                }
+//            }
+//        }
+//
+//        public void terminate() {
+//
+//        }
+//        
+//        public XHTML.EFlow toXHTML() {
+//        	XHTML.Table.Body tbody = new XHTML.Table.Body();
+//        	tbody.add(new XHTML.Table.Row(new XHTML.Table.Data("Maximum Clients"), new XHTML.Table.Data(this.executor.getMaximumPoolSize())));
+//        	tbody.add(new XHTML.Table.Row(new XHTML.Table.Data("Active Clients"), new XHTML.Table.Data(this.executor.getActiveCount())));
+//        	tbody.add(new XHTML.Table.Row(new XHTML.Table.Data("High Water Mark"), new XHTML.Table.Data(this.executor.getLargestPoolSize())));
+//        	
+//        	return new XHTML.Table(tbody);
+//        }
+//
+//        public long getJMXActiveCount() {
+//            return this.executor.getActiveCount();
+//        }
+//
+//        public long getJMXKeepAliveTime() {
+//            return this.executor.getKeepAliveTime(TimeUnit.MILLISECONDS);
+//        }
+//
+//        public long getJMXLargestPoolSize() {
+//            return this.executor.getLargestPoolSize();
+//        }
+//    }
+    
+//    public interface BeehiveServer2MBean extends ThreadMBean, ServerSocketMBean {
+//        public long getJMXActiveCount();
+//        public long getJMXKeepAliveTime();
+//        public long getJMXLargestPoolSize();
+//    }
+//
+//    public interface BeehiveService2MBean extends ServerSocketMBean {
+//
+//    }
 
     public static class ConfigurationException extends java.lang.Exception {
         private static final long serialVersionUID = 1L;
@@ -714,20 +689,20 @@ public class TitanNodeImpl implements TitanNode, NodeMBean {
     protected final static String nodeBackingStorePrefix = "node-";
     private static final String SERVICES_PACKAGENAME = "sunlabs.titan.node.services";
 
-    /** The maximum number of of simultaneous neighbour connections. */
-    public final static Attributes.Prototype ClientMaximum = new Attributes.Prototype(TitanNodeImpl.class, "ClientMaximum",
-            20,
-            "The maximum number of of simultaneous neighbour connections.");
-    
-    /** The maximum number of milliseconds a client connection can be idle before it is considered unused and can be closed. */
-    public final static Attributes.Prototype ClientTimeoutSeconds = new Attributes.Prototype(TitanNodeImpl.class, "ClientTimeoutSeconds",
-            Time.minutesInSeconds(11),
-            "The maximum number of seconds a client connection can be idle before it is considered unused and can be closed.");
-
-    /** The inter-node connection type. Either 'plain' or 'ssl'. */
-    public final static Attributes.Prototype ConnectionType = new Attributes.Prototype(TitanNodeImpl.class, "ConnectionType",
-            "ssl",
-            "The inter-node connection type. Either 'plain' or 'ssl'.");
+//    /** The maximum number of of simultaneous neighbour connections. */
+//    public final static Attributes.Prototype ClientMaximum = new Attributes.Prototype(TitanNodeImpl.class, "ClientMaximum",
+//            20,
+//            "The maximum number of of simultaneous neighbour connections.");
+//    
+//    /** The maximum number of milliseconds a client connection can be idle before it is considered unused and can be closed. */
+//    public final static Attributes.Prototype ClientTimeoutSeconds = new Attributes.Prototype(TitanNodeImpl.class, "ClientTimeoutSeconds",
+//            Time.minutesInSeconds(11),
+//            "The maximum number of seconds a client connection can be idle before it is considered unused and can be closed.");
+//
+//    /** The inter-node connection type. Either 'plain' or 'ssl'. */
+//    public final static Attributes.Prototype ConnectionType = new Attributes.Prototype(TitanNodeImpl.class, "ConnectionType",
+//            "ssl",
+//            "The inter-node connection type. Either 'plain' or 'ssl'.");
     
     /** The full pathname to a local directory to use as the "spool" directory for this node. */
     public final static Attributes.Prototype LocalFileSystemRoot = new Attributes.Prototype(TitanNodeImpl.class, "LocalFileSystemRoot", "/tmp/titan",
@@ -817,7 +792,7 @@ public class TitanNodeImpl implements TitanNode, NodeMBean {
 
     private ThreadGroup threadGroup;
 
-    private ConnectionServer server;
+//    private ConnectionServer server;
 
     private ApplicationFramework services;
 
@@ -855,11 +830,11 @@ public class TitanNodeImpl implements TitanNode, NodeMBean {
         this.configuration.add(TitanNodeImpl.TaskPoolSize);
         this.configuration.add(TitanNodeImpl.InterNetworkAddress);
         this.configuration.add(TitanNodeImpl.Port);
-        this.configuration.add(TitanNodeImpl.ClientMaximum);
-        this.configuration.add(TitanNodeImpl.ClientTimeoutSeconds);
+//        this.configuration.add(TitanNodeImpl.ClientMaximum);
+//        this.configuration.add(TitanNodeImpl.ClientTimeoutSeconds);
         this.configuration.add(TitanNodeImpl.GatewayURL);
         this.configuration.add(TitanNodeImpl.GatewayRetryDelaySeconds);
-        this.configuration.add(TitanNodeImpl.ConnectionType);
+//        this.configuration.add(TitanNodeImpl.ConnectionType);
         this.configuration.add(TitanNodeImpl.NodeAddress);
         this.configuration.add(TitanNodeImpl.ObjectStoreCapacity);
         this.configuration.add(TitanNodeImpl.Version);
@@ -906,8 +881,8 @@ public class TitanNodeImpl implements TitanNode, NodeMBean {
         }
 
         this.nodeKey = new NodeKey(keyStoreFileName, internetworkAddress, localBeehivePort);
-        this.address = new NodeAddress(new TitanNodeIdImpl(this.nodeKey.getObjectId()), internetworkAddress, localBeehivePort, this.configuration.asInt(WebDAVDaemon.Port));
 
+        this.address = new NodeAddress(new TitanNodeIdImpl(this.nodeKey.getObjectId()), internetworkAddress, localBeehivePort, this.configuration.asInt(WebDAVDaemon.Port));
         this.configuration.set(TitanNodeImpl.NodeAddress, this.address.format());
 
         // Give the main Thread for this node a name and setup a ThreadGroup.
@@ -931,58 +906,59 @@ public class TitanNodeImpl implements TitanNode, NodeMBean {
             TitanNodeImpl.registrar.registerMBean(this.jmxObjectName, this, NodeMBean.class);
             TitanNodeImpl.registrar.registerMBean(JMX.objectName(this.jmxObjectName, "log"), this.log, DOLRLoggerMBean.class);
 
-            this.connMgr = ConnectionManager.getInstance(this.configuration.asString(TitanNodeImpl.ConnectionType), this.getNodeAddress(), this.nodeKey);
-            // Still some problems with the new async I/O mechanism and SSL.  It uses up a lot of memory.
-            if (false) {
-                this.server = new BeehiveServer2();
-            } else {
-                if (this.configuration.asString(TitanNodeImpl.ConnectionType).equalsIgnoreCase("plain")) {
-                    this.server = new PlainServer(new PlainChannelHandler.Factory(this));
-                } else if (this.configuration.asString(TitanNodeImpl.ConnectionType).equalsIgnoreCase("ssl")) {
-                    if (true) {
-                        this.server = new BeehiveServer2();
-                    } else {
-                        try {
-                            KeyManagerFactory kmf = KeyManagerFactory.getInstance("SunX509");
-                            kmf.init(this.nodeKey.getKeyStore(), this.nodeKey.getKeyPassword());
-                            KeyManager[] km = kmf.getKeyManagers();
-
-                            TrustManager[] tm = new TrustManager[1];
-                            tm[0] = new NodeX509TrustManager();
-                            SSLContext sslContext;
-                            sslContext = SSLContext.getInstance("TLS");
-                            sslContext.init(km, tm, null);
-                            sslContext.getServerSessionContext().setSessionCacheSize(SSLConnectionManager.beehiveSSLSessionCacheSize);
-                            sslContext.getClientSessionContext().setSessionCacheSize(SSLConnectionManager.beehiveSSLSessionCacheSize);
-                            sslContext.getClientSessionContext().setSessionTimeout(SSLConnectionManager.beehiveClientSSLSessionTimeout);
-                            sslContext.getServerSessionContext().setSessionTimeout(SSLConnectionManager.beehiveServerSSLSessionTimeout);
-
-
-                            ServerSocketChannel serverSocketChannel2 = ServerSocketChannel.open();
-
-                            serverSocketChannel2.socket().setReuseAddress(true);
-                            serverSocketChannel2.socket().bind(this.address.getInternetworkAddress());
-                            this.server = new SSLServer(serverSocketChannel2, new SSLChannelHandler.Factory(this, sslContext));
-                        } catch (java.security.NoSuchAlgorithmException exception) {
-                            throw new IOException(exception.toString());
-                        } catch (java.security.KeyStoreException exception) {
-                            throw new IOException(exception.toString());
-                        } catch (java.security.KeyManagementException exception) {
-                            throw new IOException(exception.toString());
-                        } catch (java.security.UnrecoverableKeyException exception) {
-                            throw new IOException(exception.toString());
-                        } catch (java.net.BindException exception) {
-                            System.out.printf("%s port %d%n", exception, this.address.getInternetworkAddress());
-                            throw new IOException(exception.toString());
-                        }
-                    }
-                } else {
-                    throw new TitanNodeImpl.ConfigurationException("Unknown connection type '%s' Must be either 'ssl' or 'plain'");
-                }
-            }
-
+//            if (false) {
+//                this.connMgr = ConnectionManager.getInstance(this.configuration.asString(TitanNodeImpl.ConnectionType), this.getNodeAddress(), this.nodeKey);
+//                // Still some problems with the new async I/O mechanism and SSL.  It uses up a lot of memory.
+//                if (false) {
+//                    this.server = new BeehiveServer2();
+//                } else {
+//                    if (this.configuration.asString(TitanNodeImpl.ConnectionType).equalsIgnoreCase("plain")) {
+//                        this.server = new PlainServer(new PlainChannelHandler.Factory(this));
+//                    } else if (this.configuration.asString(TitanNodeImpl.ConnectionType).equalsIgnoreCase("ssl")) {
+//                        if (true) {
+//                            this.server = new BeehiveServer2();
+//                        } else {
+//                            try {
+//                                KeyManagerFactory kmf = KeyManagerFactory.getInstance("SunX509");
+//                                kmf.init(this.nodeKey.getKeyStore(), this.nodeKey.getKeyPassword());
+//                                KeyManager[] km = kmf.getKeyManagers();
+//
+//                                TrustManager[] tm = new TrustManager[1];
+//                                tm[0] = new NodeX509TrustManager();
+//                                SSLContext sslContext;
+//                                sslContext = SSLContext.getInstance("TLS");
+//                                sslContext.init(km, tm, null);
+//                                sslContext.getServerSessionContext().setSessionCacheSize(SSLConnectionManager.beehiveSSLSessionCacheSize);
+//                                sslContext.getClientSessionContext().setSessionCacheSize(SSLConnectionManager.beehiveSSLSessionCacheSize);
+//                                sslContext.getClientSessionContext().setSessionTimeout(SSLConnectionManager.beehiveClientSSLSessionTimeout);
+//                                sslContext.getServerSessionContext().setSessionTimeout(SSLConnectionManager.beehiveServerSSLSessionTimeout);
+//
+//
+//                                ServerSocketChannel serverSocketChannel2 = ServerSocketChannel.open();
+//
+//                                serverSocketChannel2.socket().setReuseAddress(true);
+//                                serverSocketChannel2.socket().bind(this.address.getInternetworkAddress());
+//                                this.server = new SSLServer(serverSocketChannel2, new SSLChannelHandler.Factory(this, sslContext));
+//                            } catch (java.security.NoSuchAlgorithmException exception) {
+//                                throw new IOException(exception.toString());
+//                            } catch (java.security.KeyStoreException exception) {
+//                                throw new IOException(exception.toString());
+//                            } catch (java.security.KeyManagementException exception) {
+//                                throw new IOException(exception.toString());
+//                            } catch (java.security.UnrecoverableKeyException exception) {
+//                                throw new IOException(exception.toString());
+//                            } catch (java.net.BindException exception) {
+//                                System.out.printf("%s port %d%n", exception, this.address.getInternetworkAddress());
+//                                throw new IOException(exception.toString());
+//                            }
+//                        }
+//                    } else {
+//                        throw new TitanNodeImpl.ConfigurationException("Unknown connection type '%s' Must be either 'ssl' or 'plain'");
+//                    }
+//                }
+//            }
             this.map = new NeighbourMap(this);
-            // XXX Should the object store be part of PublishDaemon?
+            // XXX Should the object store be part of PublishDaemon? Or vice-versa?
             this.store = new BeehiveObjectStore(this, this.configuration.asString(TitanNodeImpl.ObjectStoreCapacity));
             this.objectPublishers = new Publishers(this, this.spoolDirectory);
 
@@ -995,13 +971,14 @@ public class TitanNodeImpl implements TitanNode, NodeMBean {
             // Any other services will be loaded lazily as needed.
             // For initial bootstrapping, we expect to find these classes on
             // the local CLASSPATH.
+            this.getService(WebDAVDaemon.class);
+            this.getService(MessageService.class);
             this.getService(RoutingDaemon.class);
             this.getService(AppClassObjectType.class);
             this.getService(PublishDaemon.class);
             this.getService(RetrieveObjectService.class);
             this.getService(ReflectionService.class);
             this.getService(CensusDaemon.class);
-            this.getService(WebDAVDaemon.class);
         } catch (JMException e) {
             throw new RuntimeException(e);
         } catch (IllegalStateException e) {
@@ -1009,9 +986,6 @@ public class TitanNodeImpl implements TitanNode, NodeMBean {
         }
 
         if (this.log.isLoggable(Level.CONFIG)) {
-            this.log.config("%s", this.configuration.get(TitanNodeImpl.ClientMaximum));
-            this.log.config("%s", this.configuration.get(TitanNodeImpl.ClientTimeoutSeconds));
-            this.log.config("%s", this.configuration.get(TitanNodeImpl.ConnectionType));
             this.log.config("%s", this.configuration.get(TitanNodeImpl.DojoJavascript));
             this.log.config("%s", this.configuration.get(TitanNodeImpl.DojoRoot));
             this.log.config("%s", this.configuration.get(TitanNodeImpl.DojoTheme));
@@ -1088,13 +1062,14 @@ public class TitanNodeImpl implements TitanNode, NodeMBean {
         return this.address;
     }
 
-    /**
-     * Return this Node's object-id.
-     */
     public TitanNodeId getNodeId() {
         return this.address.getObjectId();
     }
 
+    public NodeKey getNodeKey() {
+        return this.nodeKey;
+    }
+    
     public Publishers getObjectPublishers() {
         return this.objectPublishers;
     }
@@ -1150,9 +1125,9 @@ public class TitanNodeImpl implements TitanNode, NodeMBean {
         return this.threadGroup;
     }
 
-    public long jmxGetBeehiveServerMaxIdleTime() {
-        return this.configuration.asInt(TitanNodeImpl.ClientTimeoutSeconds);
-    }
+//    public long jmxGetBeehiveServerMaxIdleTime() {
+//        return this.configuration.asInt(TitanNodeImpl.ClientTimeoutSeconds);
+//    }
 
     /**
      * Get this Node's object-id as a String.
@@ -1256,7 +1231,7 @@ public class TitanNodeImpl implements TitanNode, NodeMBean {
                 // Otherwise, accept the message.
                 if (request.isExactRouting() && !destinationNodeId.equals(this.getNodeId())) {
                     TitanNodeImpl.this.log.finest("routed to nonexistent node %s%n", destinationNodeId);
-                    
+
                     return request.composeReply(this.address, new TitanNode.NoSuchNodeException(destinationNodeId, "%s->%s", this.address.format(), destinationNodeId.toString()));
                 }
                 TitanMessage result = this.services.sendMessageToApp(request);
@@ -1267,17 +1242,18 @@ public class TitanNodeImpl implements TitanNode, NodeMBean {
                 return result;
             }
 
-            TitanMessage result = this.transmit(request);
+//            TitanMessage result = this.transmit(request);
+            TitanMessage result = this.getService(MessageService.class).transmit(request);
 
             return result;
         } catch (ClassCastException e) {
-            TitanNodeImpl.this.log.severe("Internal message payload ClassCastException.%n");
+            TitanNodeImpl.this.log.severe("Internal message payload ClassCastException. Message %s%n", request);
             return request.composeReply(this.address, e);
         } catch (ClassNotFoundException e) {
-            TitanNodeImpl.this.log.severe("Internal message payload ClassNotFoundException.%n");
+            TitanNodeImpl.this.log.severe("Internal message payload ClassNotFoundException. Message %s%n", request);
             return request.composeReply(this.address, e);
         } catch (TitanMessage.RemoteException e) {
-            TitanNodeImpl.this.log.severe("Internal message payload contained unexpected BeehiveMessage.RemoteException%n");
+            TitanNodeImpl.this.log.severe("Internal message payload contained unexpected TitanMessage.RemoteException. Message %s%n", request);
             return request.composeReply(this.address, e);
         } finally {
 
@@ -1315,7 +1291,8 @@ public class TitanNodeImpl implements TitanNode, NodeMBean {
         // If this message can be routed further, transmit it and simply return the reply.
         TitanMessage rootReply;
         if (this.map.getRoute(message.getDestinationNodeId()) != null) {
-            rootReply = this.transmit(message);
+//            rootReply = this.transmit(message);
+            rootReply = this.getService(MessageService.class).transmit(message);
         } else {
             // This node is the root for the published object.
             // Perform all the mandatory "rootness" functions here,
@@ -1448,7 +1425,9 @@ public class TitanNodeImpl implements TitanNode, NodeMBean {
             // These checks need to be updated in synchrony with the results and exceptions embodied in the new form of TitanMessages,
             // where the status contains less information and more information is expressed in exceptions and return values.
 
-            if ((response = this.transmit(proxyMessage)) != null) {
+            response = this.getService(MessageService.class).transmit(proxyMessage);
+            
+            if (response != null) {
                 if (response.getStatus().isSuccessful()) {
                     return response;
                 } else {
@@ -1465,7 +1444,8 @@ public class TitanNodeImpl implements TitanNode, NodeMBean {
         // Otherwise we hand the message up to the BeehiveService specified in the message and let it handle it.
         if (this.map.getRoute(request.getDestinationNodeId()) != null) {
             //this.log.fine(request.objectId + " 3: I am forwarding");
-            return this.transmit(request);
+//            return this.transmit(request);
+            return this.getService(MessageService.class).transmit(request);
         }
 
         //this.log.fine(request.objectId + " 4: I am root");
@@ -1508,7 +1488,8 @@ public class TitanNodeImpl implements TitanNode, NodeMBean {
         }
         if (this.map.getRoute(request.getDestinationNodeId()) != null) {
             // Route the message on to the root.
-            return this.transmit(request);
+            return this.getService(MessageService.class).transmit(request);
+//            return this.transmit(request);
         } else {
             // This node is the root hand it out to the handler specified in the incoming BeehiveMessage.
             return this.services.sendMessageToApp(request);                
@@ -1568,7 +1549,7 @@ public class TitanNodeImpl implements TitanNode, NodeMBean {
 
         XHTML.Div executors = new XHTML.Div(new XHTML.Table(new XHTML.Table.Caption("Executors"), executorBody));
 
-        XHTML.Table clientListener = (XHTML.Table) this.server.toXHTML();
+        //XHTML.Table clientListener = (XHTML.Table) this.server.toXHTML();
         
         XHTML.Table.Body javaBody = new XHTML.Table.Body(
                 new XHTML.Table.Row(new XHTML.Table.Data("Available Processors"), new XHTML.Table.Data(r.availableProcessors())),
@@ -1581,8 +1562,8 @@ public class TitanNodeImpl implements TitanNode, NodeMBean {
         return new XHTML.Table(
                 new XHTML.Table.Caption("Resources"),
                 new XHTML.Table.Body(
-                    new XHTML.Table.Row(new XHTML.Table.Data(javaTable, this.connMgr.getStatisticsAsXHTML(), executors), new XHTML.Table.Data(this.threadResources())),
-                    new XHTML.Table.Row(new XHTML.Table.Data(clientListener), new XHTML.Table.Data())
+                    new XHTML.Table.Row(new XHTML.Table.Data(javaTable, /*this.connMgr.getStatisticsAsXHTML(),*/ executors), new XHTML.Table.Data(this.threadResources()))
+                    //new XHTML.Table.Row(new XHTML.Table.Data(clientListener), new XHTML.Table.Data())
                 ));
     }
 
@@ -1695,7 +1676,7 @@ public class TitanNodeImpl implements TitanNode, NodeMBean {
         TitanMessage reply = this.receive(message);
         return reply;
     }
-
+    
     /**
      * Start the node.
      * This consists of initialising all of the listening sockets,
@@ -1750,21 +1731,33 @@ public class TitanNodeImpl implements TitanNode, NodeMBean {
                 census.putAllLocal(list);
             }
 
+
+            // Start up the services. For those Services that must be started in
+            // order, start them manually here. In particular the MessageService
+            // must be started first so it is able to receive and send messages.
+            // Be careful, however, to start the MessageService AFTER the join
+            // operation (which happens above). If a node rebooted, neighbour
+            // nodes would still have an entry for the rebooted node in their
+            // routing table. As a result the new node's join message would
+            // actually be routed to itself.  Therefore, if it was accepting
+            // inbound connections before it had completed the join process, it
+            // would hang or return an empty routing table.
+            // This means that the join operation must happen before the node
+            // starts accepting inbound connections.
+
             // Start the server listening for incoming connections from other nodes to this node.
-            this.server.start();
+            MessageService xcvr = this.getService(MessageService.class);
+            xcvr.start();
 
             // Let the service framework know we're started and know who our
             // neighbors are - it is now safe to start arbitrary services.
             this.services.fullyStarted();
+            return (Thread) xcvr.getServer();
         } catch (IOException e) {
             throw new RuntimeException(e);
-        } catch (RuntimeException e) {
-            throw e;
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
-
-        return (Thread) this.server;
     }
 
     public void stop() {
@@ -1774,7 +1767,7 @@ public class TitanNodeImpl implements TitanNode, NodeMBean {
                 application.stop();
         }
 
-        this.server.terminate();
+        //this.server.terminate();
     }
 
     /**
@@ -1870,7 +1863,6 @@ public class TitanNodeImpl implements TitanNode, NodeMBean {
     }
 
     public XML.Content toXML() {
-
         TitanXML xml = new TitanXML();
 
         long currentTime = System.currentTimeMillis();
@@ -1899,110 +1891,119 @@ public class TitanNodeImpl implements TitanNode, NodeMBean {
      * Use {@link TitanNodeImpl#receive receive} instead.
      * </p>
      */
-    public TitanMessage transmit(TitanMessage message) {
-        message.timeToLive++;
-        if (message.timeToLive >= this.map.n_tables) {
-            this.log.severe("Message exceeded time-to-live: " + message.toString());
-            new Exception().printStackTrace();
-            return null;
-        }
+//    public TitanMessage transmit(TitanMessage message) {
+//        if (true) {
+//            MessageService xcvr = this.getService(MessageService.class);
+//            return xcvr.transmit(message);
+//        }
+//        
+//        message.timeToLive++;
+//        if (message.timeToLive >= this.map.n_tables) {
+//            this.log.severe("Message exceeded time-to-live: " + message.toString());
+//            new Exception().printStackTrace();
+//            return null;
+//        }
+//
+//        message.timestamp = System.currentTimeMillis();
+//        if (message.getDestinationNodeId().equals(this.getNodeId())) {
+//            return this.receive(message);
+//        }
+//
+//        TitanMessage reply;
+//        NodeAddress neighbour;
+//        while ((neighbour = this.map.getRoute(message.getDestinationNodeId())) != null) {
+//            if ((reply = this.transmit(neighbour, message)) != null) {
+//                return reply;
+//            }
+//            this.log.warning("Removing dead neighbour %s", neighbour.format());
+//
+//            // XXX Should also clean out any other remaining cached sockets to this neighbour.
+//            this.map.remove(neighbour);
+//        }
+//
+//        // If there is no next hop, then this node is the root of the destination objectId.
+//        // If the message is to be routed exactly then send back an error.
+//        if (message.isExactRouting()) {
+//            return message.composeReply(this.getNodeAddress(), DOLRStatus.NOT_FOUND);
+//        }
+//
+//        return this.receive(message);
+//    }
 
-        message.timestamp = System.currentTimeMillis();
-        if (message.getDestinationNodeId().equals(this.getNodeId())) {
-            return this.receive(message);
-        }
-
-        TitanMessage reply;
-        NodeAddress neighbour;
-        while ((neighbour = this.map.getRoute(message.getDestinationNodeId())) != null) {
-            if ((reply = this.transmit(neighbour, message)) != null) {
-                return reply;
-            }
-            this.log.warning("Removing dead neighbour %s", neighbour.format());
-
-            // XXX Should also clean out any other remaining cached sockets to this neighbour.
-            this.map.remove(neighbour);
-        }
-
-        // If there is no next hop, then this node is the root of the destination objectId.
-        // If the message is to be routed exactly then send back an error.
-        if (message.isExactRouting()) {
-            return message.composeReply(this.getNodeAddress(), DOLRStatus.NOT_FOUND);
-        }
-
-        return this.receive(message);
-    }
-
-    /**
-     * Transmit a {@link TitanMessage} directly to a {@link NodeAddress} and return the reply.
-     * If the destination address is unresponsive or cannot be reached, the return value is {@code null}.
-     *
-     * <p>
-     * This method should throw Exceptions to signal failures rather than returning null.
-     * </p>
-     */
-    public TitanMessage transmit(NodeAddress addr, TitanMessage message) /*throws InterruptedException*/ {
-        while (true) {
-            Socket socket = null;
-            boolean socketValid = true;
-            try {
-                socket = this.connMgr.getAndRemove(addr);
-
-                if (message.isTraced()) {
-                    TitanNodeImpl.this.log.info("%s to %s", message.traceReport(), addr.format());
-                }
-
-                DataOutputStream out = new DataOutputStream(new BufferedOutputStream(socket.getOutputStream()));
-                message.writeObject(out);
-                out.flush();
-
-                TitanMessage response = TitanMessage.newInstance(socket.getInputStream());
-                if (response.isTraced()) {
-                    TitanNodeImpl.this.log.info("recv: %s, reply: %ss", message.traceReport(), response.traceReport());
-                }
-                return response;
-            } catch (InterruptedIOException e) {
-                this.log.warning("%s disconnecting node %s(%s.%s)", e.toString(), addr.format(), message.getSubjectClass(), message.getSubjectClassMethod());
-                socketValid = false;
-                return null;  // return and don't continue to try, but don't disconnect the node.
-            } catch (java.net.NoRouteToHostException e) {
-                this.log.warning("%s disconnecting node %s(%s.%s)", e.toString(), addr.format(), message.getSubjectClass(), message.getSubjectClassMethod());
-                socketValid = false;
-                return null; // return and don't continue to try.
-            } catch (java.net.ConnectException e) {
-                this.log.warning("%s disconnecting node %s(%s.%s)", e.toString(), addr.format(), message.getSubjectClass(), message.getSubjectClassMethod());
-                socketValid = false;
-                return null; // return and don't continue to try.
-            } catch (java.net.SocketException e) {
-                this.log.warning("%s retry node %s(%s) %s.%s", e.toString(), addr.format(), socket, message.getSubjectClass(), message.getSubjectClassMethod());
-                socketValid = false;
-                // close this socket and try again with a new one.
-            } catch (IOException e) {
-                this.log.warning("%s retry node %s(%s) %s.%s", e.toString(), addr.format(), socket, message.getSubjectClass(), message.getSubjectClassMethod());
-                socketValid = false;
-                // close this socket and try again with a new one.
-            } catch (Exception e) {
-                this.log.warning("%s retry node %s(%s) %s.%s.", e.toString(), addr.format(), socket, message.getSubjectClass(), message.getSubjectClassMethod());
-                e.printStackTrace();
-                //
-                // One of the cases above will catch anything that actually
-                // occurs.  But SSLSocketCache.Factory's newInstance() method
-                // overrides one that's specified to throw Exception, so it must
-                // be handled here.
-                //
-                socketValid = false;
-                // close this socket and try again with a new one.
-            } finally {
-                if (socketValid) {
-                    // The socket is (still) good, so return the socket to the cache.
-                    this.connMgr.addAndEvictOld(addr, socket);
-                } else {
-                    if (socket != null)
-                        this.connMgr.disposeItem(addr, socket);
-                }
-            }
-        }
-    }
+//    /**
+//     * Transmit a {@link TitanMessage} directly to a {@link NodeAddress} and return the reply.
+//     * If the destination address is unresponsive or cannot be reached, the return value is {@code null}.
+//     *
+//     * <p>
+//     * This method should throw Exceptions to signal failures rather than returning null.
+//     * </p>
+//     */
+//    public TitanMessage transmit(NodeAddress addr, TitanMessage message) /*throws InterruptedException*/ {
+//        if (true) {
+//            return this.getService(MessageService.class).transmit(addr, message);
+//        }
+//        
+//        while (true) {
+//            Socket socket = null;
+//            boolean socketValid = true;
+//            try {
+//                socket = this.connMgr.getAndRemove(addr);
+//
+//                if (message.isTraced()) {
+//                    TitanNodeImpl.this.log.info("%s to %s", message.traceReport(), addr.format());
+//                }
+//
+//                DataOutputStream out = new DataOutputStream(new BufferedOutputStream(socket.getOutputStream()));
+//                message.writeObject(out);
+//                out.flush();
+//
+//                TitanMessage response = TitanMessage.newInstance(socket.getInputStream());
+//                if (response.isTraced()) {
+//                    TitanNodeImpl.this.log.info("recv: %s, reply: %ss", message.traceReport(), response.traceReport());
+//                }
+//                return response;
+//            } catch (InterruptedIOException e) {
+//                this.log.warning("%s disconnecting node %s(%s.%s)", e.toString(), addr.format(), message.getSubjectClass(), message.getSubjectClassMethod());
+//                socketValid = false;
+//                return null;  // return and don't continue to try, but don't disconnect the node.
+//            } catch (java.net.NoRouteToHostException e) {
+//                this.log.warning("%s disconnecting node %s(%s.%s)", e.toString(), addr.format(), message.getSubjectClass(), message.getSubjectClassMethod());
+//                socketValid = false;
+//                return null; // return and don't continue to try.
+//            } catch (java.net.ConnectException e) {
+//                this.log.warning("%s disconnecting node %s(%s.%s)", e.toString(), addr.format(), message.getSubjectClass(), message.getSubjectClassMethod());
+//                socketValid = false;
+//                return null; // return and don't continue to try.
+//            } catch (java.net.SocketException e) {
+//                this.log.warning("%s retry node %s(%s) %s.%s", e.toString(), addr.format(), socket, message.getSubjectClass(), message.getSubjectClassMethod());
+//                socketValid = false;
+//                // close this socket and try again with a new one.
+//            } catch (IOException e) {
+//                this.log.warning("%s retry node %s(%s) %s.%s", e.toString(), addr.format(), socket, message.getSubjectClass(), message.getSubjectClassMethod());
+//                socketValid = false;
+//                // close this socket and try again with a new one.
+//            } catch (Exception e) {
+//                this.log.warning("%s retry node %s(%s) %s.%s.", e.toString(), addr.format(), socket, message.getSubjectClass(), message.getSubjectClassMethod());
+//                e.printStackTrace();
+//                //
+//                // One of the cases above will catch anything that actually
+//                // occurs.  But SSLSocketCache.Factory's newInstance() method
+//                // overrides one that's specified to throw Exception, so it must
+//                // be handled here.
+//                //
+//                socketValid = false;
+//                // close this socket and try again with a new one.
+//            } finally {
+//                if (socketValid) {
+//                    // The socket is (still) good, so return the socket to the cache.
+//                    this.connMgr.addAndEvictOld(addr, socket);
+//                } else {
+//                    if (socket != null)
+//                        this.connMgr.disposeItem(addr, socket);
+//                }
+//            }
+//        }
+//    }
     
     /**
      * Run a single node.

@@ -67,10 +67,10 @@ public class TitanGuidImpl implements TitanGuid {
      * {@code MessageDigest.getInstance(TitanGuidImpl.hashFunction).digest().length * 2}
      * </p>
      */
-    public static int n_digits;
+    public static short n_digits;
     static {
         try {
-            TitanGuidImpl.n_digits = MessageDigest.getInstance(TitanGuidImpl.hashFunction).digest().length * 2;
+            TitanGuidImpl.n_digits = (short) (MessageDigest.getInstance(TitanGuidImpl.hashFunction).digest().length * 2);
         } catch (Exception e) {
             e.printStackTrace();
             throw new RuntimeException(e);
@@ -516,5 +516,9 @@ public class TitanGuidImpl implements TitanGuid {
     	profiler.stamp("fini");
     	System.out.printf("%s%n", profiler);
     	
+    }
+
+    public short getHopCount() {
+        return TitanGuidImpl.n_digits;
     }
 }

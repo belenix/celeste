@@ -90,7 +90,7 @@ public class SocketCache
         }
 
         public Socket newInstance(Key key) throws IOException {
-            Socket s = socketFactory.createSocket(key.address.getInternetworkAddress().getAddress(), key.address.getBeehivePort());
+            Socket s = socketFactory.createSocket(key.address.getInternetworkAddress().getAddress(), key.address.getPort());
             s.setSoTimeout(this.socketTimeOutInMs);
             s.setKeepAlive(true);
             s.setTcpNoDelay(true);

@@ -42,6 +42,7 @@ import sunlabs.celeste.node.services.CelesteClientDaemon;
 import sunlabs.titan.Copyright;
 import sunlabs.titan.node.TitanNodeImpl;
 import sunlabs.titan.node.TitanNodeImpl.ConfigurationException;
+import sunlabs.titan.node.services.MessageService;
 import sunlabs.titan.node.services.WebDAVDaemon;
 import sunlabs.titan.util.OrderedProperties;
 
@@ -149,7 +150,7 @@ public class Celeste {
         properties.setProperty(TitanNodeImpl.LocalFileSystemRoot.getName(), File.listRoots()[0] + "tmp" + File.separator + "celeste" + File.separator);
 
         properties.setProperty(TitanNodeImpl.Port.getName(), 12000);
-        properties.setProperty(TitanNodeImpl.ConnectionType.getName(), "plain");
+        properties.setProperty(MessageService.ConnectionType.getName(), "plain");
         properties.setProperty(WebDAVDaemon.Port.getName(), 12001);
         properties.setProperty(TitanNodeImpl.InterNetworkAddress.getName(), "127.0.0.1");
         properties.setProperty(TitanNodeImpl.GatewayRetryDelaySeconds.getName(), 30);

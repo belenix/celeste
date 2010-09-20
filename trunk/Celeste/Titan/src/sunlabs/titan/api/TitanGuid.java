@@ -102,4 +102,10 @@ public interface TitanGuid extends Comparable<TitanGuid>, Serializable {
      * @param other
      */
     public int distance(final TitanGuid other);
+    
+    /**
+     * 
+     * @return
+     */
+    short getHopCount();
 }

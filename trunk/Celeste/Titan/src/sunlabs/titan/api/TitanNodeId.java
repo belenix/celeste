@@ -26,4 +26,5 @@ package sunlabs.titan.api;
 
 public interface TitanNodeId extends TitanGuid {
 
+
 }

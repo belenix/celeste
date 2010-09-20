@@ -56,7 +56,7 @@ import sunlabs.asdf.jmx.JMX;
  * and dispatching them to their respective {@code ChannelHandler.Factory} instance.
  */
 public class Asynchronous extends Thread implements Runnable, AsynchronousMBean {
-    private ServerSocketChannel server;
+    protected ServerSocketChannel server;
     private Selector selector;
     private ChannelHandler.Factory factory;
     private long highWaterMark;

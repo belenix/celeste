@@ -54,7 +54,7 @@ import sunlabs.titan.node.util.DOLRLogger;
 /**
  * Base class for managing Beehive inter-node connections.
  */
-abstract class ConnectionManager {
+public abstract class ConnectionManager {
 
     /**
      * The maximum number of yet-to-be-accepted incoming
@@ -66,7 +66,7 @@ abstract class ConnectionManager {
     // stable it also makes sense in the light of many parallel
     // connection attempts, as they can be seen in the Beehive network
     // setup phase.
-    protected static int beehiveServerSocketBacklog = 0;
+    public static int beehiveServerSocketBacklog = 0;
 
     /**
      * The number of seconds a client connection to a server should

@@ -131,16 +131,6 @@ public final class ReflectionService extends AbstractTitanService implements Ref
             Reflection.ObjectType.Response response = new Reflection.ObjectType.Response(object.getObjectType());
             return response;
     }
-    
-//    public TitanMessage getObjectType(TitanMessage message) throws ClassCastException, ClassNotFoundException, BeehiveObjectStore.NotFoundException, TitanMessage.RemoteException {
-//        Reflection.ObjectType.Request request = message.getPayload(Reflection.ObjectType.Request.class, node);
-//        TitanGuid objectId = request.getObjectId();
-//        TitanObject object = this.node.getObjectStore().get(TitanObject.class, objectId);
-//
-//        Reflection.ObjectType.Response response = new Reflection.ObjectType.Response(object.getObjectType());
-//
-//        return message.composeReply(this.node.getNodeAddress(), response);
-//}
 
     public XHTML.EFlow toXHTML(URI uri, Map<String,HTTP.Message> props) {
         return new XHTML.Div("nothing here");

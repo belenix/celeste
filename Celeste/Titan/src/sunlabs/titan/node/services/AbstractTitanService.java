@@ -94,6 +94,9 @@ public abstract class AbstractTitanService extends NotificationBroadcasterSuppor
     // JMX variables and parameters
     protected long jmxEventCounter;
     protected final ObjectName jmxObjectNameRoot;
+    
+    /** This field is {@code true} if this Service has been started (See {@link #start()}) */
+    private Boolean started;
 
     private String status;
 
@@ -105,20 +108,22 @@ public abstract class AbstractTitanService extends NotificationBroadcasterSuppor
     protected final DOLRLogger log;
 
     /**
+     * Construct a new {@link TitanService}, creating this service's spool directory, JMX connection, and log file.
      * 
-     * @param node
-     * @param applicationName
-     * @param description
+     * @param node The {@link TitanNode} enclosing this service
+     * @param serviceName The name of this service.
+     * @param description A description of this service.
      * @throws JMException
      */
-    public AbstractTitanService(TitanNode node, String applicationName, String description) throws JMException {
-        if (applicationName == null || applicationName.matches("\\s"))
+    public AbstractTitanService(TitanNode node, String serviceName, String description) throws JMException {
+        if (serviceName == null || serviceName.matches("\\s"))
             throw new IllegalArgumentException("applicationName must be non-null and cannot contain white space");
 
         node.getConfiguration().add(AbstractTitanService.LogFileSize);
         node.getConfiguration().add(AbstractTitanService.LogFileCount);
 
-        this.name = applicationName;
+        this.started = Boolean.FALSE;
+        this.name = serviceName;
         this.node = node;
         this.description = description;
         this.status = "created";
@@ -127,12 +132,12 @@ public abstract class AbstractTitanService extends NotificationBroadcasterSuppor
         // Create the private "spool" directory for this Service.
         new File(this.getSpoolDirectory()).mkdirs();
 
-        this.log = new DOLRLogger(applicationName, node.getNodeId(), this.getSpoolDirectory(),
+        this.log = new DOLRLogger(serviceName, node.getNodeId(), this.getSpoolDirectory(),
                 node.getConfiguration().asInt(AbstractTitanService.LogFileSize), node.getConfiguration().asInt(AbstractTitanService.LogFileCount));
         //this.log.load();
 
         if (node.getJMXObjectName() != null) {
-            this.jmxObjectNameRoot = JMX.objectName(node.getJMXObjectName(), applicationName);
+            this.jmxObjectNameRoot = JMX.objectName(node.getJMXObjectName(), serviceName);
 
             AbstractTitanService.registrar.registerMBean(this.jmxObjectNameRoot, this, TitanServiceMBean.class);
             AbstractTitanService.registrar.registerMBean(JMX.objectName(this.jmxObjectNameRoot, "log"), this.log, DOLRLoggerMBean.class);
@@ -323,26 +328,49 @@ public abstract class AbstractTitanService extends NotificationBroadcasterSuppor
     	}
     	return div;
     }
+    
+    /**
+     * Return the value of {@link #started}.
+     * @return the value of {@link #started}.
+     */
+    public boolean isStarted() {
+        synchronized (this.started) {
+            return this.started;
+        }
+    }
 
     /**
      * <p>
      * Overrides of this method must protect themselves if start() is called
      * multiple times, and if it is called by two threads at the same time.
      * </p>
+     * <pre>
+     * synchronized (this.started) {
+     *   if (this.started) {
+     *     return;
+     *   }
+     * }
+     * </pre>
      */
-    public synchronized void start() throws Exception {
+    public synchronized void start() {
+        synchronized (this.started) {
+            this.started = Boolean.TRUE;
+        }
         this.setStatus("idle");
     }
 
     /**
      * Restart this service by invoking the Service's {@link #stop()} and {@link #start()} methods.
      */
-    public synchronized void restart() throws Exception {
+    public synchronized void restart() {
         this.stop();
         this.start();
     }
 
     public synchronized void stop() {
+        synchronized (this.started) {
+            this.started = Boolean.FALSE;
+        }
         this.setStatus("stopped");
     }
 

@@ -362,7 +362,10 @@ public final class PublishDaemon extends AbstractTitanService implements Publish
     
     @Override
     public synchronized void start() {
-    	this.setStatus("initializing");
+        if (this.isStarted()) {
+            return;
+        }
+        super.start();
 
     	if (this.node.getConfiguration().asInt(PublishDaemon.ExpirePeriodSeconds) > 0) {
     		this.expireDaemonFuture = this.threadPool.scheduleWithFixedDelay(
@@ -397,22 +400,7 @@ public final class PublishDaemon extends AbstractTitanService implements Publish
 
     @Override
     public void stop() {
-//        this.setStatus("stopping");
-//        if (this.publishDaemon != null) {
-//            if (this.log.isLoggable(Level.INFO)) {
-//                this.log.info("Interrupting Thread %s%n", this.publishDaemon);
-//            }
-//            this.publishDaemon.interrupt(); // Logged
-//            this.publishDaemon = null;
-//        }
-//        if (this.expireDaemon != null) {
-//            if (this.log.isLoggable(Level.INFO)) {
-//                this.log.info("Interrupting Thread %s%n", this.expireDaemon);
-//            }
-//            this.expireDaemon.interrupt(); // Logged
-//            this.expireDaemon = null;
-//        }
-//        this.setStatus("stopped");
+        super.stop();
     }
 
     public void jmxSetPublishObjectInterstitialSleepTime(long time) {

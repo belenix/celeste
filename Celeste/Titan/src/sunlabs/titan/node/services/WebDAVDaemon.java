@@ -34,16 +34,12 @@ import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
 import java.net.InetSocketAddress;
 import java.net.MalformedURLException;
+import java.net.SocketException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
-import java.security.InvalidKeyException;
-import java.security.NoSuchAlgorithmException;
-import java.security.NoSuchProviderException;
-import java.security.SignatureException;
-import java.security.cert.CertificateException;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -134,7 +130,6 @@ public final class WebDAVDaemon extends AbstractTitanService implements WebDAVDa
          * HTTP protocol POST request from a client.
          */
         private class HttpPost implements HTTP.Request.Method.Handler {
-
             public HttpPost(HTTP.Server server, WebDAV.Backend backend) {
                 super();
             }
@@ -160,7 +155,6 @@ public final class WebDAVDaemon extends AbstractTitanService implements WebDAVDa
          * HTTP protocol PUT request from a client.
          */
         private class HttpPut implements HTTP.Request.Method.Handler {
-
             public HttpPut(HTTP.Server server, WebDAV.Backend backend) {
                 super();
             }
@@ -257,25 +251,33 @@ public final class WebDAVDaemon extends AbstractTitanService implements WebDAVDa
         
         @Override
         public void run() {
+            ServerSocketChannel serverSocketChannel = null;
+
             try {                
-                ServerSocketChannel serverSocketChannel = ServerSocketChannel.open();
+                serverSocketChannel = ServerSocketChannel.open();
                 serverSocketChannel.configureBlocking(true);
                 serverSocketChannel.socket().bind(new InetSocketAddress(WebDAVDaemon.this.node.getConfiguration().asInt(WebDAVDaemon.Port)));
                 serverSocketChannel.socket().setReuseAddress(true);
-
-//                ExecutorService executor = (ThreadPoolExecutor) Executors.newFixedThreadPool(WebDAVDaemon.this.clientMaximum,
-//                        new SimpleThreadFactory(WebDAVDaemon.this.node.getObjectId() + ":" + WebDAVDaemon.this.getName() + ".Server"));
-
-                WebDAV.Backend backend;
-                
-                URL root = WebDAVServerMain.class.getClass().getResource("/");
-                if (root == null) {
-                    backend = new ClassLoaderBackend(WebDAVServerMain.class.getClassLoader(), "web/");
-                } else {
-                    backend = new FileSystemBackend("web/");                
+            } catch (IOException e) {
+                if (WebDAVDaemon.this.log.isLoggable(Level.SEVERE)) {
+                    WebDAVDaemon.this.log.severe("Cannot accept connections: %s", e);
                 }
+                return;
+            }
 
-                while (true) {
+            //  ExecutorService executor = (ThreadPoolExecutor) Executors.newFixedThreadPool(WebDAVDaemon.this.clientMaximum,
+            //  new SimpleThreadFactory(WebDAVDaemon.this.node.getObjectId() + ":" + WebDAVDaemon.this.getName() + ".Server"));
+            WebDAV.Backend backend;
+
+            URL root = WebDAVServerMain.class.getClass().getResource("/");
+            if (root == null) {
+                backend = new ClassLoaderBackend(WebDAVServerMain.class.getClassLoader(), "web/");
+            } else {
+                backend = new FileSystemBackend("web/");                
+            }
+
+            while (true) {
+                try {
                     SocketChannel clientSocket = serverSocketChannel.accept();
                     clientSocket.socket().setKeepAlive(false);
                     clientSocket.socket().setSoTimeout(WebDAVDaemon.this.node.getConfiguration().asInt(WebDAVDaemon.ClientTimeoutMillis));
@@ -283,9 +285,9 @@ public final class WebDAVDaemon extends AbstractTitanService implements WebDAVDa
                     clientSocket.socket().setReceiveBufferSize(16*1024);
                     clientSocket.socket().setSendBufferSize(16*1024);
                     HTTPServer server = new HTTPServer(clientSocket);
-                    
+
                     server.setName(WebDAVDaemon.this.node.getNodeId().toString() + ":" + server.getName());
-                    
+
                     HTTP.NameSpace handler = new TitanNodeURLNameSpace(server, null);
                     HTTP.NameSpace fileHandler = new WebDAVNameSpace(server, backend);
                     server.addNameSpace(new URI("/"), handler);
@@ -296,11 +298,23 @@ public final class WebDAVDaemon extends AbstractTitanService implements WebDAVDa
                     server.addNameSpace(new URI("/dojo"), fileHandler); // This namespace is in the filesystem/jar file
                     server.start();
                     //executor.submit(server);
+                } catch (SocketException e) {
+                    if (WebDAVDaemon.this.log.isLoggable(Level.SEVERE)) {
+                        WebDAVDaemon.this.log.severe("Connection failed: %s", e);
+                    }
+                } catch (URISyntaxException e) {
+                    if (WebDAVDaemon.this.log.isLoggable(Level.SEVERE)) {
+                        WebDAVDaemon.this.log.severe("Cannot setup connection: %s", e);
+                    }
+                } catch (JMException e) {
+                    if (WebDAVDaemon.this.log.isLoggable(Level.SEVERE)) {
+                        WebDAVDaemon.this.log.severe("Cannot setup connection: %s", e);
+                    }                
+                } catch (IOException e) {
+                    if (WebDAVDaemon.this.log.isLoggable(Level.SEVERE)) {
+                        WebDAVDaemon.this.log.severe("Cannot setup connection: %s", e);
+                    }      
                 }
-            } catch (java.net.BindException e) {
-                System.err.printf("%s: Cannot open a server socket on this host.%n", e.getLocalizedMessage());
-            } catch (Exception e) {
-                e.printStackTrace ();
             }
             // loop accepting connections and dispatching new thread to handle incoming requests.
         }
@@ -644,9 +658,16 @@ public final class WebDAVDaemon extends AbstractTitanService implements WebDAVDa
     }
 
     @Override
-    public void start()
-    throws CertificateException, SignatureException, NoSuchAlgorithmException, InvalidKeyException, NoSuchProviderException, IOException {
+    public synchronized void start() {
+        if (this.isStarted()) {
+            return;
+        }
+        super.start();
+        
         if (this.daemon != null) {
+            if (WebDAVDaemon.this.log.isLoggable(Level.WARNING)) {
+                WebDAVDaemon.this.log.warning("Already started");
+            }
             // We've already been started
             return;
         }
@@ -655,12 +676,11 @@ public final class WebDAVDaemon extends AbstractTitanService implements WebDAVDa
 
         this.daemon = new Daemon();
         this.daemon.start();
-
-        this.setStatus("idle");
     }
 
     @Override
     public void stop() {
+        super.stop();
 //        this.setStatus("stopping");
 //        if (this.daemon != null) {
 //            if (this.log.isLoggable(Level.INFO)) {

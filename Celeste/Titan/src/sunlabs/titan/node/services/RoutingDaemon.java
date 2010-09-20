@@ -59,7 +59,6 @@ import sunlabs.titan.node.Publishers;
 import sunlabs.titan.node.Reputation;
 import sunlabs.titan.node.TitanMessage;
 import sunlabs.titan.node.TitanMessage.RemoteException;
-import sunlabs.titan.node.TitanNodeImpl;
 
 /**
  * A Titan Node routing table maintenance daemon.
@@ -597,10 +596,10 @@ public final class RoutingDaemon extends AbstractTitanService implements Routing
             this.log.config("%s", this.node.getConfiguration().get(RoutingDaemon.IntroductionRateSeconds));
             this.log.config("%s", this.node.getConfiguration().get(RoutingDaemon.ReunionRateSeconds));
             this.log.config("%s", this.node.getConfiguration().get(RoutingDaemon.DossierTimeToLiveSeconds));
-            if (this.node.getConfiguration().get(TitanNodeImpl.ClientTimeoutSeconds).asLong() < this.node.getConfiguration().get(RoutingDaemon.IntroductionRateSeconds).asLong()
-                    && this.node.getConfiguration().get(TitanNodeImpl.ClientTimeoutSeconds).asLong() < this.node.getConfiguration().get(RoutingDaemon.ReunionRateSeconds).asLong()) {
+            if (this.node.getConfiguration().get(MessageService.ClientTimeoutSeconds).asLong() < this.node.getConfiguration().get(RoutingDaemon.IntroductionRateSeconds).asLong()
+                    && this.node.getConfiguration().get(MessageService.ClientTimeoutSeconds).asLong() < this.node.getConfiguration().get(RoutingDaemon.ReunionRateSeconds).asLong()) {
                 this.log.config("Warning %s is less than %s or %s and will result in unnecessary close and reopen of connections.",
-                        TitanNodeImpl.ClientTimeoutSeconds,
+                        MessageService.ClientTimeoutSeconds,
                         RoutingDaemon.IntroductionRateSeconds,
                         RoutingDaemon.ReunionRateSeconds);
             }
@@ -609,7 +608,6 @@ public final class RoutingDaemon extends AbstractTitanService implements Routing
 
     /**
      * Receive and process a JoinOperation message.
-     *
      * <p>
      * Route a message to the next hop for the destination node object-id.
      * If no more hops, then this node is the root node for the joining node
@@ -628,7 +626,8 @@ public final class RoutingDaemon extends AbstractTitanService implements Routing
             // This clause is executed on the non-root nodes of the joining
             // object-id.  ONLY after the root has created a response: we only
             // augment the data in the response.
-            TitanMessage reply = this.node.transmit(message);
+            TitanMessage reply = this.node.getService(MessageService.class).transmit(message);
+            //TitanMessage reply = this.node.transmit(message);
             JoinOperation.Response response = reply.getPayload(JoinOperation.Response.class, this.node);
             Set<NodeAddress> addresses = response.getMap();
             addresses.addAll(this.node.getNeighbourMap().keySet());
@@ -638,7 +637,6 @@ public final class RoutingDaemon extends AbstractTitanService implements Routing
             // This clause is executed on the root node of the joining object-id.
             Map<TitanGuid,Set<Publishers.PublishRecord>> objectRoots = new Hashtable<TitanGuid,Set<Publishers.PublishRecord>>();
 
-            //for (TitanGuid objectId : this.node.getObjectPublishers().keySet()) {
             for (TitanGuid objectId: this.node.getObjectPublishers()) {
                 if (this.node.getNeighbourMap().isRoot(objectId)) {
                     objectRoots.put(objectId, this.node.getObjectPublishers().getPublishers(objectId));
@@ -675,8 +673,8 @@ public final class RoutingDaemon extends AbstractTitanService implements Routing
             return null;
         }
 
-        TitanMessage reply;
-        if ((reply = this.node.transmit(gateway, message)) == null) {
+        TitanMessage reply = this.node.getService(MessageService.class).transmit(gateway, message);
+        if (reply == null) {
             return null;
         }
 
@@ -782,7 +780,9 @@ public final class RoutingDaemon extends AbstractTitanService implements Routing
             PingOperation.Response response = new PingOperation.Response(this.node.getNeighbourMap().keySet(), publishers);
             return response;
         } else {
-            TitanMessage reply = this.node.transmit(message);
+//            TitanMessage reply = this.node.transmit(message);
+
+            TitanMessage reply = this.node.getService(MessageService.class).transmit(message);
             PingOperation.Response response = reply.getPayload(PingOperation.Response.class, this.node);
             return response;
         }
@@ -796,10 +796,14 @@ public final class RoutingDaemon extends AbstractTitanService implements Routing
      */
     public PingOperation.Response ping(NodeAddress target, PingOperation.Request request) throws IOException, RemoteException {
         long startTime = System.currentTimeMillis();
-        this.log.finest("%s", target.format());
+        if (this.log.isLoggable(Level.FINEST)) {
+            this.log.finest("%s", target.format());
+        }
         TitanMessage reply = this.node.sendToNode(target.getObjectId(), RoutingDaemon.name, "ping", request);
         long latency = System.currentTimeMillis() - startTime;
-        this.log.finest("%s response %dms", target.format(), latency);
+        if (this.log.isLoggable(Level.FINEST)) {
+            this.log.finest("%s response %dms", target.format(), latency);
+        }
 
         if (reply != null) {
             if (reply.getStatus().isSuccessful()) {
@@ -842,36 +846,42 @@ public final class RoutingDaemon extends AbstractTitanService implements Routing
     }
 
     @Override
-    public synchronized void start() throws Exception {
+    public synchronized void start() {
+        if (this.isStarted()) {
+            return;
+        }
+        super.start();
+        
         if (this.introductionDaemon == null) {
             this.setStatus("start");
-            this.introductionDaemon = new Introduction();
+            try {
+                this.introductionDaemon = new Introduction();
+            } catch (JMException e) {
+                this.stop();
+                if (RoutingDaemon.this.log.isLoggable(Level.SEVERE)) {
+                    RoutingDaemon.this.log.severe("Cannot start: %s", e);
+                }
+                return;
+            }
             this.introductionDaemon.start();
         }
         if (this.reunion == null) {
-            this.reunion = new Reunion();
+            try {
+                this.reunion = new Reunion();
+            } catch (JMException e) {
+                this.stop();
+                if (RoutingDaemon.this.log.isLoggable(Level.SEVERE)) {
+                    RoutingDaemon.this.log.severe("Cannot start: %s", e);
+                }
+                return;
+            }
             this.reunion.start();
         }
     }
 
     @Override
     public void stop() {
-//        this.setStatus("stopped");
-//        if (this.introductionDaemon != null) {
-//            if (this.log.isLoggable(Level.INFO)) {
-//                this.log.info("Interrupting Thread %s%n", this.introductionDaemon);
-//            }
-//            this.introductionDaemon.interrupt(); // Logged
-//            this.introductionDaemon = null;
-//        }
-//
-//        if (this.reunion != null) {
-//            if (this.log.isLoggable(Level.INFO)) {
-//                this.log.info("Interrupting Thread %s%n", this.reunion);
-//            }
-//            this.reunion.interrupt(); // Logged
-//            this.reunion = null;
-//        }
+        super.stop();
     }
 
     public XHTML.EFlow toXHTML(URI uri, Map<String,HTTP.Message> props) {

@@ -25,7 +25,7 @@ package sunlabs.titan.api.management;
 
 public interface NodeMBean {
     public String jmxGetObjectIdAsString();
-//    public int jmxGetBeehiveMaxServers();
-    public long jmxGetBeehiveServerMaxIdleTime();
+////    public int jmxGetBeehiveMaxServers();
+//    public long jmxGetBeehiveServerMaxIdleTime();
 
 }

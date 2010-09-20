@@ -77,7 +77,7 @@ class PlainConnectionManager extends ConnectionManager {
 
     @Override
     public ServerSocket getServerSocket() throws IOException {
-        return this.serverSocketFactory.createServerSocket(this.nodeAddress.getBeehivePort(), ConnectionManager.beehiveServerSocketBacklog, this.inetAddress);
+        return this.serverSocketFactory.createServerSocket(this.nodeAddress.getPort(), ConnectionManager.beehiveServerSocketBacklog, this.inetAddress);
     }
 
     @Override

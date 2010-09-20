@@ -475,7 +475,7 @@ public final class NeighbourMap {
                 } else {
                     XMLRoute route = xml.newXMLRoute(digit, level);
                     for (NodeAddress n : this.routes[level][digit]) {
-                        route.add(xml.newXMLRouteNode(n.getObjectId(), n.getInternetworkAddress().getAddress().toString(), n.getBeehivePort(), n.getHTTPInterface().getPort()));
+                        route.add(xml.newXMLRouteNode(n.getObjectId(), n.getInternetworkAddress().getAddress().toString(), n.getPort(), n.getHTTPInterface().getPort()));
                     }
                     table.add(route);
                 }                

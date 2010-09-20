@@ -84,15 +84,15 @@ public final class NodeKey {
         }
     }
 
-    KeyStore getKeyStore() {
+    public KeyStore getKeyStore() {
         return this.keyStore;
     }
 
-    char[] getKeyPassword() {
+    public char[] getKeyPassword() {
         return keyPassword.toCharArray();
     }
 
-    TitanGuidImpl getObjectId() {
+    public TitanGuidImpl getObjectId() {
         return this.objectId;
     }
 

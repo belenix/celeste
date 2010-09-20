@@ -41,7 +41,7 @@ import sunlabs.titan.node.util.DOLRLogger;
 /**
  * A manager for SSL connections.
  */
-class SSLConnectionManager extends PlainConnectionManager {
+public class SSLConnectionManager extends PlainConnectionManager {
 
     private SSLContext sslContext;
 
@@ -79,7 +79,7 @@ class SSLConnectionManager extends PlainConnectionManager {
 //    private static int defaultRealSSLSessionCacheSize = 2048;
 
 
-    SSLConnectionManager(NodeAddress nodeAddress, NodeKey nodeKey) throws IOException {
+    public SSLConnectionManager(NodeAddress nodeAddress, NodeKey nodeKey) throws IOException {
 
 //            if (false) {
 //            // Creating this socket before the node is ready to receive 

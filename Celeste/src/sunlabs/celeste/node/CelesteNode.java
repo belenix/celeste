@@ -27,7 +27,6 @@ package sunlabs.celeste.node;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.URL;
-import java.text.DateFormat;
 
 import sunlabs.asdf.util.AbstractStoredMap;
 import sunlabs.asdf.util.Time;

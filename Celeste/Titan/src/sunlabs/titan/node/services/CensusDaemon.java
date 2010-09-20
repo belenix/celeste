@@ -480,29 +480,22 @@ public final class CensusDaemon extends AbstractTitanService implements Census, 
 
     @Override
     public synchronized void start() {
-        this.setStatus("initializing");
+        if (this.isStarted()) {
+            return;
+        }
+        super.start();
+        
         if (this.daemon == null) {
             try {
                 this.daemon = new ReportDaemon();
             } catch (JMException e) {
-                e.printStackTrace();
+                this.stop();
+                if (CensusDaemon.this.log.isLoggable(Level.SEVERE)) {
+                    CensusDaemon.this.log.severe("Cannot start: %s", e);
+                }
             }
             this.daemon.start();
         }
-    }
-
-    @Override
-    public void stop() {
-        this.setStatus("stopping");
-//        synchronized (this.daemon) {
-//            if (this.log.isLoggable(Level.INFO)) {
-//                this.log.info("Interrupting Thread %s%n", this.daemon);
-//            }
-//
-//            this.daemon.interrupt(); // Logged
-//            this.daemon.notifyAll();
-//            this.daemon = null;
-//        }
     }
 
     public Map<TitanNodeId,OrderedProperties> select(int count) throws ClassCastException {
@@ -545,8 +538,8 @@ public final class CensusDaemon extends AbstractTitanService implements Census, 
                 request
         );
 
-        TitanMessage reply;
-        if ((reply = this.node.transmit(gateway, message)) == null) {
+        TitanMessage reply = this.node.getService(MessageService.class).transmit(gateway, message);
+        if (reply  == null) {
             return null;
         }
 

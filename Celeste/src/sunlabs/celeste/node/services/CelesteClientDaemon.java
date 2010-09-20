@@ -528,7 +528,11 @@ public class CelesteClientDaemon extends AbstractTitanService {
     }
 
     @Override
-    public synchronized void start() throws Exception {
+    public synchronized void start() {
+        if (this.isStarted()) {
+            return;
+        }
+        super.start();
         if (this.clientDaemon == null) {
             this.setStatus("start");
             this.clientDaemon = new ClientListener();
@@ -538,14 +542,7 @@ public class CelesteClientDaemon extends AbstractTitanService {
 
     @Override
     public void stop() {
-//        this.setStatus("stopped");
-//        if (this.clientDaemon != null) {
-//            if (this.log.isLoggable(Level.INFO)) {
-//                this.log.info("Interrupting Thread %s%n", this.clientDaemon);
-//            }
-//            this.clientDaemon.interrupt(); // Logged
-//            this.clientDaemon = null;
-//        }
+        super.stop();
     }
 
 //    /**

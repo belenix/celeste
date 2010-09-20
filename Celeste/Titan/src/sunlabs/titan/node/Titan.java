@@ -40,6 +40,7 @@ import sunlabs.asdf.util.Time;
 import sunlabs.titan.Copyright;
 import sunlabs.titan.api.TitanNode;
 import sunlabs.titan.node.TitanNodeImpl.ConfigurationException;
+import sunlabs.titan.node.services.MessageService;
 import sunlabs.titan.node.services.WebDAVDaemon;
 import sunlabs.titan.util.OrderedProperties;
 
@@ -152,7 +153,7 @@ public class Titan {
 
         properties.setProperty(WebDAVDaemon.Port.getName(), 12001);
         properties.setProperty(TitanNodeImpl.Port.getName(), 12000);
-        properties.setProperty(TitanNodeImpl.ConnectionType.getName(), "plain");
+        properties.setProperty(MessageService.ConnectionType.getName(), "plain");
         properties.setProperty(TitanNodeImpl.InterNetworkAddress.getName(), "127.0.0.1");
         properties.setProperty(TitanNodeImpl.GatewayRetryDelaySeconds.getName(), 30);
 
@@ -320,7 +321,7 @@ public class Titan {
 
         // Start all of the nodes as threads in one JVM.
         if (useThreads) {
-            TitanNodeImpl[] node = new TitanNodeImpl[n_nodes];
+            TitanNode[] node = new TitanNode[n_nodes];
             Thread[] thread = new Thread[n_nodes];
 
             try {
@@ -336,7 +337,7 @@ public class Titan {
                     thread[i] = node[i].start();
 
                     System.out.printf("%s [%d ms] %s%n", Time.ISO8601(System.currentTimeMillis()),
-                            System.currentTimeMillis() - Long.parseLong(node[i].getProperty(TitanNodeImpl.StartTime.getName())),
+                            System.currentTimeMillis() - node[i].getConfiguration().asLong(TitanNodeImpl.StartTime),
                             node[i].getNodeAddress().format());
 
                     try {

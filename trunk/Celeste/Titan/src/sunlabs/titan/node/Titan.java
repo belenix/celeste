@@ -40,7 +40,7 @@ import sunlabs.asdf.util.Time;
 import sunlabs.titan.Copyright;
 import sunlabs.titan.api.TitanNode;
 import sunlabs.titan.node.TitanNodeImpl.ConfigurationException;
-import sunlabs.titan.node.services.MessageService;
+import sunlabs.titan.node.services.TCPMessageService;
 import sunlabs.titan.node.services.WebDAVDaemon;
 import sunlabs.titan.util.OrderedProperties;
 
@@ -151,9 +151,9 @@ public class Titan {
         // This way to construct the default spool directory is very UNIX-centric.
         properties.setProperty(TitanNodeImpl.LocalFileSystemRoot.getName(), File.listRoots()[0] + "tmp" + File.separator + "titan" + File.separator);
 
-        properties.setProperty(WebDAVDaemon.Port.getName(), 12001);
+        properties.setProperty(WebDAVDaemon.ServerSocketPort.getName(), 12001);
         properties.setProperty(TitanNodeImpl.Port.getName(), 12000);
-        properties.setProperty(MessageService.ConnectionType.getName(), "plain");
+        properties.setProperty(TCPMessageService.ConnectionType.getName(), "plain");
         properties.setProperty(TitanNodeImpl.InterNetworkAddress.getName(), "127.0.0.1");
         properties.setProperty(TitanNodeImpl.GatewayRetryDelaySeconds.getName(), 30);
 
@@ -241,7 +241,7 @@ public class Titan {
                     String port = tokens[0];
                     if (tokens.length > 1)
                         webdavPortIncrement = Integer.parseInt(tokens[1]);
-                    properties.setProperty(WebDAVDaemon.Port.getName(), port);
+                    properties.setProperty(WebDAVDaemon.ServerSocketPort.getName(), port);
                 } else if (args[i].equals("--jmx-port")) {
                     String[] tokens = args[++i].split(",");
                     String port = tokens[0];
@@ -268,7 +268,7 @@ public class Titan {
                     System.out.printf(" [--delay <integer>] (%d)%n", interprocessStartupDelayTimeSeconds);
                     System.out.printf(" [--n-nodes <integer>] (%d)%n", n_nodes);
                     System.out.printf(" [--threads] (use threads instead of spawning a JVM for each node)%n");
-                    System.out.printf(" [--http-port <integer>[,<integer>]] (%d,%d)%n", properties.getPropertyAsInt(WebDAVDaemon.Port.getName()), webdavPortIncrement);
+                    System.out.printf(" [--http-port <integer>[,<integer>]] (%d,%d)%n", properties.getPropertyAsInt(WebDAVDaemon.ServerSocketPort.getName()), webdavPortIncrement);
                     System.out.printf(" [--jar <file name>] (%s)%n", String.valueOf(jarFile));
                     System.out.printf(" [--java <file name>] (%s)%n", javaFile);
                     System.out.printf(" [--jmx-port <integer>[,<integer>]] (%d,%d)%n] (%d)%n", jmxPort, jmxPortIncrement);
@@ -346,9 +346,9 @@ public class Titan {
                         e.printStackTrace();
                     }
 
-                    properties.setProperty(TitanNodeImpl.GatewayURL.getName(), node[0].getNodeAddress().getHTTPInterface());
+                    properties.setProperty(TitanNodeImpl.GatewayURL.getName(), node[0].getNodeAddress().getInspectorInterface());
                     properties.setProperty(TitanNodeImpl.Port.getName(), properties.getPropertyAsInt(TitanNodeImpl.Port.getName()) + titanPortIncrement);
-                    properties.setProperty(WebDAVDaemon.Port.getName(), properties.getPropertyAsInt(WebDAVDaemon.Port.getName()) + webdavPortIncrement);
+                    properties.setProperty(WebDAVDaemon.ServerSocketPort.getName(), properties.getPropertyAsInt(WebDAVDaemon.ServerSocketPort.getName()) + webdavPortIncrement);
                 }
                 if (n_nodes > 1) {
                     System.out.printf("%s All node threads running.%n", Time.ISO8601(System.currentTimeMillis()));
@@ -363,7 +363,7 @@ public class Titan {
                 }
             } catch (java.net.BindException e) {
                 System.out.printf("%s titan-port=%d http-port=%d jmx-port=%d%n",
-                        e.toString(),  properties.getPropertyAsInt(TitanNodeImpl.Port.getName()), properties.getPropertyAsInt(WebDAVDaemon.Port.getName()),
+                        e.toString(),  properties.getPropertyAsInt(TitanNodeImpl.Port.getName()), properties.getPropertyAsInt(WebDAVDaemon.ServerSocketPort.getName()),
                         jmxPort);
             } catch (IOException e) {
                 e.printStackTrace();
@@ -430,12 +430,12 @@ public class Titan {
             // subsequent nodes use it as a gateway.
             //
             if (i == 0) {
-                gatewayArgument = "http://" +  properties.getProperty(TitanNodeImpl.InterNetworkAddress.getName()) + ":" + properties.getProperty(WebDAVDaemon.Port.getName());
+                gatewayArgument = "http://" +  properties.getProperty(TitanNodeImpl.InterNetworkAddress.getName()) + ":" + properties.getProperty(WebDAVDaemon.ServerSocketPort.getName());
                 properties.setProperty(TitanNodeImpl.GatewayURL.getName(), gatewayArgument);
             }
 
             properties.setProperty(TitanNodeImpl.Port.getName(), properties.getPropertyAsInt(TitanNodeImpl.Port.getName()) + titanPortIncrement);
-            properties.setProperty(WebDAVDaemon.Port.getName(), properties.getPropertyAsInt(WebDAVDaemon.Port.getName()) + webdavPortIncrement);
+            properties.setProperty(WebDAVDaemon.ServerSocketPort.getName(), properties.getPropertyAsInt(WebDAVDaemon.ServerSocketPort.getName()) + webdavPortIncrement);
             if (jmxPort != null) {
                 jmxPort += jmxPortIncrement;
             }

@@ -56,7 +56,7 @@ import sunlabs.titan.util.DOLRStatus;
  * via the underlying DHT routing mechanism of the system.  Each message contains several
  * fields used to control the routing of the message and a payload consisting of a {@link Serializable} Java object.
  * </p>
- * @see MessageService
+ * @see sunlabs.titan.node.services.api.MessageService
  */
 public class TitanMessage implements Serializable, XHTMLInspectable {
     private final static long serialVersionUID = 1L;
@@ -64,7 +64,7 @@ public class TitanMessage implements Serializable, XHTMLInspectable {
     /**
      * Create a new {@link TitanMessage} instance by reading it from an {@link InputStream}.
      * @param input
-     * @return
+     * @return a new {@link TitanMessage} instance by reading it from an {@link InputStream}.
      * @throws IOException
      * @throws ClassNotFoundException
      */

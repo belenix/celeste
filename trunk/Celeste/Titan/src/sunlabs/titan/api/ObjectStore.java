@@ -33,7 +33,7 @@ import sunlabs.titan.node.BeehiveObjectStore.ObjectExistenceException;
 import sunlabs.titan.node.BeehiveObjectStore.UnacceptableObjectException;
 import sunlabs.titan.node.PublishObjectMessage;
 import sunlabs.titan.node.UnpublishObjectMessage;
-import sunlabs.titan.node.object.BeehiveObjectHandler;
+import sunlabs.titan.node.object.TitanObjectHandler;
 import sunlabs.titan.node.services.api.Publish;
 import sunlabs.titan.node.services.xml.TitanXML.XMLObjectStore;
 
@@ -103,7 +103,7 @@ public interface ObjectStore extends XHTMLInspectable, Iterable<TitanGuid> {
      * @throws BeehiveObjectStore.ObjectExistenceException The {@link TitanObject} already exists.
      * @throws BeehiveObjectStore.NoSpaceException There is no space on this node for the {@link TitanObject}
      * @throws BeehiveObjectStore.UnacceptableObjectException The {@link TitanObject} is unacceptable as it is presented due
-     *         to some inconsistency or the object's {@link BeehiveObjectHandler} rejected it during publishing.
+     *         to some inconsistency or the object's {@link TitanObjectHandler} rejected it during publishing.
      * @throws ClassNotFoundException 
      */
     public TitanGuid create(TitanObject object) throws BeehiveObjectStore.InvalidObjectException, BeehiveObjectStore.ObjectExistenceException,
@@ -115,10 +115,10 @@ public interface ObjectStore extends XHTMLInspectable, Iterable<TitanGuid> {
      * If the object is not found, the node
      * will perform a clean-up and <em>unpublish</em> of the specified {@code TitanGuid}
      * lest the system have some residual, but incorrect, location information for the
-     * object-id and {@link BeehiveObjectStore.NotFoundException} is thrown.
+     * object-id and {@link sunlabs.titan.node.BeehiveObjectStore.NotFoundException} is thrown.
      * </p>
      * <p>
-     * The BeehiveObject instance returned from this method cannot be put back in the object store
+     * The {@link TitanObject} instance returned from this method cannot be put back in the object store
      * (ie. the subject of a {@link ObjectStore#store(TitanObject) store} or
      * {@link ObjectStore#update(TitanObject) update} method).
      * </p>
@@ -130,7 +130,7 @@ public interface ObjectStore extends XHTMLInspectable, Iterable<TitanGuid> {
      * to obtain an instance of a {@code BeehiveObject}
      * that you can put back in the object store.
      * </p>
-     *
+     * @param klasse
      * @param objectId
      * @throws ClassCastException
      */

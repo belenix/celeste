@@ -101,7 +101,7 @@ public class ProfileCache {
      *                      is valid
      */
     public ProfileCache(TitanNode node, int timeout) {
-        this(node.getNodeAddress().getInternetworkAddress(), null, timeout);
+        this(new InetSocketAddress(node.getNodeAddress().getMessageURL().getHost(), node.getNodeAddress().getMessageURL().getPort()), null, timeout);
     }
 
     /**

@@ -52,8 +52,7 @@ import sunlabs.titan.api.TitanNode;
 import sunlabs.titan.api.TitanObject.Metadata;
 import sunlabs.titan.node.AbstractBeehiveObject;
 import sunlabs.titan.node.BeehiveObjectStore;
-import sunlabs.titan.node.BeehiveObjectStore.InvalidObjectException;
-import sunlabs.titan.node.BeehiveObjectStore.NoSpaceException;
+import sunlabs.titan.node.BeehiveObjectStore.ObjectExistenceException;
 import sunlabs.titan.node.Publishers.PublishRecord;
 import sunlabs.titan.node.TitanMessage;
 import sunlabs.titan.node.TitanMessage.RemoteException;
@@ -99,7 +98,7 @@ import sunlabs.titan.util.DOLRStatus;
  * <p>
  * While we can always find a node to take on the role of a server,
  * we are not guaranteed that this node previously participated in Linearizer activity for a specific object-id.
- * A node can take on three states in relation to its involvment in Linearizer activity for an object-id.
+ * A node can take on three states in relation to its involvement in Linearizer activity for an object-id.
  * </p>
  * <ul>
  * <li>New: the node has no previous Linearizer information for the object-id.
@@ -312,10 +311,18 @@ public class AObjectVersionService extends AbstractObjectHandler implements AObj
             return new TitanGuidImpl("always the same".getBytes());
         }
 
+        /**
+         * Set the {@link MutableObject.ObjectHistory} in this object.
+         * @param history
+         */
         public void setObjectHistory(MutableObject.ObjectHistory history) {
             this.history = history;
         }
 
+        /**
+         * Get the {@link MutableObject.ObjectHistory} from this object.
+         * @return the {@link MutableObject.ObjectHistory} from this object.
+         */
         public MutableObject.ObjectHistory getObjectHistory() {
             return this.history;
         }
@@ -374,77 +381,56 @@ public class AObjectVersionService extends AbstractObjectHandler implements AObj
      * DOLRStatus.INTERNAL_SERVER_ERROR ClassNotFoundException, IOException
      *
      * @param message
+     * @throws ClassNotFoundException 
+     * @throws TitanMessage.RemoteException 
+     * @throws ClassCastException 
+     * @throws BeehiveObjectStore.DeleteTokenException 
+     * @throws BeehiveObjectStore.UnacceptableObjectException 
+     * @throws BeehiveObjectStore.NoSpaceException 
+     * @throws BeehiveObjectStore.InvalidObjectException 
+     * @throws BeehiveObjectStore.NotFoundException 
+     * @throws BeehiveObjectStore.ObjectExistenceException 
      */
-    public TitanMessage createObjectHistory(TitanMessage message) {
+    public MutableObject.CreateOperation.Response createObjectHistory(TitanMessage message) throws ClassCastException, TitanMessage.RemoteException, ClassNotFoundException, BeehiveObjectStore.DeleteTokenException,
+        BeehiveObjectStore.UnacceptableObjectException, BeehiveObjectStore.InvalidObjectException, BeehiveObjectStore.NoSpaceException, BeehiveObjectStore.NotFoundException,
+        BeehiveObjectStore.ObjectExistenceException {
+
+        // The message contains a CreateOperation.Request as the payload.
+        MutableObject.CreateOperation.Request request = message.getPayload(MutableObject.CreateOperation.Request.class, this.node);
+        if (this.log.isLoggable(Level.FINE)) {
+            this.log.info("%s", request.getReplicaId());
+        }
+
+        // Construct an storable object history object.
+        MutableObject.ObjectHistory initialObjectHistory = new MutableObject.ObjectHistory(request.getObjectId(), request.getReplicaId());
+        initialObjectHistory.add(new MutableObject.TimeStamp());
+        AObjectVersionService.FSBFTObject object = new AObjectVersionService.FSBFTObject(initialObjectHistory, request.getTimeToLive(),  request.getDeleteTokenId());
+
+        BeehiveObjectStore.CreateSignatureVerifiedObject(request.getReplicaId(), object);
         try {
-            // The message contains a CreateOperation.Request as the payload.
-            MutableObject.CreateOperation.Request request = message.getPayload(MutableObject.CreateOperation.Request.class, this.node);
-            if (this.log.isLoggable(Level.FINE)) {
-                this.log.info("%s", request.getReplicaId());
-            }
-
-            // Construct an storable object history object.
-            MutableObject.ObjectHistory initialObjectHistory = new MutableObject.ObjectHistory(request.getObjectId(), request.getReplicaId());
-            initialObjectHistory.add(new MutableObject.TimeStamp());
-            AObjectVersionService.FSBFTObject object = new AObjectVersionService.FSBFTObject(initialObjectHistory, request.getTimeToLive(),  request.getDeleteTokenId());
-
+            TitanGuid objectId = AObjectVersionService.this.node.getObjectStore().create(object);
+            AObjectVersionService.this.node.getObjectStore().get(AObjectVersionService.FSBFTObject.class, objectId);
+            MutableObject.CreateOperation.Response result = new MutableObject.CreateOperation.Response(initialObjectHistory);
+            return result;
+            //return message.composeReply(this.getNode().getNodeAddress(), result);
+        } catch (BeehiveObjectStore.ObjectExistenceException e) {
+            object = AObjectVersionService.this.node.getObjectStore().getAndLock(AObjectVersionService.FSBFTObject.class, request.getReplicaId());
             try {
-                BeehiveObjectStore.CreateSignatureVerifiedObject(request.getReplicaId(), object);
-                try {
-                    TitanGuid objectId = AObjectVersionService.this.node.getObjectStore().create(object);
-                    AObjectVersionService.this.node.getObjectStore().get(AObjectVersionService.FSBFTObject.class, objectId);
-
-                    assert (objectId.equals(request.getReplicaId()));
-
-                    return message.composeReply(this.getNode().getNodeAddress(), new MutableObject.CreateOperation.Response(initialObjectHistory));
-                } catch (BeehiveObjectStore.ObjectExistenceException e) {
-                    try {
-                        object = AObjectVersionService.this.node.getObjectStore().getAndLock(AObjectVersionService.FSBFTObject.class, request.getReplicaId());
-                        try {
-                            if (!object.getObjectHistory().isInitial()) {
-                                if (this.log.isLoggable(Level.INFO)) {
-                                    this.log.info("Already exists. replicaId %5.5s...: %5.5s...", request.getReplicaId(), object.getObjectHistory().toString());
-                                }
-                                return message.composeReply(this.getNode().getNodeAddress(), DOLRStatus.CONFLICT);
-                            }
-                        } finally {
-                            AObjectVersionService.this.node.getObjectStore().unlock(request.getReplicaId());
-                        }
-                        if (this.log.isLoggable(Level.FINE))
-                            this.log.info("Already initialized. replicaId %s ", request.getReplicaId());
-                        return message.composeReply(this.getNode().getNodeAddress(), new MutableObject.CreateOperation.Response(initialObjectHistory));
-                    } catch (BeehiveObjectStore.NotFoundException notFound) {
-                        // The object existed, now we can't find it.
-                        notFound.printStackTrace();
-                        return message.composeReply(this.getNode().getNodeAddress(), DOLRStatus.NOT_ACCEPTABLE);
+                if (!object.getObjectHistory().isInitial()) {
+                    if (this.log.isLoggable(Level.INFO)) {
+                        this.log.info("Already exists. replicaId %5.5s...: %5.5s...", request.getReplicaId(), object.getObjectHistory().toString());
                     }
-                } catch (NoSpaceException e) {
-                    e.printStackTrace();
-                    return message.composeReply(this.getNode().getNodeAddress(), DOLRStatus.NOT_ACCEPTABLE);
-                } catch (InvalidObjectException e) {
-                    e.printStackTrace();
-                    return message.composeReply(this.getNode().getNodeAddress(), DOLRStatus.NOT_ACCEPTABLE);
-                } catch (ClassCastException e) {
-                    e.printStackTrace();
-                    return message.composeReply(this.getNode().getNodeAddress(), DOLRStatus.INTERNAL_SERVER_ERROR);
-                } catch (BeehiveObjectStore.NotFoundException e) {
-                    e.printStackTrace();
-                    return message.composeReply(this.getNode().getNodeAddress(), DOLRStatus.INTERNAL_SERVER_ERROR);
+                    throw e;
                 }
-            } catch (BeehiveObjectStore.UnacceptableObjectException e) {
-                this.log.info("BeehiveObjectStore.UnacceptableObjectException %s", request.getReplicaId());
-                return message.composeReply(this.getNode().getNodeAddress(), DOLRStatus.CONFLICT);
-            } catch (BeehiveObjectStore.DeleteTokenException e) {
-                e.printStackTrace();
-                return message.composeReply(this.getNode().getNodeAddress(), DOLRStatus.NOT_ACCEPTABLE);
+            } finally {
+                AObjectVersionService.this.node.getObjectStore().unlock(request.getReplicaId());
             }
-        } catch (ClassNotFoundException e) {
-            e.printStackTrace();
-            return message.composeReply(this.getNode().getNodeAddress(), DOLRStatus.INTERNAL_SERVER_ERROR);
-        } catch (ClassCastException e) {
-            return message.composeReply(this.getNode().getNodeAddress(), DOLRStatus.BAD_REQUEST);
-        } catch (RemoteException e) {
-            return message.composeReply(this.getNode().getNodeAddress(), DOLRStatus.BAD_REQUEST);
+            if (this.log.isLoggable(Level.FINE))
+                this.log.fine("Already initialized. replicaId %s ", request.getReplicaId());
+            
+            MutableObject.CreateOperation.Response result = new MutableObject.CreateOperation.Response(initialObjectHistory);
+            return result;
+            //return message.composeReply(this.getNode().getNodeAddress(), result);
         }
     }
 
@@ -452,7 +438,6 @@ public class AObjectVersionService extends AbstractObjectHandler implements AObj
      * Get the specified {@link MutableObject.ObjectHistory} replica from this node.
      * Replica objectIds are a function of the original objectId
      * plus an integer all hashed to produce the replica objectId.
-     *
      * <p>
      * If the named replica is not available from this node, the result status is {@link DOLRStatus#NOT_FOUND}.
      * </p>
@@ -461,118 +446,57 @@ public class AObjectVersionService extends AbstractObjectHandler implements AObj
      * replica to be created (because some previous replica became unavailable).
      * </p>
      */
-    public TitanMessage getObjectHistory(TitanMessage message) {
-        try {
-            MutableObject.GetOperation.Request request = message.getPayload(MutableObject.GetOperation.Request.class, this.node);
-            try {
-                TitanGuid replicaId = request.getReplicaId();
-                AObjectVersionService.FSBFTObject linearizerObject =
-                    AObjectVersionService.this.node.getObjectStore().get(AObjectVersionService.FSBFTObject.class, replicaId);
+    public MutableObject.GetOperation.Response getObjectHistory(TitanMessage message) throws ClassNotFoundException, ClassCastException,
+        BeehiveObjectStore.NotFoundException, TitanMessage.RemoteException {
+        MutableObject.GetOperation.Request request = message.getPayload(MutableObject.GetOperation.Request.class, this.node);
+        TitanGuid replicaId = request.getReplicaId();
+        AObjectVersionService.FSBFTObject linearizerObject =
+            AObjectVersionService.this.node.getObjectStore().get(AObjectVersionService.FSBFTObject.class, replicaId);
 
-                MutableObject.GetOperation.Response response = new MutableObject.GetOperation.Response(linearizerObject.getObjectHistory());
-
-                return message.composeReply(this.getNode().getNodeAddress(), response);
-            } catch (ClassCastException e) {
-                e.printStackTrace();
-                return message.composeReply(this.getNode().getNodeAddress(), e);
-            } catch (BeehiveObjectStore.NotFoundException e) {
-                if (this.log.isLoggable(Level.FINE))
-                    this.log.fine("Replica expected, but not found locally: replicaId=%s", request.getReplicaId());
-                return message.composeReply(this.getNode().getNodeAddress(), e);
-            }
-        } catch (ClassNotFoundException e) {
-            this.log.info("Malformed MutableObject.GetOperation.Request from node %s%n", message.getSource().format());
-            e.printStackTrace();
-            return message.composeReply(this.getNode().getNodeAddress(), e);
-        } catch (ClassCastException e) {
-            this.log.info("Malformed MutableObject.GetOperation.Request from node %s%n", message.getSource().format());
-            e.printStackTrace();
-            return message.composeReply(this.getNode().getNodeAddress(), e);
-        } catch (RemoteException e) {
-            this.log.info("Bad result from MutableObject.GetOperation.Request from node %s%n", message.getSource().format());
-            e.printStackTrace();
-            return message.composeReply(this.getNode().getNodeAddress(), e);
-        }
+        MutableObject.GetOperation.Response response = new MutableObject.GetOperation.Response(linearizerObject.getObjectHistory());
+        return response;
     }
 
     private void removeLocalObjectHistory(TitanGuid objectId) {
 //        this.linearizedObjects.remove(objectId.toString());
     }
 
-    public TitanMessage setObjectHistory(TitanMessage message) {
+    public MutableObject.SetOperation.Response setObjectHistory(TitanMessage message) throws ClassNotFoundException, ClassCastException, IOException,
+        MutableObject.ObjectHistory.OutOfDateException, BeehiveObjectStore.DeleteTokenException, BeehiveObjectStore.InvalidObjectException,
+        BeehiveObjectStore.UnacceptableObjectException, BeehiveObjectStore.ObjectExistenceException, BeehiveObjectStore.NoSpaceException,
+        BeehiveObjectStore.NotFoundException, TitanMessage.RemoteException {
+        MutableObject.SetOperation.Request request = message.getPayload(MutableObject.SetOperation.Request.class, this.node);
+        //this.log.info("Update: %s ohsId=%s %s", message.subjectId, request.getObjectHistorySet().getHash(), request.getObjectHistorySet().state);
+
+        // Check the consistency of the request.
+        if (!request.objectHistoryId.equals(request.getObjectHistorySet().getObjectId())) {
+            if (this.log.isLoggable(Level.SEVERE)) {
+                this.log.severe("Confused OHS replica=%s expected=%s vs %s", message.subjectId, request.objectHistoryId, request.getObjectHistorySet().getObjectId());
+                this.log.severe(request.toString());
+            }
+        }
+        AObjectVersionService.FSBFTObject object = this.node.getObjectStore().getAndLock(AObjectVersionService.FSBFTObject.class, message.subjectId);
         try {
-            MutableObject.SetOperation.Request request = message.getPayload(MutableObject.SetOperation.Request.class, this.node);
-            //this.log.info("Update: %s ohsId=%s %s", message.subjectId, request.getObjectHistorySet().getHash(), request.getObjectHistorySet().state);
-            
-            // The request is inconsistent...
-            if (!request.objectHistoryId.equals(request.getObjectHistorySet().getObjectId())) {
-            	if (this.log.isLoggable(Level.SEVERE)) {
-            		this.log.severe("Confused OHS replica=%s expected=%s vs %s", message.subjectId, request.objectHistoryId, request.getObjectHistorySet().getObjectId());
-            		this.log.severe(request.toString());
-            	}
-            }
-            AObjectVersionService.FSBFTObject object = null;
+            MutableObject.ObjectHistory objectHistory = object.getObjectHistory();
+
+            objectHistory.setValue(this.log, message.getSource().getObjectId(), request.getObjectHistorySet(), request.getValue());
+            object.setObjectHistory(objectHistory);
+
+            BeehiveObjectStore.CreateSignatureVerifiedObject(message.subjectId, object);
+            TitanGuid objectId = this.node.getObjectStore().update(object);
+
+            MutableObject.SetOperation.Response response = new MutableObject.SetOperation.Response(objectHistory);
+            return response;
+        } finally {
             try {
-                object = AObjectVersionService.this.node.getObjectStore().getAndLock(AObjectVersionService.FSBFTObject.class, message.subjectId);
-                MutableObject.ObjectHistory objectHistory = object.getObjectHistory();
-
-                objectHistory.setValue(this.log, message.getSource().getObjectId(), request.getObjectHistorySet(), request.getValue());
-                object.setObjectHistory(objectHistory);
-
-                BeehiveObjectStore.CreateSignatureVerifiedObject(message.subjectId, object);
-                TitanGuid objectId = AObjectVersionService.this.node.getObjectStore().update(object);
-
-                assert(objectId.equals(message.subjectId));
-
-                MutableObject.SetOperation.Response response = new MutableObject.SetOperation.Response(objectHistory);
-                return message.composeReply(this.getNode().getNodeAddress(), response);
-            } catch (ClassCastException e) {
-            	if (this.log.isLoggable(Level.WARNING)) {
-            		this.log.warning("Node %s sent request to set object %s which is NOT an AObjectVersionService.FSBFTObject instance.", message.getSource(),  message.subjectId);
-            		e.printStackTrace();
-            	}
-            	return message.composeReply(this.getNode().getNodeAddress(), e);
-            } finally {
-                if (object != null)
-                    try {
-                        AObjectVersionService.this.node.getObjectStore().unlock(object);
-                    } catch (sunlabs.titan.node.BeehiveObjectStore.Exception e) {
-                        // TODO Auto-generated catch block
-                        e.printStackTrace();
-                    } catch (sunlabs.titan.node.BeehiveObjectPool.Exception e) {
-                        // TODO Auto-generated catch block
-                        e.printStackTrace();
-                    }
+                AObjectVersionService.this.node.getObjectStore().unlock(object);
+            } catch (sunlabs.titan.node.BeehiveObjectStore.Exception e) {
+                // TODO Auto-generated catch block
+                e.printStackTrace();
+            } catch (sunlabs.titan.node.BeehiveObjectPool.Exception e) {
+                // TODO Auto-generated catch block
+                e.printStackTrace();
             }
-        } catch (ClassNotFoundException e) {
-            return message.composeReply(this.getNode().getNodeAddress(), e);
-        } catch (MutableObject.ObjectHistory.OutOfDateException failure) {
-            return message.composeReply(this.getNode().getNodeAddress(), DOLRStatus.CONFLICT);
-        } catch (BeehiveObjectStore.DeleteTokenException e) {
-            e.printStackTrace();
-            return message.composeReply(this.getNode().getNodeAddress(), DOLRStatus.BAD_REQUEST);
-        } catch (BeehiveObjectStore.InvalidObjectException e) {
-            e.printStackTrace();
-            return message.composeReply(this.getNode().getNodeAddress(), DOLRStatus.BAD_REQUEST);
-        } catch (BeehiveObjectStore.UnacceptableObjectException e) {
-            e.printStackTrace();
-            return message.composeReply(this.getNode().getNodeAddress(), DOLRStatus.NOT_ACCEPTABLE);
-        } catch (BeehiveObjectStore.NotFoundException e) {
-            this.log.info("%s Not Found", message.subjectId);
-            return message.composeReply(this.getNode().getNodeAddress(), DOLRStatus.NOT_FOUND);
-        } catch (BeehiveObjectStore.NoSpaceException e) {
-            e.printStackTrace();
-            return message.composeReply(this.getNode().getNodeAddress(), DOLRStatus.NOT_ACCEPTABLE);
-        } catch (IOException e) {
-            e.printStackTrace();
-            return message.composeReply(this.getNode().getNodeAddress(), e);
-        } catch (BeehiveObjectStore.ObjectExistenceException e) {
-            e.printStackTrace();
-            return message.composeReply(this.getNode().getNodeAddress(), DOLRStatus.INTERNAL_SERVER_ERROR);
-        } catch (ClassCastException e) {
-            return message.composeReply(this.getNode().getNodeAddress(), e);
-        } catch (RemoteException e) {
-            return message.composeReply(this.getNode().getNodeAddress(), e.getCause());
         }
     }
 
@@ -581,12 +505,20 @@ public class AObjectVersionService extends AbstractObjectHandler implements AObj
         return (AObjectVersionMapAPI.Value) MutableObject.getValue(this, new MutableObject.ObjectId(objectId), params);
     }
 
+    /**
+     * Set the value of the map of the given {@code objectId} to {@code value}.
+     *  
+     * @param objectId the key {@link TitanGuid}.
+     * @param predicatedValue the required current value of the map.
+     * @param value the new value of the map
+     * @param params the parameters governing the byzantine-quorum.
+     */
     public AObjectVersionMapAPI.Value setValue(TitanGuid objectId, AObjectVersionMapAPI.Value predicatedValue, AObjectVersionMapAPI.Value value,
-            AObjectVersionMapAPI.Parameters params)
-    throws MutableObject.PredicatedValueException, MutableObject.InsufficientResourcesException,
-    		MutableObject.ObjectHistory.ValidationException, MutableObject.ProtocolException, MutableObject.DeletedException {
-        if (this.log.isLoggable(Level.FINE))
+            AObjectVersionMapAPI.Parameters params) throws MutableObject.PredicatedValueException, MutableObject.InsufficientResourcesException,
+            MutableObject.ObjectHistory.ValidationException, MutableObject.ProtocolException, MutableObject.DeletedException {
+        if (this.log.isLoggable(Level.FINE)) {
             this.log.fine("%s %s -> %s", objectId, predicatedValue, value);
+        }
         return (AObjectVersionMapAPI.Value) MutableObject.setValue(this, new MutableObject.ObjectId(objectId), predicatedValue, value, params);
     }
 

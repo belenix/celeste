@@ -55,16 +55,16 @@ import sunlabs.titan.node.BeehiveObjectStore.UnacceptableObjectException;
 import sunlabs.titan.node.TitanMessage;
 import sunlabs.titan.node.TitanMessage.RemoteException;
 import sunlabs.titan.node.TitanNodeIdImpl;
-import sunlabs.titan.node.object.BeehiveObjectHandler;
+import sunlabs.titan.node.object.TitanObjectHandler;
 import sunlabs.titan.node.services.WebDAVDaemon;
 import sunlabs.titan.util.DOLRStatus;
 
 public final class StorableFragmentedObject {
 
-    public interface Handler<T extends StorableFragmentedObject.Handler.Object> extends BeehiveObjectHandler {
+    public interface Handler<T extends StorableFragmentedObject.Handler.Object> extends TitanObjectHandler {
         public static final String ERASURECODER = "StorableFragmentedObject.ErasureCoder";
 
-        public interface Object extends BeehiveObjectHandler.ObjectAPI {
+        public interface Object extends TitanObjectHandler.ObjectAPI {
 
         }
 
@@ -285,7 +285,7 @@ public final class StorableFragmentedObject {
      * @throws TitanNode.NoSuchNodeException
      * @throws ErasureCode.UnsupportedAlgorithmException
      */
-    public static FragmentMap storeObjectRemotely(BeehiveObjectHandler objectType, TitanNodeId destination, ErasureCode erasureCode,
+    public static FragmentMap storeObjectRemotely(TitanObjectHandler objectType, TitanNodeId destination, ErasureCode erasureCode,
             StorableFragmentedObject.Handler.Object object,
             int maxAttempts)
     throws BeehiveObjectStore.NoSpaceException, TitanNode.NoSuchNodeException, ErasureCode.UnsupportedAlgorithmException {
@@ -313,7 +313,7 @@ public final class StorableFragmentedObject {
     }
 
     public static FragmentMap storeObjectRemotely(
-            BeehiveObjectHandler objectType,
+            TitanObjectHandler objectType,
             ErasureCode erasureCode,
             StorableFragmentedObject.Handler.Object object,
             int maxAttempts)
@@ -413,7 +413,7 @@ public final class StorableFragmentedObject {
         TitanGuid objectId = object.getObjectId();
 
         TitanService a = node.getService(CelesteNode.OBJECT_PKG + ".FObjectType");
-        if (a instanceof BeehiveObjectHandler && a instanceof FObjectType) {
+        if (a instanceof TitanObjectHandler && a instanceof FObjectType) {
             FObjectType fObjectApplication = (FObjectType) a;
             TitanObject.Metadata fObjectMetaData = object.getMetadata();
 

@@ -145,10 +145,10 @@ public final class HttpResponse implements HTTP.Response {
     /**
      * Write the HEAD of this HttpResponse to the given {@link DataOutputStream}.
      * 
-     * See {@link HttpMessage#writeHeadTo(DataOutputStream)}
+     * See {@link HttpMessage#writeHeadTo(OutputStream)}
      * 
      * @param out
-     * @return
+     * @return the {@link DataOutputStream}
      * @throws IOException
      */
     public DataOutputStream writeHeadTo(DataOutputStream out) throws IOException {
@@ -161,10 +161,10 @@ public final class HttpResponse implements HTTP.Response {
     /**
      * Write this {@code HttpResponse} to the given {@link DataOutputStream}.
      * 
-     * See {@link HttpMessage#writeHeadTo(DataOutputStream)}
+     * See {@link HttpMessage#writeHeadTo(OutputStream)}
      * 
      * @param out
-     * @return
+     * @return the number of octets written
      * @throws IOException
      */
     public long writeTo(DataOutputStream out) throws IOException {        

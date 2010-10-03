@@ -42,32 +42,28 @@ import sunlabs.titan.api.TitanGuid;
 import sunlabs.titan.api.TitanNode;
 import sunlabs.titan.api.TitanNodeId;
 import sunlabs.titan.api.TitanObject;
-import sunlabs.titan.node.TitanNodeImpl;
 import sunlabs.titan.node.BeehiveObjectPool;
 import sunlabs.titan.node.BeehiveObjectStore;
 import sunlabs.titan.node.TitanMessage;
-import sunlabs.titan.node.TitanMessage.RemoteException;
 import sunlabs.titan.node.services.CensusDaemon;
-import sunlabs.titan.node.services.PublishDaemon;
 import sunlabs.titan.node.services.api.Census;
 import sunlabs.titan.node.services.api.Publish;
 import sunlabs.titan.util.DOLRStatus;
 import sunlabs.titan.util.OrderedProperties;
 
 /**
- * {@link TitanObject} and {@link BeehiveObjectHander} classes implementing the interfaces specified
- * in this class implement the capability of objects to be
- * stored in the Beehive object pool.
+ * Classes implementing {@link TitanObject} and extending {@link sunlabs.titan.node.object.AbstractObjectHandler} implement the capability of objects to be
+ * stored in the Titan object pool.
  * <p>
  * A class implementing {@link StorableObject.Handler} interface implements the  required methods for the two sides of the operation --
  * the requester and the responder.  In operation, the requester composes the Request to store the TitanObject and transmits that Request to a responder.
- * The responder does whatever is necessary to store the object locally and returns the Publish.Response returned as a result of publishing the stored object.
+ * The responder does whatever is necessary to store the object locally and returns the {@link sunlabs.titan.node.services.api.Publish.PublishUnpublishResponse}
+ * returned as a result of publishing the stored object.
  * </p>
  * 
  * @author Glenn Scott - Sun Microsystems Laboratories
  */
 public final class StorableObject {
-    
     public static class Store /* implements TitanService.Thing */ {
         public static class Request implements Serializable {
             private static final long serialVersionUID = 1L;
@@ -98,12 +94,12 @@ public final class StorableObject {
     
     
     /**
-     * {@link BeehiveObjectHandler}'s {@link TitanObject}'s that are storable in the Beehive object pool implement implement this interface.
+     * {@link TitanObjectHandler}'s {@link TitanObject}'s that are storable in the Beehive object pool implement implement this interface.
      *
      * @param <T>
      */
-    public interface Handler<T extends StorableObject.Handler.Object> extends BeehiveObjectHandler {
-        public interface Object extends BeehiveObjectHandler.ObjectAPI {
+    public interface Handler<T extends StorableObject.Handler.Object> extends TitanObjectHandler {
+        public interface Object extends TitanObjectHandler.ObjectAPI {
 
         }
         /**
@@ -157,14 +153,22 @@ public final class StorableObject {
      * Typically, this helper method is invoked on the receiver-side of a store object operation.
      * <p>
      * The returned {@link TitanMessage} is the message from the object's root node indicating the status of the publish operation of the stored object.
-     * The payload of the returned message is either an instance of {@link PublishDaemon.PublishObject.PublishUnpublishResponseImpl}
-     * or an {@link Exception} (see {@link TitanMessage#getPayload(Class, TitanNodeImpl)}.
+     * The payload of the returned message is either an instance of {@link sunlabs.titan.node.services.PublishDaemon.PublishObject.PublishUnpublishResponseImpl}
+     * or an Exception (see {@link TitanMessage#getPayload(Class, TitanNode)}.
      * </p>
-     * @param handler The instance implementing {@link StorableObject.Handler<? extends StorableObject.Handler.Object>} invoking this method.
+     * @param handler The instance implementing {@link StorableObject.Handler} invoking this method.
      * @param object An instance implementing {@link StorableObject.Handler.Object} to store.
      * @param message
-     * @return The reply {@link TitanMessage} containing the response from the {@link BeehiveObjectHandler#publishObject(TitanMessage)} method on the root node for this {@code object}.
-     * @throws TitanMessage.RemoteException encapsulating an Exception thrown by this node.
+     * @return The reply {@link TitanMessage} containing the response from the {@link TitanObjectHandler#publishObject(TitanMessage)}
+     *         method on the root node for this {@code object}.
+     * @throws ClassNotFoundException
+     * @throws BeehiveObjectStore.UnacceptableObjectException
+     * @throws BeehiveObjectStore.DeleteTokenException
+     * @throws BeehiveObjectStore.InvalidObjectIdException
+     * @throws BeehiveObjectStore.NoSpaceException
+     * @throws BeehiveObjectStore.InvalidObjectException
+     * @throws BeehiveObjectPool.Exception
+     * @throws BeehiveObjectStore.Exception
      */
     public static Publish.PublishUnpublishResponse storeLocalObject(StorableObject.Handler<? extends StorableObject.Handler.Object> handler, StorableObject.Handler.Object object, TitanMessage message) throws
     ClassNotFoundException, BeehiveObjectStore.UnacceptableObjectException, BeehiveObjectStore.DeleteTokenException,
@@ -237,7 +241,8 @@ public final class StorableObject {
      * Store a {@link StorableObject.Handler.Object} object in the global object store.
      * <p>
      * The number of copies to store is governed by the value {@code nReplicas}
-     * (note that the value of the object's metadata value {@link ObjectStore.METADATA_REPLICATION_STORE} does not have to be equal to {@code nReplicas}.)
+     * (note that the value of the object's metadata value {@link ObjectStore#METADATA_REPLICATION_STORE}
+     * does not have to be equal to {@code nReplicas}.)
      * Each copy is stored on a different node, excluding the nodes specified in the {@link Set} {@code excludedNodes}.
      * </p>
      * <p>

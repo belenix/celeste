@@ -58,7 +58,7 @@ case $CELESTECONFIG in
 
 	supervisor_vm_options="-server -ea"
 	supervisor_options="--delay 2 --n-nodes 6 --keystore ${keystores} --jmx-port 16000,1"
-	node_vm_options="-Xmx64m -Xms64m -XX:+UseParallelGC -Dcom.sun.management.jmxremote -Dcom.sun.management.jmxremote.password.file=/Users/glennscott/Development/Celeste/celeste/Celeste/etc/jmxremote.password.template -Djava.util.logging.config.file=/Users/glennscott/Development/Celeste/celeste/Celeste/etc/logging.properties"
+	node_vm_options="-Xmx96m -Xms96m -XX:+UseParallelGC -Dcom.sun.management.jmxremote -Dcom.sun.management.jmxremote.password.file=/Users/glennscott/Development/Celeste/celeste/Celeste/etc/jmxremote.password.template -Djava.util.logging.config.file=/Users/glennscott/Development/Celeste/celeste/Celeste/etc/logging.properties"
 	node_options="-Dsunlabs.titan.node.TitanNodeImpl.LocalFileSystemRoot=${spool_root} -Dsunlabs.titan.node.services.WebDAVDaemon.InspectorCSS=/css/BeehiveStyle.css,/css/BeehiveColours-grey.css -Dsunlabs.titan.node.services.RoutingDaemon.IntroductionRateSeconds=60 -Dsunlabs.titan.node.services.RoutingDaemon.ReunionRateSeconds=600 -Dsunlabs.titan.node.TitanNodeImpl.ObjectStoreMaximum=500M -Dsunlabs.titan.node.TitanNodeImpl.InterNetworkAddress=127.0.0.1"
 	;;
 

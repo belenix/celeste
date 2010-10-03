@@ -25,6 +25,7 @@ package sunlabs.celeste.node.services.object;
 
 import java.io.IOException;
 import java.io.Serializable;
+import java.lang.reflect.InvocationTargetException;
 import java.net.URI;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -942,7 +943,8 @@ public final class VersionObjectHandler extends AbstractObjectHandler implements
         return new XHTML.Div("nothing here");
     }
     
-    public TitanMessage extensibleOperation(TitanMessage message) {
+    public Serializable extensibleOperation(TitanMessage message) throws ClassCastException, TitanMessage.RemoteException, SecurityException,
+        IllegalArgumentException, ClassNotFoundException, NoSuchMethodException, InstantiationException, IllegalAccessException, InvocationTargetException {
         return ExtensibleObject.extensibleOperation(this, message);
     }
     

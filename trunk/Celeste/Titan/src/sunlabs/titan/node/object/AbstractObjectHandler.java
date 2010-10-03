@@ -44,7 +44,7 @@ import sunlabs.titan.node.services.api.Publish;
  *
  * This class contains helper methods for implementors.
  */
-public abstract class AbstractObjectHandler extends AbstractTitanService implements BeehiveObjectHandler {
+public abstract class AbstractObjectHandler extends AbstractTitanService implements TitanObjectHandler {
     private final static long serialVersionUID = 1L;
 
     /**
@@ -59,11 +59,11 @@ public abstract class AbstractObjectHandler extends AbstractTitanService impleme
     }
     
     /**
-     * This method transmits the {@link Publish.PublishUnpublishRequest} to nodes that are next in
-     * line to succeed this node, should this node leave the system.
+     * This method transmits the {@link sunlabs.titan.node.services.api.Publish.PublishUnpublishRequest PublishUnpublishRequest}
+     * to nodes that are next in line to succeed this node, should this node leave the system.
      *
      * @param handler the {@link AbstractObjectHandler} of the caller.
-     * @param publishRequest The incoming {@code AbstractObjectType.Publish.Request}
+     * @param publishRequest The incoming {@code Publish.PublishUnpublishRequest}
      *
      * XXX How many copies of a publish record to push around?
      */

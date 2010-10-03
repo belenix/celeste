@@ -1,5 +1,5 @@
 /*
- * Copyright 2007-2008 Sun Microsystems, Inc. All Rights Reserved.
+ * Copyright 2007-2010 Oracle. All Rights Reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER
  *
  * This code is free software; you can redistribute it and/or modify
@@ -17,9 +17,9 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
  * 02110-1301 USA
  *
- * Please contact Sun Microsystems, Inc., 16 Network Circle, Menlo
- * Park, CA 94025 or visit www.sun.com if you need additional
- * information or have any questions.
+ * Please contact Oracle Corporation, 500 Oracle Parkway, Redwood Shores, CA 94065
+ * or visit www.oracle.com if you need additional information or
+ * have any questions.
  */
 package sunlabs.titan.node;
 
@@ -28,24 +28,34 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.security.GeneralSecurityException;
+import java.security.KeyManagementException;
 import java.security.KeyStore;
+import java.security.KeyStoreException;
+import java.security.NoSuchAlgorithmException;
+import java.security.UnrecoverableKeyException;
 import java.security.cert.Certificate;
 
+import javax.net.ssl.KeyManager;
+import javax.net.ssl.KeyManagerFactory;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.TrustManager;
+
+import sunlabs.asdf.util.Time;
 import sunlabs.titan.TitanGuidImpl;
 
 /**
  * <p>
- * The key of a Beehive Node
+ * The key of a Titan Node
  * </p>
  */
 public final class NodeKey {
-
     private static final String keyStorePassword = "celesteStore";
     private static final String keyPassword = "celesteKey";
     private static final String KEY_NAME = "PrivateKey";
 
     private KeyStore keyStore;
     private TitanGuidImpl objectId;
+    private String keyStoreFileName;
 
     /**
      * Creates a key for the a beehive node operating on a given port on a
@@ -56,24 +66,23 @@ public final class NodeKey {
      * @param keyStoreFileName the path to a keystore file
      * @param localAddress the local host name (used in the name in the
      * keystore certificate if a keystore is created)
-     * @param localBeehivePort port on which this node is operating (used
+     * @param localPort port on which this node is operating (used
      * in the name in the keystore certificate if a keystore is created)
      *
      * @throws java.io.IOException
      */
-    public NodeKey(String keyStoreFileName, String localAddress, int localBeehivePort) throws IOException {
+    public NodeKey(String keyStoreFileName, String localAddress, int localPort) throws IOException {
 
         // If there is an existing file with the same name as the purported
         // keyStoreFileName, attempt to use it to initialise the NodeKey
         // instance.  Otherwise, create a new one and store it in the
         // file named keyStoreFileName.
         //
-        keyStoreFileName = keyStoreFileName.trim(); // remove windows <CR>
+        this.keyStoreFileName = keyStoreFileName.trim(); // remove windows <CR>
         File keyStoreFile = new File(keyStoreFileName);
         if (!keyStoreFile.exists()) {
-            createKeyStore(keyStoreFileName, localAddress, localBeehivePort);
-        } 
-//        System.out.println("Loading keystore: " + keyStoreFileName);
+            createKeyStore(keyStoreFileName, localAddress, localPort);
+        }
         try {
             this.keyStore = KeyStore.getInstance(KeyStore.getDefaultType());
             this.keyStore.load(new BufferedInputStream(new FileInputStream(keyStoreFile)), keyStorePassword.toCharArray());
@@ -84,6 +93,10 @@ public final class NodeKey {
         }
     }
 
+    public String getKeyStoreFileName() {
+        return this.keyStoreFileName;
+    }
+    
     public KeyStore getKeyStore() {
         return this.keyStore;
     }
@@ -102,12 +115,9 @@ public final class NodeKey {
         System.out.println("Creating keystore: " + keyStoreFileName);
         long startTime = System.currentTimeMillis();
         String distinguishedName =
-            String.format("CN=%s, DC=%s, DNQ=%s, OU=%s, " +
-                "O=%s, C=%s, IP=%s:%d", localAddress,
-                "beehive.sun.com", "v1", "Sun Microsystems Laboratories",
-                "Sun Microsystems", "US", localAddress, localBeehivePort);
-        String path = System.getProperty("java.home") + File.separator +
-            "bin" + File.separator + "keytool";
+            String.format("CN=%s, DC=%s, DNQ=%s, OU=%s, " + "O=%s, C=%s, IP=%s:%d",
+                    localAddress, "beehive.sun.com", "v1", "Sun Microsystems Laboratories", "Sun Microsystems", "US", localAddress, localBeehivePort);
+        String path = System.getProperty("java.home") + File.separator + "bin" + File.separator + "keytool";
         String command[] = { path, "-genkeypair", "-dname", distinguishedName,
              "-keyalg", "RSA", "-alias", NodeKey.KEY_NAME,
              "-keypass", keyPassword, "-keystore", keyStoreFileName,
@@ -131,7 +141,31 @@ public final class NodeKey {
             }
         }
         long stopTime = System.currentTimeMillis();
-        System.out.println("KeyStore created in " + (stopTime - startTime)/1000.
-                           + " seconds.");
+        System.out.printf("KeyStore created in %d seconds.%n", Time.millisecondsInSeconds(stopTime - startTime));
+    }
+    
+    public SSLContext newSSLContext() throws UnrecoverableKeyException, KeyManagementException, NoSuchAlgorithmException, KeyStoreException {
+        return NodeKey.TitanSSLContext(this.getKeyStore(), this.getKeyPassword());
+    }
+    
+    public static SSLContext TitanSSLContext(KeyStore keyStore, char[] password) throws NoSuchAlgorithmException, UnrecoverableKeyException, KeyStoreException, KeyManagementException {
+        KeyManagerFactory kmf = KeyManagerFactory.getInstance("SunX509");
+        KeyManager[] km = null;
+        if (keyStore != null) {
+            kmf.init(keyStore, password);
+            km = kmf.getKeyManagers();
+        }
+
+        TrustManager[] tm = new TrustManager[1];
+        tm[0] = new NodeX509TrustManager();
+
+        SSLContext sslContext = SSLContext.getInstance("TLS");
+        sslContext.init(km, tm, null);
+        sslContext.getServerSessionContext().setSessionCacheSize(1024);
+        sslContext.getClientSessionContext().setSessionCacheSize(1024);
+        sslContext.getClientSessionContext().setSessionTimeout(60*60);
+        sslContext.getServerSessionContext().setSessionTimeout(60*60);
+
+        return sslContext;
     }
 }

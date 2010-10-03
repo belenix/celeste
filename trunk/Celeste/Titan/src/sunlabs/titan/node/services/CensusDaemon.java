@@ -24,7 +24,9 @@
 package sunlabs.titan.node.services;
 
 import java.io.Serializable;
+import java.net.MalformedURLException;
 import java.net.URI;
+import java.net.URL;
 import java.net.UnknownHostException;
 import java.util.Collections;
 import java.util.Date;
@@ -60,7 +62,6 @@ import sunlabs.titan.node.NodeAddress;
 import sunlabs.titan.node.TitanMessage;
 import sunlabs.titan.node.TitanMessage.RemoteException;
 import sunlabs.titan.node.TitanNodeIdImpl;
-import sunlabs.titan.node.TitanNodeImpl;
 import sunlabs.titan.node.services.api.Census;
 import sunlabs.titan.util.OrderedProperties;
 
@@ -83,7 +84,7 @@ public final class CensusDaemon extends AbstractTitanService implements Census, 
     public final static Attributes.Prototype ReportRateSeconds = new Attributes.Prototype(CensusDaemon.class,
             "ReportRateSeconds",
             60,
-            "The number of seconds between each Census report transmitted by this TitanNode.");
+    "The number of seconds between each Census report transmitted by this TitanNode.");
 
     private static String release = Release.ThisRevision();
 
@@ -97,42 +98,38 @@ public final class CensusDaemon extends AbstractTitanService implements Census, 
      * </p>
      */
     private static class Report {
-    	private static class Request implements Serializable {
-    		private final static long serialVersionUID = 1L;
+        private static class Request implements Serializable {
+            private final static long serialVersionUID = 1L;
 
-    		private NodeAddress address;
-    		private OrderedProperties properties;
+            private NodeAddress address;
+            private OrderedProperties properties;
 
-    		public Request() {
-    			this.properties = new OrderedProperties();
-    		}
+            public Request() {
+                this.properties = new OrderedProperties();
+            }
 
-    		public Request(NodeAddress address, OrderedProperties properties) {
-    			this();
-    			this.address = address;
-    			this.properties = properties;
-    			this.properties.setProperty(Census.NodeAddress, address.format());
-    			this.properties.setProperty(Census.Version, CensusDaemon.serialVersionUID);
-    			this.properties.setProperty(Census.NodeRevision, CensusDaemon.release);
-    		}
+            public Request(NodeAddress address, OrderedProperties properties) {
+                this();
+                this.address = address;
+                this.properties = properties;
+                this.properties.setProperty(Census.NodeAddress, address.format());
+                this.properties.setProperty(Census.Version, CensusDaemon.serialVersionUID);
+                this.properties.setProperty(Census.NodeRevision, CensusDaemon.release);
+            }
 
-    		public OrderedProperties getProperties() {
-    			return this.properties;
-    		}
+            public OrderedProperties getProperties() {
+                return this.properties;
+            }
+        }
 
-    		public NodeAddress getAddress() {
-    			return this.address;
-    		}
-    	}
+        private static class Response implements Serializable {
+            private final static long serialVersionUID = 1L;
 
-    	private static class Response implements Serializable {
-    		private final static long serialVersionUID = 1L;
+            private NodeAddress address;
+            private Map<TitanNodeId,OrderedProperties> census;
 
-    		private NodeAddress address;
-    		private Map<TitanNodeId,OrderedProperties> census;
-
-    		public Response(NodeAddress address, Map<TitanNodeId,OrderedProperties> census) {
-    			this.address = address;
+            public Response(NodeAddress address, Map<TitanNodeId,OrderedProperties> census) {
+                this.address = address;
                 this.census = new HashMap<TitanNodeId,OrderedProperties>(census);
             }
 
@@ -148,8 +145,8 @@ public final class CensusDaemon extends AbstractTitanService implements Census, 
              */
             public Map<TitanNodeId,OrderedProperties> getCensus() {
                 return this.census;
+            }
         }
-    }
     }
 
     /**
@@ -197,10 +194,10 @@ public final class CensusDaemon extends AbstractTitanService implements Census, 
             public OrderedProperties getMatch() {
                 return this.match;
             }
-            
+
             public String toString() {
                 StringBuilder result = new StringBuilder(this.getClass().getName()).append(" ")
-                    .append(count).append(" ").append(exclude).append(" ").append(match);
+                .append(count).append(" ").append(exclude).append(" ").append(match);
                 return result.toString();
             }
         }
@@ -217,7 +214,7 @@ public final class CensusDaemon extends AbstractTitanService implements Census, 
             public Map<TitanNodeId,OrderedProperties> getCensusData() {
                 return this.censusData;
             }
-            
+
             public String toString() {
                 StringBuilder result = new StringBuilder(this.getClass().getName()).append(" ").append(this.censusData);
                 return result.toString();
@@ -296,7 +293,7 @@ public final class CensusDaemon extends AbstractTitanService implements Census, 
     }
 
     /**
-     * Receive a {@link Report.Request} from a {@link TitanNodeImpl}.
+     * Receive a {@link CensusDaemon.Report.Request} from a {@link TitanNode}.
      * The report must contain a positive value for the {@link Census#TimeToLiveMillis} property.
      * <p>
      * If a report does not exist, create one.  If a report already exists, this will
@@ -368,7 +365,7 @@ public final class CensusDaemon extends AbstractTitanService implements Census, 
     }
 
     /**
-     * This daemon periodically transmits a {@link CensusDaemon.Report.Request} containing this node's Census data to the Census keeper.
+     * This Thread periodically transmits a {@link CensusDaemon.Report.Request} containing this node's Census data to the Census keeper.
      *
      */
     private class ReportDaemon extends Thread implements ReportDaemonMBean, Serializable {
@@ -484,7 +481,7 @@ public final class CensusDaemon extends AbstractTitanService implements Census, 
             return;
         }
         super.start();
-        
+
         if (this.daemon == null) {
             try {
                 this.daemon = new ReportDaemon();
@@ -538,7 +535,7 @@ public final class CensusDaemon extends AbstractTitanService implements Census, 
                 request
         );
 
-        TitanMessage reply = this.node.getService(MessageService.class).transmit(gateway, message);
+        TitanMessage reply = this.node.getMessageService().transmit(gateway, message);
         if (reply  == null) {
             return null;
         }
@@ -561,9 +558,8 @@ public final class CensusDaemon extends AbstractTitanService implements Census, 
     }
 
     public XHTML.EFlow toXHTML(URI uri, Map<String,HTTP.Message> props) {
-
         try {
-            String defaultNodeAddress = new NodeAddress(new TitanNodeIdImpl("1111111111111111111111111111111111111111111111111111111111111111"), "127.0.0.1", 12001, 12002).format();
+            String defaultNodeAddress = new NodeAddress(new TitanNodeIdImpl("1111111111111111111111111111111111111111111111111111111111111111"), "127.0.0.1", 12001, new URL("http", "127.0.0.1", 12002, "")).format();
 
 
             String action = HttpMessage.asString(props.get("action"), null);
@@ -652,7 +648,7 @@ public final class CensusDaemon extends AbstractTitanService implements Census, 
                     OrderedProperties data = this.catalogue.get(nodeId);
                     String controlURL = null;
                     try {
-                        controlURL = new NodeAddress(data.getProperty(Census.NodeAddress)).getHTTPInterface().toExternalForm();
+                        controlURL = new NodeAddress(data.getProperty(Census.NodeAddress)).getInspectorInterface().toExternalForm();
                     } catch (UnknownHostException e) {
                         controlURL = data.getProperty(Census.NodeAddress);
                     }
@@ -684,9 +680,9 @@ public final class CensusDaemon extends AbstractTitanService implements Census, 
             e1.printStackTrace();
             XHTML.Div body = new XHTML.Div(new sunlabs.asdf.web.XML.XHTML.Heading.Para(e1.toString()));
             return body;
-        } catch (UnknownHostException e1) {
-            e1.printStackTrace();
-            XHTML.Div body = new XHTML.Div(new sunlabs.asdf.web.XML.XHTML.Heading.Para(e1.toString()));
+        } catch (MalformedURLException e) {
+            e.printStackTrace();
+            XHTML.Div body = new XHTML.Div(new sunlabs.asdf.web.XML.XHTML.Heading.Para(e.toString()));
             return body;
         }
     }

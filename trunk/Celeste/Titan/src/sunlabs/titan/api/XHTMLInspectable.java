@@ -38,11 +38,11 @@ import sunlabs.asdf.web.http.HTTP;
  */
 public interface XHTMLInspectable {
     /**
-     * Return an {@link XHTML.EFlow} instance containing the representation of
+     * Return an {@link sunlabs.asdf.web.xml XHTML.EFlow} instance containing the representation of
      * the implementing class's instance data.
      * 
      * @param uri the HTTP/WebDaV request {@link URI}
-     * @param props a {@link Map} of named attributes as {@link String} and {@link HTTP.Message} instances as values, if the incoming request contained
+     * @param props a {@link Map} of named attributes as {@link String} and {@link sunlabs.asdf.web.http HTTP.Message} instances as values, if the incoming request contained
      *  encoded data (eg. HTTP POST or PUT).
      *
      * @throws URISyntaxException

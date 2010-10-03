@@ -275,7 +275,7 @@ public class XML {
     /**
      * An XML Name Space serves to distinguish element names with the same spelling from each other.
      * 
-     * See {@link NameSpace#NameSpace(String)} and {@link NameSpace#NameSpace(String, String)} 
+     * See {@link XML.NameSpace#NameSpace(String)} and {@link XML.NameSpace#NameSpace(String, String)} 
      */
     public static class NameSpace extends Attr {
     	private final static long serialVersionUID = 1L;
@@ -287,7 +287,7 @@ public class XML {
         // an URISyntaxException thrown by the Java URI class constructor.
 
         /**
-         * Create an XMLNameSpace specifying only the name-space URI as {@code uri} with no element name prefix.
+         * Create an {@code XML.NameSpace} specifying only the name-space URI as {@code uri} with no element name prefix.
          */
         public NameSpace(String uri) {
             super("xmlns", uri);
@@ -297,7 +297,7 @@ public class XML {
         /**
          * Create an XML NameSpace specifying the given element name prefix {@code prefix} and the name-space URI as {@code uri}.
          * <p>
-         * If {@code prefix} is {@code null} it is ignored and the result is equivalent to using {@link #NameSpace(String uri)}.
+         * If {@code prefix} is {@code null} it is ignored and the result is equivalent to using {@link #NameSpace(String)}.
          * </p>
          * @param prefix the element prefix to use for this element.
          * @param uri the XML name-space URI.
@@ -569,7 +569,7 @@ public class XML {
          * This method should be eliminated in favour of a mechanism that automatically binds all name-space definitions to elements and sub-elements in one recursive operation.
          * Elements that share the same XML name-space as their parents inherit the parent namespace (without emitting a, redundant, xmlns:ns="ns" attribute).
          * </p>
-         * @see #setNameSpace(NameSpace)
+         * @see #setNameSpace(XML.NameSpace)
          */
         public Node bindNameSpace() {
             if (this.getNameSpace() != null)
@@ -589,7 +589,7 @@ public class XML {
          * 
          * @return the XML name-space for this Node.
          * @see #bindNameSpace()
-         * @see #setNameSpace(NameSpace)
+         * @see #setNameSpace(XML.NameSpace)
          */
         public XML.NameSpace getNameSpace() {
             return this.nameSpace;

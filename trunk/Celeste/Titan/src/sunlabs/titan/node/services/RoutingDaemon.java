@@ -28,6 +28,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.Serializable;
 import java.lang.management.ManagementFactory;
+import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.UnknownHostException;
 import java.util.Date;
@@ -83,9 +84,9 @@ public final class RoutingDaemon extends AbstractTitanService implements Routing
      */
     private class Introduction extends Thread implements IntroductionMBean {
         // "currentIntroductionRate" is a ramp which starts low (not zero!) and doubles at each iteration
-        // reaching its maximum value which is limited to NeighbourmapApplication.this.refreshRate.
-        private long currentIntroductionRate;
-        private long lastRunTime;
+        // reaching its maximum value which is limited to the configuration property RoutingDaemon.IntroductionRateSeconds.
+        private long currentIntroductionRateSeconds;
+        private long lastRunTimeStamp;
         private long lastRunDuration;
         private long wakeUpTime;
         private final ObjectName jmxObjectName;
@@ -93,7 +94,7 @@ public final class RoutingDaemon extends AbstractTitanService implements Routing
         Introduction() throws JMException {
             super(RoutingDaemon.this.node.getThreadGroup(), RoutingDaemon.this.node.getNodeId() + " " + RoutingDaemon.name + ".Introduction");
             this.setPriority(Thread.NORM_PRIORITY);
-            this.currentIntroductionRate = this.getIntroductionRate();
+            this.currentIntroductionRateSeconds = this.getIntroductionRate();
             this.wakeUpTime = 0;
 
             if (RoutingDaemon.this.jmxObjectNameRoot != null) {
@@ -105,7 +106,7 @@ public final class RoutingDaemon extends AbstractTitanService implements Routing
         }
 
         public String getJMXCurrentIntroductionRate() {
-            return String.format("%dms", this.currentIntroductionRate);
+            return String.format("%dms", this.currentIntroductionRateSeconds);
         }
 
         public long getIntroductionRate() {
@@ -117,7 +118,7 @@ public final class RoutingDaemon extends AbstractTitanService implements Routing
         }
 
         public String getLastRunTime() {
-            return new Date(this.lastRunTime).toString();
+            return new Date(this.lastRunTimeStamp).toString();
         }
 
         public String getTimeToNextRun() {
@@ -139,7 +140,7 @@ public final class RoutingDaemon extends AbstractTitanService implements Routing
 
                 while (!interrupted()) {
                     RoutingDaemon.this.setStatus(String.format("Running"));
-                    this.lastRunTime = System.currentTimeMillis();
+                    this.lastRunTimeStamp = System.currentTimeMillis();
                     RoutingDaemon.this.log.finest("Running");
 
                     Set<NodeAddress> neighbours = RoutingDaemon.this.node.getNeighbourMap().keySet();
@@ -189,33 +190,35 @@ public final class RoutingDaemon extends AbstractTitanService implements Routing
                         }
                     }
 
-                    long introductionRateMillis = Time.secondsInMilliseconds(RoutingDaemon.this.node.getConfiguration().asLong(RoutingDaemon.IntroductionRateSeconds));;
+                    long introductionRateSeconds = RoutingDaemon.this.node.getConfiguration().asLong(RoutingDaemon.IntroductionRateSeconds);
 
-                    if (this.currentIntroductionRate < introductionRateMillis) {
-                        this.currentIntroductionRate *= 2;
+                    if (this.currentIntroductionRateSeconds < introductionRateSeconds) {
+                        this.currentIntroductionRateSeconds *= 2;
                     }
-                    if (this.currentIntroductionRate > introductionRateMillis) {
-                        this.currentIntroductionRate = introductionRateMillis;
+                    if (this.currentIntroductionRateSeconds > introductionRateSeconds) {
+                        this.currentIntroductionRateSeconds = introductionRateSeconds;
                     }
 
-                    long currentTime = System.currentTimeMillis();
-                    this.lastRunDuration = currentTime - this.lastRunTime;
+                    long currentTimeStamp = System.currentTimeMillis();
+                    this.lastRunDuration = currentTimeStamp - this.lastRunTimeStamp;
 
-                    long sleepTime = Math.max(this.currentIntroductionRate - this.lastRunDuration, 0);
-                    this.wakeUpTime = currentTime + sleepTime;
+                    long sleepTimeMillis = Time.secondsInMilliseconds(this.currentIntroductionRateSeconds);
+                    this.wakeUpTime = currentTimeStamp + sleepTimeMillis;
 
                     RoutingDaemon.this.setStatus(String.format("Wakeup %s", Time.ISO8601(this.wakeUpTime)));
 
-                    RoutingDaemon.this.log.fine(String.format("Desired introductionRate=%ss currentIntroductionRate=%dms elasped time=%dms, sleepTime=%dms",
-                            RoutingDaemon.this.node.getConfiguration().asLong(RoutingDaemon.IntroductionRateSeconds),
-                            this.currentIntroductionRate, this.lastRunDuration, sleepTime));
-
-                    if (sleepTime < 0) {
-                        sleepTime = 0;
-                        this.currentIntroductionRate = this.lastRunDuration;
+                    if (RoutingDaemon.this.log.isLoggable(Level.FINE)) {
+                        RoutingDaemon.this.log.fine(String.format("Desired introductionRate=%ss currentIntroductionRate=%ds elasped time=%dms, sleepTime=%dms",
+                                RoutingDaemon.this.node.getConfiguration().asLong(RoutingDaemon.IntroductionRateSeconds),
+                                this.currentIntroductionRateSeconds, this.lastRunDuration, sleepTimeMillis));
                     }
+
+//                    if (sleepTimeMillis < 0) {
+//                        sleepTimeMillis = 0;
+//                        this.currentIntroductionRate = this.lastRunDuration;
+//                    }
                     synchronized (this) {
-                        this.wait(sleepTime);
+                        this.wait(sleepTimeMillis);
                     }
                     this.wakeUpTime = 0;
                 } // while
@@ -423,7 +426,8 @@ public final class RoutingDaemon extends AbstractTitanService implements Routing
                                                         RoutingDaemon.this.log.fine("fail %s", address.format());
                                                     }
                                                     // Get dossier entry: if it is too old, then delete it
-                                                    long tooOld = Time.millisecondsToSeconds(System.currentTimeMillis()) - RoutingDaemon.this.node.getConfiguration().asLong(RoutingDaemon.DossierTimeToLiveSeconds);
+                                                    long tooOld = System.currentTimeMillis()
+                                                        - Time.secondsInMilliseconds(RoutingDaemon.this.node.getConfiguration().asLong(RoutingDaemon.DossierTimeToLiveSeconds));
                                                     Dossier.Entry e = RoutingDaemon.this.node.getNeighbourMap().getDossier().getEntryAndLock(address);
                                                     try {
                                                         if (e.getTimestamp() < tooOld) {
@@ -453,7 +457,7 @@ public final class RoutingDaemon extends AbstractTitanService implements Routing
                             this.lastRunDuration = System.currentTimeMillis() - this.lastRunTime;
 
                             synchronized (this) {
-                                this.wait(Time.minutesInMilliseconds(1));
+                                this.wait(Time.minutesInMilliseconds(RoutingDaemon.this.node.getConfiguration().asLong(RoutingDaemon.ReunionRateSeconds)));
                             }
                         } catch (FileNotFoundException e) {
                             // it's okay, just skip it.
@@ -596,13 +600,14 @@ public final class RoutingDaemon extends AbstractTitanService implements Routing
             this.log.config("%s", this.node.getConfiguration().get(RoutingDaemon.IntroductionRateSeconds));
             this.log.config("%s", this.node.getConfiguration().get(RoutingDaemon.ReunionRateSeconds));
             this.log.config("%s", this.node.getConfiguration().get(RoutingDaemon.DossierTimeToLiveSeconds));
-            if (this.node.getConfiguration().get(MessageService.ClientTimeoutSeconds).asLong() < this.node.getConfiguration().get(RoutingDaemon.IntroductionRateSeconds).asLong()
-                    && this.node.getConfiguration().get(MessageService.ClientTimeoutSeconds).asLong() < this.node.getConfiguration().get(RoutingDaemon.ReunionRateSeconds).asLong()) {
-                this.log.config("Warning %s is less than %s or %s and will result in unnecessary close and reopen of connections.",
-                        MessageService.ClientTimeoutSeconds,
-                        RoutingDaemon.IntroductionRateSeconds,
-                        RoutingDaemon.ReunionRateSeconds);
-            }
+            
+//            if (this.node.getConfiguration().get(TCPMessageService.ClientTimeoutSeconds).asLong() < this.node.getConfiguration().get(RoutingDaemon.IntroductionRateSeconds).asLong()
+//                    && this.node.getConfiguration().get(TCPMessageService.ClientTimeoutSeconds).asLong() < this.node.getConfiguration().get(RoutingDaemon.ReunionRateSeconds).asLong()) {
+//                this.log.config("Warning %s is less than %s or %s and will result in unnecessary close and reopen of connections.",
+//                        TCPMessageService.ClientTimeoutSeconds,
+//                        RoutingDaemon.IntroductionRateSeconds,
+//                        RoutingDaemon.ReunionRateSeconds);
+//            }
         }
     }
 
@@ -626,8 +631,8 @@ public final class RoutingDaemon extends AbstractTitanService implements Routing
             // This clause is executed on the non-root nodes of the joining
             // object-id.  ONLY after the root has created a response: we only
             // augment the data in the response.
-            TitanMessage reply = this.node.getService(MessageService.class).transmit(message);
-            //TitanMessage reply = this.node.transmit(message);
+            //TitanMessage reply = this.node.getService(TCPMessageService.class).transmit(message);
+            TitanMessage reply = this.node.transmit(message);
             JoinOperation.Response response = reply.getPayload(JoinOperation.Response.class, this.node);
             Set<NodeAddress> addresses = response.getMap();
             addresses.addAll(this.node.getNeighbourMap().keySet());
@@ -673,7 +678,9 @@ public final class RoutingDaemon extends AbstractTitanService implements Routing
             return null;
         }
 
-        TitanMessage reply = this.node.getService(MessageService.class).transmit(gateway, message);
+        TitanMessage reply = this.node.getMessageService().transmit(gateway, message);
+        
+//        TitanMessage reply = this.node.getService(TCPMessageService.class).transmit(gateway, message);
         if (reply == null) {
             return null;
         }
@@ -780,9 +787,7 @@ public final class RoutingDaemon extends AbstractTitanService implements Routing
             PingOperation.Response response = new PingOperation.Response(this.node.getNeighbourMap().keySet(), publishers);
             return response;
         } else {
-//            TitanMessage reply = this.node.transmit(message);
-
-            TitanMessage reply = this.node.getService(MessageService.class).transmit(message);
+            TitanMessage reply = this.node.transmit(message);
             PingOperation.Response response = reply.getPayload(PingOperation.Response.class, this.node);
             return response;
         }
@@ -895,8 +900,7 @@ public final class RoutingDaemon extends AbstractTitanService implements Routing
             } else if (action.equals("disconnect")) {
                 try {
                     this.node.getNeighbourMap().remove(new NodeAddress(HttpMessage.asString(props.get("address"), null)));
-                } catch (NumberFormatException e) {
-                    // TODO Auto-generated catch block
+                } catch (MalformedURLException e) {
                     e.printStackTrace();
                 } catch (UnknownHostException e) {
                     // TODO Auto-generated catch block

@@ -69,7 +69,7 @@ public interface ChannelHandler {
      * If application input data is produced, invoke {@link #input(ByteBuffer)} with the application data.
      * See {@link #input(ByteBuffer)}.
      * <p>
-     * If the Channel signals that it has reached end-of-stream (see {@link ReadableByteChannel#read(ByteBuffer dst)}),
+     * If the Channel signals that it has reached end-of-stream (see {@link java.nio.channels.ReadableByteChannel#read(ByteBuffer dst)}),
      * this method is responsible for closing, or otherwise handling the channel.
      * </p>
      */
@@ -100,7 +100,7 @@ public interface ChannelHandler {
     public void output(ByteBuffer data) throws IOException;
 
     /**
-     * Close this {@code ChannelHandler}'s {@link Channel} and cancels the associated {@link SelectionKey}.
+     * Close this {@code ChannelHandler}'s channel and cancels the associated {@link SelectionKey}.
      * @throws IOException 
      */
     public void close() throws IOException;

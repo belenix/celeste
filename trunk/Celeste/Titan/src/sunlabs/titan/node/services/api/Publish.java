@@ -48,26 +48,27 @@ import sunlabs.titan.node.services.PublishDaemon.GetPublishers;
 public interface Publish {
 
     /**
-     * A Publish.Request to publish one (or more {@link TitanObject}'s.
-     * @see Publish.PublishUnpublishResponse
+     * Instances of this class contain the data necessary to publish or unpublish one or more {@link TitanObject}'s.
+     * @see sunlabs.titan.node.services.api.Publish.PublishUnpublishResponse
+     * 
      * @author Glenn Scott - Oracle Sun Labs.
      */
     public interface PublishUnpublishRequest extends Serializable {
         /**
-         * If {@code true} this {@code Publish.Request} is a backup for the root of the object's
+         * If {@code true} this {@code Publish.PublishUnpublishRequest} is a backup for the root of the object's
          * {@link TitanGuid}.
-         * @see {@link AbstractObjectHandler#publishObjectBackup(AbstractObjectHandler, PublishUnpublishRequest)}.
          */
+        // @see {@link sunlabs.titan.node.object AbstractObjectHandler#publishObjectBackup(AbstractObjectHandler, Publish.PublishUnpublishRequest)}.
         public boolean isBackup();
         
         /**
          * Get the {@link NodeAddress} of the sender of this Request.
-         * @return the {@link NodeAddress} of the sender of this Request.
+         * @return the {@code NodeAddress} of the sender of this Request.
          */
         public NodeAddress getPublisherAddress();
 
         /**
-         * Return a {@link Map<TitanGuid,TitanObject.Metadata>} indexed by the object identifier
+         * Return a {@code Map} indexed by the object identifier
          * of the object to publish and the corresponding object metadata as the value.
          */
         public Map<TitanGuid,TitanObject.Metadata> getObjects();
@@ -87,7 +88,7 @@ public interface Publish {
     }
 
     /**
-     * The Response to a {@link PublishUnpublishRequest}.
+     * The Response to a {@link Publish.PublishUnpublishRequest}.
      * 
      * @see Publish.PublishUnpublishRequest
      * @author Glenn Scott - Oracle Sun Labs.
@@ -144,13 +145,13 @@ public interface Publish {
      * Transmit a {@link TitanMessage} to "unpublish" a {@link TitanObject}.
      * <p>
      * This unpublish of an object <em>does contain the object-type of the object</em>.
-     * See also, {@link Publish#unpublish(TitanGuid, PublishDaemon.UnpublishObject.Type)}.
+     * See also, {@link Publish#unpublish(TitanGuid)}.
      * </p>
      * <p>
      * This is typically used where an object was not found and the node transmits a remedial unpublish message to the rest
      * of the system to remove any spurious back-pointers for the object that point to this node.
      * </p>
-     * @param objectId the object identifiers of the object to be unpublished
+     * @param object the object to be unpublished
      * @return the reply {@link TitanMessage} from the root of object identifier
      * @throws BeehiveObjectStore.Exception 
      * @throws BeehiveObjectPool.Exception 
@@ -161,9 +162,9 @@ public interface Publish {
     public Publish.PublishUnpublishResponse unpublish(TitanObject object) throws ClassCastException, ClassNotFoundException, BeehiveObjectPool.Exception, BeehiveObjectStore.Exception;
 
     /**
-     * Get the set of publishers of a specified {@link TitanObject}.
+     * Get the set of publishers of a specified {@link TitanObject}. 
      * @param message
-     * @return {@link TitanMessage} containing an instance of {@link GetPublishers.Response} as payload.
+     * @return {@link TitanMessage} containing an instance of {@link sunlabs.titan.node.services.PublishDaemon.GetPublishers.Response} as payload.
      * @throws ClassCastException
      * @throws ClassNotFoundException
      * @throws RemoteException
@@ -172,8 +173,8 @@ public interface Publish {
 	
     /**
      * Get the set of publishers of a specified {@link TitanObject}.
-     * @param message
-     * @return {@link Set}<{@link Publishers.PublishRecord}>
+     * @param objectId the {@link TitanGuid} of the object.
+     * @return {@link Set}<{@link sunlabs.titan.node.Publishers.PublishRecord}>
      * @throws ClassCastException
      * @throws ClassNotFoundException
      * @throws RemoteException

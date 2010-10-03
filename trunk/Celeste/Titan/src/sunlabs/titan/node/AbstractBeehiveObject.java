@@ -61,9 +61,9 @@ import sunlabs.titan.util.OrderedProperties;
  * <li> Data attestation - The object's identifier is derived from the content of the object.
  *      This is suitable for the vast majority of objects.
  * <ul>
- *  <li>The object's meta-data contains a {@link ObjectStore.ObjectId} which is the hash of the
- *      {@link ObjectStore.DeleteTokenHash} and the
- *      {@link ObjectStore.DataHash} properties.</li>
+ *  <li>The object's meta-data contains a {@code ObjectStore.ObjectId} which is the hash of the
+ *      {@code ObjectStore.DeleteTokenHash} and the
+ *      {@code ObjectStore.DataHash} properties.</li>
  *  <li>The object's meta-data contains a {@code ObjectStore.DataHash}
  *      property which is the value returned from the object's {@link #getDataId()} method.</li>
  *  <li>The object's meta-data contains a {@code ObjectStore.DeleteTokenHash} property which is the hash
@@ -264,7 +264,7 @@ public abstract class AbstractBeehiveObject implements TitanObject {
     }
 
     /**
-     * Create an {@link XHTML.Div} element to which subclasses can append additional XHTML elements.
+     * Create an XHTML {@code div} element to which subclasses can append additional XHTML elements.
      */
     public XHTML.Div toXHTML(URI uri, Map<String,HTTP.Message> props) {
         XHTML.Div div = new XHTML.Div().setClass("section").addClass("BeehiveObject");

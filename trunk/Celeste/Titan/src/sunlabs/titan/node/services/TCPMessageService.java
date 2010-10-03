@@ -36,6 +36,10 @@ import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.ServerSocketChannel;
+import java.security.KeyManagementException;
+import java.security.KeyStoreException;
+import java.security.NoSuchAlgorithmException;
+import java.security.UnrecoverableKeyException;
 import java.util.ConcurrentModificationException;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
@@ -45,12 +49,9 @@ import java.util.logging.Level;
 
 import javax.management.JMException;
 import javax.management.ObjectName;
-import javax.net.ssl.KeyManager;
-import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLServerSocket;
 import javax.net.ssl.SSLServerSocketFactory;
-import javax.net.ssl.TrustManager;
 
 import sunlabs.asdf.io.ChannelHandler;
 import sunlabs.asdf.io.UnsecureChannelHandler;
@@ -61,72 +62,75 @@ import sunlabs.asdf.util.Attributes;
 import sunlabs.asdf.util.Attributes.Prototype;
 import sunlabs.asdf.util.Time;
 import sunlabs.titan.api.TitanNode;
-import sunlabs.titan.node.ConnectionManager;
 import sunlabs.titan.node.NodeAddress;
-import sunlabs.titan.node.NodeX509TrustManager;
 import sunlabs.titan.node.SSLSocketCache;
 import sunlabs.titan.node.SocketCache;
 import sunlabs.titan.node.TitanMessage;
 import sunlabs.titan.node.TitanNodeImpl;
-import sunlabs.titan.util.DOLRStatus;
+import sunlabs.titan.node.TitanNodeImpl.ConfigurationException;
+import sunlabs.titan.node.services.api.MessageService;
 
-public class MessageService extends AbstractTitanService {
+public class TCPMessageService extends AbstractTitanService implements MessageService {
     private final static long serialVersionUID = 1L;
-    private final static String name = AbstractTitanService.makeName(MessageService.class, MessageService.serialVersionUID);
+    private final static String name = AbstractTitanService.makeName(TCPMessageService.class, TCPMessageService.serialVersionUID);
     
     /**  */
-    private final static Attributes.Prototype SocketCacheSize = new Attributes.Prototype(MessageService.class, "SocketCacheSize",
+    private final static Attributes.Prototype SocketCacheSize = new Attributes.Prototype(TCPMessageService.class, "SocketCacheSize",
             1024,
             "The inter-node connection type. Either 'plain' or 'ssl'.");
     /** The number of seconds a client connection to a server will wait before it times-out.
      * 
      * @see java.net.Socket#setSoTimeout
      */
-    private final static Attributes.Prototype SocketTimeoutSeconds = new Attributes.Prototype(MessageService.class, "SocketTimeoutSeconds",
+    private final static Attributes.Prototype SocketTimeoutSeconds = new Attributes.Prototype(TCPMessageService.class, "SocketTimeoutSeconds",
             0,
             "The number of seconds a client connection to a server will wait before it times-out.");
     
     /** The inter-node connection type. Either 'plain' or 'ssl'. */
-    public final static Attributes.Prototype ConnectionType = new Attributes.Prototype(MessageService.class, "ConnectionType",
-            "plain",
+    public final static Attributes.Prototype ConnectionType = new Attributes.Prototype(TCPMessageService.class, "ConnectionType",
+            "ssl", // this must match up with the debugging conditions in transmit().
             "The inter-node connection type. Either 'plain' or 'ssl'.");
     
     /** The maximum number of of simultaneous neighbour connections. */
-    public final static Attributes.Prototype ClientMaximum = new Attributes.Prototype(MessageService.class, "ClientMaximum",
+    public final static Attributes.Prototype ClientMaximum = new Attributes.Prototype(TCPMessageService.class, "ClientMaximum",
             20,
             "The maximum number of of simultaneous neighbour connections.");
     
     /** The maximum number of seconds a client connection can be idle before it is considered unused and can be closed. */
-    public final static Attributes.Prototype ClientTimeoutSeconds = new Attributes.Prototype(MessageService.class, "ClientTimeoutSeconds",
+    public final static Attributes.Prototype ClientTimeoutSeconds = new Attributes.Prototype(TCPMessageService.class, "ClientTimeoutSeconds",
             Time.minutesInSeconds(11),
             "The maximum number of seconds a client connection can be idle before it is considered unused and can be closed.");    
 
     private Connector connection;
     private ThreadPoolExecutor executor;
     
-    public MessageService(TitanNode node) throws JMException, IOException {
-        super(node, MessageService.name, "Titan Message Transceiver");
+    public TCPMessageService(TitanNode node) throws JMException, IOException, ConfigurationException {
+        super(node, TCPMessageService.name, "Titan Message Transceiver");
 
-        node.getConfiguration().add(MessageService.ConnectionType);
-        node.getConfiguration().add(MessageService.SocketCacheSize);
-        node.getConfiguration().add(MessageService.SocketTimeoutSeconds);
-        node.getConfiguration().add(MessageService.ClientMaximum);
-        node.getConfiguration().add(MessageService.ClientTimeoutSeconds);
+        node.getConfiguration().add(TCPMessageService.ConnectionType);
+        node.getConfiguration().add(TCPMessageService.SocketCacheSize);
+        node.getConfiguration().add(TCPMessageService.SocketTimeoutSeconds);
+        node.getConfiguration().add(TCPMessageService.ClientMaximum);
+        node.getConfiguration().add(TCPMessageService.ClientTimeoutSeconds);
 
-        this.executor = (ThreadPoolExecutor) Executors.newFixedThreadPool(MessageService.this.node.getConfiguration().asInt(MessageService.ClientMaximum),
-                new SimpleThreadFactory(MessageService.this.node.getThreadGroup().getName()));
+        this.executor = (ThreadPoolExecutor) Executors.newFixedThreadPool(TCPMessageService.this.node.getConfiguration().asInt(TCPMessageService.ClientMaximum),
+                new SimpleThreadFactory(TCPMessageService.this.node.getThreadGroup().getName()));
 
-        if (this.node.getConfiguration().asString(MessageService.ConnectionType).equalsIgnoreCase("plain")) {
+        if (this.node.getConfiguration().asString(TCPMessageService.ConnectionType).equalsIgnoreCase("plain")) {
             this.connection = new PlainConnector(this, new PlainChannelHandler.Factory(this.node));
-        } else if (this.node.getConfiguration().asString(MessageService.ConnectionType).equalsIgnoreCase("ssl")) {
-            this.connection = new SSLConnector(node);
+        } else if (this.node.getConfiguration().asString(TCPMessageService.ConnectionType).equalsIgnoreCase("ssl")) {
+            this.connection = new SSLConnector(this);
+        } else {
+            node.getLogger().config("Misconfigured %s.  Must be either 'plain' or 'ssl'", node.getConfiguration().get(TCPMessageService.ConnectionType));
+            throw new TitanNodeImpl.ConfigurationException("Misconfigured %s.  Must be either 'plain' or 'ssl'",
+                    node.getConfiguration().get(TCPMessageService.ConnectionType));
         }
 
-        node.getLogger().config("%s", node.getConfiguration().get(MessageService.ConnectionType));
-        node.getLogger().config("%s", node.getConfiguration().get(MessageService.SocketCacheSize));
-        node.getLogger().config("%s", node.getConfiguration().get(MessageService.SocketTimeoutSeconds));
-        node.getLogger().config("%s", node.getConfiguration().get(MessageService.ClientMaximum));
-        node.getLogger().config("%s", node.getConfiguration().get(MessageService.ClientTimeoutSeconds));
+        node.getLogger().config("%s", node.getConfiguration().get(TCPMessageService.ConnectionType));
+        node.getLogger().config("%s", node.getConfiguration().get(TCPMessageService.SocketCacheSize));
+        node.getLogger().config("%s", node.getConfiguration().get(TCPMessageService.SocketTimeoutSeconds));
+        node.getLogger().config("%s", node.getConfiguration().get(TCPMessageService.ClientMaximum));
+        node.getLogger().config("%s", node.getConfiguration().get(TCPMessageService.ClientTimeoutSeconds));
     }
     
     /**
@@ -141,15 +145,12 @@ public class MessageService extends AbstractTitanService {
         super.start();
         
         Thread t = (Thread) this.connection;
-//        System.err.printf("MessageService%d.start: %d state=%s isAlive=%b%n", this.hashCode(), this.connection.hashCode(), t.getState(), t.isAlive());
         if (!t.isAlive()) {
-//            System.err.printf("MessageService%d.start: starting thread%n", this.hashCode());
             t.start();
         }
-//        System.err.printf("MessageService%d.start:  state=%s isAlive=%b%n", this.hashCode(), t.getState(), t.isAlive());
     }
     
-    public Thread getServer() {
+    public Thread getServerThread() {
         return (Thread) this.connection;
     }
     
@@ -189,8 +190,7 @@ public class MessageService extends AbstractTitanService {
             return thread;
         }
     }
-  
-    
+   
     
     public static class PlainChannelHandler extends UnsecureChannelHandler implements ChannelHandler {
         public static final Prototype ApplicationInputSize = new Attributes.Prototype(PlainConnector.class, "ApplicationInputSize",
@@ -225,13 +225,13 @@ public class MessageService extends AbstractTitanService {
                 node.getConfiguration().add(PlainChannelHandler.ApplicationOutputSize);
                 node.getConfiguration().add(PlainChannelHandler.ApplicationInputSize);
 
-                this.timeoutMillis = Time.secondsInMilliseconds(this.node.getConfiguration().asInt(MessageService.ClientTimeoutSeconds));
+                this.timeoutMillis = Time.secondsInMilliseconds(this.node.getConfiguration().asInt(TCPMessageService.ClientTimeoutSeconds));
                 this.networkInputSize = this.node.getConfiguration().asInt(PlainChannelHandler.NetworkInputSize);
                 this.networkOutputSize = this.node.getConfiguration().asInt(PlainChannelHandler.NetworkOutputSize);
                 this.applicationOutputSize = this.node.getConfiguration().asInt(PlainChannelHandler.ApplicationOutputSize);
                 this.applicationInputSize = this.node.getConfiguration().asInt(PlainChannelHandler.ApplicationInputSize);
 
-                node.getLogger().config("%s", node.getConfiguration().get(MessageService.ClientTimeoutSeconds));
+                node.getLogger().config("%s", node.getConfiguration().get(TCPMessageService.ClientTimeoutSeconds));
                 node.getLogger().config("%s", node.getConfiguration().get(PlainChannelHandler.NetworkInputSize));
                 node.getLogger().config("%s", node.getConfiguration().get(PlainChannelHandler.NetworkOutputSize));
                 node.getLogger().config("%s", node.getConfiguration().get(PlainChannelHandler.ApplicationOutputSize));
@@ -344,6 +344,7 @@ public class MessageService extends AbstractTitanService {
                         return;
 
                     int payLoadLength = data.getInt();
+                    
                     this.payload = ByteBuffer.wrap(new byte[payLoadLength]);
                     this.state = ParserState.READ_HEADER;
                     break;
@@ -386,19 +387,19 @@ public class MessageService extends AbstractTitanService {
         private ObjectName jmxObjectName;
         private SocketCache sockets;         // a cache of idle sockets
 
-        public PlainConnector(MessageService service, ChannelHandler.Factory handlerFactory) throws IOException, JMException {
+        public PlainConnector(TCPMessageService service, ChannelHandler.Factory handlerFactory) throws IOException, JMException {
             super(ServerSocketChannel.open(), handlerFactory);
             
             this.server.socket().setReuseAddress(true);
             this.server.socket().bind(
-            new InetSocketAddress(service.node.getNodeAddress().getInternetworkAddress().getAddress(), service.node.getNodeAddress().getInternetworkAddress().getPort()));
+            new InetSocketAddress(service.node.getNodeAddress().getMessageURL().getHost(), service.node.getNodeAddress().getMessageURL().getPort()));
 
-            this.sockets = new SocketCache(service.node.getConfiguration().asInt(MessageService.SocketCacheSize),
-                    service.node.getConfiguration().asInt(MessageService.SocketTimeoutSeconds));
+            this.sockets = new SocketCache(service.node.getConfiguration().asInt(TCPMessageService.SocketCacheSize),
+                    service.node.getConfiguration().asInt(TCPMessageService.SocketTimeoutSeconds));
             
             if (service.jmxObjectNameRoot != null) {
                 this.jmxObjectName = JMX.objectName(service.jmxObjectNameRoot, "PlainServer");
-                MessageService.registrar.registerMBean(this.jmxObjectName, this, PlainConnectorMBean.class);
+                TCPMessageService.registrar.registerMBean(this.jmxObjectName, this, PlainConnectorMBean.class);
             }
         }
         
@@ -432,13 +433,18 @@ public class MessageService extends AbstractTitanService {
     }
 
     /**
-     * Each {@code TitanNode} has a server dispatching a new {@link MessageService.RequestHandler} to
+     * Each {@code TitanNode} has a server dispatching a new {@link TCPMessageService.RequestHandler} to
      * handle each inbound connection.
      * 
      * Other TitanNodes initiating connections to this TitanNode may place their sockets into a cache
      * (see {@link TitanNodeImpl#transmit(TitanMessage)} leaving the socket open and ready for use for a subsequent message. 
      */
-    private class SSLConnector extends Thread implements Connector, SSLConnectorMBean {
+    private static class SSLConnector extends Thread implements Connector, SSLConnectorMBean {
+
+        /** The maximum queue length for incoming connections. The connection is refused if a connection indication arrives when the queue is full. */
+        public static final Prototype ServerSocketBacklog = new Attributes.Prototype(PlainConnector.class, "ServerSocketBacklog",
+                4,
+        "The maximum queue length for incoming connections. The connection is refused if a connection indication arrives when the queue is full.");
         /**
          * Per thread Socket handling, reads messages from the input
          * socket and dispatches each to the local node for processing.
@@ -446,15 +452,16 @@ public class MessageService extends AbstractTitanService {
         public class SocketHandler implements Runnable, SocketHandlerMBean {
             private Socket socket;
             private long lastActivityMillis;
+            private TCPMessageService service;
             
-            public SocketHandler(MessageService service, ObjectName jmxObjectNameRoot, final Socket socket) throws JMException, IOException {
+            public SocketHandler(TCPMessageService service, ObjectName jmxObjectNameRoot, final Socket socket) throws JMException, IOException {
                 this.socket = socket;
+                this.service = service;
             }
 
             public void run() {
-                MessageService.this.getLogger().finest("BehiveService2[%d].run %s", this.hashCode(), this);
                 try {
-                    this.socket.setSoTimeout((int) Time.secondsInMilliseconds(MessageService.this.node.getConfiguration().asInt(MessageService.SocketTimeoutSeconds)));
+                    this.socket.setSoTimeout((int) Time.secondsInMilliseconds(this.service.node.getConfiguration().asInt(TCPMessageService.SocketTimeoutSeconds)));
 
                     while (!this.socket.isClosed()) {
                         // The client-side puts its end of this connection into its socket cache.
@@ -466,31 +473,31 @@ public class MessageService extends AbstractTitanService {
 
                             this.lastActivityMillis = System.currentTimeMillis();
 
-                            TitanMessage myResponse = MessageService.this.node.receive(request);
+                            TitanMessage myResponse = this.service.node.receive(request);
                             DataOutputStream dos = new DataOutputStream(this.socket.getOutputStream());
                             try {
                                 myResponse.writeObject(dos);
                             } catch (ConcurrentModificationException e) {
-                                if (MessageService.this.node.getLogger().isLoggable(Level.SEVERE)) {
-                                    MessageService.this.node.getLogger().severe("%s reading input TitanMessage from %s%n", e.toString(), this.socket);
+                                if (this.service.getLogger().isLoggable(Level.SEVERE)) {
+                                    this.service.getLogger().severe("%s reading input TitanMessage from %s%n", e.toString(), this.socket);
                                     e.printStackTrace();
                                 }
                             }
                             dos.flush();
                         } catch (ClassNotFoundException e) {
-                            if (MessageService.this.node.getLogger().isLoggable(Level.WARNING)) {
-                                MessageService.this.node.getLogger().warning("%s reading input TitanMessage from %s%n", e.toString(), this.socket);
+                            if (this.service.getLogger().isLoggable(Level.WARNING)) {
+                                this.service.getLogger().warning("%s reading input TitanMessage from %s%n", e.toString(), this.socket);
                             }
                             this.socket.close();
                         }
                         // If the executor pool is full and there are client requests in the queue, then exit freeing up this Thread.
-                        synchronized (MessageService.this.executor) {
-                            if (MessageService.this.executor.getActiveCount() == MessageService.this.executor.getMaximumPoolSize() && MessageService.this.executor.getQueue().size() > 0) {
-                                if (MessageService.this.node.getLogger().isLoggable(Level.WARNING)) {
-                                    MessageService.this.node.getLogger().warning("Inbound connection congestion: active=%d max=%d queue=%d",
-                                            MessageService.this.executor.getActiveCount(),
-                                            MessageService.this.executor.getMaximumPoolSize(),
-                                            MessageService.this.executor.getQueue().size());
+                        synchronized (this.service.executor) {
+                            if (this.service.executor.getActiveCount() == this.service.executor.getMaximumPoolSize() && this.service.executor.getQueue().size() > 0) {
+                                if (this.service.node.getLogger().isLoggable(Level.WARNING)) {
+                                    this.service.getLogger().warning("Inbound connection congestion: active=%d max=%d queue=%d",
+                                            this.service.executor.getActiveCount(),
+                                            this.service.executor.getMaximumPoolSize(),
+                                            this.service.executor.getQueue().size());
                                 }
                                 break;
                             }
@@ -498,28 +505,28 @@ public class MessageService extends AbstractTitanService {
                     }
                 } catch (java.net.SocketTimeoutException exception) {
                     // ignore this exception, just abandon this connection.
-                    if (MessageService.this.node.getLogger().isLoggable(Level.FINE)) {
-                        MessageService.this.node.getLogger().fine("Closing idle connection: %s", exception);
+                    if (this.service.getLogger().isLoggable(Level.FINE)) {
+                        this.service.getLogger().fine("Closing idle connection: %s", exception);
                     }
                 } catch (EOFException exception) {
-                    if (MessageService.this.node.getLogger().isLoggable(Level.FINE)) {
-                        MessageService.this.node.getLogger().fine("Closed by client. Idle %s.", Time.formattedElapsedTime(System.currentTimeMillis() - this.lastActivityMillis));
+                    if (this.service.getLogger().isLoggable(Level.FINE)) {
+                        this.service.getLogger().fine("Closed by client. Idle %s.", Time.formattedElapsedTime(System.currentTimeMillis() - this.lastActivityMillis));
                     }
                     // ignore this exception, just abandon this connection,
                 } catch (IOException exception) {
-                    if (MessageService.this.node.getLogger().isLoggable(Level.WARNING)) {
-                        MessageService.this.node.getLogger().warning("%s", exception);
+                    if (this.service.getLogger().isLoggable(Level.WARNING)) {
+                        this.service.getLogger().warning("%s", exception);
                     }
                     // ignore this exception, just abandon this connection,
                 } catch (Exception e) {
-                    if (MessageService.this.node.getLogger().isLoggable(Level.WARNING)) {
-                        MessageService.this.node.getLogger().warning("%s", e);
+                    if (this.service.node.getLogger().isLoggable(Level.WARNING)) {
+                        this.service.node.getLogger().warning("%s", e);
                     }
                 } finally {
                     try { this.socket.close(); } catch (IOException ignore) { /**/ }
                     // If the accept() loop is waiting because the executor is full, this will notify it wakeup and try again.
-                    synchronized (MessageService.this.executor) {
-                        MessageService.this.executor.notify();
+                    synchronized (this.service.executor) {
+                        this.service.executor.notify();
                     }
                 }
             }
@@ -527,48 +534,45 @@ public class MessageService extends AbstractTitanService {
 
         private ObjectName jmxObjectName;
         private SSLServerSocketFactory factory;
-        private TitanNode node;
+        private TCPMessageService service;
         private SSLSocketCache sockets;
         private SSLContext sslContext;
         private InetAddress inetAddress;
         
-        public SSLConnector(TitanNode node) throws IOException, JMException {
-            super(new ThreadGroup(MessageService.this.node.getThreadGroup(), "SSLServer"), MessageService.this.node.getThreadGroup().getName());
-            this.node = node;
+        public SSLConnector(TCPMessageService service) throws IOException, JMException {
+            super(new ThreadGroup(service.node.getThreadGroup(), "SSLServer"), service.node.getThreadGroup().getName());
+            this.service = service;
+
+            this.service.node.getConfiguration().add(SSLConnector.ServerSocketBacklog);
+            // All of this should be in the Node instance where it can be used by other things.
 
             try {
-                KeyManagerFactory kmf = KeyManagerFactory.getInstance("SunX509");
-                kmf.init(node.getNodeKey().getKeyStore(), node.getNodeKey().getKeyPassword());
-                KeyManager[] km = kmf.getKeyManagers();
-
-                TrustManager[] tm = new TrustManager[1];
-                tm[0] = new NodeX509TrustManager();
-
-                this.sslContext = SSLContext.getInstance("TLS");
-                this.sslContext.init(km, tm, null);
-                this.sslContext.getServerSessionContext().setSessionCacheSize(1024);
-                this.sslContext.getClientSessionContext().setSessionCacheSize(1024);
-                this.sslContext.getClientSessionContext().setSessionTimeout(60*60);
-                this.sslContext.getServerSessionContext().setSessionTimeout(60*60);
-            } catch (java.security.NoSuchAlgorithmException exception) {
-                throw new IOException(exception.toString());
-            } catch (java.security.KeyStoreException exception) {
-                throw new IOException(exception.toString());
-            } catch (java.security.KeyManagementException exception){
-                throw new IOException(exception.toString());
-            } catch (java.security.UnrecoverableKeyException exception){
-                throw new IOException(exception.toString());
+                this.sslContext = service.node.getNodeKey().newSSLContext();
+            } catch (UnrecoverableKeyException e) {
+                // TODO Auto-generated catch block
+                e.printStackTrace();
+            } catch (KeyManagementException e) {
+                // TODO Auto-generated catch block
+                e.printStackTrace();
+            } catch (NoSuchAlgorithmException e) {
+                // TODO Auto-generated catch block
+                e.printStackTrace();
+            } catch (KeyStoreException e) {
+                // TODO Auto-generated catch block
+                e.printStackTrace();
             }
 
             this.factory = this.sslContext.getServerSocketFactory();
-            this.inetAddress = this.node.getNodeAddress().getInternetworkAddress().getAddress();
-            this.sockets = new SSLSocketCache(node.getConfiguration().asInt(MessageService.SocketCacheSize), this.sslContext,
-                    node.getConfiguration().asInt(MessageService.SocketTimeoutSeconds));
+            this.inetAddress = InetAddress.getByName(this.service.node.getNodeAddress().getMessageURL().getHost());
+            
+            this.sockets = new SSLSocketCache(this.service.node.getConfiguration().asInt(TCPMessageService.SocketCacheSize), this.sslContext,
+                    this.service.node.getConfiguration().asInt(TCPMessageService.SocketTimeoutSeconds));
 
-            if (MessageService.this.jmxObjectNameRoot != null) {
-                this.jmxObjectName = JMX.objectName(MessageService.this.jmxObjectNameRoot, "SSLConnector");
-                MessageService.registrar.registerMBean(this.jmxObjectName, this, SSLConnectorMBean.class);
+            if (this.service.jmxObjectNameRoot != null) {
+                this.jmxObjectName = JMX.objectName(this.service.jmxObjectNameRoot, "SSLConnector");
+                TCPMessageService.registrar.registerMBean(this.jmxObjectName, this, SSLConnectorMBean.class);
             }
+            this.service.node.getLogger().config("%s", this.service.node.getConfiguration().get(SSLConnector.ServerSocketBacklog));
         }
 
         @Override
@@ -583,47 +587,58 @@ public class MessageService extends AbstractTitanService {
             
             SSLServerSocket serverSocket = null;
             try {
-                serverSocket = (SSLServerSocket) this.factory.createServerSocket(node.getNodeAddress().getPort(), ConnectionManager.beehiveServerSocketBacklog, this.inetAddress);
+                serverSocket = (SSLServerSocket) this.factory.createServerSocket(this.service.node.getNodeAddress().getMessageURL().getPort(),
+                        this.service.node.getConfiguration().asInt(SSLConnector.ServerSocketBacklog),
+                        this.inetAddress);
 
                 serverSocket.setNeedClientAuth(true);
                 serverSocket.setReuseAddress(true);
             } catch (IOException e) {
-                MessageService.this.node.getLogger().severe("Connection accept Thread terminated: %s", e);
+               this.service.node.getLogger().severe("Connection accept Thread terminated: %s", e);
                 // Terminate this thread, which means this service is no longer accepting connections.
                 return;
             }
 
             while (true) {
-                MessageService.this.log.info("SSLServer pool %d active threads.", MessageService.this.executor.getActiveCount());
-                synchronized (MessageService.this.executor) {
-                    while (MessageService.this.executor.getActiveCount() == MessageService.this.executor.getMaximumPoolSize()) {
+                if (this.service.log.isLoggable(Level.FINE)) {
+                    this.service.log.fine("SSLServer pool %d active threads.", this.service.executor.getActiveCount());
+                }
+                synchronized (this.service.executor) {
+                    while (this.service.executor.getActiveCount() == this.service.executor.getMaximumPoolSize()) {
                         try {
-                            MessageService.this.node.getLogger().info("SSLServer pool full with %d active threads (%d maximum).  Waiting on %s.",
-                                    MessageService.this.executor.getActiveCount(), MessageService.this.executor.getMaximumPoolSize(), this);
-                            MessageService.this.executor.wait();
+                            if (this.service.log.isLoggable(Level.WARNING)) {
+                                this.service.node.getLogger().warning("SSLServer pool full with %d active threads (%d maximum).  Waiting on %s.",
+                                        this.service.executor.getActiveCount(), this.service.executor.getMaximumPoolSize(), this);
+                            }
+                            this.service.executor.wait();
                         } catch (InterruptedException e) {}
                     }
                 }
-                Socket socket = null;
-                MessageService.this.log.info("Accepting new connections on %s", serverSocket);
+                if (this.service.log.isLoggable(Level.FINE)) {
+                    this.service.log.fine("Accepting new connections on %s", serverSocket);
+                }
                 try {
-                    socket = serverSocket.accept();
+                    Socket socket = serverSocket.accept();
                     socket.setTcpNoDelay(true);
                     socket.setKeepAlive(true);
 
-                    MessageService.this.log.info("Accepted connection %s serverClosed=%b", socket, serverSocket.isClosed());
-
-                    synchronized (MessageService.this.executor) {
-                        MessageService.this.executor.submit(new SocketHandler(MessageService.this, jmxObjectName, socket));
+                    if (this.service.log.isLoggable(Level.FINE)) {
+                        this.service.log.fine("Accepted connection %s serverClosed=%b", socket, serverSocket.isClosed());
                     }
 
-                    MessageService.this.log.info("Dispatched connection %s serverClosed=%b", socket, serverSocket.isClosed());
+                    synchronized (this.service.executor) {
+                        this.service.executor.submit(new SocketHandler(this.service, jmxObjectName, socket));
+                    }
+
+                    if (this.service.log.isLoggable(Level.FINE)) {
+                        this.service.log.fine("Dispatched connection %s serverClosed=%b", socket, serverSocket.isClosed());
+                    }
                 } catch (IOException e) {
-                    MessageService.this.node.getLogger().severe("Connection accept Thread terminated: %s serverSocket=%s serverClosed=%b", e, serverSocket, serverSocket.isClosed());
+                    this.service.node.getLogger().severe("Connection accept Thread terminated: %s serverSocket=%s serverClosed=%b", e, serverSocket, serverSocket.isClosed());
                     e.printStackTrace();
                     return;
                 } catch (JMException e) {
-                    MessageService.this.node.getLogger().severe("Connection accept Thread terminated: %s", e);
+                    this.service.node.getLogger().severe("Connection accept Thread terminated: %s", e);
                     e.printStackTrace();
                     return;
                 } finally {
@@ -633,15 +648,15 @@ public class MessageService extends AbstractTitanService {
         }
 
         public long getJMXActiveCount() {
-            return MessageService.this.executor.getActiveCount();
+            return this.service.executor.getActiveCount();
         }
 
         public long getJMXKeepAliveTime() {
-            return MessageService.this.executor.getKeepAliveTime(TimeUnit.MILLISECONDS);
+            return this.service.executor.getKeepAliveTime(TimeUnit.MILLISECONDS);
         }
 
         public long getJMXLargestPoolSize() {
-            return MessageService.this.executor.getLargestPoolSize();
+            return this.service.executor.getLargestPoolSize();
         }
 
         public Socket getAndRemove(NodeAddress address) throws Exception {
@@ -666,57 +681,17 @@ public class MessageService extends AbstractTitanService {
     public interface SocketHandlerMBean extends ServerSocketMBean {
 
     }
-    
-    /**
-     * Transmit a message to its destination.
-     *
-     * <p>
-     * Note: Use this method and {@link #transmit(NodeAddress, TitanMessage)} to
-     * transmit a message ONLY IF you want this node to not receive the message.
-     * Use {@link TitanNodeImpl#receive receive} instead.
-     * </p>
-     */
-    public TitanMessage transmit(TitanMessage message) {
-        message.timeToLive--;
-        if (message.timeToLive < 0) {
-            this.log.severe("Message exceeded time-to-live: " + message.toString());
-            new Exception().printStackTrace();
-            return null;
-        }
-
-        message.timestamp = System.currentTimeMillis();
-        if (message.getDestinationNodeId().equals(this.node.getNodeId())) {
-            return this.node.receive(message);
-        }
-
-        TitanMessage reply;
-        NodeAddress neighbour;
-        while ((neighbour = this.node.getNeighbourMap().getRoute(message.getDestinationNodeId())) != null) {
-            if ((reply = this.transmit(neighbour, message)) != null) {
-                return reply;
-            }
-            this.log.warning("Removing dead neighbour %s", neighbour.format());
-
-            // XXX Should also clean out any other remaining cached sockets to this neighbour.
-            this.node.getNeighbourMap().remove(neighbour);
-        }
-
-        // If there is no next hop, then this node is the root of the destination objectId.
-        // If the message is to be routed exactly then send back an error.
-        if (message.isExactRouting()) {
-            return message.composeReply(this.node.getNodeAddress(), DOLRStatus.NOT_FOUND);
-        }
-
-        return this.node.receive(message);
-    }
 
     /**
+     * 
      * Transmit a {@link TitanMessage} directly to a {@link NodeAddress} and return the reply.
      * If the destination address is unresponsive or cannot be reached, the return value is {@code null}.
      *
      * <p>
      * This method should throw Exceptions to signal failures rather than returning null.
      * </p>
+     *
+     * This handles both the SSL and non-SSL connections through the classes implementing the Connector interface.
      */
     public TitanMessage transmit(NodeAddress addr, TitanMessage message) /*throws InterruptedException*/ {
         while (true) {
@@ -729,6 +704,7 @@ public class MessageService extends AbstractTitanService {
                     this.log.info("%s to %s", message.traceReport(), addr.format());
                 }
 
+                System.out.printf("TCPMessageService.transmitSocket: %s%n", socket);
                 DataOutputStream out = new DataOutputStream(new BufferedOutputStream(socket.getOutputStream()));
                 message.writeObject(out);
                 out.flush();
@@ -781,4 +757,5 @@ public class MessageService extends AbstractTitanService {
         }
     }
 
+    
 }

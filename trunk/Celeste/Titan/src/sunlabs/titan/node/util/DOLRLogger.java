@@ -222,7 +222,7 @@ public class DOLRLogger implements DOLRLoggerMBean {
     }
 
     /**
-     * Call {@link Logger#isLoggable(Level)} do determin if this logger
+     * Call {@link Logger#isLoggable(Level)} do determine if this logger
      * is enabled for the specified level.
      */
     public boolean isLoggable(Level level) {
@@ -234,9 +234,7 @@ public class DOLRLogger implements DOLRLoggerMBean {
      * is enabled for the FINE message level.
      */
     public void fine(String msg) {
-        if (this.logger.isLoggable(Level.FINE)) {
-            this.logger.logp(Level.FINE, this.getCallingClass(), this.getCallingMethod(), msg);
-        }
+        this.logger.logp(Level.FINE, this.getCallingClass(), this.getCallingMethod(), msg);
     }
 
     public void fine(String format, Object... args) {
@@ -310,21 +308,21 @@ public class DOLRLogger implements DOLRLoggerMBean {
     	this.logger.logp(Level.INFO, this.getCallingClass(), this.getCallingMethod(), String.format(format, args));
     }
 
-    /**
-     * Call {@link Logger#logp(Level, String, String, String )} if this logger
-     * is enabled for the specified message level.
-     */
-    public void log(Level level, String msg) {
-        if (this.logger.isLoggable(level)) {
-            this.logger.logp(level, this.getCallingClass(), this.getCallingMethod(), msg);
-        }
-    }
-
-    public void log(Level level, String format, Object... args) {
-        if (this.logger.isLoggable(level)) {
-            this.logger.logp(level, this.getCallingClass(), this.getCallingMethod(), String.format(format, args));
-        }
-    }
+//    /**
+//     * Call {@link Logger#logp(Level, String, String, String )} if this logger
+//     * is enabled for the specified message level.
+//     */
+//    public void log(Level level, String msg) {
+//        if (this.logger.isLoggable(level)) {
+//            this.logger.logp(level, this.getCallingClass(), this.getCallingMethod(), msg);
+//        }
+//    }
+//
+//    public void log(Level level, String format, Object... args) {
+//        if (this.logger.isLoggable(level)) {
+//            this.logger.logp(level, this.getCallingClass(), this.getCallingMethod(), String.format(format, args));
+//        }
+//    }
 
     /**
      * Call {@link Logger#setLevel(Level)}.

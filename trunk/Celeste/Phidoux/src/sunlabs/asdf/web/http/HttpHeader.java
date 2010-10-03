@@ -53,7 +53,7 @@ import sunlabs.asdf.web.http.HttpUtil.PathName;
  * <p>
  * The static inner classes defined in this class represent each header defined in the
  * <a href="http://webdav.org/specs/rfc4918.html">WebDAV specification</a>.
- * See the static factory method {@link #getInstance(byte[])}.   
+ * See the static factory method {@link HttpHeader#getInstance(String)}.
  * </p>
  *
  * @author Glenn Scott, Sun Microsystems Laboratories
@@ -518,16 +518,23 @@ public abstract class HttpHeader implements HTTP.Message.Header {
         }
     }
 
+    /**
+     * The HTTP {@code Connection:} header.
+     */
     public static class Connection extends HttpHeader {
     	private final static long serialVersionUID = 1L;
+    	/**
+    	 * Convenience constant consisting of a {@code Connection: close} header.
+    	 */
+    	public final static Connection CLOSE = new Connection("close");
     	
         private String connection;
-        private Set<String> parameters;
+        private Set<String> tokens;
 
         private Connection() {
             super(HttpHeader.CONNECTION, MultipleHeaders.NOTALLOWED);
             this.connection = null;
-            this.parameters = new HashSet<String>();
+            this.tokens = new HashSet<String>();
         }
 
         public Connection(String fieldValue) {
@@ -543,7 +550,7 @@ public abstract class HttpHeader implements HTTP.Message.Header {
             List<HeaderToken> tokens = HttpHeader.parseFields(this.fieldValue, false);
             for (HeaderToken token : tokens) {
                 if (!token.equals(",")) {
-                    this.parameters.add(token.toString());
+                    this.tokens.add(token.toString());
                 }
             }
             if (tokens.size() > 0) {
@@ -560,7 +567,7 @@ public abstract class HttpHeader implements HTTP.Message.Header {
             
             StringBuilder result = new StringBuilder();
             boolean comma = false;
-            for (String token : this.parameters) {
+            for (String token : this.tokens) {
                 if (comma)
                     result.append(", ");
                 result.append(token);
@@ -572,20 +579,20 @@ public abstract class HttpHeader implements HTTP.Message.Header {
             return this.fieldValue;
         }
         
-        public Set<String> getParameters() throws HTTP.BadRequestException {
+        public Set<String> getTokens() throws HTTP.BadRequestException {
             this.parse();
-            return this.parameters;
+            return this.tokens;
         }
         
         public boolean contains(String parameter) throws HTTP.BadRequestException {
             this.parse();
-            return this.parameters.contains(parameter);
+            return this.tokens.contains(parameter);
         }
 
         /**
          * This is a short-hand method which makes the (not valid, but not uncommon) assumption that the Connection header contains a single value.
-         * @return
-         * @throws InvalidFormatException
+         * @return the field value for the {@code Connection} header.
+         * @throws BadRequestException
          */
         public String getConnection() throws HTTP.BadRequestException {
             this.parse();

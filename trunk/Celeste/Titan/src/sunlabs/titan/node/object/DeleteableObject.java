@@ -49,9 +49,8 @@ import sunlabs.titan.node.services.api.Publish;
 import sunlabs.titan.util.DOLRStatus;
 
 /**
- * {@link TitanObject} and {@link BeehiveObjectHander} classes implementing the interfaces specified
- * in this class implement the capability of objects in the object pool to be
- * deleted.
+ * Classes implementing {@link DeleteableObject} and extending {@link sunlabs.titan.node.object.AbstractObjectHandler} implement the capability of objects to be
+ * deleted from the Titan object pool.
  * 
  * @author Glenn Scott - Sun Microsystems Laboratories
  */
@@ -62,13 +61,14 @@ public final class DeleteableObject {
      * The interface that must be implemented to support object-types that are deleteable.
      *
      */
-    public interface Handler<T extends DeleteableObject.Handler.Object> extends BeehiveObjectHandler {
-        public interface Object extends BeehiveObjectHandler.ObjectAPI {
+    public interface Handler<T extends DeleteableObject.Handler.Object> extends TitanObjectHandler {
+        public interface Object extends TitanObjectHandler.ObjectAPI {
             /**
              * Delete this object.
              * <p>
              * Implementations of this method are responsible for setting the fields in this object suitable for deleteing.
-             * (See {@link DeleteableObject#MakeDeletable(TitanObject, TitanGuid)}, and {@link DeleteableObject.Handler.createAntiObject}.
+             * (See {@link DeleteableObject#MakeDeletable(DeleteableObject.Handler.Object, TitanGuid)},
+             * {@link DeleteableObject.Handler#createAntiObject(DeleteableObject.Handler.Object, TitanGuid, long)}.
              * </p>
              * @param profferedDeleteToken The {@link TitanGuid} of the delete-token for this object.
              * @param timeToLive The number of seconds for this object to continue to exist in the anti-object form.
@@ -250,7 +250,7 @@ public final class DeleteableObject {
     }
 
     /**
-     * Helper function for implementors of the {@link BeehiveObjectHandler#publishObject(TitanMessage)}
+     * Helper function for implementors of the {@link TitanObjectHandler#publishObject(TitanMessage)}
      * method of classes that implement the {@link DeleteableObject} interface.
      * <p>
      * The given {@link PublishDaemon.PublishObject.PublishUnpublishRequestImpl} {@code publishRequest}

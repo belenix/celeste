@@ -73,9 +73,9 @@ public class HttpRequest implements HTTP.Request {
     
     /**
      * Factory method to create an {@link HttpRequest}
-     * instance from reading a {@link PushBackInputStream} containing a well-formed HTTP request.
+     * instance from reading a {@link PushbackInputStream} containing a well-formed HTTP request.
      * <p>
-     * Only the header is consumed from the {@link PushBackInputStream}.
+     * Only the header is consumed from the {@link PushbackInputStream}.
      * The body is left on the stream for subsequent processing.
      * </p>
      * 
@@ -144,7 +144,7 @@ public class HttpRequest implements HTTP.Request {
     
     /**
      * Convenience constructor equivalent to {@link HttpRequest#HttpRequest(HTTP.Request.Method, URI, String, HTTP.Message)}
-     * with the value of {@value HTTPServer#VERSION} as the {@code String} parameter.
+     * with the value of {@link HTTPServer#VERSION} as the {@code String} parameter.
      */
     public HttpRequest(HTTP.Request.Method method, URI uri, HTTP.Message message) {
         this(method, uri, HTTPServer.VERSION, message);

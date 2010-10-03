@@ -178,14 +178,12 @@ public class WebDAV {
         /**
          * {@inheritDoc}
          * 
-         * This implementation will return the HTTP status {@link MethodNodeAllowedException}.
+         * This implementation will return the HTTP status {@link HTTP.MethodNotAllowedException}.
          * See also: {@link #getAccessAllowed()}.
          */
         public OutputStream asOutputStream()
-                throws InternalServerErrorException, GoneException,
-                MethodNotAllowedException, InsufficientStorageException,
-                NotFoundException, UnauthorizedException, ConflictException,
-                BadRequestException, LockedException, ForbiddenException {
+                throws InternalServerErrorException, GoneException, MethodNotAllowedException, InsufficientStorageException,
+                NotFoundException, UnauthorizedException, ConflictException, BadRequestException, LockedException, ForbiddenException {
             throw new HTTP.MethodNotAllowedException(this.getURI(), "Write protected", this.getAccessAllowed());
         }
 
@@ -292,7 +290,7 @@ public class WebDAV {
          * {@inheritDoc}
          * <p>
          * This implementation tries to deduce the content-type from the file-name extension (suffix) using the URI path of this resource
-         * (See {@link InternetMediaType.getByFileExtension}).
+         * (See {@link InternetMediaType#getByFileExtension(String)}.
          * </p>
          */
         public InternetMediaType getContentType()
@@ -1208,10 +1206,11 @@ public class WebDAV {
         private boolean onlyErrors;
 
         /**
-         * Construct a new DAVMultistatus instance containing the initial Collection of {@link WebDAV.DAVResponse}
+         * Construct a new {@code DAVMultistatus} instance containing the initial Collection of {@link WebDAV.DAVResponse}
          * instances and only recording additional instances that are errors.
-         * @param response The initial Collection of {@code WebDAV.DAVResponse} instances for this Multistatus object.
-         * @param onlyErrors If {@code true}, future invocations of the {@link #add(DAVMultistatus)} or {@link #add(DAVResponse)}
+         * @param response The initial Collection of {@code WebDAV.DAVResponse} instances for this {@code DAVMultistatus} object.
+         * @param onlyErrors If {@code true}, future invocations of the {@link WebDAV.DAVMultistatus#add(WebDAV.DAVMultistatus)}
+         * or {@link WebDAV.DAVMultistatus#add(WebDAV.DAVResponse)}
          * method on this instance will only record {@code DAVResponse} objects that contain error status. 
          */
         public DAVMultistatus(Collection<WebDAV.DAVResponse> response, boolean onlyErrors) {
@@ -1265,11 +1264,11 @@ public class WebDAV {
         }
 
         /**
-         * Create and return a new {@link DAVMultistatus} instance containing all of the {@link DAVResponse}
+         * Create and return a new {@link WebDAV.DAVMultistatus} instance containing all of the {@link WebDAV.DAVResponse}
          * instances that contain a non-successful {@code DAVResponse}.
          * NOTE: This does not work for propstat responses.
-         * @return a new {@link DAVMultistatus} instance containing all of the {@link DAVResponse} instances that contain a non-successful {@code DAVResponse}.
-         * @see DAVMultistatus#DAVMultistatus(Collection, boolean)
+         * @return a new {@link WebDAV.DAVMultistatus} instance containing all of the {@link WebDAV.DAVResponse}
+         * instances that contain a non-successful {@code DAVResponse}.
          */
         public DAVMultistatus getErrors() {
             DAVMultistatus result = new DAVMultistatus(new LinkedList<WebDAV.DAVResponse>(), true);
@@ -1533,7 +1532,6 @@ public class WebDAV {
          * 
          * @param uri
          * @param status
-         * @author Glenn Scott, Sun Microsystems Laboratories, Sun Microsystems, Inc.
          */
         public DAVResponse(URI uri, DAVStatus status) {
             this(uri, status, null);
@@ -1822,8 +1820,8 @@ public class WebDAV {
         /**
          * Copy this resource to another named by {@code destination}.
          *
-         * @return {@link HTTP.Resource.Status#CREATED} if the source was successfully copied after the successful creation of a new destination resource.<br/>
-         *         {@link HTTP.Resource.Status#NO_CONTENT} if the source was successfully copied to a preexisting destination resource.
+         * @return {@link HTTP.Response.Status#CREATED} if the source was successfully copied after the successful creation of a new destination resource.<br/>
+         *         {@link HTTP.Response.Status#NO_CONTENT} if the source was successfully copied to a preexisting destination resource.
          * 
          * @throws HTTP.InternalServerErrorException if this method encounters an irrecoverable processing error that cannot be expressed more completely.
          * @throws HTTP.InsufficientStorageException the server is unable to store data needed to successfully complete the request.
@@ -1867,7 +1865,7 @@ public class WebDAV {
         /**
          * Get the member resources of a WebDAV collection.
          * 
-         * @return a {@link Collection<Resource>} containing the members of this WebDAV collection.
+         * @return a {@link Collection} containing the members of this WebDAV collection.
          *
          * @throws HTTP.ConflictException if this resource cannot be created at the destination until one or more intermediate collections have been created.
          * @throws HTTP.InternalServerErrorException if this method encounters an irrecoverable processing error that cannot be expressed more completely.
@@ -2200,7 +2198,6 @@ public class WebDAV {
              * Produce a well-formed XML.Node instance for this property.
              *  
              * @param d
-             * @return
              */
             public XML.Node toXML(DAV d) {
                 
@@ -2298,9 +2295,7 @@ public class WebDAV {
              * </p>
              * @return a String containing a canonicalised form of a {@link WebDAV.Resource.Property}.
              * @param nameSpace A String containing the XML namespace of a Property.
-             * @param name A String containing the name of a Property.
-             * 
-             * @author Glenn Scott, Sun Microsystems Laboratories, Sun Microsystems, Inc.
+             * @param propertyName A String containing the name of a Property.
              */
             public static String canonicalisePropertyName(String nameSpace, String propertyName) {
                 if (nameSpace == null) {
@@ -2317,8 +2312,6 @@ public class WebDAV {
              * @see #canonicalisePropertyName(String, String)
              * @param canonicalName
              * @return a String containing the property's name-space and name components
-             * 
-             * @author Glenn Scott, Sun Microsystems Laboratories, Sun Microsystems, Inc.
              */
             public static String[] fromCanonicalName(String canonicalName) {
                 String[] tokens = canonicalName.split("}", 2);
@@ -2426,7 +2419,7 @@ public class WebDAV {
                 
             /**
              * 
-             * @param activeLock
+             * @param locks
              * @throws HTTP.InternalServerErrorException
              * @throws HTTP.NotFoundException
              * @throws HTTP.GoneException
@@ -2436,10 +2429,8 @@ public class WebDAV {
              * @throws InsufficientStorageException
              * @throws HTTP.BadRequestException
              */
-            public void setLock(WebDAV.DAVLockDiscovery locks)
-            throws HTTP.InternalServerErrorException, HTTP.NotFoundException, HTTP.GoneException, HTTP.UnauthorizedException, HTTP.ConflictException,
-                   HTTP.LockedException, InsufficientStorageException, HTTP.BadRequestException;
-            
+            public void setLock(WebDAV.DAVLockDiscovery locks) throws HTTP.InternalServerErrorException, HTTP.NotFoundException, HTTP.GoneException,
+                HTTP.UnauthorizedException, HTTP.ConflictException, HTTP.LockedException, InsufficientStorageException, HTTP.BadRequestException;
                 
             public WebDAV.Resource.Property.Name lockDiscovery = new WebDAV.Resource.Property.Name("DAV:", "lockdiscovery");
             public WebDAV.Resource.Property.Name supportedLock = new WebDAV.Resource.Property.Name("DAV:", "supportedlock");

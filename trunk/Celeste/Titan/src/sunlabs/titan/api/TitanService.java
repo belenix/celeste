@@ -62,7 +62,6 @@ import sunlabs.titan.node.util.DOLRLogger;
  * </li>
  * <li>
  * The third are the classes supplying the code for stored objects.
- * For example the Celeste {@link sunlabs.celeste.node.services.object.AnchorObjectHandler} class.
  * By convention the names of these kinds of services end with the String
  * <code>Type</code>.
  * </li>
@@ -73,7 +72,8 @@ import sunlabs.titan.node.util.DOLRLogger;
 public interface TitanService extends Serializable {
     
     /**
-     * Classes implementing this interface and providing request/response communication between instances on different {@link TitanNodeImpl} instances
+     * Classes implementing the TitanService interface which also implement request/response
+     * communications between instances on different {@link TitanNode} instances
      * implement this interface for requests sent to a {@code BeehiveObjectHandler}.
      */
     public interface Request extends Serializable {
@@ -81,8 +81,9 @@ public interface TitanService extends Serializable {
     }
 
     /**
-     * Classes implementing this interface and providing request/response communication between instances on different {@link TitanNodeImpl} instances
-     * implement this interface for requests sent from a {@code BeehiveObjectHandler}.
+     * Classes implementing the TitanService interface which also implement request/response
+     * communications between instances on different {@link TitanNode} instances
+     * implement this interface for responses sent to a {@code BeehiveObjectHandler}.
      */
     public interface Response extends Serializable {
         
@@ -120,19 +121,19 @@ public interface TitanService extends Serializable {
     public String getDescription();
 
     /**
-     * Get the {@link TitanNode} of this {@code Service}.
+     * Get the {@link TitanNode} of this {@code TitanService}.
      */
     public TitanNode getNode();
 
     /**
-     * Get the {@link DOLRLogger} instance for this {@code Service}.
+     * Get the {@link DOLRLogger} instance for this {@code TitanService}.
      */
     public DOLRLogger getLogger();
 
     /**
-     * Start this {@code Service} and start its processing.
+     * Start this {@code TitanService} and start its processing.
      */
-    public void start() throws Exception;
+    public void start();
 
     /**
      * Restart this {@code Service}.
@@ -145,7 +146,7 @@ public interface TitanService extends Serializable {
     public void restart() throws Exception;
 
     /**
-     * Stop the {@code Service} and process no more messages.
+     * Stop the {@code TitanService} and process no more messages.
      * <p>
      * No attempt is made to detect whether there are any current users of
      * this application.  An application stopping unexpectedly should be

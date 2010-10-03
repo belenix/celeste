@@ -420,7 +420,7 @@ public class XHTML extends XML.Node {
 
         /**
          * Create an empty Document.
-         * See {@link Document#add(Html...)}.
+         * See {@link XHTML.Document#add(XHTML.Html)}.
          */
         public Document() {
             super();

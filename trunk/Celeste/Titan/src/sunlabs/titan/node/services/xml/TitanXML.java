@@ -41,7 +41,7 @@ public class TitanXML implements XML.ElementFactory  {
     private long nameSpaceReferenceCount;
 
     /**
-     * Construct a new XML content factory using the given {@link XML.NameSpace} specification.
+     * Construct a new XML content factory using the given {@link sunlabs.asdf.web.xml XML.NameSpace} specification.
      * <p>
      * This will create elements within the given XML name-space.
      * </p>

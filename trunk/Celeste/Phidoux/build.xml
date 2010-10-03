@@ -134,8 +134,8 @@ information or have any questions.
             description="==> build the Phidoux.jar file">
         <jar destfile="Phidoux.jar">
         	<fileset dir="${build.classes.dir}"/>
-        	<fileset dir="." includes="docroot/**"/>
-            <fileset dir="." includes="src/**"/>
+        	<fileset dir="${basedir}" includes="docroot/**"/>
+		<fileset dir="${basedir}" includes="src/**"/>
             <manifest>
                 <attribute name="Main-Class"             value="sunlabs.asdf.web.http.WebDAVServerMain" />
                 <attribute name="Built-By"               value="${user.name}.${DSTAMP}" />

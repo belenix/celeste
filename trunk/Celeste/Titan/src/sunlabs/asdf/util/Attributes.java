@@ -167,7 +167,7 @@ public class Attributes extends TreeMap<String,Attributes.Attribute> {
     }
 
     /**
-     * Take each property from the given Properties object and add its value to this Attribute object.
+     * Take each property from the given {@link Properties} object and add its value to this {@link Attributes} instance.
      *
      * @param props
      */
@@ -377,9 +377,9 @@ public class Attributes extends TreeMap<String,Attributes.Attribute> {
         return Integer.parseInt(value);
     }
 
-    public Integer asLong(Attributes.Prototype prototype) {
+    public Long asLong(Attributes.Prototype prototype) {
         String value = this.asString(prototype);
-        return Integer.parseInt(value);
+        return Long.parseLong(value);
     }
 
     public static void main(String[] args) {

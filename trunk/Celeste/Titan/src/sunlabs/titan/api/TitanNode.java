@@ -44,8 +44,9 @@ import sunlabs.titan.node.NodeKey;
 import sunlabs.titan.node.Publishers;
 import sunlabs.titan.node.TitanMessage;
 import sunlabs.titan.node.TitanMessage.RemoteException;
-import sunlabs.titan.node.object.BeehiveObjectHandler;
+import sunlabs.titan.node.object.TitanObjectHandler;
 import sunlabs.titan.node.services.AbstractTitanService;
+import sunlabs.titan.node.services.api.MessageService;
 import sunlabs.titan.node.util.DOLRLogger;
 
 public interface TitanNode {
@@ -103,11 +104,11 @@ public interface TitanNode {
     public NodeAddress getNodeAddress();
     
     /**
-     * Send the given {@link Serializable} {@code data} via a {@link TitanMessage.Type#RouteToNode}
-     * to the {@link TitanNode} that is the root of the {@link TitanNodeId} {@code nodeId}.
+     * Send the given {@link Serializable} {@code payload} via a {@link sunlabs.titan.node.TitanMessage.Type#RouteToNode}
+     * {@code TitanMessage} to the {@link TitanNode} that is the root of the {@link TitanNodeId} {@code nodeId}.
      *
      * @param nodeId The {@link TitanNodeId} of the destination.
-     * @param klasse The name of the {@link AbstractTitanService} to handle the reception of this message.
+     * @param klasse The name of the {@link AbstractTitanService} required to handle the reception of this message.
      * @param method The name of the method to invoke in {@code klasse} on the receiving node.
      * @param payload Serializable data as the input parameter to the {@code method} method.
      */
@@ -125,10 +126,10 @@ public interface TitanNode {
      * @param payload Serializable data as the input parameter to the {@code method} method.
      */
     @Deprecated
-    public TitanMessage sendToNode(TitanNodeId nodeId, TitanGuid objectId, String klasse, String method, Serializable data);
+    public TitanMessage sendToNode(TitanNodeId nodeId, TitanGuid objectId, String klasse, String method, Serializable payload);
 
     /**
-     * Transmit a {@link TitanMessage.Type#RouteToNode} message to the specified {@link TitanNodeId}.
+     * Transmit a {@link sunlabs.titan.node.TitanMessage.Type#RouteToNode} message to the specified {@link TitanNodeId}.
      * If the node cannot be found, throw {@link TitanNode.NoSuchNodeException}.
      *
      * @param nodeId the {@link TitanNodeId} of the destination node.
@@ -145,11 +146,11 @@ public interface TitanNode {
     /**
      * Send the given {@link Serializable} {@code data} to the {@link TitanObject}
      * specified by {@link TitanGuid} {@code objectId}.
-     * The object must be of the {@link BeehiveObjectHandler} {@code klasse} and the
+     * The object must be of the {@link TitanObjectHandler} {@code klasse} and the
      * method invoked is specified by String {@code method}.
      *
      * @param objectId The {@link TitanGuid} of the target {@link TitanObject}.
-     * @param klasse The name of the {@link BeehiveObjectHandler} to use.
+     * @param klasse The name of the {@link TitanObjectHandler} to use.
      * @param method The name of the method to invoke.
      * @param payload The data to transmit to the object.
      */
@@ -196,7 +197,6 @@ public interface TitanNode {
      *
      * @param <C>
      * @param klasse
-     * @param serviceName
      * @return an instance of the named class cast to the given {@link TitanService}
      * @throws ClassCastException if the loaded class is <em>not</em> an instance of {@code klasse}.
      * @throws ClassNotFoundException if the class cannot be found.
@@ -206,8 +206,6 @@ public interface TitanNode {
     /**
      * Get (dynamically loading and instantiating, if necessary) an instance of the named class cast to the given {@link TitanService}.
      *
-     * @param <C>
-     * @param klasse
      * @param serviceName
      * @return an instance of the named class cast to the given {@link TitanService}
      * @throws ClassCastException if the loaded class is <em>not</em> an instance of {@code klasse}.
@@ -220,6 +218,8 @@ public interface TitanNode {
 
 
     public XML.Content toXML();
+    
+    public TitanMessage transmit(TitanMessage message);
 
     /**
      * Produce an {@link sunlabs.asdf.web.XML.XHTML.EFlow XHTML.EFlow} element containing an XHTML formatted representation of this node.
@@ -227,9 +227,8 @@ public interface TitanNode {
     public XHTML.EFlow toXHTML(URI uri, Map<String,HTTP.Message> props) throws URISyntaxException;
 
     /**
-     * 
-     * @param objectId
-     * @return
+     * @param objectId the {@link TitanGuid} of the object to remove.
+     * @return {@code true} if the object was successfully removed.
      * @throws BeehiveObjectStore.NotFoundException
      * @throws ClassNotFoundException
      * @throws BeehiveObjectStore.Exception
@@ -246,4 +245,11 @@ public interface TitanNode {
 
 
     public NodeKey getNodeKey();
+
+    /**
+     * Get the instance of the class, implementing {@link MessageService}, that this node uses to send/receive link {@link TitanMessage}s.
+     * 
+     * @return the instance of the class, implementing {@link MessageService}, that this node uses to send/receive link {@link TitanMessage}s.
+     */
+    public MessageService getMessageService();
 }

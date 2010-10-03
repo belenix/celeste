@@ -34,7 +34,7 @@ import java.util.Set;
 import sunlabs.asdf.util.Time;
 import sunlabs.asdf.web.XML.XHTML;
 import sunlabs.asdf.web.http.HTTP;
-import sunlabs.titan.node.object.BeehiveObjectHandler;
+import sunlabs.titan.node.object.TitanObjectHandler;
 
 /**
 
@@ -127,7 +127,7 @@ import sunlabs.titan.node.object.BeehiveObjectHandler;
  * </li>
  * </ol>
  * Signatures need to implemented and replace the simple hashing.
- * @see BeehiveObjectHandler
+ * @see TitanObjectHandler
  */
 public interface TitanObject extends /*XHTMLInspectable,*/ Serializable {
     /**
@@ -135,6 +135,12 @@ public interface TitanObject extends /*XHTMLInspectable,*/ Serializable {
      */
     public static final long INFINITE_TIME_TO_LIVE = Long.MAX_VALUE;
 
+    /**
+     * The meta-data of a {@code TitanObject}.
+     * <p>
+     * The meta-data consists of name/value pairs containing system and application related information about this object.
+     * </p>
+     */
     public interface Metadata extends Serializable {
         public static final Metadata NONE = null;
 
@@ -206,7 +212,7 @@ public interface TitanObject extends /*XHTMLInspectable,*/ Serializable {
     public long getTimeToLive();
     
     /**
-     * Get the remaining number of seconds from {@code now} (expressed in seconds, see {@link Time.currentTimeInSeconds}
+     * Get the remaining number of seconds from {@code now} (expressed in seconds, see {@link Time#currentTimeInSeconds()}
      * and {@link System#currentTimeMillis()} that this object is scheduled to exist before it is expired.
      * If an object has an infinite expiration date, this method returns {@link TitanObject#INFINITE_TIME_TO_LIVE}.
      */

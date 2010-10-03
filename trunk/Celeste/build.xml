@@ -100,19 +100,19 @@
     <!-- =================================
           target: jars
          ================================= -->
-    <target name="jars" depends="titan.jar, celeste, sortgen, wordcount, Phidoux.jar"
-        description="==> builds all jar files"/>
+    <target name="jars" depends="titan.jar, celeste.jar, sortgen.jar, wordcount.jar, Phidoux.jar"
+        description="==> Builds all jar files"/>
 
     <!-- =================================
           target: all
          ================================= -->
-    <target name="all" depends="jars, doc"
-        description="==> builds everything, including javadocs"/>
+    <target name="all" depends="jars, javadoc"
+        description="==> Builds everything, including javadocs"/>
 
     <!-- =================================
           target: compile
          ================================= -->
-    <target name="compile" depends="init, Phidoux.jar, titan.jar" description="==> compile all sources">
+    <target name="compile" depends="init, Phidoux.jar, titan.jar" description="==> Compile all sources">
         <mkdir dir="${build.classes.dir}"/>
         <depend srcdir="${src.dir}"
                 destdir="${build.classes.dir}"
@@ -135,39 +135,11 @@
         </javac>
     </target>
 
-
     <!-- =================================
-          target: titan
+          target: celeste.jar
          ================================= -->
-	<!--
-    <target name="titan" depends="compile,scmversion" description="==> build Titan">
-        <mkdir dir="${dist.dir}" />
-        <jar destfile="${dist.dir}/titan.jar" filesonly="true" 
-             >
-            <fileset dir="${build.classes.dir}" includes="sunlabs/titan/** sunlabs/asdf/io/** sunlabs/asdf/jmx/** sunlabs/asdf/util/**  sunlabs/asdf/functional/**" />
-            <fileset dir="" includes="web/**" />
-            <manifest>
-                <attribute name="Main-Class" value="sunlabs.titan.node.Beehive" />
-                <attribute name="Class-Path" value="${Phidoux.jar}" />
-                <attribute name="Built-By" value="${user.name}.${DSTAMP}" />
-                <attribute name="Sealed" value="true" />
-                <attribute name="Specification-Title" value="Sun Labs Titan" />
-                <attribute name="Specification-Version" value="2010.8.17" />
-                <attribute name="Specification-Vendor" value="${manifest.vendor}" />
-                <attribute name="Implementation-Title" value="sunlabs.titan" />
-                <attribute name="Implementation-Version" value="${scm_version}" />
-                <attribute name="Implementation-Vendor" value="${manifest.vendor}" />
-            </manifest>
-        </jar>
-    </target>
-    -->
-
-
-    <!-- =================================
-          target: celeste
-         ================================= -->
-    <target name="celeste" depends="compile,scmversion"
-            description="==> build Celeste Application">
+    <target name="celeste.jar" depends="compile,scmversion"
+            description="==> Build the celeste.jar file">
         <mkdir dir="${dist.dir}" />
         <jar destfile="${dist.dir}/celeste.jar" filesonly="true">
             <fileset dir="${build.classes.dir}" includes="sunlabs/celeste/**" />
@@ -187,7 +159,7 @@
         </jar>
     </target>
 
-    <target name="sortgen" depends="compile,scmversion" description="==> build sortable data generator">
+    <target name="sortgen.jar" depends="compile,scmversion" description="==> Build sortjen.jar, the sortable data generator">
         <mkdir dir="${dist.dir}" />
         <jar destfile="${dist.dir}/sortgen.jar" filesonly="true" >
              <fileset dir="${build.classes.dir}" includes="sunlabs/celeste/client/application/SortGen.class" />
@@ -205,8 +177,8 @@
          </jar>
     </target>
 
-    <target name="wordcount" depends="compile,scmversion"
-            description="==> build the wordcount extension">
+    <target name="wordcount.jar" depends="compile,scmversion"
+            description="==> Build the wordcount.jar extension">
         <mkdir dir="${dist.dir}" />
         <jar destfile="${dist.dir}/wordcount.jar" filesonly="true" >
             <fileset dir="${build.classes.dir}" includes="sunlabs/celeste/extension/WordCount*.class" />
@@ -229,7 +201,7 @@
          target: Phidoux.jar
          ================================= -->
     <target name="Phidoux.jar"
-            description="==> get the Phidoux.jar file">
+            description="==> Get the Phidoux.jar file from the Phidoux sub-project.">
         <mkdir dir="${dist.dir}" />
     	<copy file="Phidoux/Phidoux.jar" toDir="${dist.dir}" />
     </target>
@@ -238,7 +210,7 @@
          target: titan.jar
          ================================= -->
     <target name="titan.jar"
-            description="==> get the titan.jar file">
+            description="==> Get the titan.jar file from the Titan sub-project.">
         <mkdir dir="${dist.dir}" />
         <copy file="Titan/lib/titan.jar" toDir="${dist.dir}" />
     </target>
@@ -248,7 +220,7 @@
           target: test-compile
          ================================= -->
     <target name="test-compile" depends="init"
-            description="==> build test files">
+            description="==> Build all test files.">
         <mkdir dir="${build.test.classes.dir}" />
         <depend srcdir="${test.unit.dir}"
                 destdir="${build.test.classes.dir}"
@@ -359,7 +331,7 @@
     <!-- =================================
           target: doc
          ================================= -->
-    <target name="doc" depends="init, check.javadoc.isuptodate, proxy.args" unless="javadoc.isuptodate" description="==> build javadocs">
+    <target name="javadoc" depends="init, check.javadoc.isuptodate, proxy.args" unless="javadoc.isuptodate" description="==> Build javadocs">
         <delete dir="${javadoc.dir}" />
         <mkdir dir="${javadoc.dir}" />
         <mkdir dir="${javadoc.dir}/doc-files" />
@@ -377,6 +349,8 @@
                 <pathelement location="${dist.dir}/Phidoux.jar" />
                 <pathelement location="${dist.dir}/titan.jar" />
             </classpath>
+            <arg line="-link jar:file:${dist.dir}/Phidoux.jar!/docroot/javadoc" />
+            <arg line="-link jar:file:${dist.dir}/titan.jar!/web/javadoc" />
             <arg line="${option.proxyHost}" />
             <arg line="${option.proxyPort}" />
             <arg line="${option.nonProxyHosts}" />
@@ -408,8 +382,8 @@
     <!-- =================================
           target: install
          ================================= -->
-    <target name="install" depends="jars, doc"
-            description="==> build tar file for a binary distribution">
+    <target name="install" depends="jars, javadoc"
+            description="==> Build a tar file for a binary distribution.">
         <tar destfile="${DSTAMP}-install.tgz"
              defaultexcludes="yes"
              compression="gzip" >
@@ -430,7 +404,7 @@
     <!-- =================================
           target: clean
          ================================= -->
-    <target name="clean" description="==> Remove all build artifacts">
+    <target name="clean" description="==> Remove all built components">
         <delete dir="${build.dir}" />
         <delete dir="${dist.dir}" />
     </target>
@@ -440,7 +414,7 @@
           target: clobber
          ================================= -->
     <target name="clobber" depends="clean"
-            description="==> Remove all build artifacts, including javadoc">
+            description="==> Remove all built components and the generated documentation">
         <delete dir="${javadoc.dir}" />
     </target>
 

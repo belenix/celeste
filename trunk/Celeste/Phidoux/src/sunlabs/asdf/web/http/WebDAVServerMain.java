@@ -101,7 +101,7 @@ public class WebDAVServerMain {
 
                 HTTPServer server = new HTTPServer(socketChannel);
                 server.setTrace(true);
-                HTTP.NameSpace nameSpace = new WebDAVNameSpace(server, backend);
+                HTTP.URINameSpace nameSpace = new WebDAVNameSpace(server, backend);
 
                 server.addNameSpace(new URI("/"), nameSpace);
                 server.setLogger(Logger.getLogger(WebDAVServerMain.class.getName()));

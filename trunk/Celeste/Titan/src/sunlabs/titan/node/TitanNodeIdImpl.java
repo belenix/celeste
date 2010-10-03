@@ -59,7 +59,7 @@ public class TitanNodeIdImpl extends TitanGuidImpl implements TitanNodeId {
     /**
      * Construct a new {@code TitanNodeIdImpl} instance from a {@code String} representation of the identifier in hex.
      * <p>
-     * The given value must be a contiguous string of hexadecimal numerals {@link TitanGuidImpl.n_digits} in length.
+     * The given value must be a contiguous string of hexadecimal numerals {@link TitanGuidImpl#n_digits} in length.
      * </p>
      */
     public TitanNodeIdImpl(String hexValue) throws NumberFormatException {

@@ -25,7 +25,6 @@ package sunlabs.titan.node;
 
 import java.io.File;
 import java.io.FileNotFoundException;
-import java.io.FilenameFilter;
 import java.io.IOException;
 import java.io.Serializable;
 import java.util.HashMap;
@@ -125,7 +124,7 @@ public class Dossier extends AbstractStoredMap<TitanGuid,Dossier.Entry> {
         private static final long serialVersionUID = 1L;
 
         private NodeAddress address;
-        private long timestamp;
+        private long timeStampMillis;
         private String revision;
 
         private Map<String,ProbabilityThing> probabilities;
@@ -140,25 +139,43 @@ public class Dossier extends AbstractStoredMap<TitanGuid,Dossier.Entry> {
         public Entry(NodeAddress address) {
             this();
             this.address = address;
-            this.timestamp = System.currentTimeMillis();
+            this.timeStampMillis = System.currentTimeMillis();
         }
 
+        /**
+         * Return the {@link NodeAddress} of this Entry.
+         * @return the {@link NodeAddress} of this Entry.
+         */
         public NodeAddress getNodeAddress() {
             return this.address;
         }
 
+        /**
+         * Set the time-stamp of this Dossier entry to the given time,
+         * interpreted as milliseconds between the current time and midnight, January 1, 1970 UTC.
+         * @return this Entry
+         */
         public Entry setTimestamp(long time) {
-            this.timestamp = time;
+            this.timeStampMillis = time;
             return this;
         }
 
+        /**
+         * Set the time-stamp of this Dossier entry to the current time,
+         * represented as milliseconds between the current time and midnight, January 1, 1970 UTC.
+         * @return this Entry
+         */
         public Entry setTimestamp() {
-            this.timestamp = System.currentTimeMillis();
-            return this;
+            return this.setTimestamp(System.currentTimeMillis());
         }
 
+        /**
+         * Get the time-stamp of this Dossier entry, represented as milliseconds
+         * between the current time and midnight, January 1, 1970 UTC.
+         * @return the time-stamp of this Dossier entry
+         */
         public long getTimestamp() {
-            return this.timestamp;
+            return this.timeStampMillis;
         }
 
         public String getRevision() {
@@ -238,9 +255,9 @@ public class Dossier extends AbstractStoredMap<TitanGuid,Dossier.Entry> {
 
         public XHTML.Table toXHTML(Map<String,Integer> coefficients) {
             XHTML.Table.Body tbody1 = new XHTML.Table.Body();
-            tbody1.add(new XHTML.Table.Row(new XHTML.Table.Data("Timestamp"), new XHTML.Table.Data(Long.toString(this.timestamp))));
+            tbody1.add(new XHTML.Table.Row(new XHTML.Table.Data("Timestamp"), new XHTML.Table.Data(Long.toString(this.timeStampMillis))));
             tbody1.add(new XHTML.Table.Row(new XHTML.Table.Data("CurrentTime"), new XHTML.Table.Data(Long.toString(System.currentTimeMillis()))));
-            tbody1.add(new XHTML.Table.Row(new XHTML.Table.Data("Age"), new XHTML.Table.Data(Long.toString((System.currentTimeMillis() - this.timestamp)/1000) + "s")));
+            tbody1.add(new XHTML.Table.Row(new XHTML.Table.Data("Age"), new XHTML.Table.Data(Long.toString((System.currentTimeMillis() - this.timeStampMillis)/1000) + "s")));
             XHTML.Table column1 = new XHTML.Table(tbody1);
 
             XHTML.Table.Body tbody2 = new XHTML.Table.Body();
@@ -335,18 +352,11 @@ public class Dossier extends AbstractStoredMap<TitanGuid,Dossier.Entry> {
     public void removeEntry(Dossier.Entry e) {
         this.locks.assertLock(e.address.getObjectId());
         super.remove(e.address.getObjectId());
-//        this.entries.remove(e.address.getObjectId());
     }
 
     public boolean unlockEntry(Dossier.Entry e) {
         this.locks.assertLock(e.address.getObjectId());
         return this.locks.unlock(e.address.getObjectId());
-    }
-
-    private static class BeehiveObjectIdFilter implements FilenameFilter {
-        public boolean accept(File dir, String name) {
-            return TitanGuidImpl.IsValid(name);
-        }
     }
 
     public void failure(NodeAddress address, String virtue) throws AbstractStoredMap.OutOfSpace {

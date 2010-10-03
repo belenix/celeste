@@ -26,6 +26,7 @@ package sunlabs.titan.node;
 import java.io.IOException;
 import java.io.Serializable;
 import java.net.URI;
+import java.net.URL;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashSet;
@@ -475,10 +476,11 @@ public final class NeighbourMap {
                 } else {
                     XMLRoute route = xml.newXMLRoute(digit, level);
                     for (NodeAddress n : this.routes[level][digit]) {
-                        route.add(xml.newXMLRouteNode(n.getObjectId(), n.getInternetworkAddress().getAddress().toString(), n.getPort(), n.getHTTPInterface().getPort()));
+                        URL inspectorURL = n.getInspectorInterface();
+                        route.add(xml.newXMLRouteNode(n.getObjectId(), n.getMessageURL().getHost(), n.getMessageURL().getPort(), inspectorURL.getPort()));
                     }
                     table.add(route);
-                }                
+                }
             }
         }
         
@@ -516,12 +518,12 @@ public final class NeighbourMap {
                         XHTML.Div dojoTooltip = new XHTML.Div().setClass("neighbour");
                         dojoTooltip.addAttribute(new XML.Attr("dojoType", "sunlabs.StickyTooltip")).addAttribute(new XML.Attr("connectId", cellId));
                         for (NodeAddress a : this.routes[level][digit]) {
-                        	dojoTooltip.add(WebDAVDaemon.inspectNodeXHTML(a).add(" [X] [P]").add(new XHTML.Break()));
+                            dojoTooltip.add(WebDAVDaemon.inspectNodeXHTML(a).add(" [X] [P]").add(new XHTML.Break()));
                         }
                         cell.add(dojoTooltip);
                     } else {
                         NodeAddress firstNode = this.routes[level][digit].first();
-                        XHTML.Anchor link = new XHTML.Anchor(" ").add(this.routes[level][digit].size()).add(" ").setHref(XHTML.SafeURL(firstNode.getHTTPInterface()));
+                        XHTML.Anchor link = new XHTML.Anchor(" ").add(this.routes[level][digit].size()).add(" ").setHref(XHTML.SafeURL(firstNode.getInspectorInterface()));
                         link.setTitle(firstNode.getObjectId());
 
                         cell.add(link);

@@ -23,14 +23,11 @@
  */
 package sunlabs.titan.node.object;
 
-import java.io.Serializable;
-
 import sunlabs.titan.api.TitanNode;
 import sunlabs.titan.api.TitanObject;
 import sunlabs.titan.api.TitanService;
 import sunlabs.titan.node.BeehiveObjectPool;
 import sunlabs.titan.node.BeehiveObjectStore;
-import sunlabs.titan.node.PublishObjectMessage;
 import sunlabs.titan.node.TitanMessage;
 import sunlabs.titan.node.UnpublishObjectMessage;
 import sunlabs.titan.node.services.api.Publish;
@@ -70,7 +67,7 @@ import sunlabs.titan.node.services.api.Publish;
  * @see TitanObject
  * @see TitanService
  */
-public interface BeehiveObjectHandler/*<T extends BeehiveObjectHandler.ObjectAPI>*/ extends TitanService {
+public interface TitanObjectHandler extends TitanService {
     /**
      * Every Beehive object handled by instances of {@code BeehiveObjectHandler}
      * must implement this interface.
@@ -80,7 +77,8 @@ public interface BeehiveObjectHandler/*<T extends BeehiveObjectHandler.ObjectAPI
     }
 
     /**
-     * Receive and process a {@link PublishObjectMessage} for a {@link BeehiveObjectHandler.ObjectAPI} instance.
+     * Receive and process a {@link TitanMessage} publish object request for a
+     * {@link TitanObjectHandler.ObjectAPI} instance.
      * <p>
      * If the status of the resultant reply {@link TitanMessage} does <em>NOT</em> indicate success, the publishing {@link TitanNode} and all inter-hop nodes
      * are obligated to <em>NOT</em> store backpointers and the storing node <em>MUST NOT</em> store the object.
@@ -94,7 +92,7 @@ public interface BeehiveObjectHandler/*<T extends BeehiveObjectHandler.ObjectAPI
      * method will result in deadlock if there is only one object in the system.
      * </p>
      * @param message
-     * @return The reply {@link Publish.PublishUnpublishResponse}.
+     * @return The reply {@link sunlabs.titan.node.services.api Publish.PublishUnpublishResponse}.
      * @throws ClassCastException 
      * @throws ClassNotFoundException 
      * @throws BeehiveObjectPool.Exception
@@ -104,7 +102,7 @@ public interface BeehiveObjectHandler/*<T extends BeehiveObjectHandler.ObjectAPI
 
     /**
      * Receive and process a {@link UnpublishObjectMessage} for a
-     * {@link BeehiveObjectHandler.ObjectAPI} instance.
+     * {@link TitanObjectHandler.ObjectAPI} instance.
      * <p>
      * Every node that receives this message which also has a back-pointer
      * to the specified {@link TitanObject} <em>MUST</em> delete that
@@ -112,7 +110,7 @@ public interface BeehiveObjectHandler/*<T extends BeehiveObjectHandler.ObjectAPI
      * </p>
      *
      * @param message
-     * @return The reply {@link Publish.PublishUnpublishResponse}.
+     * @return The reply {@link sunlabs.titan.node.services.api.Publish.PublishUnpublishResponse}.
      * @throws ClassCastException 
      * @throws ClassNotFoundException 
      */

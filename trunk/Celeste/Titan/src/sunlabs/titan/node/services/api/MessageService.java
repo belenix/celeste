@@ -21,28 +21,28 @@
  * or visit www.oracle.com if you need additional information or
  * have any questions.
  */
-package sunlabs.celeste.node.object;
+package sunlabs.titan.node.services.api;
 
-import sunlabs.titan.api.TitanObject;
+import sunlabs.titan.api.TitanService;
+import sunlabs.titan.node.NodeAddress;
 import sunlabs.titan.node.TitanMessage;
-import sunlabs.titan.node.object.TitanObjectHandler;
 
-/**
- *
- */
-public class Countable {
-    public interface Handler <T extends TitanObject> extends TitanObjectHandler {
-        public interface Object extends TitanObjectHandler.ObjectAPI {
+public interface MessageService extends TitanService {
 
-        }
-
-        /**
-         * <p>
-         * Count the number of words in object specified by the BeehiveMessage.
-         * </p>
-         * @param message
-         * @return The reply BeehiveMessage containing the entire result of the operation.
-         */
-        public TitanMessage extension(TitanMessage message);
-    }
+    /**
+     * Transmit a {@link TitanMessage} directly to a {@link NodeAddress} and return the reply.
+     * If the destination {@code NodeAddress} is unresponsive or cannot be reached, the return value is {@code null}.
+     *
+     * <p>
+     * This method should throw Exceptions to signal failures rather than returning {@code null}.
+     * </p>
+     */
+    public TitanMessage transmit(NodeAddress addr, TitanMessage message) /*throws InterruptedException*/;
+    
+    /**
+     * This returns the Thread listening for incoming messages.
+     * 
+     * @return the Thread listening for incoming messages.
+     */
+    public Thread getServerThread();
 }

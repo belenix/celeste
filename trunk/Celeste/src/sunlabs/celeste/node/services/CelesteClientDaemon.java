@@ -545,16 +545,6 @@ public class CelesteClientDaemon extends AbstractTitanService {
         super.stop();
     }
 
-//    /**
-//     * Set the {@link CelesteNode} instance that this daemon is to use to perform the Celeste functions.
-//     *
-//     *
-//     * @param celesteNode
-//     */
-//    public void setCelesteNode(CelesteNode celesteNode) {
-//        this.celesteNode = celesteNode;
-//    }
-
     public XHTML.EFlow toXHTML(URI uri, Map<String,HTTP.Message> props) {
         return new XHTML.Div("nothing here");
     }
@@ -1103,7 +1093,7 @@ public class CelesteClientDaemon extends AbstractTitanService {
         // ensure that they cannot be written directly by other applications.
         //
         if (operation.getFileIdentifier().getFileId().equals(TitanGuidImpl.ZERO)) {
-            throw new CelesteException.IllegalParameterException("File Identifier cannot be zero");
+            throw new CelesteException.IllegalParameterException("File Identifier cannot be %s", TitanGuidImpl.ZERO);
         }
         Credential clientCredential = this.getProfile(operation.getClientId());
 
@@ -1288,7 +1278,7 @@ public class CelesteClientDaemon extends AbstractTitanService {
                 //
                 BlockObject.Object newBObject = blockObjectHandler.create(bounds, data, bObjectMetaData, deleteTokenHash, timeToLive, aObject.getReplicationParameters());
                 newBObject = blockObjectHandler.storeObject(newBObject);
-                assert newBObject.getBounds().contains(data) : String.format("newBboBounds: %s, data: %s", newBObject.getBounds(), data.asString(false));
+                assert newBObject.getBounds().contains(data) : String.format("newBObject Bounds: %s, data: %s", newBObject.getBounds(), data.asString(false));
                 //
                 // Since the new BObject contains data from this write, its
                 // bounds should encompass those of the data that this write

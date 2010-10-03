@@ -32,9 +32,8 @@ import sunlabs.titan.node.TitanMessage;
 import sunlabs.titan.node.TitanMessage.RemoteException;
 
 /**
- * {@link TitanObject} and {@link BeehiveObjectHander} classes implementing the interfaces specified
- * in this class implement the capability of objects to be
- * retrieved from the Beehive object pool.
+ * Classes implementing {@link TitanObject} and extending {@link sunlabs.titan.node.object.AbstractObjectHandler}
+ * implement the capability of objects to be stored in the Titan object pool.
  * 
  * @author Glenn Scott - Sun Microsystems Laboratories
  */
@@ -46,8 +45,8 @@ public class RetrievableObject {
      *
      * @param <T>
      */
-    public interface Handler<T extends RetrievableObject.Handler.Object> extends BeehiveObjectHandler {
-        public interface Object extends BeehiveObjectHandler.ObjectAPI {
+    public interface Handler<T extends RetrievableObject.Handler.Object> extends TitanObjectHandler {
+        public interface Object extends TitanObjectHandler.ObjectAPI {
 
         }
 

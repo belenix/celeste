@@ -85,8 +85,8 @@ public interface Census {
      * excluding those nodes specified by {@link TitanGuid} in the Set {@code exclude}.
      *
      * @param count the number of nodes to select.  If zero, all nodes are selected.
-     * @param exclude a {@link Set} of nodes to specifically exclude from the selection.
-     * @param match an {@link OrderedProperties} instance containing the set of properties that selected nodes much match.
+     * @param excludedNodes a {@link Set} of nodes to specifically exclude from the selection.
+     * @param matchedAttributes an {@link OrderedProperties} instance containing the set of properties that selected nodes much match.
      * @return A {@link Map} of {@link TitanGuid} to {@link OrderedProperties} for each node selected.
      * @throws RemoteException if the remote node threw an Exception.
      * @throws ClassCastException 
@@ -109,8 +109,8 @@ public interface Census {
      *
      * @param gateway the {@link NodeAddress} of the node used to proxy this request.
      * @param count the number of nodes to select
-     * @param exclude a {@link Set} of nodes to specifically exclude from the selection, or {@code null}.
-     * @param match an {@link OrderedProperties} instance containing the set of properties that selected nodes much match, or {@code null}.
+     * @param excludedNodes a {@link Set} of nodes to specifically exclude from the selection, or {@code null}.
+     * @param matchedAttributes an {@link OrderedProperties} instance containing the set of properties that selected nodes much match, or {@code null}.
      * @return A {@link Map} of {@link TitanGuid} to {@link OrderedProperties} for each node selected.
      */
     public Map<TitanNodeId, OrderedProperties> select(NodeAddress gateway, int count, Set<TitanNodeId> excludedNodes, OrderedProperties matchedAttributes);

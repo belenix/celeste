@@ -1,5 +1,5 @@
 /*
- * Copyright 2007-2008 Sun Microsystems, Inc. All Rights Reserved.
+ * Copyright 2007-2010 Oracle. All Rights Reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER
  *
  * This code is free software; you can redistribute it and/or modify
@@ -17,9 +17,8 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
  * 02110-1301 USA
  *
- * Please contact Sun Microsystems, Inc., 16 Network Circle, Menlo
- * Park, CA 94025 or visit www.sun.com if you need additional
- * information or have any questions.
+ * Please contact Oracle, 16 Network Circle, MenloPark, CA 94025
+ * or visit www.oracle.com if you need additional information or have any questions.
  */
 package sunlabs.titan.node;
 
@@ -38,8 +37,7 @@ import sunlabs.titan.util.LRUCache;
  * and port number.
  *
  */
-public class SocketCache
-        extends LRUCache<SocketCache.Key, Socket> {
+public class SocketCache extends LRUCache<SocketCache.Key, Socket> {
     private final static long serialVersionUID = 0L;
 
     /**
@@ -90,7 +88,7 @@ public class SocketCache
         }
 
         public Socket newInstance(Key key) throws IOException {
-            Socket s = socketFactory.createSocket(key.address.getInternetworkAddress().getAddress(), key.address.getPort());
+            Socket s = socketFactory.createSocket(key.address.getMessageURL().getHost(), key.address.getMessageURL().getPort());
             s.setSoTimeout(this.socketTimeOutInMs);
             s.setKeepAlive(true);
             s.setTcpNoDelay(true);
@@ -203,9 +201,9 @@ public class SocketCache
     }
 
     /**
-     * Return an {@link XHTML.Eflow} element whose contents describe this cache's performance.
+     * Return an {@link sunlabs.asdf.web.xml XHTML.Eflow} element whose contents describe this cache's performance.
      *
-     * @return an {@link XHTML.Eflow} element whose contents describe this cache's performance.
+     * @return an {@link sunlabs.asdf.web.xml XHTML.Eflow} element whose contents describe this cache's performance.
      */
     public XHTML.EFlow getStatisticsAsXHTML() {
         return getStatisticsAsXHTML("Socket Cache");
@@ -214,7 +212,7 @@ public class SocketCache
     /**
      * Return an XHTML table whose contents describe this cache's performance.
      *
-     * @return  an XHTML table of performance statistics
+     * @return an XHTML table of performance statistics
      */
     protected XHTML.EFlow getStatisticsAsXHTML(String caption) {
         int capacity = this.getCapacity();

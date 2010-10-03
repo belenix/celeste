@@ -57,7 +57,7 @@ import sunlabs.titan.node.TitanMessage.RemoteException;
 import sunlabs.titan.node.TitanNodeIdImpl;
 import sunlabs.titan.node.UnpublishObjectMessage;
 import sunlabs.titan.node.object.AbstractObjectHandler;
-import sunlabs.titan.node.object.BeehiveObjectHandler;
+import sunlabs.titan.node.object.TitanObjectHandler;
 import sunlabs.titan.node.services.api.Publish;
 
 /**
@@ -94,8 +94,9 @@ public final class PublishDaemon extends AbstractTitanService implements Publish
      */
     public final static Attributes.Prototype PublishPeriodSeconds = new Attributes.Prototype(PublishDaemon.class,
             "PublishPeriodSeconds",
-            Time.minutesInSeconds(10),
+            Time.minutesInSeconds(60),
             "The number of seconds to delay after completing an object publish cycle, to starting the next one.");
+    
     public final static Attributes.Prototype PublishObjectInterstitialSleepMillis = new Attributes.Prototype(PublishDaemon.class,
             "PublishObjectInterstitialSleepMillis",
             0,
@@ -442,7 +443,7 @@ public final class PublishDaemon extends AbstractTitanService implements Publish
      * Publish the availability of the given {@link TitanObject}.
      * <p>
      * A {@link PublishObjectMessage} is composed and routed through the local node to the node that is the root of the object's identifier.
-     * The {@link BeehiveObjectHandler#publishObject(TitanMessage)} method in the {@code BeehiveObjectHandler} corresponding to the given {@link TitanObject}'s
+     * The {@link TitanObjectHandler#publishObject(TitanMessage)} method in the {@code BeehiveObjectHandler} corresponding to the given {@link TitanObject}'s
      * class is invoked and its reply returned.
      * The reply {@link TitanMessage} is returned.
      * </p>
@@ -673,11 +674,10 @@ public final class PublishDaemon extends AbstractTitanService implements Publish
             private boolean backup;
 
             /**
-             * Construct a {@link Publish.PublishUnpublishRequest} containing the {@link NodeAddress} of the {@code TitanNode} publishing the given objects.
+             * Construct a {@link sunlabs.titan.node.services.api.Publish.PublishUnpublishRequest PublishUnpublishRequest}
+             * containing the {@link NodeAddress} of the {@code TitanNode} publishing the given objects.
              * 
-             * @see PublishUnpublishRequestImpl#PublishUnpublishRequestImpl(NodeAddress, TitanGuid...)
-             *  
-             * @param publisher The {@code NodeAddress} of the {@link TitanNode} publishing the objects.
+             * @param publisher The {@link NodeAddress} of the {@link TitanNode} publishing the objects.
              * @param secondsToLive The number of seconds each publish record should exist.
              * @param object One or more {@link TitanObject} instances to publish.
              */
@@ -692,14 +692,12 @@ public final class PublishDaemon extends AbstractTitanService implements Publish
             }
             
             /**
-             * Construct a {@link Publish.PublishUnpublishRequest} containing the {@link NodeAddress} of the {@code TitanNode} publishing the given objects.
+             * Construct a {@link sunlabs.titan.node.services.api.Publish.PublishUnpublishRequest PublishUnpublishRequest}
+             * containing the {@link NodeAddress} of the {@code TitanNode} publishing the given objects.
              * This is the anonymous form of publish or unpublish where there is no accompanying metaadata about the objects.
-             * 
-             * @see PublishUnpublishRequestImpl#PublishUnpublishRequestImpl(NodeAddress, long, TitanObject...)
              *  
              * @param publisher The {@code NodeAddress} of the {@link TitanNode} publishing the objects.
-             * @param secondsToLive The number of seconds each publish record should exist.
-             * @param object One or more {@link TitanObject} instances to publish.
+             * @param objectIds One or more {@link TitanGuid} instances to publish.
              */
             public PublishUnpublishRequestImpl(NodeAddress publisher, TitanGuid...objectIds) {
                 this.objects = new HashMap<TitanGuid,TitanObject.Metadata>();
@@ -712,9 +710,9 @@ public final class PublishDaemon extends AbstractTitanService implements Publish
             }
 
             /**
-             * If {@code true} this Publish is a backup for the root of the object's
+             * If {@code true} this {@link  Publish.PublishUnpublishRequest} is a backup for the root of the object's
              * {@link TitanGuid} and signals the helper method
-             * {@link AbstractObjectHandler#publishObjectBackup(AbstractObjectHandler, PublishUnpublishRequestImpl)}
+             * {@link AbstractObjectHandler#publishObjectBackup(AbstractObjectHandler, Publish.PublishUnpublishRequest)}
              * to <b>not</b> continue making backup back-pointers.
              */
             public boolean isBackup() {
@@ -737,7 +735,7 @@ public final class PublishDaemon extends AbstractTitanService implements Publish
             }
 
             /**
-             * Get the map of {@link TitanGuid}s to {@link TitanObject.Metadata} in this Request.
+             * Get the map of {@link TitanGuid}s to {@link sunlabs.titan.api.TitanObject.Metadata} in this Request.
              */
             public Map<TitanGuid,TitanObject.Metadata> getObjects() {
             	return this.objects;

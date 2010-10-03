@@ -48,7 +48,6 @@ import javax.management.MalformedObjectNameException;
 import javax.management.NotCompliantMBeanException;
 import javax.management.ObjectName;
 
-import sunlabs.asdf.web.jmx.JMX;
 import sunlabs.asdf.web.http.HTTP;
 import sunlabs.asdf.web.http.HTTPServerMBean;
 import sunlabs.asdf.web.http.HttpContent;
@@ -77,7 +76,7 @@ public class HTTPServer extends Thread implements HTTP.Server, Runnable, HTTPSer
 
     private boolean trace;
     
-    private Map<URI,HTTP.NameSpace> handlers;
+    private Map<URI,HTTP.URINameSpace> handlers;
     
     private Socket socket;
     private Logger logger;
@@ -90,17 +89,19 @@ public class HTTPServer extends Thread implements HTTP.Server, Runnable, HTTPSer
      * messages and {@link OutputStream} as the sink for output {@link HTTP.Response} messages.
      * <p>
      * Before using the resulting instance for receiving HTTP requests, you must add
-     * name-space handlers via the {@link #addNameSpace(URI, sunlabs.asdf.http.HTTP.NameSpace)}
+     * name-space handlers via the {@link HTTPServer#addNameSpace(URI, HTTP.URINameSpace)}
      * method and start the service by invoking the {@link #start()} method.
      * </p>
-     *
-     * @param socket
+     * @throws MalformedObjectNameException 
+     * @throws NotCompliantMBeanException 
+     * @throws MBeanRegistrationException 
+     * @throws InstanceAlreadyExistsException 
      */
     public HTTPServer(InputStream input, OutputStream output) {
         super(Thread.currentThread().getThreadGroup(), "HttpServer");
         this.socket = null;
         this.trace = false;
-        this.handlers = new HashMap<URI,HTTP.NameSpace>();
+        this.handlers = new HashMap<URI,HTTP.URINameSpace>();
         try {
             this.addNameSpace(new URI("*"), new ServerNameSpace(this, null));
         } catch (URISyntaxException e) {
@@ -114,14 +115,13 @@ public class HTTPServer extends Thread implements HTTP.Server, Runnable, HTTPSer
      * Create an instance of an HTTP service using a {@link SocketChannel} as the input/output socket.
      * <p>
      * Before using the resulting instance for receiving HTTP requests, you must add
-     * name-space handlers via the {@link #addNameSpace(URI, sunlabs.asdf.http.HTTP.NameSpace)}
+     * name-space handlers via the {@link HTTPServer#addNameSpace(URI, sunlabs.asdf.web.http.HTTP.URINameSpace)}
      * method and start the service by invoking the {@link #start()} method.
      * </p>
      *
      * @param channel
      */
-    public HTTPServer(SocketChannel channel)
-    throws IOException, MalformedObjectNameException, MBeanRegistrationException, NotCompliantMBeanException, InstanceAlreadyExistsException {
+    public HTTPServer(SocketChannel channel) throws IOException {
         this(channel.socket().getInputStream(), channel.socket().getOutputStream());
 
         this.setName(String.format("HttpServer_%s_%d<->%s_%d",
@@ -131,14 +131,12 @@ public class HTTPServer extends Thread implements HTTP.Server, Runnable, HTTPSer
                 channel.socket().getPort()));
 
         this.socket = channel.socket();
-
-        this.jmxObjectName = JMX.objectName("sunlabs.asdf.http.HTTPServer", this.getName());
-
-        ManagementFactory.getPlatformMBeanServer().registerMBean(this, this.jmxObjectName);
+//
+//        this.jmxObjectName = JMX.objectName("sunlabs.asdf.http.HTTPServer", this.getName());
+//        ManagementFactory.getPlatformMBeanServer().registerMBean(this, this.jmxObjectName);
     }
 
-    public HTTPServer(SocketChannel channel, OutputStream inputTap, OutputStream outputTap)
-    throws IOException, MalformedObjectNameException, MBeanRegistrationException, NotCompliantMBeanException, InstanceAlreadyExistsException {
+    public HTTPServer(SocketChannel channel, OutputStream inputTap, OutputStream outputTap) throws IOException {
         this(new TappedInputStream(channel.socket().getInputStream(), inputTap), new TappedOutputStream(channel.socket().getOutputStream(), outputTap));
 
         this.socket = channel.socket();
@@ -149,32 +147,32 @@ public class HTTPServer extends Thread implements HTTP.Server, Runnable, HTTPSer
                 this.socket.getInetAddress(),
                 socket.getPort()));
 
-        this.socket = channel.socket();
-
-        this.jmxObjectName = JMX.objectName("sunlabs.asdf.http.HTTPServer", this.getName());
-        ManagementFactory.getPlatformMBeanServer().registerMBean(this, this.jmxObjectName);
+//        this.socket = channel.socket();
+//
+//        this.jmxObjectName = JMX.objectName("sunlabs.asdf.http.HTTPServer", this.getName());
+//        ManagementFactory.getPlatformMBeanServer().registerMBean(this, this.jmxObjectName);
     }
 
     /**
-     * Add the given {@link URI} as the namespace prefix of the URIs to be handled by the {@link HTTP.NameSpace}.
+     * Add the given {@link URI} as the namespace prefix of the URIs to be handled by the {@link HTTP.URINameSpace}.
      * <p>
      * All URIs that begin with this prefix are handled by the given {@code HTTP.NameSpace}.
      * </p>
      * 
      * @param root the root {@link URI} of the name-space.
-     * @param handler the {@link HTTP.NameSpace} that services the root name-space.
+     * @param handler the {@link HTTP.URINameSpace} that services the root name-space.
      */
-    public void addNameSpace(URI root, HTTP.NameSpace handler) {
+    public void addNameSpace(URI root, HTTP.URINameSpace handler) {
         this.handlers.put(root, handler);
     }
     
     /**
-     * Get the {@link HTTP.NameSpace} handler for the given URI.
+     * Get the {@link HTTP.URINameSpace} handler for the given URI.
      *  
      * @param uri
      * @return the {@code HTTP.NameSpace} handler for the given URI.
      */
-    public HTTP.NameSpace getNameSpace(URI uri) {
+    public HTTP.URINameSpace getURINameSpace(URI uri) {
         String longestPath = "";
         URI longestKey = null;
         
@@ -251,7 +249,8 @@ public class HTTPServer extends Thread implements HTTP.Server, Runnable, HTTPSer
         /**
          * Construct an identity representation from an {@link HTTP.Message.Header.Authorization} object.
          * <p>
-         * The parameter {@code authorization} may be {@code null} in which case the constructor is functionally equivalent to {@link Identity#Identity()}.
+         * The parameter {@code authorization} may be {@code null} in which case the constructor is functionally equivalent to
+         * {@link HTTPServer.Identity#Identity()}.
          * </p>
          * @param authorization
          * @throws HTTP.BadRequestException
@@ -267,7 +266,8 @@ public class HTTPServer extends Thread implements HTTP.Server, Runnable, HTTPSer
         /**
          * Construct an identity representation from the supplied name and password.
          *
-         * @param authorization
+         * @param name
+         * @param password
          * @throws HTTP.BadRequestException
          */
         public Identity(String name ,String password) {
@@ -298,12 +298,16 @@ public class HTTPServer extends Thread implements HTTP.Server, Runnable, HTTPSer
         HTTP.Response response = null;
 
         // Since every resource can have a different behaviour, map the request URI to a corresponding URIHandler which implements that behaviour.
-        HTTP.NameSpace resourceHandler = this.getNameSpace(request.getURI());
+        HTTP.URINameSpace resourceHandler = this.getURINameSpace(request.getURI());
         if (resourceHandler == null) {
             response = new HttpResponse(HTTP.Response.Status.NOT_FOUND, new HttpContent.Text.Plain("%s not found%n", request.getURI()));
         } else {
             HTTP.Identity identity = new Identity((HTTP.Message.Header.Authorization) request.getMessage().getHeader(HTTP.Message.Header.AUTHORIZATION));
             response = resourceHandler.dispatch(request, identity);
+        }
+        
+        if (response == null) {
+            response = new HttpResponse(HTTP.Response.Status.INTERNAL_SERVER_ERROR, new HttpContent.Text.Plain("Internal Server Error\nNull response from dispatch.\nReport this as a bug.\n"));
         }
 
         // If the response's HttpMessage doesn't specify a Server: header, add one here.
@@ -318,26 +322,24 @@ public class HTTPServer extends Thread implements HTTP.Server, Runnable, HTTPSer
     public void run() {
         try {
             for (;;) {
-                HTTP.Response response = null;
-                HttpRequest request;
-
-                // Get the request from the client.
                 try {
-                    request = HttpRequest.getInstance(this.inputStream);
+                    HTTP.Request request = HttpRequest.getInstance(this.inputStream);
                     if (this.getTrace()) {
                         this.log(request);
                     }
 
-                    response = this.dispatch(request);
-                    
+                    HTTP.Response response = this.dispatch(request);
+
+                    // Guard against a poorly implemented handler.
+                    //
                     // If the client request stipulated that the connection is to be closed,
                     // then set a Connection: close header in the response, send the response
                     // and close the connection.
                     HttpHeader.Connection connection = (HttpHeader.Connection) request.getMessage().getHeader(HTTP.Message.Header.CONNECTION);
                     if (connection != null && connection.contains("close")) {
-                        response.getMessage().addHeader(new HttpHeader.Connection("close"));
+                        response.getMessage().addHeader(HttpHeader.Connection.CLOSE);
 
-                        if (request.getMethod().equals(HTTP.Request.Method.HEAD.toString())) {
+                        if (request.getMethod().equals(HTTP.Request.Method.HEAD)) {
                             response.writeHeadTo(this.outputStream);
                         } else {
                             response.writeTo(this.outputStream);
@@ -355,11 +357,11 @@ public class HTTPServer extends Thread implements HTTP.Server, Runnable, HTTPSer
                             // Alternatively, the content should be sent chunked.
                             long contentLength = response.getMessage().getBody().contentLength();
                             if (contentLength == -1) {
-                                response.getMessage().addHeader(new HttpHeader.Connection("close"));
+                                response.getMessage().addHeader(HttpHeader.Connection.CLOSE);
                             }
                         }
 
-                        if (request.getMethod().equals(HTTP.Request.Method.HEAD.toString())) {
+                        if (request.getMethod().equals(HTTP.Request.Method.HEAD)) {
                             response.writeHeadTo(this.outputStream);
                         } else {
                             response.writeTo(this.outputStream);
@@ -377,7 +379,7 @@ public class HTTPServer extends Thread implements HTTP.Server, Runnable, HTTPSer
                         }
                     }
                 } catch (HTTP.BadRequestException e) {
-                    response = e.getResponse();
+                    HTTP.Response response = e.getResponse();
                     response.writeTo(this.outputStream);
                     if (this.getTrace()) {
                         this.log(response);
@@ -420,7 +422,7 @@ public class HTTPServer extends Thread implements HTTP.Server, Runnable, HTTPSer
         }
     }
 
-    // XXX This is an HTTP server and here we are claiming to respond to WebDAV methods.
+    // XXX This is only an HTTP server and here we are claiming to respond to WebDAV methods.
     public Collection<HTTP.Request.Method> getAccessAllowed() {
         Collection<HTTP.Request.Method> result = new HashSet<HTTP.Request.Method>();
         result.add(HTTP.Request.Method.GET);

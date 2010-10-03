@@ -24,7 +24,6 @@
 package sunlabs.titan.node;
 
 import java.io.Serializable;
-import java.net.InetSocketAddress;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.UnknownHostException;
@@ -54,44 +53,30 @@ public final class NodeAddress implements Serializable {
     /** The object-id of this node */
     private TitanNodeId nodeId;
 
-    /** The local address and port number of the node's Beehive server. */
-//    private InetSocketAddress localAddress;
+//    /** The system-wide address the node. */
+//    private InetSocketAddress internetworkAddress;
 
-    /** The system-wide address the node. */
-    private InetSocketAddress internetworkAddress;
+    /** The URL of the TitanNode's inspector interface */
+    private URL inspectorURL;
 
-    /** The URL of the Beehive node's HTTP interface */
-    private URL httpInterface;
+    private URL messageURL;
 
     /**
      *
      */
     private NodeAddress() {
     }
-
-    /**
-     * Compose a new NodeAddress instance with the given the node's object-id,
-     * the Beehive server local network address, and the client interface network
-     * address.
-     *
-     * @param nodeId
-     * @param internetworkAddress
-     * @param port
-     * @param httpPort
-     * @throws NumberFormatException
-     * @throws UnknownHostException
-     */
-    public NodeAddress(TitanNodeId nodeId, String internetworkAddress, int port, int httpPort) throws NumberFormatException, UnknownHostException {
-        this();
-        this.nodeId = nodeId;
-        this.internetworkAddress = new InetSocketAddress(internetworkAddress, port);
-        try {
-            this.httpInterface = new URL("http://" + this.internetworkAddress.getAddress().getHostAddress() + ":" + httpPort);
-        } catch (MalformedURLException e) {
-            throw new NumberFormatException(e.toString());
-        }
+    
+    public NodeAddress(TitanNodeId nodeId, String internetworkAddress, int port, URL inspectorURL) throws MalformedURLException {
+        this(nodeId, new URL(inspectorURL.getProtocol(), internetworkAddress, port, ""), inspectorURL);
     }
 
+    public NodeAddress(TitanNodeId nodeId, URL messageURL, URL inspectorURL) {
+        this.nodeId = nodeId;
+        this.messageURL = messageURL;
+        this.inspectorURL = inspectorURL;
+    }
+    
     /**
      * Create a NodeAddress instance from a String of the same format as {@link NodeAddress#toString()}.
      * The format of the input string is:
@@ -99,38 +84,46 @@ public final class NodeAddress implements Serializable {
      * 	ObjectId:ServerPort:HTTPPort:IpAddress
      * </pre>
      * @throws UnknownHostException
+     * 
+     * 
+        StringBuilder result = new StringBuilder(this.nodeId.toString())
+        .append(";").append(this.internetworkAddress.getAddress().getHostAddress())
+        .append(";").append(this.internetworkAddress.getPort())
+        .append(";").append(this.inspectorURL)
+        
      */
-    public NodeAddress(String s) throws NumberFormatException, UnknownHostException {
+    public NodeAddress(String s) throws MalformedURLException, NumberFormatException, UnknownHostException {
         this();
-        String[] field = s.split(":", 4);
+        String[] field = s.split(";", 4);
+
         this.nodeId = new TitanNodeIdImpl(field[0]);
-//        this.localAddress = new InetSocketAddress(field[3], Integer.parseInt(field[1]));
-        this.internetworkAddress = new InetSocketAddress(field[3], Integer.parseInt(field[1]));
-        try {
-            this.httpInterface = new URL("http://" +  this.internetworkAddress.getAddress().getHostAddress() + ":" + Integer.parseInt(field[2]));
-        } catch (MalformedURLException e) {
-            throw new NumberFormatException(e.toString() + " " + s);
-        }
+        this.messageURL = new URL(field[1]);
+        //this.internetworkAddress = new InetSocketAddress(field[1], Integer.parseInt(field[2]));
+        this.inspectorURL = new URL(field[2]);
     }
 
     public TitanNodeId getObjectId() {
         return this.nodeId;
     }
 
-    public int getPort() {
-        return this.internetworkAddress.getPort();
+    public URL getMessageURL() {
+        return this.messageURL;
     }
+    
+//    public int getPort() {
+//        return this.internetworkAddress.getPort();
+//    }
 
-    /**
-     * Get the {@link InetSocketAddress} of the server port of this {@code NodeAddress}. 
-     * @return the {@link InetSocketAddress} of the server port of this {@code NodeAddress}. 
-     */
-    public InetSocketAddress getInternetworkAddress() {
-        return this.internetworkAddress;
-    }
+//    /**
+//     * Get the {@link InetSocketAddress} of the server port of this {@code NodeAddress}. 
+//     * @return the {@link InetSocketAddress} of the server port of this {@code NodeAddress}. 
+//     */
+//    public InetSocketAddress getInternetworkAddress() {
+//        return this.internetworkAddress;
+//    }
 
-    public URL getHTTPInterface() {
-        return this.httpInterface;
+    public URL getInspectorInterface() {
+        return this.inspectorURL;
     }
 
     /**
@@ -153,14 +146,11 @@ public final class NodeAddress implements Serializable {
     /**
      * Produce a String representation of this NodeAddress.
      *
-     * The format is:
-     * <i>nodeId</i><tt>:</tt><i>server-port</i><tt>:</tt><i>http-port</i><tt>:</tt><i>ip-address</i></pre>
      */
     public String format() {
         StringBuilder result = new StringBuilder(this.nodeId.toString())
-        .append(":").append(this.internetworkAddress.getPort())
-        .append(":").append(this.httpInterface.getPort())
-        .append(":").append(this.internetworkAddress.getAddress().getHostAddress())
+        .append(";").append(this.messageURL)
+        .append(";").append(this.inspectorURL)
         ;
         return result.toString();
     }

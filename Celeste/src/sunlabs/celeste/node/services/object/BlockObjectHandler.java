@@ -27,6 +27,7 @@ package sunlabs.celeste.node.services.object;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.Serializable;
+import java.lang.reflect.InvocationTargetException;
 import java.net.URI;
 import java.nio.ByteBuffer;
 import java.util.HashSet;
@@ -334,11 +335,6 @@ public final class BlockObjectHandler extends AbstractObjectHandler implements B
         super(node, BlockObjectHandler.name, "Celeste Block Object Handler");
         this.publishObjectDeleteLocks = new ObjectLock<TitanGuid>();
         this.deleteLocalObjectLocks = new ObjectLock<TitanGuid>();
-    }
-
-    @Override
-    public void setConfig() {
-
     }
 
     public Publish.PublishUnpublishResponse storeLocalObject(TitanMessage message)  throws ClassNotFoundException, ClassCastException, BeehiveObjectStore.NoSpaceException, BeehiveObjectStore.DeleteTokenException,
@@ -672,7 +668,8 @@ public final class BlockObjectHandler extends AbstractObjectHandler implements B
         return object;
     }
 
-    public TitanMessage extensibleOperation(TitanMessage message) {
+    public Serializable extensibleOperation(TitanMessage message) throws ClassCastException, TitanMessage.RemoteException, SecurityException,
+        IllegalArgumentException, ClassNotFoundException, NoSuchMethodException, InstantiationException, IllegalAccessException, InvocationTargetException {
         return ExtensibleObject.extensibleOperation(this, message);
     }
 

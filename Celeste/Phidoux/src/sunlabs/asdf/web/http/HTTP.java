@@ -68,7 +68,7 @@ public class HTTP {
         }
 
         /**
-         * Always returns {@link InternetMediaType.Application.OctetStream}.
+         * Always returns {@link InternetMediaType.Application#OctetStream}.
          * Subclasses override this method to supply more accurate responses.
          * <p>
          * {@inheritDoc}
@@ -147,7 +147,7 @@ public class HTTP {
      * <p>
      * This HTTP server has the notion of a NameSpace that is assigned to a particular URL prefix.
      * For example, the server may have two NameSpace instances, one assigned to the URL prefix {@code /webdav} and another to the URL prefix {@code /http}.
-     * A {@link NameSpace} implements a particular protocol such as HTTP or WebDAV. 
+     * A {@link URINameSpace} implements a particular protocol such as HTTP or WebDAV. 
      * </p>
      * <p>
      * NameSpaces use instances of classes implementing {@link HTTP.Backend} which implement access to resources that
@@ -159,7 +159,7 @@ public class HTTP {
      */
     public interface Server extends Runnable {
         /**
-         * Get the set of {@link HTTP.Request.Methods} that this HTTP.Server instance will respond to.
+         * Get the set of {@link HTTP.Request.Method} instances that this HTTP.Server instance will respond to.
          */
         public Collection<HTTP.Request.Method> getAccessAllowed();
         
@@ -169,15 +169,15 @@ public class HTTP {
         public void setLogger(Logger logger);
         
         /**
-         * Add the given {@link URI} as the namespace prefix of the URIs to be handled by the given {@link HTTP.NameSpace}.
+         * Add the given {@link URI} as the namespace prefix of the URIs to be handled by the given {@link HTTP.URINameSpace}.
          * <p>
-         * All URIs that begin with this prefix are handled by the given {@code HTTP.NameSpace}.
+         * All URIs that begin with this prefix are handled by the given {@code HTTP.URINameSpace}.
          * </p>
          * 
          * @param root the root {@link URI} of the name-space.
-         * @param handler the {@link HTTP.NameSpace} that services the root name-space.
+         * @param handler the {@link HTTP.URINameSpace} that services the root name-space.
          */
-        public void addNameSpace(URI root, HTTP.NameSpace handler);
+        public void addNameSpace(URI root, HTTP.URINameSpace handler);
         
         /**
          * Set the current value of the trace flag.
@@ -195,18 +195,18 @@ public class HTTP {
      * For example, a server may synthesize a URI name-space of {@code /rfc2616/} and {@code /rfc4918/} and correspondingly setup a basic HTTP
      * compliant {@code URIHandler} for the name-space {@code /rfc2616/} and a WebDAV compliant {@code URIHandler} for the name-space {@code /rfc4818/}.
      * In turn, the HTTP server takes inbound {@link HTTP.Request} instances prefixed with the different name-spaces and dispatches them
-     * (See {@link #dispatch(Request)}) based on the respective URI in the {@code HTTP.Request}.
+     * (See {@link URINameSpace#dispatch(HTTP.Request, HTTP.Identity)}) based on the respective URI in the {@code HTTP.Request}.
      * <p>
      * See also <cite><a href="http://www.w3.org/Protocols/rfc2616/rfc2616-sec5.html#sec5.2">RFC 2616, &sect;5.2 The Resource Identified by a Request</a></cite>
      * </p>
      * 
      * @author Glenn Scott, Sun Microsystems Laboratories, Sun Microsystems, Inc.
      */
-    public interface NameSpace {
+    public interface URINameSpace {
 
         /**
          * Add the given {@link HTTP.Request.Method.Handler} to this name-space.
-         * Subsequent invocations of the {@link #dispatch(Request, Identity)} method with {@link HTTP.Request} instances containing the
+         * Subsequent invocations of the {@link HTTP.URINameSpace#dispatch(HTTP.Request, HTTP.Identity)} method with {@link HTTP.Request} instances containing the
          * {@link HTTP.Request.Method} {@code method} will be dispatched to the {@code methodHandler} specified here. 
          * @param method The {@link HTTP.Request.Method} to associate with {@code methodHandler}.
          * @param methodHandler An object implementing {@link HTTP.Request.Method.Handler}.
@@ -225,8 +225,9 @@ public class HTTP {
          * 
          * @param request
          * @return The resulting {@link HTTP.Response}
+         * @throws BadRequestException 
          */
-        public HTTP.Response dispatch(HTTP.Request request, HTTP.Identity identity);        
+        public HTTP.Response dispatch(HTTP.Request request, HTTP.Identity identity) throws BadRequestException;        
 
         /**
          * Get the set of {@link HTTP.Request.Method} instances that this server will respond to.
@@ -306,7 +307,7 @@ public class HTTP {
         
         /**
          * If this request was accompanied by {@code x-www-form-urlencoded} data as part of the request URI (see {@link #getURI()}),
-         * the data is decoded and available as an instance of {@link Map<String,String>}, where the {@code Map} key is the attribute's
+         * the data is decoded and available as an instance of {@link Map}, where the {@code Map} key is the attribute's
          * name, and the mapped value is the attribute's specified value.
          */
         public Map<String,String> getURLEncoded() throws UnsupportedEncodingException;
@@ -339,6 +340,23 @@ public class HTTP {
 
             private Method(String name) {
                 this.name = name;
+            }
+            
+            @Override
+            public boolean equals(Object other) {
+                if (other instanceof Method) {
+                    if (other == this)
+                        return true;
+                    return (((Method) other).name.equals(this.name));                    
+                } else if (other instanceof String) {
+                    return (((String) other).equals(this.name));                    
+                }
+                return false;
+            }
+            
+            @Override
+            public int hashCode() {
+                return this.name.hashCode();
             }
 
             @Override
@@ -1379,7 +1397,7 @@ public class HTTP {
              * <p>
              * An {@code If} header specifies a conditional expression which, if it evaluates to true, signals that a request may be peformed.
              * Otherwise, if the expression evaluates to false, the request fails with a status code signalling the reason for failure
-             * (For example, {@link HTTP.Response.Status.PRECONDITION_FAILED} or {@link HTTP.Response.Status.LOCKED}).
+             * (For example, {@link HTTP.Response.Status#PRECONDITION_FAILED} or {@link HTTP.Response.Status#LOCKED}).
              * </p>
              * <p>
              * In short, the conditional expression {@link Conditional} is a map, containing one or more mappings each
@@ -1551,7 +1569,6 @@ public class HTTP {
                  * Prefixing it with "Not" reverses the result of the evaluation (thus, the "Not" applies only to the subsequent entity-tag or State-token).
                  *</p>
                  * 
-                 * @see HTTP.Message.Header.If.ConditionTerm.Term
                  * @author Glenn Scott, Sun Microsystems Laboratories, Sun Microsystems, Inc.
                  */
                 public interface ConditionTerm {
@@ -1737,7 +1754,7 @@ public class HTTP {
             public interface Destination extends HTTP.Message.Header {
                 /**
                  * 
-                 * @return
+                 * @return the URI of the {@code Destination} header.
                  * @throws HTTP.BadRequestException if the header could not be parsed due to malformed syntax.
                  */
                 public URI getURI() throws HTTP.BadRequestException;
@@ -2515,11 +2532,11 @@ public class HTTP {
         }
         
         /**
-         * Construct an {@link UnathorizedException} that signals authorisation is required and either none was presented,
+         * Construct an {@link UnauthorizedException} that signals authorisation is required and either none was presented,
          * or it was incorrect, or insufficient, and include an embedded {@link Throwable} as a reason for this exception, and an instance
-         * of {@link HTTP.Authenticate} suitable for generating a challenge response for use in a retry.
-         * @param message an explanatory message about the authorization required.
-         * @param reason the cause (which is saved for later retrieval by the getCause() method). (A null value is permitted,
+         * of {@link HTTP.Authenticate} suitable for generating a challenge response for use in a retry by the client.
+         * @param uri the request-URI of the resource that requires authorization.
+         * @param reason the cause (which is saved for later retrieval by the getCause() method). (A {@code null} value is permitted,
          *        and indicates that the cause is nonexistent or unknown.)
          * @param authenticate an instance of {@link HTTP.Authenticate} suitable for generating a challenge response for use in a retry.
          */
@@ -2616,7 +2633,7 @@ public class HTTP {
      * An HTTP Exception signals a failure of an HTTP method as applied to a resource.
      * <p>
      * If classes extending this abstract class do not provide an
-     * {@link HTTP.Response} instance to be used to transmit to the client (see {@link HTTP.Exception#setResponse(Response)}
+     * {@link HTTP.Response} instance to be used to transmit to the client (see {@link HTTP.Exception#setResponse(HTTP.Response)}
      * and {@link HTTP.Exception#getResponse()}),
      * a default {@code HTTP.Response} is generated.
      * </p>

@@ -251,11 +251,6 @@ public final class AnchorObjectHandler extends AbstractObjectHandler implements 
         this.publishObjectDeleteLocks = new ObjectLock<TitanGuid>();
         this.deleteLocalObjectLocks = new ObjectLock<TitanGuid>();
     }
-    
-    @Override
-    public void setConfig() {
-        // No configurable parameters here (yet).
-    }
 
     /**
      * Given a generation-id (as a {@link TitanGuid} and a serial-number,

@@ -147,7 +147,7 @@ public class WebDAVServer extends HTTPServer {
                     httpServer.setTrace(trace);
 
                     WebDAV.Backend celesteBackend = new CelesteBackend(makeAddress(celesteAddress), new CelesteProxy.Cache(4, celesteTimeOutMillis));
-                    HTTP.NameSpace webDAV = new WebDAVNameSpace(httpServer, celesteBackend);
+                    HTTP.URINameSpace webDAV = new WebDAVNameSpace(httpServer, celesteBackend);
                     
                     httpServer.addNameSpace(new URI("/"), webDAV);
                     httpServer.setLogger(Logger.getLogger(WebDAVServer.class.getName()));
@@ -189,7 +189,7 @@ public class WebDAVServer extends HTTPServer {
 //                        new FileOutputStream(String.format("webdav-s-%s:%s", socket.getInetAddress().getHostAddress(), socket.getPort())));
 
                 WebDAV.Backend backend = new CelesteBackend(makeAddress(celesteAddress), new CelesteProxy.Cache(4, celesteTimeOutMillis));
-                HTTP.NameSpace webDAV = new WebDAVNameSpace(server, backend);
+                HTTP.URINameSpace webDAV = new WebDAVNameSpace(server, backend);
 
                 server.addNameSpace(new URI("/"), webDAV);
                 server.setLogger(Logger.getLogger(WebDAVServer.class.getName()));

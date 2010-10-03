@@ -42,7 +42,7 @@ import sunlabs.celeste.node.services.CelesteClientDaemon;
 import sunlabs.titan.Copyright;
 import sunlabs.titan.node.TitanNodeImpl;
 import sunlabs.titan.node.TitanNodeImpl.ConfigurationException;
-import sunlabs.titan.node.services.MessageService;
+import sunlabs.titan.node.services.TCPMessageService;
 import sunlabs.titan.node.services.WebDAVDaemon;
 import sunlabs.titan.util.OrderedProperties;
 
@@ -102,7 +102,8 @@ public class Celeste {
         }
 
         public void run() {
-            ProcessBuilder p = new ProcessBuilder(this.command.split(" "));
+            // The String is split on single spaces
+            ProcessBuilder p = new ProcessBuilder(this.command.split("[ \t]+"));
             p.redirectErrorStream(true);
             BufferedReader input = null;
             try {
@@ -150,8 +151,8 @@ public class Celeste {
         properties.setProperty(TitanNodeImpl.LocalFileSystemRoot.getName(), File.listRoots()[0] + "tmp" + File.separator + "celeste" + File.separator);
 
         properties.setProperty(TitanNodeImpl.Port.getName(), 12000);
-        properties.setProperty(MessageService.ConnectionType.getName(), "plain");
-        properties.setProperty(WebDAVDaemon.Port.getName(), 12001);
+        properties.setProperty(TCPMessageService.ConnectionType.getName(), "plain");
+        properties.setProperty(WebDAVDaemon.ServerSocketPort.getName(), 12001);
         properties.setProperty(TitanNodeImpl.InterNetworkAddress.getName(), "127.0.0.1");
         properties.setProperty(TitanNodeImpl.GatewayRetryDelaySeconds.getName(), 30);
         properties.setProperty(TitanNodeImpl.ObjectStoreCapacity.getName(), "unlimited");
@@ -197,7 +198,7 @@ public class Celeste {
 
         RuntimeMXBean mxbean = ManagementFactory.getRuntimeMXBean();
 
-        StringBuilder nodeVMArguments = new StringBuilder(" -server ");
+        StringBuilder perNodeVMArguments = new StringBuilder(" -server ");
 
         jarFile = mxbean.getClassPath();
 
@@ -246,7 +247,7 @@ public class Celeste {
                     String port = tokens[0];
                     if (tokens.length > 1)
                         webdavPortIncrement = Integer.parseInt(tokens[1]);
-                    properties.setProperty(WebDAVDaemon.Port.getName(), port);
+                    properties.setProperty(WebDAVDaemon.ServerSocketPort.getName(), port);
                 } else if (args[i].equals("--celeste-port") || args[i].equals("--celeste-client-port")) {
                     String[] tokens = args[++i].split(",");
                     String port = tokens[0];
@@ -279,7 +280,7 @@ public class Celeste {
                     System.out.printf(" [--delay <integer>] (%d)%n", interprocessStartupDelayTimeSeconds);
                     System.out.printf(" [--n-nodes <integer>] (%d)%n", n_nodes);
                     System.out.printf(" [--threads] (use threads)%n");
-                    System.out.printf(" [--http-port <integer>[,<integer>]] (%d,%d)%n", properties.getPropertyAsInt(WebDAVDaemon.Port.getName()), webdavPortIncrement);
+                    System.out.printf(" [--http-port <integer>[,<integer>]] (%d,%d)%n", properties.getPropertyAsInt(WebDAVDaemon.ServerSocketPort.getName()), webdavPortIncrement);
                     System.out.printf(" [--jar <file name>] (%s)%n", String.valueOf(jarFile));
                     System.out.printf(" [--java <file name>] (%s)%n", javaFile);
                     System.out.printf(" [--jmx-port <integer>[,<integer>]] (%d,%d)%n] (%d)%n", jmxPort, jmxPortIncrement);
@@ -299,7 +300,7 @@ public class Celeste {
                 if (v.startsWith("'")) {
                     v.substring(1, v.length()-1);
                 }
-                nodeVMArguments.append(v);
+                perNodeVMArguments.append(v);
             } else {
                 // Read this command line argument as a URL to fetch configuration properties.
                 // These properties are then overridden by options subsequent on the command line.
@@ -357,9 +358,9 @@ public class Celeste {
                         e.printStackTrace();
                     }
 
-                    properties.setProperty(TitanNodeImpl.GatewayURL.getName(), node[0].getNodeAddress().getHTTPInterface());
+                    properties.setProperty(TitanNodeImpl.GatewayURL.getName(), node[0].getNodeAddress().getInspectorInterface());
                     properties.setProperty(TitanNodeImpl.Port.getName(), properties.getPropertyAsInt(TitanNodeImpl.Port.getName()) + titanPortIncrement);
-                    properties.setProperty(WebDAVDaemon.Port.getName(), properties.getPropertyAsInt(WebDAVDaemon.Port.getName()) + webdavPortIncrement);
+                    properties.setProperty(WebDAVDaemon.ServerSocketPort.getName(), properties.getPropertyAsInt(WebDAVDaemon.ServerSocketPort.getName()) + webdavPortIncrement);
                     properties.setProperty(CelesteClientDaemon.Port.getName(), properties.getPropertyAsInt(CelesteClientDaemon.Port.getName()) + celestePortIncrement);
                 }
                 if (n_nodes > 1) {
@@ -375,7 +376,7 @@ public class Celeste {
                 }
             } catch (java.net.BindException e) {
                 System.out.printf("%s titan-port=%d http-port=%d celeste-port=%d jmx-port=%d%n",
-                        e.toString(), properties.getPropertyAsInt(TitanNodeImpl.Port.getName()), properties.getPropertyAsInt(WebDAVDaemon.Port.getName()),
+                        e.toString(), properties.getPropertyAsInt(TitanNodeImpl.Port.getName()), properties.getPropertyAsInt(WebDAVDaemon.ServerSocketPort.getName()),
                         properties.getPropertyAsInt(CelesteClientDaemon.Port.getName()), jmxPort);
             } catch (IOException e) {
                 e.printStackTrace();
@@ -423,7 +424,7 @@ public class Celeste {
             }
             String configurationURL = " file://" + configurationFileName;
 
-            String command = javaFile + " -Dceleste-node" + nodeVMArguments.toString() + jmxPortProperty + applicationSpecification + configurationURL;
+            String command = javaFile + " -Dceleste-node" + perNodeVMArguments.toString() + jmxPortProperty + applicationSpecification + configurationURL;
             System.out.println(command);
 
             try {
@@ -442,12 +443,12 @@ public class Celeste {
             // subsequent nodes use it as a gateway.
             //
             if (i == 0) {
-                gatewayArgument = "http://" +  properties.getProperty(TitanNodeImpl.InterNetworkAddress.getName()) + ":" + properties.getProperty(WebDAVDaemon.Port.getName());
+                gatewayArgument = "http://" +  properties.getProperty(TitanNodeImpl.InterNetworkAddress.getName()) + ":" + properties.getProperty(WebDAVDaemon.ServerSocketPort.getName());
                 properties.setProperty(TitanNodeImpl.GatewayURL.getName(), gatewayArgument);
             }
 
             properties.setProperty(TitanNodeImpl.Port.getName(), properties.getPropertyAsInt(TitanNodeImpl.Port.getName()) + titanPortIncrement);
-            properties.setProperty(WebDAVDaemon.Port.getName(), properties.getPropertyAsInt(WebDAVDaemon.Port.getName()) + webdavPortIncrement);
+            properties.setProperty(WebDAVDaemon.ServerSocketPort.getName(), properties.getPropertyAsInt(WebDAVDaemon.ServerSocketPort.getName()) + webdavPortIncrement);
             properties.setProperty(CelesteClientDaemon.Port.getName(), properties.getPropertyAsInt(CelesteClientDaemon.Port.getName()) + celestePortIncrement);
             if (jmxPort != null) {
                 jmxPort += jmxPortIncrement;

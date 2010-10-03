@@ -123,7 +123,7 @@ abstract public class AbstractMapFunction<I,O> implements MapFunction<I,O> {
     }
 
     /**
-     * An abstract class implementation of the {@link MapFunction.Function<I,O>} interface.
+     * An abstract class implementation of the {@link MapFunction.Function} interface.
      * Extending classes provide the per-item processing in a Map operation.
      */
     abstract public class Function implements MapFunction.Function<I,O> {

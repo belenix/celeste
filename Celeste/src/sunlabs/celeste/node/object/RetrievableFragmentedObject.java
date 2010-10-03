@@ -35,12 +35,12 @@ import sunlabs.titan.api.TitanObject;
 import sunlabs.titan.node.TitanMessage;
 import sunlabs.titan.node.TitanMessage.RemoteException;
 import sunlabs.titan.node.BeehiveObjectStore;
-import sunlabs.titan.node.object.BeehiveObjectHandler;
+import sunlabs.titan.node.object.TitanObjectHandler;
 import sunlabs.titan.node.object.DeleteableObject;
 
 public final class RetrievableFragmentedObject {
-    public interface Handler<T extends TitanObject> extends BeehiveObjectHandler {
-        public interface Object extends BeehiveObjectHandler.ObjectAPI {
+    public interface Handler<T extends TitanObject> extends TitanObjectHandler {
+        public interface Object extends TitanObjectHandler.ObjectAPI {
 
         }
 

@@ -55,7 +55,7 @@ import sunlabs.titan.api.TitanGuid;
 import sunlabs.titan.api.TitanNode;
 import sunlabs.titan.node.BeehiveObjectStore;
 import sunlabs.titan.node.TitanMessage;
-import sunlabs.titan.node.object.BeehiveObjectHandler;
+import sunlabs.titan.node.object.TitanObjectHandler;
 import sunlabs.titan.node.object.MutableObject;
 import sunlabs.titan.node.services.api.BeehiveExtension;
 import sunlabs.titan.util.ExtentBuffer;
@@ -306,7 +306,7 @@ public class WordCount implements ExtensibleObject.Extension<HashMap<String,Long
 
         private ExtensibleObject.JarClassLoader classLoader;
         private TitanGuid objectId;
-        private BeehiveObjectHandler handler;
+        private TitanObjectHandler handler;
         @SuppressWarnings("unused")
         private ExtensibleOperation operation;
 

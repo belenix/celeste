@@ -199,7 +199,7 @@ public final class HttpMessage implements HTTP.Message {
      * @see HttpMessage#addHeader(sunlabs.asdf.web.http.HTTP.Message.Header...)
      * @see HttpMessage#HttpMessage(Map, sunlabs.asdf.web.http.HTTP.Message.Body)
      * @see HttpContent
-     * @param content An {@link HTTP.Message.Body} instance.
+     * @param body a {@link HTTP.Message.Body} instance.
      */
     public HttpMessage(HTTP.Message.Body body) {
         this(new HashMap<String,HTTP.Message.Header>(), body);

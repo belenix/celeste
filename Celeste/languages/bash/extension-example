@@ -51,8 +51,8 @@ groupPassword=group
 fileName=extension-example-file
 
 deleteToken=delete
-blockSize=`expr 4144 \* 500`
-timeToLive=600
+blockSize=`expr 16 \* 1024`
+timeToLive=3600
 wordcount=file://${CELESTEHOME}/dist/wordcount.jar
 signWrites="--signed-writes"
 
@@ -64,7 +64,7 @@ ${CELESTEHOME}/bin/celestesh new-credential  ${clientName} ${clientPassword} "${
 
 ${CELESTEHOME}/bin/celestesh create-file     ${signWrites} ${clientName} ${clientPassword} ${nameSpaceName} ${nameSpacePassword} ${fileName} ${ownerName} ${groupName} ${deleteToken} ${replicationParams} ${blockSize} ${timeToLive} /tmp/create-d /tmp/create-m
 
-${CELESTEHOME}/bin/celestesh --verbose write ${clientName} ${clientPassword} ${nameSpaceName} ${fileName} 0 ${datafile} /tmp/d00 /tmp/m00
+${CELESTEHOME}/bin/celestesh --verbose write-file ${clientName} ${clientPassword} ${nameSpaceName} ${fileName} 0 ${datafile} /tmp/d00 /tmp/m00
 
 while true; do
 	${CELESTEHOME}/bin/celestesh --verbose run-extension ${clientName} ${clientPassword} ${wordcount} ${nameSpaceName} ${fileName} arg1 arg2 

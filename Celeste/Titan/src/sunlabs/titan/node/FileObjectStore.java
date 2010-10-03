@@ -55,10 +55,8 @@ public final class FileObjectStore<K,V> implements Iterable<TitanGuid> {
     private long currentSpoolSize;
 
     /**
-     * @param node                  the node for which this {@code
-     *                              FileObjectStore} stores objects
-     * @param objectStoreCapacity   the maximum number of bytes that this
-     *                              object store may consume
+     * @param spoolDirectory  the {@link File} instance representing the root directory of this {@code FileObjectStore}.
+     * @param objectStoreCapacity   the maximum number of bytes that this object store may consume.
      */
     public FileObjectStore(File spoolDirectory, String objectStoreCapacity) throws IOException {
         this.objectStoreDirectory = spoolDirectory;
@@ -111,6 +109,7 @@ public final class FileObjectStore<K,V> implements Iterable<TitanGuid> {
     
     /**
      * Get the maximum number of bytes that this file store is allowed to consume.
+     * @return the maximum number of bytes that this file store is allowed to consume.
      */
     public long getSpoolCapacity() {
     	return this.capacityLimit;
@@ -118,7 +117,7 @@ public final class FileObjectStore<K,V> implements Iterable<TitanGuid> {
 
     /**
      * Get the number of bytes that are available for this file store to consume.
-     * @return
+     * @return the number of bytes that are available for this file store to consume.
      */
     public long getSpoolAvailable() {
     	return this.capacityLimit - this.currentSpoolSize;
@@ -228,7 +227,7 @@ public final class FileObjectStore<K,V> implements Iterable<TitanGuid> {
      * Remove an object from the backing store.
      * <p>
      * @param objectId
-     * @return TRUE if the object existed, FALSE if not.
+     * @return {@code true} if the object existed, FALSE if not.
      */
     public boolean remove(TitanGuid objectId) {
         File localFile = new File(this.objectStoreDirectory, objectId.toString());

@@ -109,8 +109,4 @@ public final class CelesteNode extends TitanNodeImpl /*implements CelesteAPI*/ {
         }
         System.exit(0);
     }
-
-    public InetSocketAddress getInetSocketAddress() {
-        return this.getNodeAddress().getInternetworkAddress();
-    }
 }

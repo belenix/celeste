@@ -172,8 +172,8 @@ public class Asynchronous extends Thread implements Runnable, AsynchronousMBean 
     }
     
     /**
-     * Return the {@link Set<SelectionKey>} containing the {@link SelectionKey} instances for each open connection.
-     * @return The {@link Set<SelectionKey>} containing the {@link SelectionKey} instances for each open connection.
+     * Return the {@link Set} containing the {@link SelectionKey} instances for each open connection.
+     * @return The {@link Set} containing the {@link SelectionKey} instances for each open connection.
      */
     public Set<SelectionKey> getConnections() {
         return this.selector.keys();

@@ -29,7 +29,7 @@ import sunlabs.celeste.client.operation.LockFileOperation;
 import sunlabs.celeste.node.services.object.AnchorObject;
 import sunlabs.celeste.node.services.object.VersionObject;
 import sunlabs.titan.api.TitanGuid;
-import sunlabs.titan.node.object.BeehiveObjectHandler;
+import sunlabs.titan.node.object.TitanObjectHandler;
 import sunlabs.titan.node.object.InspectableObject;
 import sunlabs.titan.node.object.MutableObject;
 
@@ -43,14 +43,14 @@ import sunlabs.titan.node.object.MutableObject;
  * </p>
  * <p>
  * The {@code AnchorObject} to {@code VersionObject} map maintains the current file version such
- * that given the {@link TitanGuid} of the {@link AnchorObject}, the AObjectVersionMap
+ * that given the {@link TitanGuid} of the {@link AnchorObject}, the {@code AObjectVersionMap}
  * produces the {@link TitanGuid} of the current {@code VersionObject}.
  * </p>
  * @author Glenn Scott - Sun Microsystems Laboratories
  */
 public interface AObjectVersionMapAPI extends MutableObject.Handler<MutableObject.Handler.ObjectAPI>/*, InspectableObject.Handler<AObjectVersionMapAPI.Object>*/ {
 
-    public interface ObjectAPI extends InspectableObject.Handler.Object, MutableObject.Handler.ObjectAPI, BeehiveObjectHandler.ObjectAPI {
+    public interface ObjectAPI extends InspectableObject.Handler.Object, MutableObject.Handler.ObjectAPI, TitanObjectHandler.ObjectAPI {
     	  
     }
     
@@ -79,7 +79,7 @@ public interface AObjectVersionMapAPI extends MutableObject.Handler<MutableObjec
     }
     
     /**
-     *
+     * The value maintained by implementors of the {@code AObjectVersionMapAPI} interface.
      */
     abstract public class Value extends MutableObject.Value {
         private static final long serialVersionUID = 1L;

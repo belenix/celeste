@@ -106,7 +106,7 @@ public class ReplicatableObject {
 	         * <p>
 	         * Typically this consists of the nodes currently publishing the object, as they are already contributing a replica.
 	         *  </p>
-	         * (See {@link #getObjectId()).
+	         * (See {@link #getObjectId()}).
 	         */
 	        public Set<TitanNodeId> getExcludedNodes() {
 	            return this.excludedNodes;

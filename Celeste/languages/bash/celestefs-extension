@@ -54,6 +54,7 @@ groupPassword=group
 fileName=celestefs-extension-file
 deleteToken=deleteMe
 blockSize=`expr 4144 \* 500`
+blockSize=`expr 8 \* 1024`
 timeToLive=86400
 set -x
 ${CELESTEHOME}/bin/celestefs           --id ${myId} --password ${myPassword} mkid

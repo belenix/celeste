@@ -60,6 +60,7 @@ import sunlabs.titan.api.TitanGuid;
 import sunlabs.titan.api.TitanNode;
 import sunlabs.titan.api.TitanNodeId;
 import sunlabs.titan.api.XHTMLInspectable;
+import sunlabs.titan.node.BeehiveObjectStore;
 import sunlabs.titan.node.TitanMessage;
 import sunlabs.titan.node.TitanMessage.RemoteException;
 import sunlabs.titan.node.services.CensusDaemon;
@@ -76,23 +77,48 @@ import sunlabs.titan.util.DOLRStatus;
  * @author Glenn Scott - Sun Microsystems Laboratories
  */
 public class MutableObject {
-    public interface Handler<T extends MutableObject.Handler.ObjectAPI> extends BeehiveObjectHandler {
+    /**
+     * The required interface to be implemented by MutableObject.Handler classes and permits getting and setting the ObjectHistory of the MutableObject.
+     */
+    public interface Handler<T extends MutableObject.Handler.ObjectAPI> extends TitanObjectHandler {
 
-        public static interface ObjectAPI extends BeehiveObjectHandler.ObjectAPI, Serializable {
+        /**
+         * The required interface to be implemented by mutable objects.
+         */
+        public static interface ObjectAPI extends TitanObjectHandler.ObjectAPI, Serializable {
 
         }
 
         /**
          * Set this node's object history for the specified object.
+         * @throws ClassNotFoundException 
+         * @throws IOException 
+         * @throws ClassCastException 
+         * @throws MutableObject.ObjectHistory.OutOfDateException 
+         * @throws BeehiveObjectStore.DeleteTokenException 
+         * @throws BeehiveObjectStore.UnacceptableObjectException 
+         * @throws BeehiveObjectStore.InvalidObjectException 
+         * @throws BeehiveObjectStore.NoSpaceException 
+         * @throws BeehiveObjectStore.ObjectExistenceException 
+         * @throws BeehiveObjectStore.NotFoundException 
+         * @throws TitanMessage.RemoteException if the given {@code TitanMessage} contains an Exception thrown by the {@link TitanMessage#getPayload(Class, TitanNode)} method.
          */
-        public TitanMessage setObjectHistory(TitanMessage message);
+        public MutableObject.SetOperation.Response setObjectHistory(TitanMessage message) throws ClassNotFoundException, ClassCastException, IOException,
+            MutableObject.ObjectHistory.OutOfDateException, BeehiveObjectStore.DeleteTokenException, BeehiveObjectStore.InvalidObjectException,
+            BeehiveObjectStore.UnacceptableObjectException, BeehiveObjectStore.ObjectExistenceException, BeehiveObjectStore.NoSpaceException,
+            BeehiveObjectStore.NotFoundException, TitanMessage.RemoteException;
 
         /**
          * Get this node's object history for the specified object.
          *
          * @param message
+         * @throws TitanMessage.RemoteException 
+         * @throws ClassCastException 
+         * @throws ClassNotFoundException 
+         * @throws BeehiveObjectStore.NotFoundException 
          */
-        public TitanMessage getObjectHistory(TitanMessage message);
+        public MutableObject.GetOperation.Response getObjectHistory(TitanMessage message) throws ClassNotFoundException, ClassCastException,
+            TitanMessage.RemoteException, BeehiveObjectStore.NotFoundException;
     }
 
     /**
@@ -162,8 +188,8 @@ public class MutableObject {
         public String format();
         
         /**
-         * Return an {@link XHTML.Table} instance containing a formatted depiction.
-         * @return
+         * Return an XHTML Table containing a formatted depiction of this MutableObject.
+         * @return an XHTML Table containing a formatted depiction of this MutableObject.
          */
         public XHTML.Table toXHTMLTable();
     }
@@ -674,17 +700,15 @@ public class MutableObject {
 
     /**
      * <p>
-     *
      * The single object history for a mutable object. An object-history is a list of
      * time-stamps in relative time order. The state of the object represented by
      * this object-history is always the last time-stamp.
-     *
-     * XXX The implementation of the authenticator is incomplete.
-     *
+     * </p>
+     * <p>
+     * Note: The implementation of the authenticator is incomplete.
      * Currently this just computes a {@link TitanGuid} from the
      * object history (as a String), but doesn't include any verification that
      * this node produced it.
-     *
      * </p>
      */
     public static class ObjectHistory implements XHTMLInspectable, Serializable, Iterable<TimeStamp>, Comparable<ObjectHistory> {
@@ -1272,8 +1296,8 @@ public class MutableObject {
         }
 
         /**
-         * Get the {@link State} of this object history set.
-         * @return
+         * Get the {@link sunlabs.titan.node.object.MutableObject.ObjectHistorySet.State State} of this object history set.
+         * @return the {@link sunlabs.titan.node.object.MutableObject.ObjectHistorySet.State State} of this object history set.
          */
         public synchronized State getState() {
             return this.state;
@@ -1285,6 +1309,8 @@ public class MutableObject {
 
         /**
          * Return a {@link SortedSet} consisting of the {@link TitanGuid}s of the replicas in this Object History Set.
+         * 
+         * @return a {@link SortedSet} consisting of the {@link TitanGuid}s of the replicas in this Object History Set.
          */
         public synchronized SortedSet<TitanGuid> getReplicaSet() {
             SortedSet<TitanGuid> result = new TreeSet<TitanGuid>(this.histories.keySet());
@@ -1430,6 +1456,9 @@ public class MutableObject {
             this.request = request;
         }
 
+        /**
+         * @see MutableObject.Handler#setObjectHistory(TitanMessage)
+         */
         public MutableObject.ObjectHistory call() throws ObjectHistory.ValidationException, MutableObject.ProtocolException {
             try {
                 if (handler.getLogger().isLoggable(Level.FINE)) {
@@ -1446,7 +1475,7 @@ public class MutableObject {
                 throw new ObjectHistory.ValidationException(e);
             } catch (ClassCastException e) {
                 throw new ObjectHistory.ValidationException(e);
-            } catch (RemoteException e) {
+            } catch (TitanMessage.RemoteException e) {
                 throw new ObjectHistory.ValidationException(e);
             } finally {
                 if (this.countDown != null)
@@ -1462,7 +1491,7 @@ public class MutableObject {
     /**
      * Set the current value of the object history set to the given value.
      *
-     * @param handler the invoking {@link MutableObject.LockType} for this operation
+     * @param handler the invoking {@link MutableObject.Handler} for this operation
      * @param objectHistorySet the current {@link ObjectHistorySet}
      * @param newValue the new value to set
      * @param params the {@link MutableObject.Params} instance governing the behaviour of the mutable object
@@ -1653,7 +1682,7 @@ public class MutableObject {
          * is the last replica of the universe of replicas, the {@link CountDownLatch#countDown()} method is invoked on {@code countDown}.
          *
          * @param countDown the {@link CountDownLatch} to be count-down upon a COMPLETE ObjectHistorySet, or the last replica is added to the ObjectHistorySet.
-         * @param handler the {@link BeehiveObjectHandler} instance for the MutableObject.
+         * @param handler the {@link TitanObjectHandler} instance for the MutableObject.
          * @param replicaId {@link TitanGuid} of the replica to retrieve.
          */
         public GetObjectHistoryTask(CountDownLatch countDown, MutableObject.Handler<?> handler, TitanGuid replicaId, MutableObject.ObjectHistorySet result) {
@@ -1986,7 +2015,7 @@ public class MutableObject {
      * {@code objectId} from the object pool.
      * </p>
      *
-     * @param handler The ObjectType implementation that implements {@link MutableObject.LockType}.
+     * @param handler The ObjectType implementation that implements {@link MutableObject.Handler}.
      *
      * @param params The parameters specifying at least the number of faulty and byzantine replicas to tolerate.
      * @param objectId The {@link MutableObject.ObjectId} used as the key to the value stored in the replicas.
@@ -2212,7 +2241,7 @@ public class MutableObject {
      * @param handler 
      * @param objectId
      * @param params
-     * @return
+     * @return The {@code MutableObject.Value} for the specified {@code MutableObject}.
      * @throws MutableObject.InsufficientResourcesException
      * @throws MutableObject.NotFoundException
      * @throws MutableObject.ProtocolException

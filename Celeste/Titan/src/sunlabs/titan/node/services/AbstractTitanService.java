@@ -175,10 +175,6 @@ public abstract class AbstractTitanService extends NotificationBroadcasterSuppor
         }
     }
 
-    public void setConfig() {
-
-    }
-
     public DOLRLogger getLogger() {
         return this.log;
     }
@@ -344,6 +340,8 @@ public abstract class AbstractTitanService extends NotificationBroadcasterSuppor
      * Overrides of this method must protect themselves if start() is called
      * multiple times, and if it is called by two threads at the same time.
      * </p>
+     * This default implementation uses a {@link Boolean} protected field variable, {@link #started},
+     * to signal whether or not the service has been started.  See also {@link #stop()}.
      * <pre>
      * synchronized (this.started) {
      *   if (this.started) {

@@ -257,6 +257,7 @@
                  linksource="yes"
                  noqualifier="java.*"
                  classpath="lib/${Phidoux.jar}">
+            <arg line="-link jar:file:lib/Phidoux.jar!/docroot/javadoc" />
             <arg line="${option.proxyHost}" />
             <arg line="${option.proxyPort}" />
             <arg line="${option.nonProxyHosts}" />

@@ -32,15 +32,15 @@ import java.util.Map;
  * See also, <a href="http://www.iana.org/assignments/media-types">The IANA registry of MIME Media Types</a>
  * <p>
  * Create additional instances via the {@link #getInstance(String)}
- * constructor which automatically adds the new instance to the global Map {@link #byTypeAndSubType}
+ * constructor which automatically adds the new instance to the global Map {@link InternetMediaType#byTypeAndSubType}
  * for subsequent reuse via the {@link #getInstance(String)} class method. 
  * </p>
  * <p>
- * Associate {@code InternetMediaType} instances with file suffix extensions via the {@link #addFileExtension(InternetMediaType, String[])}
- * for later lookup via that {@link #getByFileExtension(String)} 
+ * Associate {@code InternetMediaType} instances with file suffix extensions via the {@link InternetMediaType#addFileExtension(InternetMediaType, String[])}
+ * for later lookup via that {@link InternetMediaType#getByFileExtension(String)}
  * </p>
  * <p>
- * See {@link #getInstance(String)} and {@link #type(String, String...)}
+ * See {@link InternetMediaType#getInstance(String)}
  * </p>
  * 
  * @author Glenn Scott - Sun Microsystems Laboratories, Sun Microsytems, Inc.

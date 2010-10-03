@@ -163,7 +163,7 @@ public class TitanGuidImpl implements TitanGuid {
     /**
      * Construct a new TitanGuidImpl instance from a String representation of the identifier in hex.
      * <p>
-     * The given value must be a contiguous string of hexadecimal numerals {@link TitanGuidImpl.n_digits} in length.
+     * The given value must be a contiguous string of hexadecimal numerals {@link TitanGuidImpl#n_digits} in length.
      * </p>
      */
     public TitanGuidImpl(String hexValue, int ignore) throws NumberFormatException {
@@ -194,7 +194,7 @@ public class TitanGuidImpl implements TitanGuid {
     /**
      * Construct a new TitanGuidImpl instance from a String representation of the identifier in hex.
      * <p>
-     * The given value must be a contiguous string of hexadecimal numerals {@link TitanGuidImpl.n_digits} in length.
+     * The given value must be a contiguous string of hexadecimal numerals {@link TitanGuidImpl#n_digits} in length.
      * </p>
      */
     public TitanGuidImpl(String hexValue) throws NumberFormatException {

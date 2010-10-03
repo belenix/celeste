@@ -214,12 +214,19 @@ public interface Credential extends Serializable, StorableObject.Handler.Object,
     /**
      * Decrypt the given array of bytes using the given password to unlock the internal key.
      * 
-     * @param invokerPassword
-     * @param bytes
-     * @return
+     * @param password the password to decrypt {@code bytes}.
+     * @param bytes the encrypted data
+     * @return the decrypted result
      * @throws Credential.Exception
      */
     public byte[] decrypt(char[] password, byte[] bytes) throws Credential.Exception;
 
+    /**
+     * Encrypt the given bytes with this Credential.
+     * 
+     * @param bytes the data to encrypt
+     * @return the encrypted data
+     * @throws Credential.Exception
+     */
     public byte[] encrypt(byte[] bytes) throws Credential.Exception;
 }

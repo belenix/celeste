@@ -1721,8 +1721,9 @@ public class WebDAVNameSpace extends NameSpace {
     }
 
     /**
-     * Recursively apply the methods {@link #preOperation(Resource, HTTP.Message.Header.Depth.Level, RecursiveOperation)}
-     * and {@link #postOperation(Resource, HTTP.Message.Header.Depth.Level, RecursiveOperation)} to the given resource.
+     * Recursively apply the methods {@link RecursiveOperation#preOperation(WebDAV.Resource, HTTP.Message.Header.Depth.Level, WebDAVNameSpace.RecursiveOperation)}
+     * and {@link RecursiveOperation#postOperation(WebDAV.Resource resource, HTTP.Message.Header.Depth.Level depthLevel, WebDAVNameSpace.RecursiveOperation operation, WebDAV.DAVResponse preResult)}
+     * to the given resource.
      * <p>
      * The <em>pre</em> operation is applied immediately before the resource is recursively entered,
      * and the <em>post</em> operation is applied immediately after the recursion into the collection returned.

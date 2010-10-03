@@ -274,7 +274,6 @@ public final class HttpUtil {
      * Parse an URL/URI query string consisting of attribute=value pairs separated by ampersands, into a map of the attribute name mapped to their values.
      * The presence of an attribute with no value, maps to the empty string.
      * 
-     * @return
      * @throws UnsupportedEncodingException
      */
     public static Map<String,String> parseURLQuery(String query) throws UnsupportedEncodingException {
@@ -619,7 +618,7 @@ public final class HttpUtil {
          * The result is formed by appending "/.." to this path name's canonical
          * string representation and then applying the canonicalization rules
          * described in the
-         * {@link sunlabs.celeste.client.filesystem.PathName class comment}.
+         * {@link PathName class comment}.
          *
          * </p>
          *
@@ -942,7 +941,6 @@ public final class HttpUtil {
          * Note that if the PathName is absolute (ie. it starts with the separator character), the <i>0</i>th element is the separator character alone.
          * 
          * @param index
-         * @return
          */
         public String get(int index) {
             String result = this.path.elementAt(index);
@@ -956,7 +954,6 @@ public final class HttpUtil {
          * <li>{@code tail("/a/b/c/d")} returns {@code "a/b/c/d"} (absolute paths contain the empty string as the first component).</li>
          * <li>{@code tail("a/b/c/d")} returns "b/c/d".</li>
          * </ul>
-         * @return
          */
         public PathName tail() {
             return this.tail(this.size()-1);

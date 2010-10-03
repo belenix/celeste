@@ -37,8 +37,7 @@ import java.util.zip.ZipException;
 import sunlabs.celeste.client.operation.ExtensibleOperation;
 import sunlabs.titan.api.TitanGuid;
 import sunlabs.titan.node.TitanMessage;
-import sunlabs.titan.node.object.BeehiveObjectHandler;
-import sunlabs.titan.util.DOLRStatus;
+import sunlabs.titan.node.object.TitanObjectHandler;
 
 /**
  * {@link BeehiveObjectHandler}s that implement {@link ExtensibleObject.Handler} interface are able to execute
@@ -47,11 +46,11 @@ import sunlabs.titan.util.DOLRStatus;
  * @author Glenn Scott - Oracle Sun Labs
  */
 public class ExtensibleObject {
-    public interface Handler <T extends ExtensibleObject.Handler.Object> extends BeehiveObjectHandler {
+    public interface Handler <T extends ExtensibleObject.Handler.Object> extends TitanObjectHandler {
         /**
          *
          */
-        public interface Object extends BeehiveObjectHandler.ObjectAPI {
+        public interface Object extends TitanObjectHandler.ObjectAPI {
 
         }
 
@@ -63,9 +62,19 @@ public class ExtensibleObject {
          * </p>
          * @param message
          * @return The reply {@link sunlabs.titan.node.BeehiveMessage BeehiveMessage} containing the entire result of the operation.
+         * @throws InvocationTargetException 
+         * @throws IllegalAccessException 
+         * @throws InstantiationException 
+         * @throws NoSuchMethodException 
+         * @throws ClassNotFoundException 
+         * @throws IllegalArgumentException 
+         * @throws SecurityException 
+         * @throws TitanMessage.RemoteException 
+         * @throws ClassCastException 
          * @see ExtensibleObject#extensibleOperation(BeehiveObjectHandler, TitanMessage)
          */
-        public TitanMessage extensibleOperation(TitanMessage message);
+        public Serializable extensibleOperation(TitanMessage message) throws ClassCastException, TitanMessage.RemoteException, SecurityException,
+            IllegalArgumentException, ClassNotFoundException, NoSuchMethodException, InstantiationException, IllegalAccessException, InvocationTargetException;
 
         /**
          * Top-half {@link BeehiveObjectHandler} method to invoke to start an extension.
@@ -279,21 +288,31 @@ public class ExtensibleObject {
     /**
      * Helper method for the bottom-half of an {@link ExtensibleObject.Handler} invoking
      * an extension on an {@link ExtensibleObject.Handler.Object}.
+     * @throws ClassNotFoundException 
+     * @throws TitanMessage.RemoteException 
+     * @throws ClassCastException 
+     * @throws InvocationTargetException 
+     * @throws IllegalAccessException 
+     * @throws InstantiationException 
+     * @throws NoSuchMethodException 
+     * @throws IllegalArgumentException 
+     * @throws SecurityException 
      *
      */
-    public static TitanMessage extensibleOperation(BeehiveObjectHandler handler, TitanMessage message) {
+    public static Serializable extensibleOperation(TitanObjectHandler handler, TitanMessage message) throws ClassCastException, TitanMessage.RemoteException,
+    ClassNotFoundException, SecurityException, IllegalArgumentException, NoSuchMethodException, InstantiationException, IllegalAccessException, InvocationTargetException {
+        ExtensibleObject.Operation.Request request = message.getPayload(ExtensibleObject.Operation.Request.class, handler.getNode());
+        ExtensibleOperation operation = request.operation;
+        TitanGuid objectId = message.getObjectId();
+
+        JarClassLoader classLoader =  request.getClassLoader();
+        Callable<Serializable> extension = classLoader.construct(request.getClassToUse(), operation, objectId, handler);
         try {
-            ExtensibleObject.Operation.Request request = message.getPayload(ExtensibleObject.Operation.Request.class, handler.getNode());
-            ExtensibleOperation operation = request.operation;
-            TitanGuid objectId = message.getObjectId();
-
-            JarClassLoader classLoader =  request.getClassLoader();
-            Callable<Serializable> extension = classLoader.construct(request.getClassToUse(), operation, objectId, handler);
-
-            return message.composeReply(handler.getNode().getNodeAddress(), extension.call());
+            Serializable result = extension.call();
+            return result;
+            //return message.composeReply(handler.getNode().getNodeAddress(), result);
         } catch (Exception e) {
-            e.printStackTrace();
-            return message.composeReply(handler.getNode().getNodeAddress(), DOLRStatus.THROWABLE, e);
+            throw new InvocationTargetException(e);
         }
     }
 

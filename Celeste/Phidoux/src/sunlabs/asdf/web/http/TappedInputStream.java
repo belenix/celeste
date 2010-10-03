@@ -72,6 +72,12 @@ public class TappedInputStream extends InputStream {
         return n;        
     }
     
+    @Override
+    public void close() throws IOException {
+        super.close();
+        try { this.tap.close(); } catch (IOException e) { }
+    }
+    
     public void setTapOutputStream(OutputStream tap) {
         this.tap = tap;
     }

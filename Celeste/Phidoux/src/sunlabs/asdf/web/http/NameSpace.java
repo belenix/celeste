@@ -27,25 +27,19 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
-import sunlabs.asdf.web.http.HTTP;
-import sunlabs.asdf.web.http.HttpContent;
-import sunlabs.asdf.web.http.HttpHeader;
-import sunlabs.asdf.web.http.HttpResponse;
-import sunlabs.asdf.web.http.HTTP.Request.Method;
-
 /**
- * A fully functional, extensible, implementation of the {@link HTTP.NameSpace} interface.
+ * A fully functional, extensible, implementation of the {@link HTTP.URINameSpace} interface.
  * <p>
  * Implementors can either extend this class, overriding methods implemented in this class,
  * or instantiate this class and install their own {@link HTTP.Request.Method.Handler} objects,
- * via the {@link #add(Method, sunlabs.asdf.web.http.HTTP.Request.Method.Handler)} method.
+ * via the {@link NameSpace#add(HTTP.Request.Method, HTTP.Request.Method.Handler)} method.
  * </p>
  * <p>
  * This class creates a default {@link HTTP.Request.Method.Handler} for the method {@code OPTIONS}.
  * </p>
  * @author Glenn Scott - Sun Microsystems Laboratories, Sun Microsytems, Inc.
  */
-public class NameSpace implements HTTP.NameSpace {
+public class NameSpace implements HTTP.URINameSpace {
     private Map<HTTP.Request.Method,HTTP.Request.Method.Handler> methods;
     protected HTTP.Server server;
     protected HTTP.Backend backend;

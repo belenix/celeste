@@ -676,10 +676,11 @@ public final class ApplicationFramework implements XHTMLInspectable {
         // sunlabs.titan.node.ApplicationFramework.loadOnlyFromObjectStore
         // property's been set to name this instance.
         //
-        String httpURL = this.node.getNodeAddress().getHTTPInterface().toString();
-        this.loadOnlyFromObjectStore = httpURL.equals(ApplicationFramework.loadOnlyFromObjectStoreValue);
-        if (this.loadOnlyFromObjectStore)
-            this.log.info("loadOnlyFromObjectStore set for %s", httpURL);
+        this.loadOnlyFromObjectStore = false;
+//        String httpURL = this.node.getNodeAddress().getHTTPInterface().toString();
+//        this.loadOnlyFromObjectStore = httpURL.equals(ApplicationFramework.loadOnlyFromObjectStoreValue);
+//        if (this.loadOnlyFromObjectStore)
+//            this.log.info("loadOnlyFromObjectStore set for %s", httpURL);
 
         this.storeClassesInObjectStore = Boolean.parseBoolean(ApplicationFramework.storeClassesInObjectStoreValue);
     }
@@ -864,7 +865,7 @@ public final class ApplicationFramework implements XHTMLInspectable {
      * The Node will call this method when the NeighbourMap has been populated
      * and message passing can begin.
      */
-    public void fullyStarted() throws IOException, Exception {
+    public void fullyStarted() throws IOException {
         this.log.entering();
 
         //
@@ -1569,11 +1570,11 @@ public final class ApplicationFramework implements XHTMLInspectable {
     }
     
     /**
-     * Produce an {@link XHTML.EFlow} instance containing a representation of the {@link AbstractTitanService} list.
+     * Produce an {@link sunlabs.asdf.web.xml XHTML.EFlow} instance containing a representation of the {@link AbstractTitanService} list.
      * <p>
      * If the given {@link URI} path component is prefixed with the String "/service/" the remainder of the path is
      * considered to be the name of a {@link AbstractTitanService} which is dispatched to produce the XHTML content.
-     * @See WebDAVDaemon
+     * @see WebDAVDaemon
      * </p>
      */
     public XHTML.EFlow toXHTML(URI uri, Map<String,HTTP.Message> props) {

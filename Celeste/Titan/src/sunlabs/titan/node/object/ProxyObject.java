@@ -28,8 +28,8 @@ import java.io.Serializable;
 
 public class ProxyObject {
     
-    public interface Handler<T extends ProxyObject.Handler.ObjectAPI> extends BeehiveObjectHandler {
-        public static interface ObjectAPI extends BeehiveObjectHandler.ObjectAPI, Serializable {
+    public interface Handler<T extends ProxyObject.Handler.ObjectAPI> extends TitanObjectHandler {
+        public static interface ObjectAPI extends TitanObjectHandler.ObjectAPI, Serializable {
 
         }
     }

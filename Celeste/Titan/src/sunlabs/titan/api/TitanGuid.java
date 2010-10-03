@@ -39,28 +39,28 @@ public interface TitanGuid extends Comparable<TitanGuid>, Serializable {
 
     /**
      * Compose a new {@code TitanGuid} combining this {@code TitanGuid} with the String {@code string}.
-     * @param other
+     * @param string
      * @return A new {@code TitanGuid} combining this {@code TitanGuid} with the String {@code string}.
      */
     public TitanGuid add(String string);
 
     /**
      * Compose a new {@code TitanGuid} combining this {@code TitanGuid} with the long {@code value}.
-     * @param other
+     * @param value
      * @return A new {@code TitanGuid} combining this {@code TitanGuid} with the long {@code value}.
      */
     public TitanGuid add(long value);
     
     /**
      * Compose a new {@code TitanGuid} combining this {@code TitanGuid} with the {@link ByteBuffer} {@code data}.
-     * @param other
+     * @param data
      * @return A new {@code TitanGuid} combining this {@code TitanGuid} with the {@link ByteBuffer} {@code data}.
      */
     public TitanGuid add(ByteBuffer data);
     
     /**
      * Compose a new {@code TitanGuid} combining this {@code TitanGuid} with the byte array {@code data}.
-     * @param other
+     * @param data
      * @return A new {@code TitanGuid} combining this {@code TitanGuid} with the byte array {@code data}.
      */
     public TitanGuid add(byte[] data);
@@ -94,18 +94,18 @@ public interface TitanGuid extends Comparable<TitanGuid>, Serializable {
     public int sharedPrefix(TitanGuid other);
 
     /**
-     * Encode the routing table "distance" of this object-id with another.
+     * Compute the routing table "distance" of this object-id with another.
      * <p>
      * The value 0 indicates equality. Another other value is an integer encoding of
      * the length of the shared digit prefix and the difference between this object-id and the other at the first non-shared digit.
      * </p>
      * @param other
+     * @return the routing table "distance" of this object-id with another.
      */
     public int distance(final TitanGuid other);
     
     /**
      * 
-     * @return
      */
     short getHopCount();
 }

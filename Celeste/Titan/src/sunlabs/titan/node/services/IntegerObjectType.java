@@ -78,11 +78,11 @@ public class IntegerObjectType extends AbstractObjectHandler implements MutableO
         super(node, IntegerObjectType.name, "Mutable Object");
     }
 
-    public TitanMessage setObjectHistory(TitanMessage message) {
+    public MutableObject.SetOperation.Response setObjectHistory(TitanMessage message) {
         return null;
     }
 
-    public TitanMessage getObjectHistory(TitanMessage message) {
+    public MutableObject.GetOperation.Response getObjectHistory(TitanMessage message) {
         return null;
     }
 

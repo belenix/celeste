@@ -94,7 +94,7 @@ public class Publishers extends AbstractStoredMap<TitanGuid, HashSet<Publishers.
      * The record consists of:
      * <ul>
      * <li>The {@link NodeAddress} of the node possessing the object.</li>
-     * <li>The {@link TitanObject.Metadata} of the object.</li>
+     * <li>The {@link sunlabs.titan.api.TitanObject.Metadata} of the object.</li>
      * <li>The radius that this record should be shared among the local nodes neighbours. (deprecated)</li>
      * </ul>
      * </p>
@@ -167,8 +167,8 @@ public class Publishers extends AbstractStoredMap<TitanGuid, HashSet<Publishers.
         }
 
         /**
-         * Get the published {@link TitanObject.Metadata} for this object.
-         * @return the published {@link TitanObject.Metadata} for this object.
+         * Get the published {@link sunlabs.titan.api.TitanObject.Metadata} for this object.
+         * @return the published {@link sunlabs.titan.api.TitanObject.Metadata} for this object.
          */
         public TitanObject.Metadata getMetadata() {
             return this.metaData;
@@ -258,12 +258,12 @@ public class Publishers extends AbstractStoredMap<TitanGuid, HashSet<Publishers.
     }
 
     /**
-     * For each object-id in the ObjectPublisher back-pointer list,
+     * For each object-id in the publisher back-pointer list,
      * examine the list of publishers,
      * decrementing the time-to-live for each by the frequency in seconds of this repeating process.
      * If the time-to-live is zero or negative, remove that publisher from the list of publishers.
      * @param log
-     * @return
+     * @return the number of records that were removed.
      */
     public long expire(DOLRLogger log) {
         long count = 0;

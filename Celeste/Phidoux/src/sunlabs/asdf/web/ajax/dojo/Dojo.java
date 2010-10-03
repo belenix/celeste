@@ -248,7 +248,7 @@ public class Dojo {
     }
 
     /**
-     * Given an {@link XHTML.Head} instance, add to it the necessary elements to configure, load and make ready, Dojo.
+     * Given an {@link sunlabs.asdf.web.XML.XHTML.Head XHTML.Head} instance, add to it the necessary elements to configure, load and make ready, Dojo.
      * @param head
      */
     public void dojoify(XHTML.Head head) {

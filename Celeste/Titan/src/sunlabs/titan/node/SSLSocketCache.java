@@ -167,53 +167,53 @@ public final class SSLSocketCache extends SocketCache {
         return getStatisticsAsXHTML("SSL Socket Cache");
     }
     
-    public static void main(String[] args) throws NumberFormatException, Exception {
-
-        // The name of a local java key store file containing a key.
-        // keytool -genkeypair \
-        //   -dname 'CN=129.146.73.39, DC=beehive.sun.com, DNQ=v1, OU=Sun Microsystems Laboratories, O=Sun Microsystems, C=US, IP=129.146.73.39:12000' \
-        //   -keyalg RSA -alias PrivateKey -keypass celesteKey -keystore celeste.jks -storepass celesteStore
-        //
-        String keyStore = "celeste.jks";
-        
-        try {
-            NodeKey nodeKey = new NodeKey(keyStore, "10.0.1.2", 12001);
-
-            KeyManagerFactory kmf = KeyManagerFactory.getInstance("SunX509");
-            kmf.init(nodeKey.getKeyStore(), nodeKey.getKeyPassword());
-            KeyManager[] km = kmf.getKeyManagers();
-
-            TrustManager[] tm = new TrustManager[1];
-            tm[0] = new NodeX509TrustManager();
-
-            SSLContext sslContext = SSLContext.getInstance("TLS");
-            sslContext.init(km, tm, null);
-            sslContext.getServerSessionContext().setSessionCacheSize(SSLConnectionManager.beehiveSSLSessionCacheSize);
-            sslContext.getClientSessionContext().setSessionCacheSize(SSLConnectionManager.beehiveSSLSessionCacheSize);
-            sslContext.getClientSessionContext().setSessionTimeout(SSLConnectionManager.beehiveClientSSLSessionTimeout);
-            sslContext.getServerSessionContext().setSessionTimeout(SSLConnectionManager.beehiveServerSSLSessionTimeout);
-            
-            SSLSocketCache cache = new SSLSocketCache(sslContext, 5000);
-
-            Socket socket = cache.getAndRemove(new NodeAddress(new TitanNodeIdImpl(), "127.0.0.1", 8084, 9999));
-            
-            byte[] message = "Hello World".getBytes();
-            socket.getOutputStream().write(message, 0, message.length);
-
-            byte[] buf = new byte[100];
-            while (true) {
-                int nread = socket.getInputStream().read(buf, 0, buf.length);
-                System.out.write(buf, 0, nread);
-            }
-
-        } catch (java.security.NoSuchAlgorithmException exception) {
-            throw new IOException(exception.toString());
-        } catch (java.security.KeyStoreException exception) {
-            throw new IOException(exception.toString());
-        } catch (java.security.KeyManagementException exception){
-            throw new IOException(exception.toString());
-        } catch (java.security.UnrecoverableKeyException exception){
-            throw new IOException(exception.toString());
-        }
-    }
+//    public static void main(String[] args) throws NumberFormatException, Exception {
+//
+//        // The name of a local java key store file containing a key.
+//        // keytool -genkeypair \
+//        //   -dname 'CN=129.146.73.39, DC=beehive.sun.com, DNQ=v1, OU=Sun Microsystems Laboratories, O=Sun Microsystems, C=US, IP=129.146.73.39:12000' \
+//        //   -keyalg RSA -alias PrivateKey -keypass celesteKey -keystore celeste.jks -storepass celesteStore
+//        //
+//        String keyStore = "celeste.jks";
+//        
+//        try {
+//            NodeKey nodeKey = new NodeKey(keyStore, "10.0.1.2", 12001);
+//
+//            KeyManagerFactory kmf = KeyManagerFactory.getInstance("SunX509");
+//            kmf.init(nodeKey.getKeyStore(), nodeKey.getKeyPassword());
+//            KeyManager[] km = kmf.getKeyManagers();
+//
+//            TrustManager[] tm = new TrustManager[1];
+//            tm[0] = new NodeX509TrustManager();
+//
+//            SSLContext sslContext = SSLContext.getInstance("TLS");
+//            sslContext.init(km, tm, null);
+//            sslContext.getServerSessionContext().setSessionCacheSize(SSLConnectionManager.beehiveSSLSessionCacheSize);
+//            sslContext.getClientSessionContext().setSessionCacheSize(SSLConnectionManager.beehiveSSLSessionCacheSize);
+//            sslContext.getClientSessionContext().setSessionTimeout(SSLConnectionManager.beehiveClientSSLSessionTimeout);
+//            sslContext.getServerSessionContext().setSessionTimeout(SSLConnectionManager.beehiveServerSSLSessionTimeout);
+//            
+//            SSLSocketCache cache = new SSLSocketCache(sslContext, 5000);
+//
+//            Socket socket = cache.getAndRemove(new NodeAddress(new TitanNodeIdImpl(), "127.0.0.1", 8084, 9999));
+//            
+//            byte[] message = "Hello World".getBytes();
+//            socket.getOutputStream().write(message, 0, message.length);
+//
+//            byte[] buf = new byte[100];
+//            while (true) {
+//                int nread = socket.getInputStream().read(buf, 0, buf.length);
+//                System.out.write(buf, 0, nread);
+//            }
+//
+//        } catch (java.security.NoSuchAlgorithmException exception) {
+//            throw new IOException(exception.toString());
+//        } catch (java.security.KeyStoreException exception) {
+//            throw new IOException(exception.toString());
+//        } catch (java.security.KeyManagementException exception){
+//            throw new IOException(exception.toString());
+//        } catch (java.security.UnrecoverableKeyException exception){
+//            throw new IOException(exception.toString());
+//        }
+//    }
 }

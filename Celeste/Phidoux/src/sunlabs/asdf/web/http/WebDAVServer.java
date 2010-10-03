@@ -16,7 +16,7 @@ import javax.management.NotCompliantMBeanException;
  */
 public class WebDAVServer extends HTTPServer implements WebDAV.Server {
 
-    public WebDAVServer(InputStream input, OutputStream output) {
+    public WebDAVServer(InputStream input, OutputStream output) throws MalformedObjectNameException, InstanceAlreadyExistsException, MBeanRegistrationException, NotCompliantMBeanException {
         super(input, output);
     }
 

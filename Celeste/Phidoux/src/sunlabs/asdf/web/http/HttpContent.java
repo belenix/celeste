@@ -64,7 +64,7 @@ import sunlabs.asdf.web.http.HttpUtil.PathName1;
  * This is an abstract class from which all HTTP message body content handlers are derived.
  *
  * <p>
- * A instance of this class produces output when the {@link #writeTo(DataOutputStream)} method is invoked.
+ * A instance of this class produces output when the {@link #writeTo(OutputStream)} method is invoked.
  * </p>
  *
  * @author Glenn Scott, Sun Microsystems Laboratories, Sun Microsystems, Inc.
@@ -120,7 +120,7 @@ public abstract class HttpContent implements HTTP.Message.Body {
             }
 
             /**
-             * Construct an {@code Application.OctetStream} containing the serialized form of the given {@link Serializeable} object.
+             * Construct an {@code Application.OctetStream} containing the serialized form of the given {@link Serializable} object.
              * 
              * @param obj The object to serialize.
              */
@@ -746,11 +746,11 @@ public abstract class HttpContent implements HTTP.Message.Body {
          * <p>
          * This method does not store the data read from the {@link InputStream}.
          * If, however, the data has been read from the {@link InputStream} as the result
-         * of an earlier invocation of {@link #toByteArray()} or {@link #toByteBuffer()},
+         * of an earlier invocation of {@link RawInputStream#toByteArray()},
          * the previously allocated byte array is written to the {@link DataOutputStream}.
          * </p>
          * <p>
-         * After copying {@code #contentLength()} bytes, the {@link InputStream} is closed.
+         * After copying {@code RawInputStream#contentLength()} bytes, the {@link InputStream} is closed.
          * </p>
          */
         public long writeTo(OutputStream out) throws IOException {
@@ -870,7 +870,8 @@ public abstract class HttpContent implements HTTP.Message.Body {
             private String plain;
 
             /**
-             * Construct a new Plain instance containing the value of the given {@link Object} {@code o} as produced by {@link String.valueOf(Object o)}.
+             * Construct a new {@code Text.Plain} instance containing the value of the given
+             * {@link Object} {@code o} as produced by {@link String#valueOf(Object)}.
              * <p>
              * If the Object o is null, the value is the empty String {@code ""}, not the String {@code "null"}
              * </p>

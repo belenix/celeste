@@ -104,7 +104,7 @@ public class Titan {
         }
 
         public void run() {
-            ProcessBuilder p = new ProcessBuilder(this.command.split(" "));
+            ProcessBuilder p = new ProcessBuilder(this.command.split("[ \t]+"));
             p.redirectErrorStream(true);
             BufferedReader input = null;
             try {

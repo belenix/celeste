@@ -26,6 +26,7 @@ package sunlabs.celeste.node.object;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
+import java.lang.reflect.InvocationTargetException;
 
 import sunlabs.celeste.node.CelesteNode;
 import sunlabs.celeste.node.erasurecode.ErasureCode;
@@ -127,7 +128,22 @@ public final class RetrievableFragmentedObject {
 
         FObjectType.FObject[] fObjects = new FObjectType.FObject[erasureCoder.getMinimumFragmentCount()];
 
-        FObjectType fragmentObjectHandler = (FObjectType) objectType.getNode().getService(CelesteNode.OBJECT_PKG + ".FObjectType");
+        FObjectType fragmentObjectHandler;
+        try {
+            fragmentObjectHandler = (FObjectType) objectType.getNode().getService(CelesteNode.OBJECT_PKG + ".FObjectType");
+        } catch (NullPointerException e1) {
+            throw new ErasureCode.NotRecoverableException(e1);
+        } catch (IllegalArgumentException e1) {
+            throw new ErasureCode.NotRecoverableException(e1);
+        } catch (NoSuchMethodException e1) {
+            throw new ErasureCode.NotRecoverableException(e1);
+        } catch (InstantiationException e1) {
+            throw new ErasureCode.NotRecoverableException(e1);
+        } catch (IllegalAccessException e1) {
+            throw new ErasureCode.NotRecoverableException(e1);
+        } catch (InvocationTargetException e1) {
+            throw new ErasureCode.NotRecoverableException(e1);
+        }
 
         FObjectType.FObject fObject;
 
@@ -168,7 +184,6 @@ public final class RetrievableFragmentedObject {
                 throw new ErasureCode.NotRecoverableException(e);
             }
         } catch (IOException io) {
-            io.printStackTrace();
             throw new ErasureCode.NotRecoverableException(io);
         } catch (ErasureCode.InsufficientDataException insufficientData) {
             insufficientData.printStackTrace();

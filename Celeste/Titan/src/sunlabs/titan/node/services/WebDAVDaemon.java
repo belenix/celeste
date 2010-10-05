@@ -30,6 +30,7 @@ import java.io.DataOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -46,7 +47,6 @@ import java.net.URL;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.security.KeyManagementException;
-import java.security.KeyStore;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.security.UnrecoverableKeyException;
@@ -94,6 +94,7 @@ import sunlabs.asdf.web.http.HttpResponse;
 import sunlabs.asdf.web.http.HttpUtil;
 import sunlabs.asdf.web.http.HttpUtil.PathName1;
 import sunlabs.asdf.web.http.InternetMediaType;
+import sunlabs.asdf.web.http.TappedInputStream;
 import sunlabs.asdf.web.http.WebDAV;
 import sunlabs.asdf.web.http.WebDAV.Backend;
 import sunlabs.asdf.web.http.WebDAVNameSpace;
@@ -125,12 +126,40 @@ import sunlabs.titan.util.OrderedProperties;
 public final class WebDAVDaemon extends AbstractTitanService implements MessageService, WebDAVDaemonMBean {
     private final static long serialVersionUID = 1L;
 
+//            /** The URL of the base location of a Dojo installation. */
+//             public final static Attributes.Prototype DojoRoot = new Attributes.Prototype(WebDAVDaemon.class, "DojoRoot", "http://o.aolcdn.com/dojo/1.5.0",
+//            "The URL of the base location of a Dojo installation.");
+//
+//            /** The relative path of the Dojo script. */
+//             public final static Attributes.Prototype DojoJavascript = new Attributes.Prototype(WebDAVDaemon.class, "DojoJavascript", "dojo/dojo.xd.js", "The relative path of the Dojo script.");
+//
+//            /** The value of the {@code djConfig} Dojo configuration parameter. */
+//            public final static Attributes.Prototype DojoConfig = new Attributes.Prototype(WebDAVDaemon.class, "DojoConfig",
+//                    "isDebug: false, parseOnLoad: true, baseUrl: './', useXDomain: true, modulePaths: {'sunlabs': '/dojo/1.3.1/sunlabs'}",
+//            "The value of the djConfig Dojo configuration parameter");
+
+    /** The URL of the base location of a Dojo installation. */
+    public final static Attributes.Prototype DojoRoot = new Attributes.Prototype(WebDAVDaemon.class, "DojoRoot", "dojo/dojo-release-1.5.0",
+    "The URL of the base location of a Dojo installation.");
+
+    /** The relative path of the Dojo script. */
+    public final static Attributes.Prototype DojoJavascript = new Attributes.Prototype(WebDAVDaemon.class, "DojoJavascript", "dojo/dojo.js", "The relative path of the Dojo script.");
+
+    /** The value of the Dojo {@code djConfig} configuration parameter. */
+    public final static Attributes.Prototype DojoConfig = new Attributes.Prototype(WebDAVDaemon.class, "DojoConfig",
+            "isDebug: false, parseOnLoad: true, baseUrl: './dojo/dojo-release-1.5.0/dojo/', useXDomain: false, modulePaths: {'sunlabs': '/dojo/1.3.1/sunlabs'}",
+    "The value of the Dojo djConfig configuration parameter");
+    
+
+    /** The Dojo theme name. */
+    public final static Attributes.Prototype DojoTheme = new Attributes.Prototype(WebDAVDaemon.class, "DojoTheme", "tundra", "The Dojo theme name.");
+
     /** The TCP port number this node listens on for incoming HTTP connections. */
     public final static Attributes.Prototype ServerSocketPort = new Attributes.Prototype(WebDAVDaemon.class, "ServerSocketPort", 12001,
             "The TCP port number this node listens on for incoming HTTP connections.");
     
     /** The pathname prefix for the HTTP server to use when serving files. */
-    public final static Attributes.Prototype ServerRoot = new Attributes.Prototype(WebDAVDaemon.class, "Root", "web",
+    public final static Attributes.Prototype ServerRoot = new Attributes.Prototype(WebDAVDaemon.class, "ServerRoot", "web",
             "The pathname prefix for the HTTP server to use when serving files.");
     
     /** The maximum number of concurrent clients. */
@@ -204,7 +233,6 @@ public final class WebDAVDaemon extends AbstractTitanService implements MessageS
 
                 try {
                     TitanMessage message = TitanMessage.newInstance(request.getMessage().getBody().toInputStream());
-//                    System.out.printf("TitanNodeMessageURINameSpace.HttpPost%n%s%n", message);
 
                     TitanMessage response = WebDAVDaemon.this.node.receive(message);
                     ByteArrayOutputStream bos = new ByteArrayOutputStream();
@@ -547,6 +575,10 @@ public final class WebDAVDaemon extends AbstractTitanService implements MessageS
         node.getConfiguration().add(WebDAVDaemon.InspectorJS);
         node.getConfiguration().add(WebDAVDaemon.ServerSocketBacklog);
         node.getConfiguration().add(WebDAVDaemon.Protocol);
+        node.getConfiguration().add(WebDAVDaemon.DojoConfig);
+        node.getConfiguration().add(WebDAVDaemon.DojoJavascript);
+        node.getConfiguration().add(WebDAVDaemon.DojoRoot);
+        node.getConfiguration().add(WebDAVDaemon.DojoTheme);
 
         // Setup the transmit method. (See transmit(NodeAddress, TitanMessage).
         if (WebDAVDaemon.this.node.getConfiguration().asString(WebDAVDaemon.Protocol).equals("https")) {
@@ -564,12 +596,15 @@ public final class WebDAVDaemon extends AbstractTitanService implements MessageS
             this.log.config("%s", node.getConfiguration().get(WebDAVDaemon.InspectorJS));
             this.log.config("%s", node.getConfiguration().get(WebDAVDaemon.ServerSocketBacklog));
             this.log.config("%s", node.getConfiguration().get(WebDAVDaemon.Protocol));
+            this.log.config("%s", node.getConfiguration().get(WebDAVDaemon.DojoConfig));
+            this.log.config("%s", node.getConfiguration().get(WebDAVDaemon.DojoJavascript));
+            this.log.config("%s", node.getConfiguration().get(WebDAVDaemon.DojoRoot));
+            this.log.config("%s", node.getConfiguration().get(WebDAVDaemon.DojoTheme));
         }
     }
 
     /**
-     * This produces the resulting {@link HTTPResponse} to the client interface.
-     *
+     * This produces the resulting {@link HTTP.Response} to the client interface.
      */
     private HTTP.Response generateResponse(HTTP.Request request, final URI uri, Map<String, Message> map) {
         //
@@ -622,7 +657,7 @@ public final class WebDAVDaemon extends AbstractTitanService implements MessageS
                     XML.Document document = this.makeXMLDocument(this.node.getNeighbourMap().toXML(), "/xsl/beehive-route-table.xsl");
                     // The intent here was to produce XML with an XML stylesheet for client-side translation to XHTML.
                     // That doesn't work out very well in current browsers.
-                    // So until they get better, getRouteTableAsXML produces XML and then here we perform the translation producing a String containing the XML.
+                    // So until they get better, getRouteTableAsXML produces XML and then here we perform the translation producing a String containing the XHTML.
                     // However, force the content type of the response to be text/html and NOT application/xml.
                     String query = request.getURI().getQuery();
                     if (query != null && query.equals("xml")) {
@@ -799,12 +834,13 @@ public final class WebDAVDaemon extends AbstractTitanService implements MessageS
         	}
         }
 
-        Dojo dojo = new Dojo(this.node.getConfiguration().asString(TitanNodeImpl.DojoRoot),
-                this.node.getConfiguration().asString(TitanNodeImpl.DojoJavascript),
-                this.node.getConfiguration().asString(TitanNodeImpl.DojoTheme)
+        Dojo dojo = new Dojo(this.node.getConfiguration().asString(WebDAVDaemon.DojoRoot),
+                this.node.getConfiguration().asString(WebDAVDaemon.DojoJavascript),
+                this.node.getConfiguration().asString(WebDAVDaemon.DojoTheme)
                 );
 
-        dojo.setConfig("isDebug: false, parseOnLoad: true, baseUrl: './', useXDomain: true, modulePaths: {'sunlabs': '/dojo/1.3.1/sunlabs'}");
+
+        dojo.setConfig(this.node.getConfiguration().asString(WebDAVDaemon.DojoConfig));
         dojo.requires("dojo.parser", "sunlabs.StickyTooltip", "dijit.ProgressBar");
 
         XHTML.Head head = new XHTML.Head();

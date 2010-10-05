@@ -398,7 +398,7 @@ public class TitanMessage implements Serializable, XHTMLInspectable {
             }
             this.loadPayloadObject(resultClass.getClassLoader(), node);
             if (this.dataObject == null) {
-                System.err.printf("TitanMessage payload is null: %s%n", this.toString());
+                node.getLogger().warning("TitanMessage payload is null: %s%n", this.toString());
             }
             return resultClass.cast(this.dataObject);
         } catch (ClassCastException e) {
@@ -526,11 +526,8 @@ public class TitanMessage implements Serializable, XHTMLInspectable {
                 throw e;
             } catch (IOException e) {
                 e.printStackTrace();
-                //
-                // Since there's no actual i/o, this exception should never
-                // occur.
-                //
-                assert false : "a \"can't happen\" exception occurred";
+                // Since there's no actual i/o, this exception should never occur.
+                throw new RuntimeException(e);
             } finally {
                 try {
                     if (ois != null)

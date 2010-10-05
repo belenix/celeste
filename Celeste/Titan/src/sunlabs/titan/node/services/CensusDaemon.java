@@ -78,6 +78,7 @@ import sunlabs.titan.util.OrderedProperties;
  */
 public final class CensusDaemon extends AbstractTitanService implements Census, CensusDaemonMBean {
     private final static long serialVersionUID = 1L;
+
     private final static String name = AbstractTitanService.makeName(CensusDaemon.class, CensusDaemon.serialVersionUID);
 
     /** The number of seconds between each Census report transmitted by this {@link TitanNode}. */

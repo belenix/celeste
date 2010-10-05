@@ -330,7 +330,7 @@ public class HTTPServer extends Thread implements HTTP.Server, Runnable, HTTPSer
 
                     HTTP.Response response = this.dispatch(request);
 
-                    // Guard against a poorly implemented handler.
+                    // Guard against a poorly implemented handler!
                     //
                     // If the client request stipulated that the connection is to be closed,
                     // then set a Connection: close header in the response, send the response

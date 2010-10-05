@@ -429,6 +429,8 @@ abstract public class AbstractStoredMap<K,V extends Serializable> implements Ite
 			public Directory(File path) {
 				this.path = path;
 				this.files = path.list();
+				if (this.files == null)
+				    throw new IllegalArgumentException(String.format("%s must be a directory.", path));
 				this.index = 0;
 			}
 

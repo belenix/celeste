@@ -26,6 +26,7 @@ import sunlabs.asdf.web.XML.XML;
 import sunlabs.asdf.web.XML.XML.NameSpace;
 import sunlabs.titan.TitanGuidImpl;
 import sunlabs.titan.api.TitanGuid;
+import sunlabs.titan.api.TitanService;
 
 /**
  * 
@@ -67,6 +68,11 @@ public class TitanXML implements XML.ElementFactory  {
         return result;
     }
 
+    public XMLService newXMLService(TitanService service) {
+        XMLService result = newXMLService(service.getName(), service.getDescription(), service.getStatus());
+        return result;
+    }
+    
     public XMLService newXMLService(String name, String description, String message) {
         XMLService result = new XMLService(name, description, message);
         

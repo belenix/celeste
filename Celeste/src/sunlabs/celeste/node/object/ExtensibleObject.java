@@ -288,6 +288,7 @@ public class ExtensibleObject {
     /**
      * Helper method for the bottom-half of an {@link ExtensibleObject.Handler} invoking
      * an extension on an {@link ExtensibleObject.Handler.Object}.
+     * 
      * @throws ClassNotFoundException 
      * @throws TitanMessage.RemoteException 
      * @throws ClassCastException 
@@ -296,8 +297,7 @@ public class ExtensibleObject {
      * @throws InstantiationException 
      * @throws NoSuchMethodException 
      * @throws IllegalArgumentException 
-     * @throws SecurityException 
-     *
+     * @throws SecurityException
      */
     public static Serializable extensibleOperation(TitanObjectHandler handler, TitanMessage message) throws ClassCastException, TitanMessage.RemoteException,
     ClassNotFoundException, SecurityException, IllegalArgumentException, NoSuchMethodException, InstantiationException, IllegalAccessException, InvocationTargetException {
@@ -305,12 +305,11 @@ public class ExtensibleObject {
         ExtensibleOperation operation = request.operation;
         TitanGuid objectId = message.getObjectId();
 
-        JarClassLoader classLoader =  request.getClassLoader();
+        JarClassLoader classLoader = request.getClassLoader();
         Callable<Serializable> extension = classLoader.construct(request.getClassToUse(), operation, objectId, handler);
         try {
             Serializable result = extension.call();
             return result;
-            //return message.composeReply(handler.getNode().getNodeAddress(), result);
         } catch (Exception e) {
             throw new InvocationTargetException(e);
         }

@@ -24,6 +24,7 @@
 package sunlabs.titan.api;
 
 import java.io.Serializable;
+import java.lang.reflect.InvocationTargetException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Map;
@@ -208,13 +209,19 @@ public interface TitanNode {
      *
      * @param serviceName
      * @return an instance of the named class cast to the given {@link TitanService}
+     * @throws NullPointerException 
      * @throws ClassCastException if the loaded class is <em>not</em> an instance of {@code klasse}.
      * @throws ClassNotFoundException if the class cannot be found.
+     * @throws InvocationTargetException 
+     * @throws IllegalAccessException 
+     * @throws InstantiationException 
+     * @throws NoSuchMethodException 
+     * @throws IllegalArgumentException 
      */
-    public TitanService getService(final String serviceName);
+    public TitanService getService(final String serviceName) throws NullPointerException, ClassNotFoundException, IllegalArgumentException, NoSuchMethodException, InstantiationException, IllegalAccessException, InvocationTargetException;
 
 
-    public ApplicationFramework getServiceFramework();
+    public TitanServiceFramework getServiceFramework();
 
 
     public XML.Content toXML();

@@ -136,10 +136,9 @@
          ================================= -->
     <target name="titan.jar" depends="compile,scmversion" description="==> build Titan">
         <mkdir dir="${lib.dir}" />
-        <jar destfile="${lib.dir}/titan.jar" filesonly="true" 
-             >
+        <jar destfile="${lib.dir}/titan.jar" filesonly="true">
             <fileset dir="${build.classes.dir}" includes="sunlabs/titan/** sunlabs/asdf/**" />
-            <fileset dir="" includes="web/**" />
+            <fileset dir="." includes="web/**" />
             <manifest>
                 <attribute name="Main-Class" value="sunlabs.titan.node.Titan" />
                 <attribute name="Class-Path" value="${Phidoux.jar}" />
@@ -156,10 +155,9 @@
     </target>
 	
 	<target name="titan-src.jar">
-        <jar destfile="${lib.dir}/titan-src.jar" filesonly="true" 
-             >
-            <fileset dir="" includes="src/**" />
-            <fileset dir="" includes="web/**" />
+        <jar destfile="${lib.dir}/titan-src.jar" filesonly="true">
+            <fileset dir="." includes="src/**" />
+            <fileset dir="." includes="web/**" />
             <manifest>
                 <attribute name="Built-By" value="${user.name}.${DSTAMP}" />
                 <attribute name="Sealed" value="true" />
@@ -171,7 +169,12 @@
                 <attribute name="Implementation-Vendor" value="${manifest.vendor}" />
             </manifest>
         </jar>
-		</target>
+	</target>
+
+    <target name="dojo" description="Download and install the Dojo toolkit">
+    	<get src="http://download.dojotoolkit.org/release-1.5.0/dojo-release-1.5.0.tar.gz" dest="dojo-release-1.5.0.tar.gz" verbose="true"/>
+    	<untar src="dojo-release-1.5.0.tar.gz" dest="web/dojo/" compression="gzip" />
+  	</target>
 
 
     <!-- =================================

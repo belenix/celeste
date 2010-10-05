@@ -27,6 +27,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.ObjectOutputStream;
 import java.io.Serializable;
+import java.lang.reflect.InvocationTargetException;
 import java.net.URI;
 import java.nio.ByteBuffer;
 import java.util.Map;
@@ -375,7 +376,7 @@ public final class StorableFragmentedObject {
             TitanMessage reply = message.composeReply(node.getNodeAddress(), e);
             return reply;        
         }
-        
+
         try {
             node.getObjectStore().lock(BeehiveObjectStore.ObjectId(object));
             try {
@@ -412,50 +413,68 @@ public final class StorableFragmentedObject {
 
         TitanGuid objectId = object.getObjectId();
 
-        TitanService a = node.getService(CelesteNode.OBJECT_PKG + ".FObjectType");
-        if (a instanceof TitanObjectHandler && a instanceof FObjectType) {
-            FObjectType fObjectApplication = (FObjectType) a;
-            TitanObject.Metadata fObjectMetaData = object.getMetadata();
+        try {
+            TitanService a = node.getService(CelesteNode.OBJECT_PKG + ".FObjectType");
+            if (a instanceof TitanObjectHandler && a instanceof FObjectType) {
+                FObjectType fObjectApplication = (FObjectType) a;
+                TitanObject.Metadata fObjectMetaData = object.getMetadata();
 
-            String erasureCodeName = fObjectMetaData.getProperty(StorableFragmentedObject.Handler.ERASURECODER, ErasureCodeIdentity.NAME + "/1");
-            ReplicationParameters replicationParams = new ReplicationParameters("FObject.Replication.Store=2;FObjectReplication.LowWater=2;");
+                String erasureCodeName = fObjectMetaData.getProperty(StorableFragmentedObject.Handler.ERASURECODER, ErasureCodeIdentity.NAME + "/1");
+                ReplicationParameters replicationParams = new ReplicationParameters("FObject.Replication.Store=2;FObjectReplication.LowWater=2;");
 
-            try {
-                ByteArrayOutputStream bos = new ByteArrayOutputStream();
-                ObjectOutputStream oos = new ObjectOutputStream(bos);
-                oos.writeObject(object);
-                oos.close();
+                try {
+                    ByteArrayOutputStream bos = new ByteArrayOutputStream();
+                    ObjectOutputStream oos = new ObjectOutputStream(bos);
+                    oos.writeObject(object);
+                    oos.close();
 
-                ErasureCode erasureCoder = ErasureCode.getEncoder(erasureCodeName, bos.toByteArray());
-                TitanGuid[] fObjectId = new TitanGuid[erasureCoder.getFragmentCount()];
+                    ErasureCode erasureCoder = ErasureCode.getEncoder(erasureCodeName, bos.toByteArray());
+                    TitanGuid[] fObjectId = new TitanGuid[erasureCoder.getFragmentCount()];
 
-                for (int i = 0; i < fObjectId.length; i++) {
-                    byte[] fragment = erasureCoder.getFragment(i);
-                    FObjectType.FObject fObject =
-                        fObjectApplication.storeObject(
-                                fObjectApplication.create(object.getDeleteTokenId(), object.getTimeToLive(), replicationParams, fObjectMetaData, fragment));
-                    fObjectId[i] = fObject.getObjectId();
+                    for (int i = 0; i < fObjectId.length; i++) {
+                        byte[] fragment = erasureCoder.getFragment(i);
+                        FObjectType.FObject fObject =
+                            fObjectApplication.storeObject(
+                                    fObjectApplication.create(object.getDeleteTokenId(), object.getTimeToLive(), replicationParams, fObjectMetaData, fragment));
+                        fObjectId[i] = fObject.getObjectId();
+                    }
+                    StorableFragmentedObject.FragmentMap map = new StorableFragmentedObject.FragmentMap(objectId, erasureCoder, fObjectId);
+
+                    TitanMessage reply = message.composeReply(node.getNodeAddress(), map);
+
+                    return reply;
+                } catch (IOException e) {
+                    node.getLogger().warning(e.toString());
+                } catch (ErasureCode.UnsupportedAlgorithmException e) {
+                    node.getLogger().severe(e.toString());
+                } catch (UnacceptableObjectException e) {
+                    node.getLogger().severe(e.toString());
+                } catch (BeehiveObjectPool.Exception e) {
+                    node.getLogger().severe(e.toString());
                 }
-                StorableFragmentedObject.FragmentMap map = new StorableFragmentedObject.FragmentMap(objectId, erasureCoder, fObjectId);
 
-                TitanMessage reply = message.composeReply(node.getNodeAddress(), map);
-
+                TitanMessage reply = message.composeReply(node.getNodeAddress(), DOLRStatus.NOT_ACCEPTABLE);
                 return reply;
-            } catch (IOException e) {
-                node.getLogger().warning(e.toString());
-            } catch (ErasureCode.UnsupportedAlgorithmException e) {
-                node.getLogger().severe(e.toString());
-            } catch (UnacceptableObjectException e) {
-                node.getLogger().severe(e.toString());
-            } catch (BeehiveObjectPool.Exception e) {
-                node.getLogger().severe(e.toString());
+            } else {
+                TitanMessage reply = message.composeReply(node.getNodeAddress(), DOLRStatus.INTERNAL_SERVER_ERROR);
+                return reply;
             }
+        } catch (ClassNotFoundException e) {
+            TitanMessage reply = message.composeReply(node.getNodeAddress(), e);
+            return reply;
 
-            TitanMessage reply = message.composeReply(node.getNodeAddress(), DOLRStatus.NOT_ACCEPTABLE);
-            return reply;
-        } else {
-            TitanMessage reply = message.composeReply(node.getNodeAddress(), DOLRStatus.INTERNAL_SERVER_ERROR);
-            return reply;
+        } catch (NullPointerException e) {
+            return message.composeReply(node.getNodeAddress(), e);
+        } catch (IllegalArgumentException e) {
+            return message.composeReply(node.getNodeAddress(), e);
+        } catch (NoSuchMethodException e) {
+            return message.composeReply(node.getNodeAddress(), e);
+        } catch (InstantiationException e) {
+            return message.composeReply(node.getNodeAddress(), e);
+        } catch (IllegalAccessException e) {
+            return message.composeReply(node.getNodeAddress(), e);
+        } catch (InvocationTargetException e) {
+            return message.composeReply(node.getNodeAddress(), e);
         }
     }
 }

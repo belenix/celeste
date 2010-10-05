@@ -376,6 +376,13 @@ public abstract class AbstractTitanService extends NotificationBroadcasterSuppor
         return AbstractTitanService.makeName(c.getCanonicalName(), version);
     }
 
+    /**
+     * This makes a name that incorporates the serialVersionUID of the class.
+     * 
+     * @param canonicalClassName
+     * @param version
+     * @return
+     */
     public static String makeName(String canonicalClassName, long version) {
         //
         // XXX: Perhaps should check that canonicalClassName is well-formed as

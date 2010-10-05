@@ -55,6 +55,7 @@ import sunlabs.asdf.web.http.HTTP;
 import sunlabs.titan.TitanGuidImpl;
 import sunlabs.titan.api.TitanNode;
 import sunlabs.titan.api.TitanService;
+import sunlabs.titan.api.TitanServiceFramework;
 import sunlabs.titan.api.XHTMLInspectable;
 import sunlabs.titan.node.BeehiveObjectStore.NotFoundException;
 import sunlabs.titan.node.BeehiveObjectStore.ObjectExistenceException;
@@ -66,13 +67,10 @@ import sunlabs.titan.node.services.xml.TitanXML;
 import sunlabs.titan.node.services.xml.TitanXML.XMLService;
 import sunlabs.titan.node.services.xml.TitanXML.XMLServices;
 import sunlabs.titan.node.util.DOLRLogger;
-import sunlabs.titan.util.DOLRStatus;
 
 /**
- * The ApplicationFramework is the portion of a
- * {@link sunlabs.titan.node.TitanNodeImpl}
- * which directs messages to the correct
- * {@link AbstractTitanService}
+ * The ApplicationFramework is the portion of a {@link sunlabs.titan.node.TitanNodeImpl}
+ * which directs messages to the correct {@link TitanService}
  * installed on that node.
  * Each message in the system contains
  * the name of the application to which it should be delivered.  The
@@ -532,7 +530,7 @@ import sunlabs.titan.util.DOLRStatus;
  * see which objects are stored locally (we expect this to be each application).
  */
 
-public final class ApplicationFramework implements XHTMLInspectable {
+public final class ApplicationFramework implements TitanServiceFramework, XHTMLInspectable {
     //
     // Debugging and testing support:
     //
@@ -603,7 +601,10 @@ public final class ApplicationFramework implements XHTMLInspectable {
     private Map<String, ApplicationLoader> classNameToLoader =
         new HashMap<String, ApplicationLoader>();
 
-    /** The bootstrapping state of this node.  */
+    /**
+     * The bootstrapping state of this node. If {@code true} the node is running and
+     * any subsequent creation of a TitanService will be started (see {@link TitanService#start()}).
+     */
     private volatile boolean fullyStarted = false;
 
     // During normal processing, if this Framework finds a BeehiveService it
@@ -709,34 +710,29 @@ public final class ApplicationFramework implements XHTMLInspectable {
      *
      * @return the named service, or null if it cannot be found or started
      *
-     * @throws NullPointerException
-     *      if name is null
+     * @throws NullPointerException if name is null
      */
     public TitanService get(String name) {
         return this.get(name, false);
     }
 
     /**
-     * Get a Beehive {@code Service} by name, loading and starting it if it is
-     * not already known.  If a service is returned, it is guaranteed to have
-     * been started.
+     * Get a {@code TitanService} by name, loading and starting it if it is not already known.
+     * If a service is returned, it is guaranteed to have been started.
      *
      * @param name  the name of the service to be retrieved
-     * @param trace {@code true} if the process of retrieving the service is
-     *              to be traced
+     * @param trace {@code true} if the process of retrieving the service is to be traced
      *
-     * @return  the named service, or {@code null} if it cannot be found or
-     *          started
+     * @return  the named service, or {@code null} if it cannot be found or started
      *
-     * @throws NullPointerException
-     *      if name is null
+     * @throws NullPointerException  if name is null
      */
-    public TitanService get(String name, boolean trace) {
+    private TitanService get(String name, boolean trace) {
         if (name == null) {
-            throw new NullPointerException("Service name must not be null");
+            throw new NullPointerException("Service name cannot be null.");
         }
 
-        synchronized(this.applications) {
+        synchronized (this.applications) {
             for (;;) {
                 TitanService service = getVersionedApp(name, trace);
                 if (service != null)
@@ -756,6 +752,8 @@ public final class ApplicationFramework implements XHTMLInspectable {
                 // locking would be done with a ReentrantLock rather than with
                 // a simple synchronization on this.applications.
                 //
+                // XXX There is a race here where this Thread finds this.loadingService to be false, but doesn't protect it when plunging ahead and sets it to true.
+                // Another thread may be in the same location.
                 if (this.loadingService) {
                     try {
                         this.applications.wait();
@@ -792,7 +790,7 @@ public final class ApplicationFramework implements XHTMLInspectable {
     //
     private TitanService getVersionedApp(String name, boolean trace) {
         AppInfo requested = new AppInfo(name);
-        synchronized(this.applications) {
+        synchronized (this.applications) {
             VersionMap versionMap = this.findApplicationVersions(requested.name);
             TitanService service = versionMap.findVersion(requested.version);
             return service;
@@ -837,7 +835,7 @@ public final class ApplicationFramework implements XHTMLInspectable {
      *
      * @param name  the name of the Application to remove
      */
-    public void remove(String name) {
+    private void remove(String name) {
         this.log.entering(name);
 
         TitanService app = null;
@@ -865,7 +863,7 @@ public final class ApplicationFramework implements XHTMLInspectable {
      * The Node will call this method when the NeighbourMap has been populated
      * and message passing can begin.
      */
-    public void fullyStarted() throws IOException {
+    public void startAll() throws IOException {
         this.log.entering();
 
         //
@@ -880,7 +878,7 @@ public final class ApplicationFramework implements XHTMLInspectable {
             // start them all.
             //
             Set<VersionMap> saved = null;
-            synchronized(this.applications) {
+            synchronized (this.applications) {
                 saved = new HashSet<VersionMap>(this.applications.values());
             }
 
@@ -905,13 +903,12 @@ public final class ApplicationFramework implements XHTMLInspectable {
     }
 
     /**
-     * Call the server side method for the {@link AbstractTitanService} specified in a {@link TitanMessage}.
+     * Call the server side method for the {@link TitanService} specified in a {@link TitanMessage}.
      *
-     * @param request the message being sent to an application
-     * @return the reply message from the BeehiveService, or a message with a {@code DOLRStatus} of {@code INTERNAL_SERVER_ERROR}
-     *         if the BeehiveService returns no message, or {@code METHOD_NOT_ALLOWED} if the BeehiveService cannot be found.
+     * @param request the {@code TitanMessage} being sent to an application
+     * @return the reply message from the {@code TitanService}.
      */
-    public TitanMessage sendMessageToApp(TitanMessage request) {
+    public TitanMessage dispatch(TitanMessage request) {
         String subjectClass = request.getSubjectClass();
 
         String subjectMethod = request.getSubjectClassMethod();
@@ -919,32 +916,13 @@ public final class ApplicationFramework implements XHTMLInspectable {
         TitanService a = this.get(subjectClass, request.isTraced());
 
         if (a != null) {
-            if (request.isTraced()) {
-                this.log.info("recv(%5.5s) %s %s", request.getMessageId(), subjectClass, request.getSubjectClassMethod());
-            }
-            try {
-                /*
-                 * IllegalAccessException - if this Method object enforces Java language access control and the underlying method is inaccessible.
-                 * IllegalArgumentException - if the method is an instance method and the specified object argument is not an instance of the class or interface declaring the underlying method (or of a subclass or implementor thereof); if the number of actual and formal parameters differ; if an unwrapping conversion for primitive arguments fails; or if, after possible unwrapping, a parameter value cannot be converted to the corresponding formal parameter type by a method invocation conversion.
-                 * InvocationTargetException - if the underlying method throws an exception.
-                 * NullPointerException - if the specified object is null and the method is an instance method.
-                 * ExceptionInInitializerError - if the initialization provoked by this method fails.
-                 */
-                return a.invokeMethod(subjectMethod, request);
-            } catch (IllegalArgumentException illegalArgument) {
-                illegalArgument.printStackTrace(System.err);
-                return request.composeReply(this.node.getNodeAddress(), DOLRStatus.EXPECTATION_FAILED, subjectClass);
-            } catch (ExceptionInInitializerError exceptionInInitailizer) {
-                return request.composeReply(this.node.getNodeAddress(), DOLRStatus.SERVICE_UNAVAILABLE, subjectClass);
-            } catch (Exception e) {
-            	System.err.printf("Unhandled Exception %s%n", e);
-            	e.printStackTrace();
-            	throw new RuntimeException(e);
-            }
+            return a.invokeMethod(subjectMethod, request);
         }
 
-        this.log.severe("Unimplemented BeehiveService class: message type=%s class=%s method=%s (found=%s)", request.getType(), subjectClass, subjectMethod, a);
-        return request.composeReply(this.node.getNodeAddress(), DOLRStatus.NOT_IMPLEMENTED);
+        this.log.severe("Unimplemented TitanService class: message type=%s class=%s method=%s (found=%s)", request.getType(), subjectClass, subjectMethod, a);
+        
+        return request.composeReply(this.node.getNodeAddress(),
+                new ClassNotFoundException(String.format("Unimplemented TitanService class: message type=%s class=%s method=%s (found=%s)", request.getType(), subjectClass, subjectMethod, a)));
     }
 
     /**
@@ -1024,6 +1002,20 @@ public final class ApplicationFramework implements XHTMLInspectable {
                 this.log.warning("store of " + app.getName() + " failed: " + ioe);
                 ioe.printStackTrace(System.err);
             }
+        } catch (NullPointerException e) {
+            throw new RuntimeException(e);
+        } catch (ClassNotFoundException e) {
+            throw new RuntimeException(e);
+        } catch (IllegalArgumentException e) {
+            throw new RuntimeException(e);
+        } catch (NoSuchMethodException e) {
+            throw new RuntimeException(e);
+        } catch (InstantiationException e) {
+            throw new RuntimeException(e);
+        } catch (IllegalAccessException e) {
+            throw new RuntimeException(e);
+        } catch (InvocationTargetException e) {
+            throw new RuntimeException(e);
         } finally {
             this.log.exiting();
         }
@@ -1050,8 +1042,7 @@ public final class ApplicationFramework implements XHTMLInspectable {
     // IOException if something goes wrong.
     //
     private static byte[] getByteCodes(Class<?> c) throws IOException {
-        String classname = String.format("%s%s.class",
-            "/", c.getName().replace(".", File.separator));
+        String classname = String.format("%s%s.class", "/", c.getName().replace(".", File.separator));
         //
         // Magic!  Where is it documented that a class will regurgitate its
         // class file contents under this resource name?
@@ -1072,10 +1063,10 @@ public final class ApplicationFramework implements XHTMLInspectable {
     }
 
     /**
-     * Load an application and start it.  BeehiveServices will be loaded from
+     * Load an TitanService and start it.  TitanServices will be loaded from
      * either the local CLASSPATH or from the Beehive object pool.
      *
-     * @param appName   the full name of the BeehiveService to load
+     * @param appName   the full name of the TitanService to load
      *
      * @return the loaded (and started) application
      *
@@ -1132,10 +1123,7 @@ public final class ApplicationFramework implements XHTMLInspectable {
      * @throws NoSuchMethodException
      * @throws IOException
      */
-    private TitanService loadApplication(String appName) throws
-        ClassNotFoundException, InstantiationException, IllegalAccessException,
-        InvocationTargetException, NoSuchMethodException, IOException
-    {
+    private TitanService loadApplication(String appName) throws ClassNotFoundException, InstantiationException, IllegalAccessException, InvocationTargetException, NoSuchMethodException, IOException {
         assert(appName != null);
         //this.log.info(appName);
 
@@ -1187,8 +1175,7 @@ public final class ApplicationFramework implements XHTMLInspectable {
             app = versionMap.findVersion(0);
         }
 
-        final boolean allowLocalLoading = !this.fullyStarted ||
-            !this.loadOnlyFromObjectStore;
+        final boolean allowLocalLoading = !this.fullyStarted || !this.loadOnlyFromObjectStore;
         boolean appInHand = app != null;
         boolean appLoaded = false;
         if (!appInHand && allowLocalLoading) {
@@ -1208,8 +1195,7 @@ public final class ApplicationFramework implements XHTMLInspectable {
                         loader = new ApplicationLoader(this.getClass().getClassLoader());
                         this.classNameToLoader.put(unversionedName, loader);
                     }
-                    //this.log.info("locally loading %s using loader %s",
-                    //    unversionedName, loader);
+                    this.log.info("locally loading %s using loader %s", unversionedName, loader);
                     appClass = Class.forName(unversionedName, false, loader);
                 }
             } catch (Exception e) {
@@ -1262,8 +1248,7 @@ public final class ApplicationFramework implements XHTMLInspectable {
             TitanGuidImpl nameID = new TitanGuidImpl(appName.getBytes());
 
             if (this.log.isLoggable(Level.FINE)) {
-                this.log.fine("Attempting to load %s %s from object pool",
-                    nameID, appName);
+                this.log.fine("Attempting to load %s %s from object pool", nameID, appName);
             }
             AppClass.AppClassObject.InfoList infoList = null;
 
@@ -1296,8 +1281,7 @@ public final class ApplicationFramework implements XHTMLInspectable {
             synchronized(this) {
                 loader = this.classNameToLoader.get(unversionedName);
                 if (loader == null) {
-                    loader = new ApplicationLoader(
-                        this.getClass().getClassLoader());
+                    loader = new ApplicationLoader(this.getClass().getClassLoader());
                     this.classNameToLoader.put(unversionedName, loader);
                 }
             }
@@ -1306,16 +1290,13 @@ public final class ApplicationFramework implements XHTMLInspectable {
                 byte[] classBytes = loadingInfo.getClassBytes();
 
                 try {
-                    appClass = loader.defineDOLRClass(
-                        name, ByteBuffer.wrap(classBytes));
+                    appClass = loader.defineDOLRClass(name, ByteBuffer.wrap(classBytes));
                 } catch (ClassFormatError cfe) {
-                    ClassNotFoundException e =
-                        new ClassNotFoundException("Problem with class found in object pool " + name, cfe);
+                    ClassNotFoundException e = new ClassNotFoundException("Problem with class found in object pool " + name, cfe);
                     this.log.throwing(e);
                     throw e;
                 } catch (NoClassDefFoundError ncdfe) {
-                    ClassNotFoundException e =
-                        new ClassNotFoundException("Problem with class found in object pool " + name, ncdfe);
+                    ClassNotFoundException e = new ClassNotFoundException("Problem with class found in object pool " + name, ncdfe);
                     this.log.throwing(e);
                     throw e;
                 }
@@ -1323,9 +1304,7 @@ public final class ApplicationFramework implements XHTMLInspectable {
                 if (appClass == null) {
                     // This is not good, we couldn't find it either locally or
                     // in the object pool!
-                    ClassNotFoundException e =
-                        new ClassNotFoundException("Could not find class for "
-                                + appName + " locally or in object pool");
+                    ClassNotFoundException e = new ClassNotFoundException("Could not find class for " + appName + " locally or in object pool");
                     this.log.throwing(e);
                     throw e;
                 }
@@ -1341,9 +1320,7 @@ public final class ApplicationFramework implements XHTMLInspectable {
         // the app.  If it's not yet instantiated, give up.
         //
         if (app == null) {
-            ClassNotFoundException e =
-                new ClassNotFoundException("Could not find correct class for "
-                        + appName + " locally or in object pool");
+            ClassNotFoundException e = new ClassNotFoundException("Could not find correct class for " + appName + " locally or in object pool");
             this.log.throwing(e);
             throw e;
         }
@@ -1375,8 +1352,7 @@ public final class ApplicationFramework implements XHTMLInspectable {
             //
             // Remove down-rev versions.
             //
-            Iterator<Map.Entry<Long, TitanService>> it =
-                versionMap.entrySet().iterator();
+            Iterator<Map.Entry<Long, TitanService>> it = versionMap.entrySet().iterator();
             Set<TitanService> removedApps = new HashSet<TitanService>();
             while (it.hasNext()) {
                 Map.Entry<Long, TitanService> entry = it.next();
@@ -1452,25 +1428,23 @@ public final class ApplicationFramework implements XHTMLInspectable {
      * @throws ClassCastException
      *      if {@code theClass} is not a {@code BeehiveService}
      */
-    private TitanService instantiateAndCheck(Class<?> theClass, long requested)
-        throws InstantiationException, IllegalAccessException, InvocationTargetException, NoSuchMethodException
-    {
+    private TitanService instantiateAndCheck(Class<?> theClass, long requested) throws InstantiationException, IllegalAccessException, InvocationTargetException, NoSuchMethodException {
         if (theClass == null) {
             return null;
         }
 
         //
         // Although the class argument to this method is supposed to represent
-        // a BeehiveService, it might not.  Verify that it does and then cast
+        // a TitanService, it might not.  Verify that it does and then cast
         // it accordingly.
         //
         // XXX: Can this runtime check and failure exception be expressed more
         //      elegantly?  (Maybe Class.cast() might be useful here.)
         //
         if (!TitanService.class.isAssignableFrom(theClass))
-            throw new ClassCastException("not a BeehiveService");
+            throw new ClassCastException("not a TitanService");
         @SuppressWarnings(value="unchecked")
-            Class <? extends TitanService> appClass = (Class<TitanService>) theClass;
+        Class <? extends TitanService> appClass = (Class<TitanService>) theClass;
 
         TitanService application = null;
         try {
@@ -1513,10 +1487,8 @@ public final class ApplicationFramework implements XHTMLInspectable {
         for (Map.Entry<String, VersionMap> app : this.applications.entrySet()) {
             String unversionedName = app.getKey();
             VersionMap versionMap = app.getValue();
-            for (Map.Entry<Long, TitanService> entry :
-                    versionMap.entrySet()) {
-                result.add(
-                        AbstractTitanService.makeName(unversionedName, entry.getKey()));
+            for (Map.Entry<Long, TitanService> entry : versionMap.entrySet()) {
+                result.add(AbstractTitanService.makeName(unversionedName, entry.getKey()));
             }
         }
         return result;
@@ -1535,23 +1507,24 @@ public final class ApplicationFramework implements XHTMLInspectable {
         return this.findApplicationVersions(info.name);
     }
 
-    //
-    // Given the name of a BeehiveService (in unversioned form), return a map
-    // containing all previously registered versions of that application.
-    // Modifications to the returned map will affect which versions of the
-    // application are considered to be registered.
-    //
-    // The caller is assumed to hold appropriate locks.
-    //
+    /**
+     * Given the name of a TitanService (in unversioned form), return a map
+     * containing all previously registered versions of that service.
+     * Modifications to the returned map will affect which versions of the
+     * application are considered to be registered.
+     * If the name is not found, a new empty VersionMap is created and inserted in the map for the given Service name.
+     *
+     * The caller is assumed to hold appropriate locks.
+     */
     private VersionMap findApplicationVersions(String unversionedName) {
         VersionMap versionMap = this.applications.get(unversionedName);
 
         if (versionMap == null) {
-//            this.log.info("%s not found", unversionedName);
+            //            this.log.info("%s not found", unversionedName);
             versionMap = new VersionMap();
             this.applications.put(unversionedName, versionMap);
         } else {
-//            this.log.info("%s found", unversionedName);
+            //            this.log.info("%s found", unversionedName);
         }
         return versionMap;
     }
@@ -1578,59 +1551,78 @@ public final class ApplicationFramework implements XHTMLInspectable {
      * </p>
      */
     public XHTML.EFlow toXHTML(URI uri, Map<String,HTTP.Message> props) {
-    	if (uri.getPath().startsWith("/service/")) {
-            String name = uri.getPath().substring("/service/".length());
-            TitanService service = this.node.getService(name);
-            if (service != null) {
-            	return service.toXHTML(uri, props);
+        try {
+            if (uri.getPath().startsWith("/service/")) {
+                String name = uri.getPath().substring("/service/".length());
+                TitanService service = this.node.getService(name);
+                if (service != null) {
+                    return service.toXHTML(uri, props);
+                }
+                return null;
             }
-            return null;
+            // Sort them by name...
+            Set<String> apps = new TreeSet<String>(this.keySet());
+
+            XHTML.Table.Head thead = new XHTML.Table.Head(
+                    new XHTML.Table.Row(
+                            new XHTML.Table.Heading("Service Name"),
+                            new XHTML.Table.Heading("Description"),
+                            new XHTML.Table.Heading("Status")));
+
+            XHTML.Table.Body tbody = new XHTML.Table.Body();
+
+            for (String name: apps) {
+                TitanService app = this.get(name);
+                XHTML.Anchor link = WebDAVDaemon.inspectServiceXHTML(app.getName());
+
+                tbody.add(new XHTML.Table.Row(new XHTML.Table.Data(link),
+                        new XHTML.Table.Data(app.getDescription()),
+                        new XHTML.Table.Data(app.getStatus())));
+            }
+
+            XHTML.Table table = new XHTML.Table(new XHTML.Table.Caption("Node Services"), thead, tbody).setId("applications");
+
+            XHTML.Div result = new XHTML.Div(table).setClass("section");
+            return result;
+        } catch (NullPointerException e) {
+            return new XHTML.Div(e.toString());
+        } catch (ClassNotFoundException e) {
+            return new XHTML.Div(e.toString());
+        } catch (IllegalArgumentException e) {
+            return new XHTML.Div(e.toString());
+        } catch (NoSuchMethodException e) {
+            return new XHTML.Div(e.toString());
+        } catch (InstantiationException e) {
+            return new XHTML.Div(e.toString());
+        } catch (IllegalAccessException e) {
+            return new XHTML.Div(e.toString());
+        } catch (InvocationTargetException e) {
+            return new XHTML.Div(e.toString());
+        } finally {
+
         }
-    	
-        Set<String> apps = new TreeSet<String>(this.keySet());
-
-        XHTML.Table.Head thead = new XHTML.Table.Head(
-            new XHTML.Table.Row(
-                new XHTML.Table.Heading("Service Name"),
-                new XHTML.Table.Heading("Description"),
-                new XHTML.Table.Heading("Status")));
-
-        XHTML.Table.Body tbody = new XHTML.Table.Body();
-
-        for (String name: apps) {
-            TitanService app = this.get(name);
-            XHTML.Anchor link = WebDAVDaemon.inspectServiceXHTML(app.getName());
-            
-            tbody.add(new XHTML.Table.Row(new XHTML.Table.Data(link),
-                    new XHTML.Table.Data(app.getDescription()),
-                    new XHTML.Table.Data(app.getStatus())));
-        }
-
-        XHTML.Table table = new XHTML.Table(
-            new XHTML.Table.Caption("Node Services"), thead, tbody).setId("applications");
-
-        XHTML.Div result = new XHTML.Div(table).setClass("section");
-        return result;
     }
 
-    //
-    // A tuple class that records that canonical class name of a given
-    // application and the application's version.
-    //
-    private static class AppInfo implements Serializable {
-        private final static long serialVersionUID = 1L;
+    /**
+     * A tuple class that records that canonical class name of a given
+     * service and the service's version.
+     */
+     private static class AppInfo implements Serializable {
+         private final static long serialVersionUID = 1L;
 
-        //
-        // The application's canonical class name.
-        //
-        public final String name;
-        //
-        // The (desired) verison of the application; zero denotes "don't
-        // care".
+         //
+         // The application's canonical class name.
+         //
+         public final String name;
+         //
+        // The (desired) verison of the application; zero denotes "don't care".
         //
         public final long version;
 
-        //
+        /**
+         * Construct a new AppInfo instance by parsing the given {@link TitanService} name into it's name and version number (if present).
+         * @param name
+         */
         // The name argument can be either fully qualified (including the
         // version number suffix) or not (including only the bare name portion
         // without the version suffix).
@@ -1647,8 +1639,7 @@ public final class ApplicationFramework implements XHTMLInspectable {
             } else {
                 this.version = Long.parseLong(tokens[1]);
                 if (this.version < 0)
-                    throw new IllegalArgumentException(
-                        "version must be non-negative (or be omitted)");
+                    throw new IllegalArgumentException("Version must be non-negative (or be omitted)");
             }
         }
 
@@ -1658,8 +1649,7 @@ public final class ApplicationFramework implements XHTMLInspectable {
                 return false;
             }
             AppInfo otherApp = (AppInfo) other;
-            return this.version == otherApp.version &&
-                this.name.equals(otherApp.name);
+            return this.version == otherApp.version && this.name.equals(otherApp.name);
         }
 
         @Override
@@ -1667,8 +1657,7 @@ public final class ApplicationFramework implements XHTMLInspectable {
             //
             // Avoid losing precision from the long version value.
             //
-            return (int)(this.version >> 32) ^
-                (int)(this.version & 0xffffffff) ^ this.name.hashCode();
+            return (int)(this.version >> 32) ^ (int) (this.version & 0xffffffff) ^ this.name.hashCode();
         }
 
         @Override
@@ -1677,47 +1666,47 @@ public final class ApplicationFramework implements XHTMLInspectable {
         }
     }
 
-    //
-    // Each instance of VersionMap captures all the extant versions of a given
-    // application.  (The rest of ApplicationFramework tries to keep the
-    // cardinality of the map down to at most one, but this class itself is
-    // more general.)
-    //
-    // We want the application versions present in an instance of VersionMap
-    // to be sorted by version, so that it's easy to find and return the
-    // highest version present.
-    //
-    public static class VersionMap extends TreeMap<Long, TitanService> {
-        private final static long serialVersionUID = 1L;
+     /**
+      * Each instance of VersionMap captures all the extant versions of a given
+      * application.  (The rest of ApplicationFramework tries to keep the
+      * cardinality of the map down to at most one, but this class itself is
+      * more general.)
+      * 
+      * We want the application versions present in an instance of VersionMap
+      * to be sorted by version, so that it's easy to find and return the
+      * highest version present.
+      */
+     public static class VersionMap extends TreeMap<Long, TitanService> {
+         private final static long serialVersionUID = 1L;
 
-        public VersionMap() {
-            super();
-        }
+         public VersionMap() {
+             super();
+         }
 
-        //
-        // Return the highest version of the application held in the map whose
-        // version is at least that of the argument.  If there's no such
-        // version, return null.
-        //
-        // XXX: Do we need a version that returns precisely the requested
-        //      version (except for when the "don't care" version is
-        //      requested)?
-        //
-        public TitanService findVersion(long version) {
-            if (version < 0)
-                throw new IllegalArgumentException("version must be non-negative");
+         /**
+          * Return the highest version of the application held in the map whose
+          * version is at least that of the argument.  If there's no such
+          * version, return null.
+          *
+          * XXX: Do we need a version that returns precisely the requested
+          *      version (except for when the "don't care" version is
+          *      requested)?
+          */
+         public TitanService findVersion(long version) {
+             if (version < 0)
+                 throw new IllegalArgumentException("version must be non-negative");
 
-            SortedMap<Long, TitanService> map = this.tailMap(version);
+             SortedMap<Long, TitanService> map = this.tailMap(version);
 
-            if (map.isEmpty()) {
-                return null;
-            }
+             if (map.isEmpty()) {
+                 return null;
+             }
 
-            return map.get(map.lastKey());
-        }
-    }
+             return map.get(map.lastKey());
+         }
+     }
 
-    /**
+     /**
      * Class loader for BeehiveServices in the Beehive.
      * All BeehiveServices must be
      * loaded by an instance of this class, which gives the object pool control to
@@ -1740,8 +1729,7 @@ public final class ApplicationFramework implements XHTMLInspectable {
             }
         }
 
-        final public Class<?> defineDOLRClass(String name, ByteBuffer buffer)
-                throws ClassFormatError {
+        final public Class<?> defineDOLRClass(String name, ByteBuffer buffer) throws ClassFormatError {
             return defineClass(name, buffer, null);
         }
 
@@ -1754,20 +1742,16 @@ public final class ApplicationFramework implements XHTMLInspectable {
 
     /**
      * <p>
-     *
      * A version of {@code ObjectInputStream} that overrides the {@code
      * resolveClass()} method to handle classes loaded from the object pool
      * specially.
-     *
      * </p><p>
-     *
      * The special handling is needed to ensure that objects of such classes
      * that are sent from one node to another in message payloads end up with
      * the proper class upon receipt.  (Without this special treatment, they
      * would have distinct types because their class would be loaded by the
      * system application class loader instead of by one of the
      * per-application loaders that the application framework sets up.)
-     *
      * </p>
      */
     public class ApplicationObjectInputStream extends ObjectInputStream {
@@ -1865,12 +1849,11 @@ public final class ApplicationFramework implements XHTMLInspectable {
     // Needed to allow non-ApplicationFramework code to obtain them.
     //
 
-    public ApplicationObjectInputStream newApplicationObjectInputStream(
-            InputStream in)  throws IOException {
+    private ApplicationObjectInputStream newApplicationObjectInputStream(InputStream in)  throws IOException {
         return new ApplicationObjectInputStream(in);
     }
 
-    public ApplicationObjectInputStream newApplicationObjectInputStream()
+    private ApplicationObjectInputStream newApplicationObjectInputStream()
             throws IOException, SecurityException {
         return new ApplicationObjectInputStream();
     }

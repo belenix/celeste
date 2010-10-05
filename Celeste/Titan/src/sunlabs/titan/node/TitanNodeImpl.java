@@ -28,6 +28,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.Serializable;
 import java.lang.management.ManagementFactory;
+import java.lang.reflect.InvocationTargetException;
 import java.net.HttpURLConnection;
 import java.net.InetAddress;
 import java.net.MalformedURLException;
@@ -71,6 +72,7 @@ import sunlabs.titan.api.TitanNode;
 import sunlabs.titan.api.TitanNodeId;
 import sunlabs.titan.api.TitanObject;
 import sunlabs.titan.api.TitanService;
+import sunlabs.titan.api.TitanServiceFramework;
 import sunlabs.titan.api.management.NodeMBean;
 import sunlabs.titan.node.TitanMessage.RemoteException;
 import sunlabs.titan.node.object.AbstractObjectHandler;
@@ -80,7 +82,6 @@ import sunlabs.titan.node.services.PublishDaemon;
 import sunlabs.titan.node.services.ReflectionService;
 import sunlabs.titan.node.services.RetrieveObjectService;
 import sunlabs.titan.node.services.RoutingDaemon;
-import sunlabs.titan.node.services.TCPMessageService;
 import sunlabs.titan.node.services.WebDAVDaemon;
 import sunlabs.titan.node.services.api.Census;
 import sunlabs.titan.node.services.api.MessageService;
@@ -193,18 +194,6 @@ public class TitanNodeImpl implements TitanNode, NodeMBean {
     /** The maximum allowed size for the local object-store. */
     public final static Attributes.Prototype ObjectStoreCapacity = new Attributes.Prototype(TitanNodeImpl.class, "ObjectStoreMaximum", "unlimited",
             "The maximum allowed size for the local object-store.");
-
-    /** The URL of the base location of a Dojo installation. */
-    public final static Attributes.Prototype DojoRoot = new Attributes.Prototype(WebDAVDaemon.class, "DojoRoot", "http://o.aolcdn.com/dojo/1.5.0",
-//    public final static Attributes.Prototype DojoRoot = new Attributes.Prototype(WebDAVDaemon.class, "DojoRoot", "dojo-release-1.5.0",
-            "The URL of the base location of a Dojo installation.");
-    
-    /** The relative path of the Dojo script. */
-    public final static Attributes.Prototype DojoJavascript = new Attributes.Prototype(WebDAVDaemon.class, "DojoJavascript", "dojo/dojo.xd.js", "The relative path of the Dojo script.");
-//    public final static Attributes.Prototype DojoJavascript = new Attributes.Prototype(WebDAVDaemon.class, "DojoJavascript", "dojo/dojo.js", "The relative path of the Dojo script.");
-
-    /** The Dojo theme name. */
-    public final static Attributes.Prototype DojoTheme = new Attributes.Prototype(WebDAVDaemon.class, "DojoTheme", "tundra", "The Dojo theme name.");
     
     /** The local start time of this TitanNode.  This Attribute is generated and is not configurable. */
     public final static Attributes.Prototype StartTime = new Attributes.Prototype(TitanNodeImpl.class, "StartTime", 0,
@@ -229,7 +218,7 @@ public class TitanNodeImpl implements TitanNode, NodeMBean {
 
     private ThreadGroup threadGroup;
 
-    private ApplicationFramework services;
+    private TitanServiceFramework services;
 
     private final DOLRLogger log;
 
@@ -272,9 +261,6 @@ public class TitanNodeImpl implements TitanNode, NodeMBean {
         this.configuration.add(TitanNodeImpl.NodeAddress);
         this.configuration.add(TitanNodeImpl.ObjectStoreCapacity);
         this.configuration.add(TitanNodeImpl.Version);
-        this.configuration.add(TitanNodeImpl.DojoRoot);
-        this.configuration.add(TitanNodeImpl.DojoJavascript);
-        this.configuration.add(TitanNodeImpl.DojoTheme);
         this.configuration.add(TitanNodeImpl.MessageService);
         // Add some of the configuration parameters of the required services here because we need them below.
         this.configuration.add(WebDAVDaemon.ServerSocketPort);
@@ -350,10 +336,14 @@ public class TitanNodeImpl implements TitanNode, NodeMBean {
             this.store = new BeehiveObjectStore(this, this.configuration.asString(TitanNodeImpl.ObjectStoreCapacity));
             this.objectPublishers = new Publishers(this, this.spoolDirectory);
 
-            this.services = new ApplicationFramework(this,
-                    new DOLRLogger(ApplicationFramework.class.getName(),
-                            getNodeId(), getSpoolDirectory(),
-                            this.configuration.asInt(TitanNodeImpl.LogFileSize), this.configuration.asInt(TitanNodeImpl.LogFileCount)));
+            if (true) {
+                this.services = new SimpleServiceFramework(this);
+            } else {
+                this.services = new ApplicationFramework(this,
+                        new DOLRLogger(ApplicationFramework.class.getName(),
+                                getNodeId(), getSpoolDirectory(),
+                                this.configuration.asInt(TitanNodeImpl.LogFileSize), this.configuration.asInt(TitanNodeImpl.LogFileCount)));
+            }
 
             // Load the services that are integral to the operation of the node.
             // Services are not started until the node is started.
@@ -365,7 +355,6 @@ public class TitanNodeImpl implements TitanNode, NodeMBean {
             this.messageService = (MessageService) this.getService(this.configuration.asString(TitanNodeImpl.MessageService));
             
             this.getService(WebDAVDaemon.class);
-            //this.getService(TCPMessageService.class);
             this.getService(RoutingDaemon.class);
             this.getService(AppClassObjectType.class);
             this.getService(PublishDaemon.class);
@@ -376,12 +365,23 @@ public class TitanNodeImpl implements TitanNode, NodeMBean {
             throw new RuntimeException(e);
         } catch (IllegalStateException e) {
             throw new RuntimeException(e);
+        } catch (NullPointerException e) {
+            throw new RuntimeException(e);
+        } catch (ClassNotFoundException e) {
+            throw new RuntimeException(e);
+        } catch (IllegalArgumentException e) {
+            throw new RuntimeException(e);
+        } catch (NoSuchMethodException e) {
+            throw new RuntimeException(e);
+        } catch (InstantiationException e) {
+            throw new RuntimeException(e);
+        } catch (IllegalAccessException e) {
+            throw new RuntimeException(e);
+        } catch (InvocationTargetException e) {
+            throw new RuntimeException(e);
         }
 
         if (this.log.isLoggable(Level.CONFIG)) {
-            this.log.config("%s", this.configuration.get(TitanNodeImpl.DojoJavascript));
-            this.log.config("%s", this.configuration.get(TitanNodeImpl.DojoRoot));
-            this.log.config("%s", this.configuration.get(TitanNodeImpl.DojoTheme));
             this.log.config("%s", this.configuration.get(TitanNodeImpl.GatewayRetryDelaySeconds));
             this.log.config("%s", this.configuration.get(TitanNodeImpl.GatewayURL));
             this.log.config("%s", this.configuration.get(TitanNodeImpl.InterNetworkAddress));
@@ -412,7 +412,7 @@ public class TitanNodeImpl implements TitanNode, NodeMBean {
         this.tasks.execute(runnable);
     }
 
-    public ApplicationFramework getServiceFramework() {
+    public TitanServiceFramework getServiceFramework() {
         return this.services;
     }
 
@@ -484,11 +484,28 @@ public class TitanNodeImpl implements TitanNode, NodeMBean {
      * @param <C>
      * @param klasse The {@link Class} of the {@link TitanService} to get.
      * @return an instance of the named class cast to the given {@link TitanService} represented by {@code klasse}.
+     * @throws  
      * @throws ClassCastException if the loaded class is <em>not</em> an instance of {@code klasse}.
-     * @throws ClassNotFoundException if the class cannot be found.
      */
     public <C> C getService(Class<? extends C> klasse) {
-        return klasse.cast(this.getService(klasse.getName()));        
+        try {
+            return klasse.cast(this.getService(klasse.getName()));
+        } catch (ClassNotFoundException e) {
+            // This cannot happen.  The class is clearly handed in by the caller.
+            throw new RuntimeException(e);
+        } catch (NullPointerException e) {
+            throw new RuntimeException(e);
+        } catch (IllegalArgumentException e) {
+            throw new RuntimeException(e);
+        } catch (NoSuchMethodException e) {
+            throw new RuntimeException(e);
+        } catch (InstantiationException e) {
+            throw new RuntimeException(e);
+        } catch (IllegalAccessException e) {
+            throw new RuntimeException(e);
+        } catch (InvocationTargetException e) {
+            throw new RuntimeException(e);
+        }        
     }    
 
     /**
@@ -496,10 +513,16 @@ public class TitanNodeImpl implements TitanNode, NodeMBean {
      *
      * @param serviceName
      * @return an instance of the named class cast to the given {@link TitanService}
+     * @throws NullPointerException 
      * @throws ClassCastException if the loaded class is <em>not</em> an instance of {@code klasse}.
      * @throws ClassNotFoundException if the class cannot be found.
+     * @throws InvocationTargetException 
+     * @throws IllegalAccessException 
+     * @throws InstantiationException 
+     * @throws NoSuchMethodException 
+     * @throws IllegalArgumentException 
      */
-    public TitanService getService(final String serviceName) {
+    public TitanService getService(final String serviceName) throws NullPointerException, ClassNotFoundException, IllegalArgumentException, NoSuchMethodException, InstantiationException, IllegalAccessException, InvocationTargetException {
         return this.services.get(serviceName);
     }
 
@@ -588,7 +611,7 @@ public class TitanNodeImpl implements TitanNode, NodeMBean {
 
             if (destinationNodeId.equals(this.getNodeId())) {
                 // Any message other than route-to-node or route-to-object would indicate an ObjectId collision.
-                return this.services.sendMessageToApp(request);
+                return this.services.dispatch(request);
             }
 
             TitanMessage.Type type = request.getType();
@@ -617,7 +640,7 @@ public class TitanNodeImpl implements TitanNode, NodeMBean {
 
                     return request.composeReply(this.address, new TitanNode.NoSuchNodeException(destinationNodeId, "%s->%s", this.address.format(), destinationNodeId.toString()));
                 }
-                TitanMessage result = this.services.sendMessageToApp(request);
+                TitanMessage result = this.services.dispatch(request);
 
                 if (request.isTraced()) {
                     this.log.finest("reply(%s)", result.traceReport());
@@ -635,6 +658,21 @@ public class TitanNodeImpl implements TitanNode, NodeMBean {
             this.log.severe("Internal message payload %s. Message %s%n", e, request);
             return request.composeReply(this.address, e);
         } catch (TitanMessage.RemoteException e) {
+            this.log.severe("Internal message payload %s. Message %s%n", e, request);
+            return request.composeReply(this.address, e);
+        } catch (IllegalArgumentException e) {
+            this.log.severe("Internal message payload %s. Message %s%n", e, request);
+            return request.composeReply(this.address, e);
+        } catch (NoSuchMethodException e) {
+            this.log.severe("Internal message payload %s. Message %s%n", e, request);
+            return request.composeReply(this.address, e);
+        } catch (InstantiationException e) {
+            this.log.severe("Internal message payload %s. Message %s%n", e, request);
+            return request.composeReply(this.address, e);
+        } catch (IllegalAccessException e) {
+            this.log.severe("Internal message payload %s. Message %s%n", e, request);
+            return request.composeReply(this.address, e);
+        } catch (InvocationTargetException e) {
             this.log.severe("Internal message payload %s. Message %s%n", e, request);
             return request.composeReply(this.address, e);
         } finally {
@@ -664,8 +702,14 @@ public class TitanNodeImpl implements TitanNode, NodeMBean {
      * @see Publishers
      *
      * @param message The incoming {@link PublishObjectMessage}
+     * @throws InvocationTargetException 
+     * @throws IllegalAccessException 
+     * @throws InstantiationException 
+     * @throws NoSuchMethodException 
+     * @throws ClassNotFoundException 
+     * @throws IllegalArgumentException 
      */
-    private TitanMessage receivePublishObject(TitanMessage message) {
+    private TitanMessage receivePublishObject(TitanMessage message) throws IllegalArgumentException, ClassNotFoundException, NoSuchMethodException, InstantiationException, IllegalAccessException, InvocationTargetException {
         if (message.isTraced() || this.getLogger().isLoggable(Level.FINEST)) {
             this.log.finest("recv: %s", message.traceReport());
         }
@@ -680,7 +724,7 @@ public class TitanNodeImpl implements TitanNode, NodeMBean {
             // then hand this off to the object handler's publishObject(BeehiveMessage message)
             // the application specified in the published object's metadata.
 
-            rootReply = this.services.sendMessageToApp(message);
+            rootReply = this.services.dispatch(message);
         }
 
         // If the response from the root node signaled success, then get the Publish.Request
@@ -747,8 +791,14 @@ public class TitanNodeImpl implements TitanNode, NodeMBean {
      * data in the {@code RouteToObjectMessage} and the target objectId
      * as arguments. The dispatched application will formulate the reply.</li>
      * </ol>
+     * @throws InvocationTargetException 
+     * @throws IllegalAccessException 
+     * @throws InstantiationException 
+     * @throws NoSuchMethodException 
+     * @throws ClassNotFoundException 
+     * @throws IllegalArgumentException 
      */
-    private TitanMessage receiveRouteToObject(TitanMessage request) {
+    private TitanMessage receiveRouteToObject(TitanMessage request) throws IllegalArgumentException, ClassNotFoundException, NoSuchMethodException, InstantiationException, IllegalAccessException, InvocationTargetException {
         if (request.isTraced() || this.getLogger().isLoggable(Level.FINE)) {
             this.log.fine("recv: %s", request.traceReport());
         }
@@ -756,13 +806,13 @@ public class TitanNodeImpl implements TitanNode, NodeMBean {
         // 1a
         if (request.subjectId.equals(this.getNodeId())) {
             //this.log.finest(request.subjectId + " 1a: I am target for application: " + request.getSubjectClass());
-            return this.services.sendMessageToApp(request);
+            return this.services.dispatch(request);
         }
 
         // We have the object locally, so send the message to the specified BeehiveService.
         if (this.store.containsObject(request.subjectId)) {
             //this.log.finest(request.subjectId + " 1b: I have objectId for application: " + request.getSubjectClass());
-            return this.services.sendMessageToApp(request);
+            return this.services.dispatch(request);
         }
 
         // 2
@@ -830,7 +880,7 @@ public class TitanNodeImpl implements TitanNode, NodeMBean {
         }
 
         //this.log.fine(request.objectId + " 4: I am root");
-        return this.services.sendMessageToApp(request);
+        return this.services.dispatch(request);
     }
 
     /**
@@ -848,8 +898,13 @@ public class TitanNodeImpl implements TitanNode, NodeMBean {
      * message only at the root, or end, of the routing path.
      * </p>
      * @param request The received {@link UnpublishObjectMessage}
+     * @throws InvocationTargetException 
+     * @throws IllegalAccessException 
+     * @throws InstantiationException 
+     * @throws NoSuchMethodException 
+     * @throws IllegalArgumentException 
      */
-    private TitanMessage receiveUnpublishObject(TitanMessage request) throws ClassCastException, ClassNotFoundException, TitanMessage.RemoteException {
+    private TitanMessage receiveUnpublishObject(TitanMessage request) throws ClassCastException, ClassNotFoundException, TitanMessage.RemoteException, IllegalArgumentException, NoSuchMethodException, InstantiationException, IllegalAccessException, InvocationTargetException {
         if (request.isTraced() || this.getLogger().isLoggable(Level.FINE)) {
             this.log.info("recv %s: objectId=%s", request.traceReport(), request.getObjectId());
         }
@@ -872,7 +927,7 @@ public class TitanNodeImpl implements TitanNode, NodeMBean {
             return this.transmit(request);
         } else {
             // This node is the root hand it out to the handler specified in the incoming BeehiveMessage.
-            return this.services.sendMessageToApp(request);                
+            return this.services.dispatch(request);                
         }
     }
     
@@ -1181,6 +1236,7 @@ public class TitanNodeImpl implements TitanNode, NodeMBean {
 
                 Census census = this.getService(CensusDaemon.class);
 
+                // Initialise the local Census data with data obtained from the gateway.
                 Map<TitanNodeId,OrderedProperties> list = census.select(gateway, 0, null, null);
                 census.putAllLocal(list);
             }
@@ -1204,7 +1260,7 @@ public class TitanNodeImpl implements TitanNode, NodeMBean {
 
             // Let the service framework know we're started and know who our
             // neighbors are - it is now safe to start arbitrary services.
-            this.services.fullyStarted();
+            this.services.startAll();
 
             return this.messageService.getServerThread();
         } catch (IOException e) {
@@ -1213,10 +1269,40 @@ public class TitanNodeImpl implements TitanNode, NodeMBean {
     }
 
     public void stop() {
-        for (String app : this.services.keySet()) {
-            TitanService application = this.services.get(app);
-            if (application != null)
-                application.stop();
+        for (String name : this.services.keySet()) {
+            try {
+                TitanService application = this.services.get(name);
+                if (application != null)
+                    application.stop();
+            } catch (NullPointerException e) {
+                if (this.log.isLoggable(Level.WARNING)) {
+                    this.log.warning("Stopping %s resulted in %s", name, e);
+                }
+            } catch (ClassNotFoundException e) {
+                if (this.log.isLoggable(Level.WARNING)) {
+                    this.log.warning("Stopping %s resulted in %s", name, e);
+                }
+            } catch (IllegalArgumentException e) {
+                if (this.log.isLoggable(Level.WARNING)) {
+                    this.log.warning("Stopping %s resulted in %s", name, e);
+                }
+            } catch (NoSuchMethodException e) {
+                if (this.log.isLoggable(Level.WARNING)) {
+                    this.log.warning("Stopping %s resulted in %s", name, e);
+                }
+            } catch (InstantiationException e) {
+                if (this.log.isLoggable(Level.WARNING)) {
+                    this.log.warning("Stopping %s resulted in %s", name, e);
+                }
+            } catch (IllegalAccessException e) {
+                if (this.log.isLoggable(Level.WARNING)) {
+                    this.log.warning("Stopping %s resulted in %s", name, e);
+                }
+            } catch (InvocationTargetException e) {
+                if (this.log.isLoggable(Level.WARNING)) {
+                    this.log.warning("Stopping %s resulted in %s", name, e);
+                }
+            }
         }
     }
 

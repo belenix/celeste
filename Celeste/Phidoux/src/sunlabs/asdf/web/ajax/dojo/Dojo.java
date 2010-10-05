@@ -141,11 +141,17 @@ public class Dojo {
         return this;
     }
 
+    /**
+     * Constructs an {@link XML.Script} element containing CDATA consisting of lines, each containing an invocation of {@code dojo.registerModulePath(}module{@code )}
+     * where each module is taken from {@link #modules}.
+     * See {@link #addModule(String, String)}.
+     * @return An {@link XML.Script} element containing invocations of {@code dojo.registerModulePath(}module{@code )}
+     */
     public XHTML.Script getRequires() {
         if (this.isEnabled()) {
             StringBuilder cdata = new StringBuilder();
             for (String m : this.modules.keySet()) {
-                cdata.append(String.format("dojo.registerModulePath(\"%s\", \"%s\");\n", m, this.modules.get(m)));
+                cdata.append(String.format("dojo.registerModulePath(\"%s\", \"%s\");%n", m, this.modules.get(m)));
             }
 
             for (String s : this.requires) {

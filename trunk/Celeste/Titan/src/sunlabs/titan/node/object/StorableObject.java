@@ -336,7 +336,6 @@ public final class StorableObject {
                             }
                             successfulStores++;
                         } catch (TitanMessage.RemoteException e) {
-                            System.err.printf("StoreObject %s%n", e.getCause());
                             if (e.getCause() instanceof BeehiveObjectPool.Exception) {
                                 // These exceptions are fatal to the whole store, so immediately get out of here throwing the rest away.
                                 throw (BeehiveObjectPool.Exception) e.getCause();

@@ -831,6 +831,18 @@ public class CelesteClientDaemon extends AbstractTitanService {
             throw new CelesteException.AlreadyExistsException(e);
         } catch (BeehiveObjectPool.Exception e) {
             throw new CelesteException.AlreadyExistsException(e); // XXX Needs a better exception.
+        } catch (NullPointerException e) {
+            throw new CelesteException.RuntimeException(e);
+        } catch (IllegalArgumentException e) {
+            throw new CelesteException.RuntimeException(e);
+        } catch (NoSuchMethodException e) {
+            throw new CelesteException.RuntimeException(e);
+        } catch (InstantiationException e) {
+            throw new CelesteException.RuntimeException(e);
+        } catch (IllegalAccessException e) {
+            throw new CelesteException.RuntimeException(e);
+        } catch (InvocationTargetException e) {
+            throw new CelesteException.RuntimeException(e);
         } finally {
             timingProfiler.stamp("remainder");
             timingProfiler.printCSV(System.out);
@@ -1818,7 +1830,7 @@ public class CelesteClientDaemon extends AbstractTitanService {
             // the profile only needs to verify a signature, not generate one.
             // Yet this is test to ensure that the Credential can generate one.
             if (credential.isLimited())
-                throw new CelesteException.CredentialException("credential must support sign() operation");
+                throw new CelesteException.CredentialException("credential must support sign() operation.");
             if (credential.verify(signature, operation.getId())) {
                 //
                 // Dig replication information out of the operation and use it
@@ -1840,14 +1852,13 @@ public class CelesteClientDaemon extends AbstractTitanService {
                 // All that's needed beyond that is to store credential.
                 //
                 CredentialObject handler = (CredentialObject)this.node.getService(CredentialObjectHandler.class);
-                assert handler != null;
                 handler.storeObject(credential);
                 return credential.getMetadata();
             } else {
                 throw new CelesteException.VerificationException("Signature failed.");
             }
         } catch (BeehiveObjectStore.NoSpaceException e) {
-            throw new CelesteException.CredentialException(e);
+            throw new CelesteException.NoSpaceException(e);
         } catch (BeehiveObjectStore.DeleteTokenException e) {
             throw new CelesteException.CredentialException(e);
         } catch (Credential.Exception e) {

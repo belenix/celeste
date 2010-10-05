@@ -27,6 +27,7 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InterruptedIOException;
+import java.lang.reflect.InvocationTargetException;
 import java.net.URI;
 import java.util.Iterator;
 import java.util.Map;
@@ -806,12 +807,30 @@ public final class BeehiveObjectStore implements ObjectStore {
         } catch (ClassNotFoundException e) {
             this.fileStore.remove(object.getObjectId());   
             throw e;
-        } catch (sunlabs.titan.node.BeehiveObjectPool.Exception e) {
+        } catch (BeehiveObjectPool.Exception e) {
             this.fileStore.remove(object.getObjectId());   
             throw e;
         } catch (BeehiveObjectStore.Exception e) {
             this.fileStore.remove(object.getObjectId());
             throw e;
+        } catch (NullPointerException e) {
+            this.fileStore.remove(object.getObjectId());
+            throw new RuntimeException(e);
+        } catch (IllegalArgumentException e) {
+            this.fileStore.remove(object.getObjectId());
+            throw new RuntimeException(e);
+        } catch (NoSuchMethodException e) {
+            this.fileStore.remove(object.getObjectId());
+            throw new RuntimeException(e);
+        } catch (InstantiationException e) {
+            this.fileStore.remove(object.getObjectId());
+            throw new RuntimeException(e);
+        } catch (IllegalAccessException e) {
+            this.fileStore.remove(object.getObjectId());
+            throw new RuntimeException(e);
+        } catch (InvocationTargetException e) {
+            this.fileStore.remove(object.getObjectId());
+            throw new RuntimeException(e);
         } finally {
     		this.unlock(object.getObjectId(), false);
     	}

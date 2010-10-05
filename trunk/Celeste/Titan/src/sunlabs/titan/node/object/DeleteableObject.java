@@ -253,7 +253,7 @@ public final class DeleteableObject {
      * Helper function for implementors of the {@link TitanObjectHandler#publishObject(TitanMessage)}
      * method of classes that implement the {@link DeleteableObject} interface.
      * <p>
-     * The given {@link PublishDaemon.PublishObject.PublishUnpublishRequestImpl} {@code publishRequest}
+     * The given {@link Publish.PublishUnpublishRequest} {@code publishRequest}
      * is examined for any {@link TitanObject}s that have been deleted (signified by an exposed
      * delete-token, see {@link DeleteableObject.deleteTokenIsValid}),
      * and for those that have, it performs the deletion checks and operation.  
@@ -342,7 +342,7 @@ public final class DeleteableObject {
      * Transmit {@code deleteLocalObject} {@link TitanMessage}s to all nodes that
      * are publishing the object specified by the given object-id.
      * <p>
-     * Does not send messages to the local {@link TitanNodeImpl} nor to the node
+     * Does not send messages to the local {@link TitanNode} nor to the node
      * identified by the given object-id publisherId.
      * </p>
      * @param objectType The {@link DeleteableObject.Handler} of the object to delete.

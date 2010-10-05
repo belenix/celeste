@@ -154,10 +154,10 @@ public final class CredentialObjectHandler extends AbstractObjectHandler impleme
     // Methods from CredentialObject's StorableObjectType super-interface
     //
 
-    public Credential storeObject(Credential credential) throws IOException,
-            BeehiveObjectStore.NoSpaceException,BeehiveObjectStore.DeleteTokenException, BeehiveObjectStore.UnacceptableObjectException, BeehiveObjectPool.Exception {
+    public Credential storeObject(Credential credential) throws IOException, BeehiveObjectStore.NoSpaceException,BeehiveObjectStore.DeleteTokenException,
+        BeehiveObjectStore.UnacceptableObjectException, BeehiveObjectPool.Exception {
         //
-        // Store the credential under its stated object id (rather than under
+        // Store the credential under its specified object id (rather than under
         // the id that its contents would dictate).
         //
         // XXX: It seems odd that the decision on how an object's

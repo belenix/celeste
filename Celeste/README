@@ -5,7 +5,7 @@ Use ant 1.7, or newer, to build the system.
 
 % (cd Phidoux ; ant clean all)
 % cp Phidoux/Phidoux.jar Titan/lib/
-% (cd Titan ; ant )
+% (cd Titan ; ant clean dojo all)
 % mkdir dist/
 % cp Titan/lib/titan*.jar dist/
 % ant clean all

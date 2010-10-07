@@ -6,7 +6,12 @@ specifying the class to run as <code>sunlabs.titan.node.TitanNodeImpl</code>, an
 /usr/bin/java -cp titan.jar sunlabs.titan.node.TitanNodeImpl file:///var/tmp/titan.cf
 </pre>
 <p>
-In production environments, there are other command line options that you might find helpful.  For example:
+In production environments, there are other command line options that might be appropriate.
+For example setting the maximum heap size can improve overall performance, specifying a different garbage collection algorithm may also improve performance.
+Similarly, logging and JMX management are enabled via the command line.
+</p>
+<p>
+For example:
 </p>
 <pre>
 /usr/bin/java -Dtitan-node \
@@ -37,19 +42,22 @@ The configuration information could be stored on a web server and the node is ca
 <pre>
 /usr/bin/java -cp titan.jar sunlabs.titan.node.TitanNodeImpl http://webserver.com/titan//global.cf file:///var/tmp/titan/local.cf
 </pre>
-
+<p>
+You can examine all of the configuration properties for any node by using the URL
+<code>http://&lt;sunlabs.titan.node.TitanNodeImpl.InterNetworkAddress&gt;:&lt;sunlabs.titan.node.services.WebDAVDaemon.Port&gt;/gateway</code>
+substituting the values for the node's IP address and the port of the http server.
+</p>
 <h2>Configuration Properties</h2>
 If there are no Configuration Properties specified in the configuration file (ie. it is empty), each property is assigned a default value.
-These default values have been chosen arbitrarily and generally produce reasonable results.
+These default values have been chosen arbitrarily and generally produce reasonable results for small, test deployments.
 
 <h2>Format</h2>
 <pre>
 #
 #
-sunlabs.beehive.node.services.WebDAVDaemon.InspectorCSS=/css/BeehiveStyle.css,/css/BeehiveColours-grey.css
-sunlabs.titan.node.BeehiveNode.ConnectionType=plain
-sunlabs.titan.node.BeehiveNode.LocalFileSystemRoot=/var/tmp/titan/
-sunlabs.titan.node.BeehiveNode.ObjectStoreMaximum=500M
+sunlabs.titan.node.TitanNodeImpl.ConnectionType=plain
+sunlabs.titan.node.TitanNodeImpl.LocalFileSystemRoot=/var/tmp/titan/
+sunlabs.titan.node.TitanNodeImpl.ObjectStoreMaximum=500M
 sunlabs.titan.node.TitanNodeImpl.ConnectionType=ssl
 sunlabs.titan.node.TitanNodeImpl.GatewayRetryDelaySeconds=30
 sunlabs.titan.node.TitanNodeImpl.GatewayURL=http\://10.0.1.6\:12001
@@ -58,6 +66,7 @@ sunlabs.titan.node.TitanNodeImpl.KeyStoreFileName=/tmp/k8
 sunlabs.titan.node.TitanNodeImpl.LocalFileSystemRoot=/tmp/titan/
 sunlabs.titan.node.TitanNodeImpl.Port=12600
 sunlabs.titan.node.services.WebDAVDaemon.Port=12601
+sunlabs.titan.node.services.WebDAVDaemon.InspectorCSS=/css/BeehiveStyle.css,/css/BeehiveColours-grey.css
 </pre>
 Lines begining with '#' are comments.
 Other lines are in the form of name=value.

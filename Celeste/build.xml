@@ -108,6 +108,9 @@
          ================================= -->
     <target name="all" depends="jars, javadoc"
         description="==> Builds everything, including javadocs"/>
+	
+	<target name="rebuild" depends="all" description="Rebuild everything">
+	</target>
 
     <!-- =================================
           target: compile

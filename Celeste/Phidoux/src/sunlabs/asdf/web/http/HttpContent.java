@@ -1,5 +1,5 @@
 /*
- * Copyright 2007-2009 Sun Microsystems, Inc. All Rights Reserved.
+ * Copyright 2007-2010 Oracle. All Rights Reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER
  *
  * This code is free software; you can redistribute it and/or modify
@@ -17,11 +17,10 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
  * 02110-1301 USA
  *
- * Please contact Sun Microsystems, Inc., 16 Network Circle, Menlo
- * Park, CA 94025 or visit www.sun.com if you need additional
- * information or have any questions.
+ * Please contact Oracle Corporation, 500 Oracle Parkway, Redwood Shores, CA 94065
+ * or visit www.oracle.com if you need additional information or
+ * have any questions.
  */
-
 package sunlabs.asdf.web.http;
 
 import java.io.ByteArrayInputStream;
@@ -70,7 +69,8 @@ import sunlabs.asdf.web.http.HttpUtil.PathName1;
  * @author Glenn Scott, Sun Microsystems Laboratories, Sun Microsystems, Inc.
  */
 public abstract class HttpContent implements HTTP.Message.Body {
-    
+    private static final long serialVersionUID = 1L;
+
     public static class Application {
         public static class OctetStream extends HttpContent {
         	private final static long serialVersionUID = 1L;
@@ -205,6 +205,7 @@ public abstract class HttpContent implements HTTP.Message.Body {
     }
 
     public static class Multipart extends HttpContent implements HTTP.Message.Body.MultiPart {
+        private static final long serialVersionUID = 1L;
 
         public static String generateBoundaryString(String suffix) {
             return "BoUnDaRyStRiNg" + Long.toString(Math.abs(System.currentTimeMillis())) + suffix;
@@ -750,7 +751,9 @@ public abstract class HttpContent implements HTTP.Message.Body {
          * the previously allocated byte array is written to the {@link DataOutputStream}.
          * </p>
          * <p>
-         * After copying {@code RawInputStream#contentLength()} bytes, the {@link InputStream} is closed.
+         * After copying {@code RawInputStream#contentLength()} bytes,
+         * if {@link RawInputStream#closeInputStream} is {@code true},
+         * {@link RawInputStream#inputStream} is closed.
          * </p>
          */
         public long writeTo(OutputStream out) throws IOException {

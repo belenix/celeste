@@ -49,7 +49,7 @@ import sunlabs.titan.api.TitanGuid;
 import sunlabs.titan.api.TitanObject;
 import sunlabs.titan.exception.BeehiveException;
 import sunlabs.titan.node.services.PublishDaemon;
-import sunlabs.titan.node.services.WebDAVDaemon;
+import sunlabs.titan.node.services.HTTPMessageService;
 import sunlabs.titan.node.services.api.Publish;
 import sunlabs.titan.node.services.xml.TitanXML;
 import sunlabs.titan.node.services.xml.TitanXML.XMLObject;
@@ -943,7 +943,7 @@ public final class BeehiveObjectStore implements ObjectStore {
                 .setTitle("Remove without Unpublishing (simulates an object failure)")
                 .setClass("toggle-button on");
 
-                XHTML.Anchor inspectButton = WebDAVDaemon.inspectObjectXHTML(objectId).setTitle(dolrObject.getObjectType());
+                XHTML.Anchor inspectButton = HTTPMessageService.inspectObjectXHTML(objectId).setTitle(dolrObject.getObjectType());
 
                 objectIdCell = new XHTML.Table.Data(inspectButton).setClass("objectId");
 

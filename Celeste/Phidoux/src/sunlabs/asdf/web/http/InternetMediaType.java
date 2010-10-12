@@ -120,6 +120,7 @@ public final class InternetMediaType implements Serializable {
     }
 
     public static final class Multipart {
+        /** multipart-form-data */
         public static final InternetMediaType FormData = InternetMediaType.getInstance("multipart/form-data");
         public static final InternetMediaType Mixed = InternetMediaType.getInstance("multipart/mixed");
         public static final InternetMediaType Digest = InternetMediaType.getInstance("multipart/digest");

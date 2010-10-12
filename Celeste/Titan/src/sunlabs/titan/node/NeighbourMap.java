@@ -53,7 +53,7 @@ import sunlabs.asdf.web.http.HTTP;
 import sunlabs.titan.TitanGuidImpl;
 import sunlabs.titan.api.TitanGuid;
 import sunlabs.titan.api.TitanNodeId;
-import sunlabs.titan.node.services.WebDAVDaemon;
+import sunlabs.titan.node.services.HTTPMessageService;
 import sunlabs.titan.node.services.xml.TitanXML;
 import sunlabs.titan.node.services.xml.TitanXML.XMLRoute;
 import sunlabs.titan.node.services.xml.TitanXML.XMLRoutingTable;
@@ -518,7 +518,7 @@ public final class NeighbourMap {
                         XHTML.Div dojoTooltip = new XHTML.Div().setClass("neighbour");
                         dojoTooltip.addAttribute(new XML.Attr("dojoType", "sunlabs.StickyTooltip")).addAttribute(new XML.Attr("connectId", cellId));
                         for (NodeAddress a : this.routes[level][digit]) {
-                            dojoTooltip.add(WebDAVDaemon.inspectNodeXHTML(a).add(" [X] [P]").add(new XHTML.Break()));
+                            dojoTooltip.add(HTTPMessageService.inspectNodeXHTML(a).add(" [X] [P]").add(new XHTML.Break()));
                         }
                         cell.add(dojoTooltip);
                     } else {

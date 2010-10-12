@@ -23,6 +23,7 @@
  */
 package sunlabs.titan.node.services;
 
+import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
@@ -469,12 +470,12 @@ public class TCPMessageService extends AbstractTitanService implements MessageSe
                         // The client will figure that out once it tries to reuse this connection and it is closed and must setup a new connection.
 
                         try {
-                            TitanMessage request = TitanMessage.newInstance(this.socket.getInputStream());
+                            TitanMessage request = TitanMessage.newInstance(new BufferedInputStream(this.socket.getInputStream()));
 
                             this.lastActivityMillis = System.currentTimeMillis();
 
                             TitanMessage myResponse = this.service.node.receive(request);
-                            DataOutputStream dos = new DataOutputStream(this.socket.getOutputStream());
+                            DataOutputStream dos = new DataOutputStream(new BufferedOutputStream(this.socket.getOutputStream()));
                             try {
                                 myResponse.writeObject(dos);
                             } catch (ConcurrentModificationException e) {

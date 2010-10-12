@@ -45,7 +45,7 @@ case $CELESTECONFIG in
         enable_jmx=true
 	use_processes=true
 	celeste_log="/var/tmp/celeste-$config_key.log"
-	additional_options="--delay-time 2 --object-store-capacity 10M --keystore /tmp/k2,/tmp/k3,/tmp/k4,/tmp/k5,/tmp/k6,/tmp/k7,/tmp/k8,/tmp/k9,/tmp/k10,/tmp/k11,/tmp/k12,/tmp/k1 -Dsunlabs.titan.node.services.WebDAVDaemon.InspectorCSS=/css/BeehiveStyle.css,/css/BeehiveColours-grey.css"
+	additional_options="--delay-time 2 --object-store-capacity 10M --keystore /tmp/k2,/tmp/k3,/tmp/k4,/tmp/k5,/tmp/k6,/tmp/k7,/tmp/k8,/tmp/k9,/tmp/k10,/tmp/k11,/tmp/k12,/tmp/k1 -Dsunlabs.titan.node.services.HTTPMessageService.InspectorCSS=/css/BeehiveStyle.css,/css/BeehiveColours-grey.css"
         #connection_type=plain
         heap_options="-Xmx12m -Xms12m -XX:+UseParallelGC"
 	#java_options="-DenableProfiling=true"
@@ -58,8 +58,8 @@ case $CELESTECONFIG in
 
 	supervisor_vm_options="-server -ea"
 	supervisor_options="--delay 2 --n-nodes 6 --keystore ${keystores} --jmx-port 16000,1"
-	node_vm_options="-Xmx96m -Xms96m -XX:+UseParallelGC -Dcom.sun.management.jmxremote -Dcom.sun.management.jmxremote.password.file=/Users/glennscott/Development/Celeste/celeste/Celeste/etc/jmxremote.password.template -Djava.util.logging.config.file=/Users/glennscott/Development/Celeste/celeste/Celeste/etc/logging.properties"
-	node_options="-Dsunlabs.titan.node.TitanNodeImpl.LocalFileSystemRoot=${spool_root} -Dsunlabs.titan.node.services.WebDAVDaemon.InspectorCSS=/css/BeehiveStyle.css,/css/BeehiveColours-grey.css -Dsunlabs.titan.node.services.RoutingDaemon.IntroductionRateSeconds=60 -Dsunlabs.titan.node.services.RoutingDaemon.ReunionRateSeconds=600 -Dsunlabs.titan.node.TitanNodeImpl.ObjectStoreMaximum=500M -Dsunlabs.titan.node.TitanNodeImpl.InterNetworkAddress=127.0.0.1"
+	node_vm_options="-Xmx96m -Xms96m -XX:+UseParallelGC -Dcom.sun.management.jmxremote -Dcom.sun.management.jmxremote.password.file=./etc/jmxremote.password.template -Djava.util.logging.config.file=./etc/logging.properties"
+	node_options="-Dsunlabs.titan.node.TitanNodeImpl.LocalFileSystemRoot=${spool_root} -Dsunlabs.titan.node.services.HTTPMessageService.InspectorCSS=/css/BeehiveStyle.css,/css/BeehiveColours-grey.css -Dsunlabs.titan.node.services.RoutingDaemon.IntroductionRateSeconds=60 -Dsunlabs.titan.node.services.RoutingDaemon.ReunionRateSeconds=600 -Dsunlabs.titan.node.TitanNodeImpl.ObjectStoreMaximum=500M -Dsunlabs.titan.node.TitanNodeImpl.InterNetworkAddress=127.0.0.1"
 	;;
 
     asdf-firewall)
@@ -68,7 +68,7 @@ case $CELESTECONFIG in
 	supervisor_vm_options="-server -ea"
 	supervisor_options="--delay 2 --n-nodes 6 --keystore /tmp/k2,/tmp/k3,/tmp/k4,/tmp/k5,/tmp/k6,/tmp/k7,/tmp/k8,/tmp/k9,/tmp/k10,/tmp/k11,/tmp/k12,/tmp/k1 --jmx-port 16000,1"
 	node_vm_options="-Xmx64m -Xms64m -XX:+UseParallelGC -Dcom.sun.management.jmxremote -Dcom.sun.management.jmxremote.password.file=/Users/glennscott/Development/Celeste/celeste/Celeste/etc/jmxremote.password.template -Djava.util.logging.config.file=/Users/glennscott/Development/Celeste/celeste/Celeste/etc/logging.properties"
-	node_options="-Dsunlabs.titan.node.TitanNodeImpl.LocalFileSystemRoot=${spool_root} -Dsunlabs.titan.node.TitanNodeImpl.InterNetworkAddress=76.235.67.115 -Dsunlabs.titan.node.services.WebDAVDaemon.InspectorCSS=/css/BeehiveStyle.css,/css/BeehiveColours-grey.css -Dsunlabs.titan.node.services.RoutingDaemon.IntroductionRateSeconds=60 -Dsunlabs.titan.node.services.RoutingDaemon.ReunionRateSeconds=600 -Dsunlabs.titan.node.TitanNodeImpl.ObjectStoreMaximum=500M"
+	node_options="-Dsunlabs.titan.node.TitanNodeImpl.LocalFileSystemRoot=${spool_root} -Dsunlabs.titan.node.TitanNodeImpl.InterNetworkAddress=76.235.67.115 -Dsunlabs.titan.node.services.HTTPMessageService.InspectorCSS=/css/BeehiveStyle.css,/css/BeehiveColours-grey.css -Dsunlabs.titan.node.services.RoutingDaemon.IntroductionRateSeconds=60 -Dsunlabs.titan.node.services.RoutingDaemon.ReunionRateSeconds=600 -Dsunlabs.titan.node.TitanNodeImpl.ObjectStoreMaximum=500M"
 	;;
 
     #

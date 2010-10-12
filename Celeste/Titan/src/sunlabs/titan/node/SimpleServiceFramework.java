@@ -38,7 +38,7 @@ import sunlabs.asdf.web.http.HTTP.Message;
 import sunlabs.titan.api.TitanNode;
 import sunlabs.titan.api.TitanService;
 import sunlabs.titan.api.TitanServiceFramework;
-import sunlabs.titan.node.services.WebDAVDaemon;
+import sunlabs.titan.node.services.HTTPMessageService;
 import sunlabs.titan.node.services.xml.TitanXML;
 import sunlabs.titan.node.services.xml.TitanXML.XMLServices;
 
@@ -87,7 +87,7 @@ public class SimpleServiceFramework implements TitanServiceFramework {
 
             for (String name: apps) {
                 TitanService app = this.get(name);
-                XHTML.Anchor link = WebDAVDaemon.inspectServiceXHTML(app.getName());
+                XHTML.Anchor link = HTTPMessageService.inspectServiceXHTML(app.getName());
 
                 tbody.add(new XHTML.Table.Row(new XHTML.Table.Data(link),
                         new XHTML.Table.Data(app.getDescription()),

@@ -26,6 +26,7 @@ package sunlabs.asdf.web.http;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
+import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.ObjectInputStream;
@@ -33,12 +34,6 @@ import java.io.OutputStream;
 import java.io.PushbackInputStream;
 import java.util.HashMap;
 import java.util.Map;
-
-import sunlabs.asdf.web.http.HTTP;
-import sunlabs.asdf.web.http.HttpContent;
-import sunlabs.asdf.web.http.HttpHeader;
-import sunlabs.asdf.web.http.HttpUtil;
-import sunlabs.asdf.web.http.InternetMediaType;
 
 /*
  * Some cleanup using the Content-Length header needs to be done.
@@ -61,13 +56,112 @@ import sunlabs.asdf.web.http.InternetMediaType;
  * @author Glenn Scott - Sun Microsystems Laboratories, Sun Microsytems, Inc.
  */
 public final class HttpMessage implements HTTP.Message {
+    private static final long serialVersionUID = 1L;
+    
     /**
      * Internal collection of {@link HTTP.Message.Header} instances for this message.
      * The map is keyed by the <b>lower case</b> header name.
      */
     private Map<String,HTTP.Message.Header> headers;
-    private HTTP.Message.Body content;
+    private HTTP.Message.Body messageBody;
 
+    /**
+     * Create a new {@link HTTP.Message} containing HTTP Headers read from the given {@link InputStream},
+     * and adding the given {@code InputStream} to the resulting {@code HTTP.Message} containing any message body unread.
+     * @param in
+     * @return A new {@link HTTP.Message} containing HTTP Headers read from the given {@link InputStream}.
+     * @throws IOException if the underlying I/O operations threw an {@code IOException}.
+     * @throws HTTP.BadRequestException if the input didn't not conform to an HTTP Request message.
+     */
+    public static HTTP.Message getRequestInstance(InputStream in) throws IOException, HTTP.BadRequestException {
+        HTTP.Message result = new HttpMessage();
+        byte[] CRNLCRNL = "\r\n\r\n".getBytes();
+
+        ByteArrayOutputStream headers = new ByteArrayOutputStream();
+        HttpUtil.transferToUntilIncludedSequence(in, CRNLCRNL, headers);
+
+        // parse headers
+        ByteArrayInputStream bin = new ByteArrayInputStream(headers.toByteArray());
+        if (true) {
+            String line = null;
+            // Read each line from the buffer.
+            // If the line is empty, then we're done.
+            // If the line is a continuation, append it to the line accumulator.
+            // If the line is NOT a continuation, add the line accumulator (if not null) to the set of headers.
+            try {
+                for (;;) {
+                    ByteArrayOutputStream buffer = new ByteArrayOutputStream();
+                    if (HttpUtil.transferToUntilIncludedSequence(bin, HttpUtil.CRNL, buffer) < 3)
+                        break;
+                    if (buffer.toByteArray()[0] != '\t') {
+                        if (line != null) {
+                            result.addHeader(HttpHeader.getInstance(line));
+                        }
+                        line = buffer.toString();
+                    } else {
+                        line += buffer.toString();                        
+                    }
+                }
+                if (line != null) {
+                    result.addHeader(HttpHeader.getInstance(line));
+                }
+            } catch (EOFException e) {
+                throw new RuntimeException(e);
+            }
+        } else {
+            for (;;) {
+                try {
+                    ByteArrayOutputStream header = new ByteArrayOutputStream();
+                    HttpUtil.transferToUntilIncludedSequence(bin, HttpUtil.CRNL, header);
+                    // XXX Need to handle header continuations
+                    if (header.size() < 3)
+                        break;
+                    result.addHeader(HttpHeader.getInstance(header.toString()));
+                } catch (EOFException e) {
+                    break;
+                }
+            }
+        }
+
+        // Do we require a message body?
+
+        HttpHeader.ContentType contentTypeHeader;
+        
+        try {
+           contentTypeHeader = (HttpHeader.ContentType) result.getHeader(HTTP.Message.Header.CONTENTTYPE);
+        } catch (ClassCastException e) {
+            e.printStackTrace();
+            for (String key : result.getHeaders().keySet()) {
+                System.out.printf("%s -> %s: %s%n", key, result.getHeader(key), result.getHeader(key).getClass());                
+            }
+            throw e;
+        }
+
+        HttpHeader.TransferEncoding transferEncoding = (HttpHeader.TransferEncoding) result.getHeader(HTTP.Message.Header.TRANSFERENCODING);
+        HttpHeader.ContentLength contentLength = (HttpHeader.ContentLength) result.getHeader(HTTP.Message.Header.CONTENTLENGTH);
+        
+        // The presence of a message-body in a request is signaled by the inclusion of a Content-Length or Transfer-Encoding header field in the request's message-headers.
+        // A message-body MUST NOT be included in a request if the specification of the request method (section 5.1.1) does not allow sending an entity-body in requests.
+        // A server SHOULD read and forward a message-body on any request;
+        // if the request method does not include defined semantics for an entity-body, then the message-body SHOULD be ignored when handling the request.
+        
+        // If this is a regular body, we can just read it normally.
+        // If this is a Transfer-Encoded body, then we need a way to parse the encoding to get the actual data.
+        if (transferEncoding != null || contentLength != null) {
+            if (transferEncoding != null) {
+                result.setBody(new HttpContent.TransferEncodedInputStream(contentTypeHeader, in, transferEncoding));
+            } else {    
+                result.setBody(new HttpContent.RawInputStream(contentTypeHeader, in));
+            }
+        }
+
+        if (contentLength != null) {
+            result.getBody().setContentLength(contentLength.getLength());
+        }
+
+        return result;
+    }
+    
     /**
      * Construct an {@link HttpMessage} from an {@link PushbackInputStream}.
      * <p>
@@ -76,7 +170,7 @@ public final class HttpMessage implements HTTP.Message {
      * this {@code HttpMessage} may induce reading the input stream to interpret or store the message body.
      * </p>
      * <p>
-     * Users of this class should never assume that a message actually contains a body.
+     * Users of this class should never assume that a message actually contains or requires a body.
      * An attempt to obtain a non-existent body from the input-stream will hang because no data will be available. 
      * </p>
      * @throws IOException
@@ -171,7 +265,7 @@ public final class HttpMessage implements HTTP.Message {
         for (HTTP.Message.Header h : headers.values()) {
             this.addHeader(h);
         }
-        this.content = content;        
+        this.messageBody = content;        
     }
     
     /**
@@ -275,23 +369,23 @@ public final class HttpMessage implements HTTP.Message {
         // If this is a regular body, we can just read it normally.
         // If this is a Transfer-Encoded body, then we need a way to parse the encoding to get the actual data.
         if (transferEncoding != null) {
-            this.content = new HttpContent.TransferEncodedInputStream(contentTypeHeader, in, transferEncoding);
+            this.messageBody = new HttpContent.TransferEncodedInputStream(contentTypeHeader, in, transferEncoding);
         } else {    
-            this.content = new HttpContent.RawInputStream(contentTypeHeader, in);
+            this.messageBody = new HttpContent.RawInputStream(contentTypeHeader, in);
         }
 
         HttpHeader.ContentLength contentLengthHeader = (HttpHeader.ContentLength) this.getHeader(HTTP.Message.Header.CONTENTLENGTH);
         if (contentLengthHeader != null) {
-            this.content.setContentLength(contentLengthHeader.getLength());
+            this.messageBody.setContentLength(contentLengthHeader.getLength());
         }
     }
     
     public HTTP.Message.Body getBody() {
-        return this.content;
+        return this.messageBody;
     }
     
     public void setBody(HTTP.Message.Body body) {
-        this.content = body;
+        this.messageBody = body;
     }
 
     public HTTP.Message.Body.MultiPart.FormData decodeMultiPartFormData() throws IOException, HTTP.BadRequestException {
@@ -390,13 +484,13 @@ public final class HttpMessage implements HTTP.Message {
     
     public Map<String,HTTP.Message.Header> getHeaders() {
         // Compute the missing headers.
-        if (this.content != null) {
+        if (this.messageBody != null) {
             // Note that setting a content type header for the message, will override whatever content type is established in this HTTP.Message.Body.
             if (this.getHeader(HTTP.Message.Header.CONTENTTYPE) == null) {
-                this.addHeader(this.content.getContentType());
+                this.addHeader(this.messageBody.getContentType());
             }
             // Set the authoritative value of the content length, overriding any content-length header that *might* have been set in this HTTP.Message.
-            long contentLength = this.content.contentLength();
+            long contentLength = this.messageBody.contentLength();
             if (contentLength != -1) {
                 // Override any Content-Length header already set in the message.
                 this.addHeader(new HttpHeader.ContentLength(contentLength));
@@ -406,8 +500,8 @@ public final class HttpMessage implements HTTP.Message {
                 this.addHeader(new HttpHeader.Connection("close"));
             }
 
-            if (this.content instanceof HttpContent.Multipart.FormData) {
-                HttpContent.Multipart.FormData body = (HttpContent.Multipart.FormData) this.content;
+            if (this.messageBody instanceof HttpContent.Multipart.FormData) {
+                HttpContent.Multipart.FormData body = (HttpContent.Multipart.FormData) this.messageBody;
                 this.addHeader(new HttpHeader.ContentType(InternetMediaType.Multipart.FormData, new HttpHeader.Parameter("boundary", body.getBoundaryString())));
             }
         }
@@ -416,20 +510,7 @@ public final class HttpMessage implements HTTP.Message {
     }
     
     /**
-     * Write this HttpMessage header to the given {@link DataOutputStream}.
-     * <p>
-     * If this message does not have a {@code Content-Type} header already set,
-     * one is created based upon the encapsulated {@link HTTP.Message.Body}.
-     * </p>
-     * <p>
-     * Any {@code Content-Length} header set for this HttpMessage will be overridden
-     * by the content length reported by the encapsulated {@code HTTP.Message.Body}.
-     * </p>
-     * <p>
-     * If the encapsulated {@code HTTP.Message.Body} does not report a content
-     * length (signified by a value of {@code -1}), any {@code Content-Length} header is removed from this message
-     * and the {@code Connection} header is set to {@code close}.
-     * </p>
+     * Write this {@code HttpMessage} header to the given {@link OutputStream}.
      * @param out The {@link DataOutputStream} to write on.
      * @return The number of bytes written.
      * @throws IOException if the underlying output threw an {@code IOException}.
@@ -450,8 +531,8 @@ public final class HttpMessage implements HTTP.Message {
     
     public long writeTo(OutputStream out) throws IOException {
         long length = this.writeHeadTo(out);
-        if (this.content != null) {
-            length += this.content.writeTo(out);
+        if (this.messageBody != null) {
+            length += this.messageBody.writeTo(out);
         }
         
         return length;
@@ -468,7 +549,7 @@ public final class HttpMessage implements HTTP.Message {
         if (formData == null)
             return defaultValue;
         try {
-            ObjectInputStream in = new ObjectInputStream(formData.content.toInputStream());
+            ObjectInputStream in = new ObjectInputStream(formData.messageBody.toInputStream());
             C result = klasse.cast(in.readObject());
             in.close();
             return result;

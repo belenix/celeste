@@ -419,6 +419,7 @@ public class TitanMessage implements Serializable, XHTMLInspectable {
      * Get the raw un-deserialized object in the Message.
      */
     public byte[] getRawPayLoad() {
+        // If the dataObject is set and the payload is null, reserialize the dataObject into the payload.
         if (this.dataObject != null && this.payload == null) {
             this.payload = this.serialize(new TitanMessage.SerializedObject(this.dataObject));
             this.dataObject = null;
@@ -497,7 +498,7 @@ public class TitanMessage implements Serializable, XHTMLInspectable {
                 if (this.dataObject instanceof SerializedObject) {
                     this.dataObject = SerializedObject.deserialize(classLoader, (SerializedObject) this.dataObject);
                 } else {
-                    System.err.printf("Message dataObject needs to be an instance of SerializedObject class%n");
+                    System.err.printf("TitanMessage dataObject needs to be an instance of SerializedObject class%n");
                 }
             } catch (IllegalStateException e) {
                 try {

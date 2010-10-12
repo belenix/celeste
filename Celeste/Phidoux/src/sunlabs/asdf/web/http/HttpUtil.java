@@ -138,10 +138,11 @@ public final class HttpUtil {
     /**
      * Transfer bytes from the given {@link InputStream} {@code in} to the
      * {@link OutputStream} {@code output} looking for the byte {@code sequence}
-     * to terminate the transfer.  The terminating sequence is NOT included in
-     * the transfer.
+     * to terminate the transfer.
+     * The terminating sequence IS included in the transfer.
      * 
-     * @throws IOException
+     * @throws IOException if an IOException (apart from EOF) is encountered while reading from {@code in}.
+     * @throws EOFException if an EOF is encountered while reading from {@code in}.
      */
     public static long transferToUntilIncludedSequence(InputStream in, final byte[] sequence, OutputStream out) throws EOFException, IOException {
         byte[] b = new byte[1];

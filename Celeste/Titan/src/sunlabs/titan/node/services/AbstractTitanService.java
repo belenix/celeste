@@ -115,7 +115,7 @@ public abstract class AbstractTitanService extends NotificationBroadcasterSuppor
      * @param description A description of this service.
      * @throws JMException
      */
-    public AbstractTitanService(TitanNode node, String serviceName, String description) throws JMException {
+    protected AbstractTitanService(TitanNode node, String serviceName, String description) throws JMException {
         if (serviceName == null || serviceName.matches("\\s"))
             throw new IllegalArgumentException("applicationName must be non-null and cannot contain white space");
 
@@ -316,7 +316,7 @@ public abstract class AbstractTitanService extends NotificationBroadcasterSuppor
     	}
 
     	XHTML.Div div = new XHTML.Div().setClass("section").addClass("BeehiveService");
-    	div.add(new XHTML.Heading.H1(WebDAVDaemon.inspectNodeXHTML(this.node.getNodeAddress())));
+    	div.add(new XHTML.Heading.H1(HTTPMessageService.inspectNodeXHTML(this.node.getNodeAddress())));
     	div.add(new XHTML.Span(this.getName()));
     	if (tbody.getChildren().size() > 0) {
     		XHTML.Table configurationTable = new XHTML.Table(new XHTML.Table.Caption("Configuration Values"), tbody).addClass("striped");

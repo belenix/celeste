@@ -82,7 +82,8 @@ import sunlabs.titan.node.services.PublishDaemon;
 import sunlabs.titan.node.services.ReflectionService;
 import sunlabs.titan.node.services.RetrieveObjectService;
 import sunlabs.titan.node.services.RoutingDaemon;
-import sunlabs.titan.node.services.WebDAVDaemon;
+import sunlabs.titan.node.services.TCPMessageService;
+import sunlabs.titan.node.services.HTTPMessageService;
 import sunlabs.titan.node.services.api.Census;
 import sunlabs.titan.node.services.api.MessageService;
 import sunlabs.titan.node.services.api.Publish;
@@ -200,7 +201,7 @@ public class TitanNodeImpl implements TitanNode, NodeMBean {
             "The local start time of this TitanNode.  This Attribute is generated and is not configurable.");
     
     /** The class name of the MessageService to use. See {@link MessageService}. */
-    public final static Attributes.Prototype MessageService = new Attributes.Prototype(TitanNodeImpl.class, "MessageService", WebDAVDaemon.class.getName(),
+    public final static Attributes.Prototype MessageService = new Attributes.Prototype(TitanNodeImpl.class, "MessageService", HTTPMessageService.class.getName(),
             "The class name of the MessageService to use.");
     
     //
@@ -263,8 +264,8 @@ public class TitanNodeImpl implements TitanNode, NodeMBean {
         this.configuration.add(TitanNodeImpl.Version);
         this.configuration.add(TitanNodeImpl.MessageService);
         // Add some of the configuration parameters of the required services here because we need them below.
-        this.configuration.add(WebDAVDaemon.ServerSocketPort);
-        this.configuration.add(WebDAVDaemon.Protocol);
+        this.configuration.add(HTTPMessageService.ServerSocketPort);
+        this.configuration.add(HTTPMessageService.Protocol);
 
         String localFsRoot = this.configuration.asString(TitanNodeImpl.LocalFileSystemRoot);
         // Create this node's "spool" directory before the rest of the node is setup.
@@ -304,8 +305,8 @@ public class TitanNodeImpl implements TitanNode, NodeMBean {
 
         this.nodeKey = new NodeKey(keyStoreFileName, internetworkAddress, localBeehivePort);
 
-        URL nodeInspectorURL = new URL(this.configuration.asString(WebDAVDaemon.Protocol), internetworkAddress, this.configuration.asInt(WebDAVDaemon.ServerSocketPort), "");
-        URL messageURL = new URL(this.configuration.asString(WebDAVDaemon.Protocol), internetworkAddress, localBeehivePort, "");
+        URL nodeInspectorURL = new URL(this.configuration.asString(HTTPMessageService.Protocol), internetworkAddress, this.configuration.asInt(HTTPMessageService.ServerSocketPort), "");
+        URL messageURL = new URL(this.configuration.asString(HTTPMessageService.Protocol), internetworkAddress, localBeehivePort, "");
         this.address = new NodeAddress(new TitanNodeIdImpl(this.nodeKey.getObjectId()), messageURL, nodeInspectorURL);
         
         this.configuration.set(TitanNodeImpl.NodeAddress, this.address.format());
@@ -354,7 +355,7 @@ public class TitanNodeImpl implements TitanNode, NodeMBean {
             // This will cause the class implementing the MessageService to be loaded.
             this.messageService = (MessageService) this.getService(this.configuration.asString(TitanNodeImpl.MessageService));
             
-            this.getService(WebDAVDaemon.class);
+            this.getService(HTTPMessageService.class);
             this.getService(RoutingDaemon.class);
             this.getService(AppClassObjectType.class);
             this.getService(PublishDaemon.class);
@@ -484,7 +485,6 @@ public class TitanNodeImpl implements TitanNode, NodeMBean {
      * @param <C>
      * @param klasse The {@link Class} of the {@link TitanService} to get.
      * @return an instance of the named class cast to the given {@link TitanService} represented by {@code klasse}.
-     * @throws  
      * @throws ClassCastException if the loaded class is <em>not</em> an instance of {@code klasse}.
      */
     public <C> C getService(Class<? extends C> klasse) {
@@ -1176,19 +1176,19 @@ public class TitanNodeImpl implements TitanNode, NodeMBean {
             if (!this.configuration.isUnset(TitanNodeImpl.GatewayURL)) {
                 while (true) {
                     URL url = new URL(this.configuration.asString(TitanNodeImpl.GatewayURL) + "/gateway");
-                    if (!url.getProtocol().equals(this.configuration.asString(WebDAVDaemon.Protocol))) {                        
+                    if (!url.getProtocol().equals(this.configuration.asString(HTTPMessageService.Protocol))) {                        
                         this.log.warning("%s is specified to use the '%s' protocol, while %s is configured to respond to the '%s' protocol. Using %s.",
                                 TitanNodeImpl.GatewayURL.getName(),
                                 url.getProtocol(),
-                                WebDAVDaemon.Protocol.getName(),
-                                this.configuration.asString(WebDAVDaemon.Protocol),
-                                this.configuration.asString(WebDAVDaemon.Protocol));
+                                HTTPMessageService.Protocol.getName(),
+                                this.configuration.asString(HTTPMessageService.Protocol),
+                                this.configuration.asString(HTTPMessageService.Protocol));
                     }
 
                     try {                        
-                        if (this.configuration.asString(WebDAVDaemon.Protocol).equals("https")) {
+                        if (this.configuration.asString(HTTPMessageService.Protocol).equals("https")) {
                             String gatewayURL = String.format("https://%s:%d/gateway", url.getHost(), url.getPort());
-                            HttpsURLConnection connection = WebDAVDaemon.TitanHttpsURLConnection(this.getNodeKey(), gatewayURL);
+                            HttpsURLConnection connection = HTTPMessageService.TitanHttpsURLConnection(this.getNodeKey(), gatewayURL);
                             OrderedProperties gatewayOptions = new OrderedProperties((InputStream) connection.getContent());
                             gateway = new NodeAddress(gatewayOptions.getProperty(TitanNodeImpl.NodeAddress.getName()));
                         } else {

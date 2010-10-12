@@ -26,6 +26,7 @@ package sunlabs.asdf.web.XML;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.io.Serializable;
 import java.util.LinkedList;
 
 
@@ -412,7 +413,9 @@ public class XHTML extends XML.Node {
         return type.cast(this);
     }
 
-    public static class Document {	
+    public static class Document implements Serializable {
+        private static final long serialVersionUID = 1L;
+
         private final static byte[] DocumentType = "<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Strict//EN\" \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd\">\n".getBytes();
 
         private java.util.List<XML.ProcessingInstruction> pi;

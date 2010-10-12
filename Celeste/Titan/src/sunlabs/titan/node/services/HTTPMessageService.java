@@ -853,8 +853,18 @@ public final class HTTPMessageService extends AbstractTitanService implements Me
     }
     
     /*
+     * Version 1 looks like this:
+     * 
      * http://127.0.0.1:12001/urn:titan-nid-256:C98088B940445D549BB33FE41D4B0D927451386BFFB543CB99DD7F6C4DACF371/sunlabs.titan.node.services.HTTPMessageService.inspect
      * http://127.0.0.1:12001/urn:titan-oid-256:C98088B940445D549BB33FE41D4B0D927451386BFFB543CB99DD7F6C4DACF371/sunlabs.titan.node.services.HTTPMessageService.inspect
+     * 
+     * The message is composed and sent directly from HTTPMessageService.
+     * 
+     * In version 2, the message could be handed off to the specified service name from there it is handled.
+     * http://127.0.0.1:12001/sunlabs.titan.node.services.HTTPMessageService.inspect/urn:titan-nid-256:C98088B940445D549BB33FE41D4B0D927451386BFFB543CB99DD7F6C4DACF371
+     * 
+     * It depends on how it's to be modeled in terms operation and operand.
+     * Is the service the operation and the object or node the operand?  Otherwise, the object or node is the operator and the object id is the operand.
      */
     private HTTP.Response routeToURN(HTTP.Request request) {
         String[] tokens = request.getURI().getPath().split("/", 3); // Don't forget about the leading empty token
@@ -895,55 +905,12 @@ public final class HTTPMessageService extends AbstractTitanService implements Me
                 return new HttpResponse(HTTP.Response.Status.INTERNAL_SERVER_ERROR, new HttpContent.Text.Plain("%s", e));
             }
         } else if (urn.nid.equals("titan-oid-256")) {
+            System.err.printf("Can't to route to object yet.%n");
 
         }
 
         return null;
     }
-
-
-    /**
-     * This "injects" a RouteToNode message destined for a method that takes the HTTP.Request and produces an HTTP.Response 
-     */
-//    private HTTP.Response routeToNode(HTTP.Request request) {
-//        // Parse URI into constituent message parts.
-//        String[] uri = request.getURI().toString().split("/", 3);
-//        TitanNodeId nodeId = new TitanNodeIdImpl(uri[1].substring(1));
-//
-//        String klasse = uri[2].substring(0, uri[2].lastIndexOf('.'));
-//        String method = uri[2].substring(uri[2].lastIndexOf('.')+1);
-//
-//        System.out.printf("nodeId %s klasse '%s' '%s'%n", nodeId, klasse, method);
-//        
-//        System.out.printf("%s%n", request.toString());
-//
-//        try {
-//            Serializable payload = new byte[0];
-//            // The HTTP.Request isn't entirely serializable because it needs to read in the content.
-//            // Se we fake it here.
-//
-////            if (request.getMethod().equals(HTTP.Request.Method.POST) || request.getMethod().equals(HTTP.Request.Method.PUT)) {
-//                ByteArrayOutputStream out = new ByteArrayOutputStream();
-//                request.writeTo(new DataOutputStream(out));
-//                payload = out.toByteArray();
-////            }
-//
-//            // Send it
-//            TitanMessage response = this.node.sendToNode(nodeId, klasse, method, payload);
-//            // Package up return value.
-//
-//            return response.getPayload(HTTP.Response.class, node);
-//        } catch (ClassCastException e) {
-//            return new HttpResponse(HTTP.Response.Status.INTERNAL_SERVER_ERROR, new HttpContent.Text.Plain("%s", e));
-//        } catch (RemoteException e) {
-//            return new HttpResponse(HTTP.Response.Status.INTERNAL_SERVER_ERROR, new HttpContent.Text.Plain("%s", e));
-//        } catch (ClassNotFoundException e) {
-//            return new HttpResponse(HTTP.Response.Status.INTERNAL_SERVER_ERROR, new HttpContent.Text.Plain("%s", e));
-//        } catch (IOException e) {
-//            return new HttpResponse(HTTP.Response.Status.INTERNAL_SERVER_ERROR, new HttpContent.Text.Plain("%s", e));
-//        }
-//    }
-
 
     /**
      * This produces a uniform {@link XHTML.Document} for all purposes.

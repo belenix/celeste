@@ -9,8 +9,9 @@ Use ant 1.7, or newer, to build the system.
 % mkdir dist/
 % cp Titan/lib/titan*.jar dist/
 % ant clean all
+# chmod 600 etc/jmxremote.password.template
 
-See http://hub.opensolaris.org/bin/view/Project+celeste/WebHome
+See https://celeste.dev.java.net/
 
 LICENSE		A copy of the GNU GPL V.2 license
 QUICKSTART	A very small how-to do someting with the system.  For the impatient.

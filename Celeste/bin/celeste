@@ -125,8 +125,7 @@ if [[ $enable_jmx = true ]]; then
 #    JMXOPTS="-Dcom.sun.management.jmxremote \
 #	-Dcom.sun.management.jmxremote.port=$jmx_port \
 #	-Dcom.sun.management.jmxremote.password.file=$jmx_password_file"
-    JMXOPTS="-Dcom.sun.management.jmxremote \
-	-Dcom.sun.management.jmxremote.password.file=$jmx_password_file"
+    JMXOPTS="-Dcom.sun.management.jmxremote  -Dcom.sun.management.jmxremote.password.file=$jmx_password_file"
     jmx_port_option="--jmx-port $jmx_port"
     if [[ -r $jmx_password_file ]]; then
         chmod 600 $jmx_password_file

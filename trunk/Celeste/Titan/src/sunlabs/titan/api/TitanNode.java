@@ -37,7 +37,6 @@ import sunlabs.asdf.util.Attributes;
 import sunlabs.asdf.web.XML.XHTML;
 import sunlabs.asdf.web.XML.XML;
 import sunlabs.asdf.web.http.HTTP;
-import sunlabs.titan.node.ApplicationFramework;
 import sunlabs.titan.node.BeehiveObjectStore;
 import sunlabs.titan.node.NeighbourMap;
 import sunlabs.titan.node.NodeAddress;
@@ -106,7 +105,8 @@ public interface TitanNode {
     
     /**
      * Send the given {@link Serializable} {@code payload} via a {@link sunlabs.titan.node.TitanMessage.Type#RouteToNode}
-     * {@code TitanMessage} to the {@link TitanNode} that is the root of the {@link TitanNodeId} {@code nodeId}.
+     * {@code TitanMessage} to the {@link TitanNode} that is the root of the given {@link TitanNodeId}.
+     * When received, the destination node will invoke the method with the signature {@code klasse}.{@code method}(TitanMessage).
      *
      * @param nodeId The {@link TitanNodeId} of the destination.
      * @param klasse The name of the {@link AbstractTitanService} required to handle the reception of this message.
@@ -114,7 +114,6 @@ public interface TitanNode {
      * @param payload Serializable data as the input parameter to the {@code method} method.
      */
     public TitanMessage sendToNode(TitanNodeId nodeId, String klasse, String method, Serializable payload);
-    
 
     /**
      * Send to a specific object-id on a specific node.

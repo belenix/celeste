@@ -1,5 +1,5 @@
 /*
- * Copyright 2007-2009 Sun Microsystems, Inc. All Rights Reserved.
+ * Copyright 2007-2010 Oracle. All Rights Reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER
  *
  * This code is free software; you can redistribute it and/or modify
@@ -17,11 +17,10 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
  * 02110-1301 USA
  *
- * Please contact Sun Microsystems, Inc., 16 Network Circle, Menlo
- * Park, CA 94025 or visit www.sun.com if you need additional
- * information or have any questions.
+ * Please contact Oracle Corporation, 500 Oracle Parkway, Redwood Shores, CA 94065
+ * or visit www.oracle.com if you need additional information or
+ * have any questions.
  */
-
 package sunlabs.asdf.web.http;
 
 import java.io.ByteArrayOutputStream;
@@ -59,6 +58,7 @@ import sunlabs.asdf.web.http.HttpUtil.PathName;
  * @author Glenn Scott, Sun Microsystems Laboratories
  */
 public abstract class HttpHeader implements HTTP.Message.Header {
+    private static final long serialVersionUID = 1L;
 
     public static class Parameter implements HTTP.Message.Header.Parameter {
         private String attribute;
@@ -721,6 +721,9 @@ public abstract class HttpHeader implements HTTP.Message.Header {
             }
         }
 
+        /**
+         * Construct a {@code Content-Type:} {@link HTTP.Message.Header} instance specifying the given {@link InternetMediaType} as the content-type.
+         */ 
         public ContentType(InternetMediaType type) {
             this();
 
@@ -820,6 +823,10 @@ public abstract class HttpHeader implements HTTP.Message.Header {
      */
     public static class Depth extends HttpHeader implements HTTP.Message.Header.Depth { 
     	
+        /**
+         * 
+         */
+        private static final long serialVersionUID = 1L;
         private HTTP.Message.Header.Depth.Level depth;
 
         public Depth() {

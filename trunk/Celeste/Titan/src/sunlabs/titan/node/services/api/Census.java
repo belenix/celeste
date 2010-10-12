@@ -53,7 +53,6 @@ import sunlabs.titan.util.OrderedProperties;
 public interface Census {
     /**
      * The Census keeper is the node the receives messages sent to the {@code CensusKeeper} object-id.
-     *
      */
     public final static TitanNodeId CensusKeeper = TitanNodeIdImpl.ZERO;
 
@@ -72,6 +71,12 @@ public interface Census {
     public final static String NodeRevision = "Census.NodeRevision";
     public final static String AdministrativeContact = "Census.AdministrativeContact";
     public final static String Location = "Census.Location";
+    
+    public final static String OperatingSystemLoadAverage = "Census.OperatingSystemLoadAverage";
+    public static final String OperatingSystemArchitecture = "Census.OperatingSystemArchitecture";
+    public static final String OperatingSystemName = "Census.OperatingSystemName";
+    public static final String OperatingSystemVersion = "Census.OperatingSystemVersion";
+    public final static String OperatingSystemAvailableProcessors = "Census.AvailableProcessors";
 
     /**
      * Put all of the entries in the given {@link Map} {@code census} into the census data kept by this node.
@@ -81,10 +86,10 @@ public interface Census {
     public void putAllLocal(Map<TitanNodeId,OrderedProperties> census);
 
     /**
-     * Select {@code count} number of nodes by {@link TitanGuid} from the Census,
-     * excluding those nodes specified by {@link TitanGuid} in the Set {@code exclude}.
+     * Select {@code count} number of nodes by {@link TitanNodeId} from the Census,
+     * excluding those nodes specified by {@code TitanNodeId} in the Set {@code exclude}.
      *
-     * @param count the number of nodes to select.  If zero, all nodes are selected.
+     * @param count the number of nodes to select.  If zero, all matching nodes are selected.
      * @param excludedNodes a {@link Set} of nodes to specifically exclude from the selection.
      * @param matchedAttributes an {@link OrderedProperties} instance containing the set of properties that selected nodes much match.
      * @return A {@link Map} of {@link TitanGuid} to {@link OrderedProperties} for each node selected.

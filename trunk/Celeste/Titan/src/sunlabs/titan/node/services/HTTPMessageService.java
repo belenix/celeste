@@ -23,17 +23,20 @@
  */
 package sunlabs.titan.node.services;
 
+import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
+import java.io.EOFException;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.io.Serializable;
 import java.io.UnsupportedEncodingException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -90,11 +93,11 @@ import sunlabs.asdf.web.http.HTTPServer;
 import sunlabs.asdf.web.http.HttpContent;
 import sunlabs.asdf.web.http.HttpHeader;
 import sunlabs.asdf.web.http.HttpMessage;
+import sunlabs.asdf.web.http.HttpRequest;
 import sunlabs.asdf.web.http.HttpResponse;
 import sunlabs.asdf.web.http.HttpUtil;
 import sunlabs.asdf.web.http.HttpUtil.PathName1;
 import sunlabs.asdf.web.http.InternetMediaType;
-import sunlabs.asdf.web.http.TappedInputStream;
 import sunlabs.asdf.web.http.WebDAV;
 import sunlabs.asdf.web.http.WebDAV.Backend;
 import sunlabs.asdf.web.http.WebDAVNameSpace;
@@ -110,6 +113,8 @@ import sunlabs.titan.node.BeehiveObjectStore;
 import sunlabs.titan.node.NodeAddress;
 import sunlabs.titan.node.NodeKey;
 import sunlabs.titan.node.TitanMessage;
+import sunlabs.titan.node.TitanMessage.RemoteException;
+import sunlabs.titan.node.TitanNodeIdImpl;
 import sunlabs.titan.node.TitanNodeImpl;
 import sunlabs.titan.node.services.api.Census;
 import sunlabs.titan.node.services.api.MessageService;
@@ -123,7 +128,7 @@ import sunlabs.titan.util.OrderedProperties;
  * </p>
  *
  */
-public final class WebDAVDaemon extends AbstractTitanService implements MessageService, WebDAVDaemonMBean {
+public final class HTTPMessageService extends AbstractTitanService implements MessageService, WebDAVDaemonMBean {
     private final static long serialVersionUID = 1L;
 
 //            /** The URL of the base location of a Dojo installation. */
@@ -139,52 +144,52 @@ public final class WebDAVDaemon extends AbstractTitanService implements MessageS
 //            "The value of the djConfig Dojo configuration parameter");
 
     /** The URL of the base location of a Dojo installation. */
-    public final static Attributes.Prototype DojoRoot = new Attributes.Prototype(WebDAVDaemon.class, "DojoRoot", "dojo/dojo-release-1.5.0",
+    public final static Attributes.Prototype DojoRoot = new Attributes.Prototype(HTTPMessageService.class, "DojoRoot", "/dojo/dojo-release-1.5.0",
     "The URL of the base location of a Dojo installation.");
 
     /** The relative path of the Dojo script. */
-    public final static Attributes.Prototype DojoJavascript = new Attributes.Prototype(WebDAVDaemon.class, "DojoJavascript", "dojo/dojo.js", "The relative path of the Dojo script.");
+    public final static Attributes.Prototype DojoJavascript = new Attributes.Prototype(HTTPMessageService.class, "DojoJavascript", "dojo/dojo.js", "The relative path of the Dojo script.");
 
     /** The value of the Dojo {@code djConfig} configuration parameter. */
-    public final static Attributes.Prototype DojoConfig = new Attributes.Prototype(WebDAVDaemon.class, "DojoConfig",
-            "isDebug: false, parseOnLoad: true, baseUrl: './dojo/dojo-release-1.5.0/dojo/', useXDomain: false, modulePaths: {'sunlabs': '/dojo/1.3.1/sunlabs'}",
+    public final static Attributes.Prototype DojoConfig = new Attributes.Prototype(HTTPMessageService.class, "DojoConfig",
+            "isDebug: false, parseOnLoad: true, baseUrl: '/dojo/dojo-release-1.5.0/dojo/', useXDomain: false, modulePaths: {'sunlabs': '/dojo/1.3.1/sunlabs'}",
     "The value of the Dojo djConfig configuration parameter");
     
 
     /** The Dojo theme name. */
-    public final static Attributes.Prototype DojoTheme = new Attributes.Prototype(WebDAVDaemon.class, "DojoTheme", "tundra", "The Dojo theme name.");
+    public final static Attributes.Prototype DojoTheme = new Attributes.Prototype(HTTPMessageService.class, "DojoTheme", "tundra", "The Dojo theme name.");
 
     /** The TCP port number this node listens on for incoming HTTP connections. */
-    public final static Attributes.Prototype ServerSocketPort = new Attributes.Prototype(WebDAVDaemon.class, "ServerSocketPort", 12001,
+    public final static Attributes.Prototype ServerSocketPort = new Attributes.Prototype(HTTPMessageService.class, "ServerSocketPort", 12001,
             "The TCP port number this node listens on for incoming HTTP connections.");
     
     /** The pathname prefix for the HTTP server to use when serving files. */
-    public final static Attributes.Prototype ServerRoot = new Attributes.Prototype(WebDAVDaemon.class, "ServerRoot", "web",
+    public final static Attributes.Prototype ServerRoot = new Attributes.Prototype(HTTPMessageService.class, "ServerRoot", "web",
             "The pathname prefix for the HTTP server to use when serving files.");
     
     /** The maximum number of concurrent clients. */
-    public final static Attributes.Prototype ServerSocketMaximum = new Attributes.Prototype(WebDAVDaemon.class, "ServerSocketMaximum", 1030,
+    public final static Attributes.Prototype ServerSocketMaximum = new Attributes.Prototype(HTTPMessageService.class, "ServerSocketMaximum", 1030,
             "The maximum number of concurrent clients.");
     
     /** The number of milliseconds a connection may be idle before it is closed. */
-    public final static Attributes.Prototype ServerSocketTimeoutMillis = new Attributes.Prototype(WebDAVDaemon.class, "ServerSocketTimeoutMillis", Time.secondsInMilliseconds(60),
+    public final static Attributes.Prototype ServerSocketTimeoutMillis = new Attributes.Prototype(HTTPMessageService.class, "ServerSocketTimeoutMillis", Time.secondsInMilliseconds(60),
             "The number of milliseconds a connection may be idle before it is closed.");
     
     /** The maximum queue length for incoming connections. The connection is refused if a connection indication arrives when the queue is full. */
-    public static final Attributes.Prototype ServerSocketBacklog = new Attributes.Prototype(WebDAVDaemon.class, "ServerSocketBacklog",
+    public static final Attributes.Prototype ServerSocketBacklog = new Attributes.Prototype(HTTPMessageService.class, "ServerSocketBacklog",
             4,
     "The maximum queue length for incoming connections. The connection is refused if a connection indication arrives when the queue is full.");
 
     /** CSS files to be loaded by the Node inspector */
-    public final static Attributes.Prototype InspectorCSS = new Attributes.Prototype(WebDAVDaemon.class, "InspectorCSS", "/css/DOLRStyle.css,/css/BeehiveColours.css",
+    public final static Attributes.Prototype InspectorCSS = new Attributes.Prototype(HTTPMessageService.class, "InspectorCSS", "/css/DOLRStyle.css,/css/BeehiveColours.css",
             "The css file to use for the node inspector interface.");
     
     /** JavaScript files to be loaded by the node inspector interface */
-    public final static Attributes.Prototype InspectorJS = new Attributes.Prototype(WebDAVDaemon.class, "InspectorJS", "/js/DOLRScript.js",
+    public final static Attributes.Prototype InspectorJS = new Attributes.Prototype(HTTPMessageService.class, "InspectorJS", "/js/DOLRScript.js",
             "The JavaScript file to load for the node inspector interface.");
 
     /** The protocol to use, specify either 'http' or 'https' */
-    public static final Attributes.Prototype Protocol = new Attributes.Prototype(WebDAVDaemon.class, "Protocol",
+    public static final Attributes.Prototype Protocol = new Attributes.Prototype(HTTPMessageService.class, "Protocol",
             "https",
     "The protocol to use, specify either 'http' or 'https'");
 
@@ -234,7 +239,7 @@ public final class WebDAVDaemon extends AbstractTitanService implements MessageS
                 try {
                     TitanMessage message = TitanMessage.newInstance(request.getMessage().getBody().toInputStream());
 
-                    TitanMessage response = WebDAVDaemon.this.node.receive(message);
+                    TitanMessage response = HTTPMessageService.this.node.receive(message);
                     ByteArrayOutputStream bos = new ByteArrayOutputStream();
                     response.writeObject(new DataOutputStream(bos));
                     bos.close();
@@ -273,9 +278,13 @@ public final class WebDAVDaemon extends AbstractTitanService implements MessageS
             }
 
             public HTTP.Response execute(HTTP.Request request, HTTP.Identity identity) {
+                if (HTTPMessageService.this.getLogger().isLoggable(Level.FINE)) {
+                    HTTPMessageService.this.getLogger().fine("%s", request.toString());
+                }
+                
                 try {
                     HttpContent.Multipart.FormData props = new HttpContent.Multipart.FormData(request.getURI());
-                    return WebDAVDaemon.this.generateResponse(request, request.getURI(), props.getMap());
+                    return HTTPMessageService.this.generateResponse(request, request.getURI(), props.getMap());
                 }  catch (UnsupportedEncodingException unsupportedEncoding) {
                     return new HttpResponse(HTTP.Response.Status.BAD_REQUEST, new HttpContent.Text.Plain(unsupportedEncoding.getLocalizedMessage()));
                 }
@@ -292,13 +301,16 @@ public final class WebDAVDaemon extends AbstractTitanService implements MessageS
             }
 
             public HTTP.Response execute(HTTP.Request request, HTTP.Identity identity) {
+                if (HTTPMessageService.this.getLogger().isLoggable(Level.FINE)) {
+                    HTTPMessageService.this.getLogger().fine("%s", request.toString());
+                }
                 try {
                     HTTP.Message.Body.MultiPart.FormData props = request.getMessage().decodeMultiPartFormData();
                     HttpHeader.UserAgent userAgent = (HttpHeader.UserAgent) request.getMessage().getHeader(HTTP.Message.Header.USERAGENT);
                     if (userAgent == null)
                         return new HttpResponse(HTTP.Response.Status.BAD_REQUEST, new HttpContent.Text.Plain(HttpHeader.USERAGENT + " header missing."));
 
-                    return WebDAVDaemon.this.generateResponse(request, request.getURI(), props);
+                    return HTTPMessageService.this.generateResponse(request, request.getURI(), props);
                 } catch (IOException e) {
                     return new HttpResponse(HTTP.Response.Status.INTERNAL_SERVER_ERROR, new HttpContent.Text.Plain(e.getLocalizedMessage() + " while reading request"));
                 } catch (HTTP.BadRequestException e) {
@@ -317,6 +329,9 @@ public final class WebDAVDaemon extends AbstractTitanService implements MessageS
             }
 
             public HTTP.Response execute(HTTP.Request request, HTTP.Identity identity) {
+                if (HTTPMessageService.this.getLogger().isLoggable(Level.FINE)) {
+                    HTTPMessageService.this.getLogger().fine("%s", request.toString());
+                }
                 try {
                     HTTP.Message.Body.MultiPart.FormData avPairs = request.getMessage().decodeMultiPartFormData();
                     HttpHeader.UserAgent userAgent = (HttpHeader.UserAgent) request.getMessage().getHeader(HTTP.Message.Header.USERAGENT);
@@ -331,7 +346,7 @@ public final class WebDAVDaemon extends AbstractTitanService implements MessageS
                         System.out.println(key + " " + query.get(key));
                     }
 
-                    return WebDAVDaemon.this.generateResponse(request, request.getURI(), avPairs);
+                    return HTTPMessageService.this.generateResponse(request, request.getURI(), avPairs);
                 } catch (IOException e) {
                     return new HttpResponse(HTTP.Response.Status.INTERNAL_SERVER_ERROR, new HttpContent.Text.Plain(e.getLocalizedMessage() + " while reading request"));
                 } catch (HTTP.BadRequestException e) {
@@ -343,7 +358,7 @@ public final class WebDAVDaemon extends AbstractTitanService implements MessageS
     
     private class HTTPConnectionServer extends Thread {
         HTTPConnectionServer() throws IOException {
-            super(WebDAVDaemon.this.node.getNodeId() + "." + WebDAVDaemon.this.getName());
+            super(HTTPMessageService.this.node.getNodeId() + "." + HTTPMessageService.this.getName());
         }
 
         @Override
@@ -353,10 +368,10 @@ public final class WebDAVDaemon extends AbstractTitanService implements MessageS
             try {                
                 serverSocketChannel = ServerSocketChannel.open();
                 serverSocketChannel.configureBlocking(true);
-                serverSocketChannel.socket().bind(new InetSocketAddress(WebDAVDaemon.this.node.getConfiguration().asInt(WebDAVDaemon.ServerSocketPort)));
+                serverSocketChannel.socket().bind(new InetSocketAddress(HTTPMessageService.this.node.getConfiguration().asInt(HTTPMessageService.ServerSocketPort)));
                 serverSocketChannel.socket().setReuseAddress(true);
             } catch (IOException e) {
-                WebDAVDaemon.this.log.severe("Cannot accept connections: %s", e);
+                HTTPMessageService.this.log.severe("Cannot accept connections: %s", e);
                 return;
             }
 
@@ -376,14 +391,14 @@ public final class WebDAVDaemon extends AbstractTitanService implements MessageS
                 try {
                     SocketChannel clientSocket = serverSocketChannel.accept();
                     clientSocket.socket().setKeepAlive(false);
-                    clientSocket.socket().setSoTimeout(WebDAVDaemon.this.node.getConfiguration().asInt(WebDAVDaemon.ServerSocketTimeoutMillis));
+                    clientSocket.socket().setSoTimeout(HTTPMessageService.this.node.getConfiguration().asInt(HTTPMessageService.ServerSocketTimeoutMillis));
 
                     clientSocket.socket().setReceiveBufferSize(16*1024);
                     clientSocket.socket().setSendBufferSize(16*1024);
 
-                    HTTPServer server = new HTTPServer(clientSocket.socket().getInputStream(), clientSocket.socket().getOutputStream());
+                    HTTPServer server = new HTTPServer(new BufferedInputStream(clientSocket.socket().getInputStream()), new BufferedOutputStream(clientSocket.socket().getOutputStream()));
 
-                    server.setName(WebDAVDaemon.this.node.getNodeId().toString() + ":" + server.getName());
+                    server.setName(HTTPMessageService.this.node.getNodeId().toString() + ":" + server.getName());
 
                     HTTP.URINameSpace messageNameSpace = new TitanNodeMessageURINameSpace(server, null);
 
@@ -399,11 +414,11 @@ public final class WebDAVDaemon extends AbstractTitanService implements MessageS
                     server.start();
                     //executor.submit(server);
                 } catch (SocketException e) {
-                    WebDAVDaemon.this.log.severe("Connection failed: %s", e);
+                    HTTPMessageService.this.log.severe("Connection failed: %s", e);
                 } catch (URISyntaxException e) {
-                    WebDAVDaemon.this.log.severe("Cannot setup connection: %s", e);
+                    HTTPMessageService.this.log.severe("Cannot setup connection: %s", e);
                 } catch (IOException e) {
-                    WebDAVDaemon.this.log.severe("Cannot setup connection: %s", e);
+                    HTTPMessageService.this.log.severe("Cannot setup connection: %s", e);
                 }
             }
             // loop accepting connections and dispatching new thread to handle incoming requests.
@@ -419,10 +434,10 @@ public final class WebDAVDaemon extends AbstractTitanService implements MessageS
         private SSLServerSocketFactory factory;
 
         public HTTPSConnectionServer() throws IOException {
-            super(WebDAVDaemon.this.node.getThreadGroup(), WebDAVDaemon.this.node.getNodeId() + "." + WebDAVDaemon.this.getName());
+            super(HTTPMessageService.this.node.getThreadGroup(), HTTPMessageService.this.node.getNodeId() + "." + HTTPMessageService.this.getName());
             
             try {
-                this.sslContext = WebDAVDaemon.this.node.getNodeKey().newSSLContext();
+                this.sslContext = HTTPMessageService.this.node.getNodeKey().newSSLContext();
             } catch (UnrecoverableKeyException e) {
                 // TODO Auto-generated catch block
                 e.printStackTrace();
@@ -444,13 +459,13 @@ public final class WebDAVDaemon extends AbstractTitanService implements MessageS
         public void run() {
             SSLServerSocket serverSocket = null;
             try {
-                serverSocket = (SSLServerSocket) this.factory.createServerSocket(WebDAVDaemon.this.node.getConfiguration().asInt(WebDAVDaemon.ServerSocketPort),
-                        WebDAVDaemon.this.node.getConfiguration().asInt(WebDAVDaemon.ServerSocketBacklog));
+                serverSocket = (SSLServerSocket) this.factory.createServerSocket(HTTPMessageService.this.node.getConfiguration().asInt(HTTPMessageService.ServerSocketPort),
+                        HTTPMessageService.this.node.getConfiguration().asInt(HTTPMessageService.ServerSocketBacklog));
 
                 serverSocket.setReuseAddress(true);
             } catch (IOException e) {
-                if (WebDAVDaemon.this.log.isLoggable(Level.SEVERE)) {
-                    WebDAVDaemon.this.node.getLogger().severe("Connection accept Thread terminated: %s", e);
+                if (HTTPMessageService.this.log.isLoggable(Level.SEVERE)) {
+                    HTTPMessageService.this.node.getLogger().severe("Connection accept Thread terminated: %s", e);
                 }
                 // Terminate this thread, which means this service is no longer accepting connections.
                 return;
@@ -469,23 +484,23 @@ public final class WebDAVDaemon extends AbstractTitanService implements MessageS
 
             while (true) {
                 SSLSocket sslSocket = null;
-                if (WebDAVDaemon.this.log.isLoggable(Level.FINEST)) {
-                    WebDAVDaemon.this.log.finest("Accepting connections %s", serverSocket);
+                if (HTTPMessageService.this.log.isLoggable(Level.FINEST)) {
+                    HTTPMessageService.this.log.finest("Accepting connections %s", serverSocket);
                 }
                 try {
                     sslSocket = (SSLSocket) serverSocket.accept();
                     sslSocket.setTcpNoDelay(true);
                     sslSocket.setKeepAlive(false);
-                    sslSocket.setSoTimeout(WebDAVDaemon.this.node.getConfiguration().asInt(WebDAVDaemon.ServerSocketTimeoutMillis));
+                    sslSocket.setSoTimeout(HTTPMessageService.this.node.getConfiguration().asInt(HTTPMessageService.ServerSocketTimeoutMillis));
                     sslSocket.setReceiveBufferSize(16*1024);
                     sslSocket.setSendBufferSize(16*1024);
-                    if (WebDAVDaemon.this.log.isLoggable(Level.FINEST)) {
-                        WebDAVDaemon.this.log.finest("Accepted connection %s serverClosed=%b", sslSocket, serverSocket.isClosed());
+                    if (HTTPMessageService.this.log.isLoggable(Level.FINEST)) {
+                        HTTPMessageService.this.log.finest("Accepted connection %s serverClosed=%b", sslSocket, serverSocket.isClosed());
                     }
 
-                    HTTPServer server = new HTTPServer(sslSocket.getInputStream(), sslSocket.getOutputStream());
+                    HTTPServer server = new HTTPServer(new BufferedInputStream(sslSocket.getInputStream()), new BufferedOutputStream(sslSocket.getOutputStream()));
 
-                    server.setName(WebDAVDaemon.this.node.getNodeId().toString() + ":" + server.getName());
+                    server.setName(HTTPMessageService.this.node.getNodeId().toString() + ":" + server.getName());
 
                     HTTP.URINameSpace messageNameSpace = new TitanNodeMessageURINameSpace(server, null);
 
@@ -500,17 +515,17 @@ public final class WebDAVDaemon extends AbstractTitanService implements MessageS
                     server.addNameSpace(new URI("/message"), messageNameSpace); 
                     server.start();
 
-                    if (WebDAVDaemon.this.log.isLoggable(Level.FINEST)) {
-                        WebDAVDaemon.this.log.finest("Dispatched connection %s serverClosed=%b", sslSocket, serverSocket.isClosed());
+                    if (HTTPMessageService.this.log.isLoggable(Level.FINEST)) {
+                        HTTPMessageService.this.log.finest("Dispatched connection %s serverClosed=%b", sslSocket, serverSocket.isClosed());
                     }
                 } catch (IOException e) {
-                    if (WebDAVDaemon.this.log.isLoggable(Level.SEVERE)) {
-                        WebDAVDaemon.this.node.getLogger().severe("Connection accept Thread terminated: %s serverSocket=%s serverClosed=%b", e, serverSocket, serverSocket.isClosed());
+                    if (HTTPMessageService.this.log.isLoggable(Level.SEVERE)) {
+                        HTTPMessageService.this.node.getLogger().severe("Connection accept Thread terminated: %s serverSocket=%s serverClosed=%b", e, serverSocket, serverSocket.isClosed());
                     }
                     return;
                 } catch (URISyntaxException e) {
-                    if (WebDAVDaemon.this.log.isLoggable(Level.SEVERE)) {
-                        WebDAVDaemon.this.node.getLogger().severe("Connection accept Thread terminated: %s", e);
+                    if (HTTPMessageService.this.log.isLoggable(Level.SEVERE)) {
+                        HTTPMessageService.this.node.getLogger().severe("Connection accept Thread terminated: %s", e);
                     }
                     return;
                 } finally {
@@ -525,7 +540,7 @@ public final class WebDAVDaemon extends AbstractTitanService implements MessageS
      * Produce an {@link sunlabs.asdf.web.xml XHTML.Anchor} element that links to a XHTML document that
      * inspects the {@link TitanObject} identified by the given {@link TitanGuidImpl}.
      * 
-     * See {@link WebDAVDaemon} for the dispatch of the HTTP request the link induces.
+     * See {@link HTTPMessageService} for the dispatch of the HTTP request the link induces.
      */
     public static XHTML.Anchor inspectObjectXHTML(TitanGuid objectId) {
         XHTML.Anchor link = new XHTML.Anchor(Xxhtml.Attr.HRef("/inspect/" + objectId))
@@ -548,7 +563,7 @@ public final class WebDAVDaemon extends AbstractTitanService implements MessageS
      * Produce an {@link sunlabs.asdf.web.xml XHTML.Anchor} element that links to a HTML document that
      * inspects the {@link TitanNodeImpl} identified by the given {@link NodeAddress}.
      * 
-     * See {@link WebDAVDaemon} for the dispatch of the HTTP request the link induces.
+     * See {@link HTTPMessageService} for the dispatch of the HTTP request the link induces.
      * @throws MalformedURLException 
      */
     public static XHTML.Anchor inspectNodeXHTML(NodeAddress address) {
@@ -564,42 +579,42 @@ public final class WebDAVDaemon extends AbstractTitanService implements MessageS
      */
     private Method transmitMethod;
 
-    public WebDAVDaemon(final TitanNode node) throws JMException, SecurityException, NoSuchMethodException {
-        super(node, AbstractTitanService.makeName(WebDAVDaemon.class, WebDAVDaemon.serialVersionUID), "Titan http/https Interface");
+    public HTTPMessageService(final TitanNode node) throws JMException, SecurityException, NoSuchMethodException {
+        super(node, AbstractTitanService.makeName(HTTPMessageService.class, HTTPMessageService.serialVersionUID), "Titan http/https Interface");
 
-        node.getConfiguration().add(WebDAVDaemon.ServerSocketPort);
-        node.getConfiguration().add(WebDAVDaemon.ServerRoot);
-        node.getConfiguration().add(WebDAVDaemon.ServerSocketMaximum);
-        node.getConfiguration().add(WebDAVDaemon.ServerSocketTimeoutMillis);
-        node.getConfiguration().add(WebDAVDaemon.InspectorCSS);
-        node.getConfiguration().add(WebDAVDaemon.InspectorJS);
-        node.getConfiguration().add(WebDAVDaemon.ServerSocketBacklog);
-        node.getConfiguration().add(WebDAVDaemon.Protocol);
-        node.getConfiguration().add(WebDAVDaemon.DojoConfig);
-        node.getConfiguration().add(WebDAVDaemon.DojoJavascript);
-        node.getConfiguration().add(WebDAVDaemon.DojoRoot);
-        node.getConfiguration().add(WebDAVDaemon.DojoTheme);
+        node.getConfiguration().add(HTTPMessageService.ServerSocketPort);
+        node.getConfiguration().add(HTTPMessageService.ServerRoot);
+        node.getConfiguration().add(HTTPMessageService.ServerSocketMaximum);
+        node.getConfiguration().add(HTTPMessageService.ServerSocketTimeoutMillis);
+        node.getConfiguration().add(HTTPMessageService.InspectorCSS);
+        node.getConfiguration().add(HTTPMessageService.InspectorJS);
+        node.getConfiguration().add(HTTPMessageService.ServerSocketBacklog);
+        node.getConfiguration().add(HTTPMessageService.Protocol);
+        node.getConfiguration().add(HTTPMessageService.DojoConfig);
+        node.getConfiguration().add(HTTPMessageService.DojoJavascript);
+        node.getConfiguration().add(HTTPMessageService.DojoRoot);
+        node.getConfiguration().add(HTTPMessageService.DojoTheme);
 
         // Setup the transmit method. (See transmit(NodeAddress, TitanMessage).
-        if (WebDAVDaemon.this.node.getConfiguration().asString(WebDAVDaemon.Protocol).equals("https")) {
+        if (HTTPMessageService.this.node.getConfiguration().asString(HTTPMessageService.Protocol).equals("https")) {
             this.transmitMethod = this.getClass().getMethod("transmitHTTPS", NodeAddress.class, TitanMessage.class);
         } else {
             this.transmitMethod = this.getClass().getMethod("transmitHTTP", NodeAddress.class, TitanMessage.class);
         }
 
         if (this.log.isLoggable(Level.CONFIG)) {
-            this.log.config("%s", node.getConfiguration().get(WebDAVDaemon.ServerSocketPort));
-            this.log.config("%s", node.getConfiguration().get(WebDAVDaemon.ServerRoot));
-            this.log.config("%s", node.getConfiguration().get(WebDAVDaemon.ServerSocketMaximum));
-            this.log.config("%s", node.getConfiguration().get(WebDAVDaemon.ServerSocketTimeoutMillis));
-            this.log.config("%s", node.getConfiguration().get(WebDAVDaemon.InspectorCSS));
-            this.log.config("%s", node.getConfiguration().get(WebDAVDaemon.InspectorJS));
-            this.log.config("%s", node.getConfiguration().get(WebDAVDaemon.ServerSocketBacklog));
-            this.log.config("%s", node.getConfiguration().get(WebDAVDaemon.Protocol));
-            this.log.config("%s", node.getConfiguration().get(WebDAVDaemon.DojoConfig));
-            this.log.config("%s", node.getConfiguration().get(WebDAVDaemon.DojoJavascript));
-            this.log.config("%s", node.getConfiguration().get(WebDAVDaemon.DojoRoot));
-            this.log.config("%s", node.getConfiguration().get(WebDAVDaemon.DojoTheme));
+            this.log.config("%s", node.getConfiguration().get(HTTPMessageService.ServerSocketPort));
+            this.log.config("%s", node.getConfiguration().get(HTTPMessageService.ServerRoot));
+            this.log.config("%s", node.getConfiguration().get(HTTPMessageService.ServerSocketMaximum));
+            this.log.config("%s", node.getConfiguration().get(HTTPMessageService.ServerSocketTimeoutMillis));
+            this.log.config("%s", node.getConfiguration().get(HTTPMessageService.InspectorCSS));
+            this.log.config("%s", node.getConfiguration().get(HTTPMessageService.InspectorJS));
+            this.log.config("%s", node.getConfiguration().get(HTTPMessageService.ServerSocketBacklog));
+            this.log.config("%s", node.getConfiguration().get(HTTPMessageService.Protocol));
+            this.log.config("%s", node.getConfiguration().get(HTTPMessageService.DojoConfig));
+            this.log.config("%s", node.getConfiguration().get(HTTPMessageService.DojoJavascript));
+            this.log.config("%s", node.getConfiguration().get(HTTPMessageService.DojoRoot));
+            this.log.config("%s", node.getConfiguration().get(HTTPMessageService.DojoTheme));
         }
     }
 
@@ -613,7 +628,7 @@ public final class WebDAVDaemon extends AbstractTitanService implements MessageS
         // /map is the neighbour map
         // /service/<name> is for the service named <name>
         // /gateway is gateway information about this node.
-        // /object/<objectId> fetches the named DOLR object as a application/octet-stream
+        // /object/<objectId> fetches the named object as a application/octet-stream
         // storeObject
         // retrieveObject
         // findObject
@@ -623,7 +638,14 @@ public final class WebDAVDaemon extends AbstractTitanService implements MessageS
         
         try {
             if (!uri.getPath().equals("/")) {
-                if (uri.getPath().equals("/map")) {
+                /*
+                 * http://127.0.0.1:12001/urn:titan-nid-256:C98088B940445D549BB33FE41D4B0D927451386BFFB543CB99DD7F6C4DACF371#sunlabs.titan.node.services.HTTPMessageService.inspect
+                 * http://127.0.0.1:12001/urn:titan-oid-256:objectC98088B940445D549BB33FE41D4B0D927451386BFFB543CB99DD7F6C4DACF371/sunlabs.titan.node.services.HTTPMessageService.inspect
+                 * http://127.0.0.1:12001/nC98088B940445D549BB33FE41D4B0D927451386BFFB543CB99DD7F6C4DACF371/sunlabs.titan.node.services.HTTPMessageService.inspect
+                 */
+                if (uri.getPath().startsWith("/urn:")) {
+                    return this.routeToURN(request);                    
+                } else if (uri.getPath().equals("/map")) {
                 	return new HttpResponse(HTTP.Response.Status.OK, new HttpContent.Text.Plain(this.node.getNeighbourMap().toString() + this.node.getNodeAddress() + "\n"));
                 } else if (uri.getPath().startsWith("/service/")) {
                 	XHTML.EFlow folio = this.node.getServiceFramework().toXHTML(uri, map);
@@ -703,7 +725,7 @@ public final class WebDAVDaemon extends AbstractTitanService implements MessageS
 
                 // Read a file from the local file system, or from the jar file that this is running from.
                 try {
-                    return new HttpResponse(HTTP.Response.Status.OK, new HttpContent.RawInputStream(WebDAVDaemon.this.node.getConfiguration().asString(WebDAVDaemon.ServerRoot), uri.getPath()));
+                    return new HttpResponse(HTTP.Response.Status.OK, new HttpContent.RawInputStream(HTTPMessageService.this.node.getConfiguration().asString(HTTPMessageService.ServerRoot), uri.getPath()));
                 } catch (java.io.FileNotFoundException e) {
                     System.err.printf("%s%n", request);
                     e.printStackTrace();
@@ -805,6 +827,124 @@ public final class WebDAVDaemon extends AbstractTitanService implements MessageS
         }
     }
 
+    public static class URN implements Serializable {
+        private static final long serialVersionUID = 1L;
+        
+        private String nid; // Namespace Identifier
+        private String nss; // Namespace Specific String
+        
+        public URN(String nid, String nss) {
+            this.nid = nid;
+            this.nss = nss;
+        }
+        
+        public URN(String string) {
+            String[] tokens = string.split(":", 3);
+            if (tokens.length != 3)
+                throw new IllegalArgumentException("Malformed URN: " + string);
+            this.nid = tokens[1];
+            this.nss = tokens[2];
+        }
+        
+        public String toString() {
+            StringBuilder result = new StringBuilder("urn:").append(this.nid).append(":").append(this.nss);
+            return result.toString();
+        }
+    }
+    
+    /*
+     * http://127.0.0.1:12001/urn:titan-nid-256:C98088B940445D549BB33FE41D4B0D927451386BFFB543CB99DD7F6C4DACF371/sunlabs.titan.node.services.HTTPMessageService.inspect
+     * http://127.0.0.1:12001/urn:titan-oid-256:C98088B940445D549BB33FE41D4B0D927451386BFFB543CB99DD7F6C4DACF371/sunlabs.titan.node.services.HTTPMessageService.inspect
+     */
+    private HTTP.Response routeToURN(HTTP.Request request) {
+        String[] tokens = request.getURI().getPath().split("/", 3); // Don't forget about the leading empty token
+        URN urn = new URN(tokens[1]);
+        
+        // Clean this up such that TitanNodeId and TitanGuid instances can identify themselves as a URN.
+        if (urn.nid.equals("titan-nid-256")) {
+            TitanNodeId nodeId = new TitanNodeIdImpl(urn.nss);
+
+            String klasse = tokens[2].substring(0, tokens[2].lastIndexOf('.'));
+            String method = tokens[2].substring(tokens[2].lastIndexOf('.')+1);
+
+            System.out.printf("nodeId %s klasse '%s' '%s'%n", nodeId, klasse, method);
+            
+//            System.out.printf("%s%n", request.toString());
+
+            try {
+                Serializable payload = new byte[0];
+                // The HTTP.Request isn't entirely serializable because it needs to read in the content.
+                // So we fake it here.
+
+                ByteArrayOutputStream out = new ByteArrayOutputStream();
+                request.writeTo(new DataOutputStream(out));
+                payload = out.toByteArray();
+
+                // Send it
+                TitanMessage response = this.node.sendToNode(nodeId, klasse, method, payload);
+                // Package up return value.
+
+                return response.getPayload(HTTP.Response.class, node);
+            } catch (ClassCastException e) {
+                return new HttpResponse(HTTP.Response.Status.INTERNAL_SERVER_ERROR, new HttpContent.Text.Plain("%s", e));
+            } catch (RemoteException e) {
+                return new HttpResponse(HTTP.Response.Status.INTERNAL_SERVER_ERROR, new HttpContent.Text.Plain("%s", e));
+            } catch (ClassNotFoundException e) {
+                return new HttpResponse(HTTP.Response.Status.INTERNAL_SERVER_ERROR, new HttpContent.Text.Plain("%s", e));
+            } catch (IOException e) {
+                return new HttpResponse(HTTP.Response.Status.INTERNAL_SERVER_ERROR, new HttpContent.Text.Plain("%s", e));
+            }
+        } else if (urn.nid.equals("titan-oid-256")) {
+
+        }
+
+        return null;
+    }
+
+
+    /**
+     * This "injects" a RouteToNode message destined for a method that takes the HTTP.Request and produces an HTTP.Response 
+     */
+//    private HTTP.Response routeToNode(HTTP.Request request) {
+//        // Parse URI into constituent message parts.
+//        String[] uri = request.getURI().toString().split("/", 3);
+//        TitanNodeId nodeId = new TitanNodeIdImpl(uri[1].substring(1));
+//
+//        String klasse = uri[2].substring(0, uri[2].lastIndexOf('.'));
+//        String method = uri[2].substring(uri[2].lastIndexOf('.')+1);
+//
+//        System.out.printf("nodeId %s klasse '%s' '%s'%n", nodeId, klasse, method);
+//        
+//        System.out.printf("%s%n", request.toString());
+//
+//        try {
+//            Serializable payload = new byte[0];
+//            // The HTTP.Request isn't entirely serializable because it needs to read in the content.
+//            // Se we fake it here.
+//
+////            if (request.getMethod().equals(HTTP.Request.Method.POST) || request.getMethod().equals(HTTP.Request.Method.PUT)) {
+//                ByteArrayOutputStream out = new ByteArrayOutputStream();
+//                request.writeTo(new DataOutputStream(out));
+//                payload = out.toByteArray();
+////            }
+//
+//            // Send it
+//            TitanMessage response = this.node.sendToNode(nodeId, klasse, method, payload);
+//            // Package up return value.
+//
+//            return response.getPayload(HTTP.Response.class, node);
+//        } catch (ClassCastException e) {
+//            return new HttpResponse(HTTP.Response.Status.INTERNAL_SERVER_ERROR, new HttpContent.Text.Plain("%s", e));
+//        } catch (RemoteException e) {
+//            return new HttpResponse(HTTP.Response.Status.INTERNAL_SERVER_ERROR, new HttpContent.Text.Plain("%s", e));
+//        } catch (ClassNotFoundException e) {
+//            return new HttpResponse(HTTP.Response.Status.INTERNAL_SERVER_ERROR, new HttpContent.Text.Plain("%s", e));
+//        } catch (IOException e) {
+//            return new HttpResponse(HTTP.Response.Status.INTERNAL_SERVER_ERROR, new HttpContent.Text.Plain("%s", e));
+//        }
+//    }
+
+
     /**
      * This produces a uniform {@link XHTML.Document} for all purposes.
      *
@@ -815,7 +955,7 @@ public final class WebDAVDaemon extends AbstractTitanService implements MessageS
     private XHTML.Document makeDocument(String title, XHTML.Body body, XHTML.Link[] styleSheets, XHTML.Script[] scripts) throws URISyntaxException {
         List<XHTML.Link> styleLinks = new LinkedList<XHTML.Link>();
 
-        for (String url : this.node.getConfiguration().get(WebDAVDaemon.InspectorCSS).asStringArray(",")) {
+        for (String url : this.node.getConfiguration().get(HTTPMessageService.InspectorCSS).asStringArray(",")) {
             styleLinks.add(Xxhtml.Stylesheet(url).setMedia("all"));
         }
         if (styleSheets != null){
@@ -825,7 +965,7 @@ public final class WebDAVDaemon extends AbstractTitanService implements MessageS
         }
 
         List<XHTML.Script> scriptLinks = new LinkedList<XHTML.Script>();
-        for (String url : this.node.getConfiguration().get(WebDAVDaemon.InspectorJS).asStringArray(",")) {
+        for (String url : this.node.getConfiguration().get(HTTPMessageService.InspectorJS).asStringArray(",")) {
             scriptLinks.add(new XHTML.Script("text/javascript").setSource(url));
         }
         if (scripts != null){
@@ -834,13 +974,13 @@ public final class WebDAVDaemon extends AbstractTitanService implements MessageS
         	}
         }
 
-        Dojo dojo = new Dojo(this.node.getConfiguration().asString(WebDAVDaemon.DojoRoot),
-                this.node.getConfiguration().asString(WebDAVDaemon.DojoJavascript),
-                this.node.getConfiguration().asString(WebDAVDaemon.DojoTheme)
+        Dojo dojo = new Dojo(this.node.getConfiguration().asString(HTTPMessageService.DojoRoot),
+                this.node.getConfiguration().asString(HTTPMessageService.DojoJavascript),
+                this.node.getConfiguration().asString(HTTPMessageService.DojoTheme)
                 );
 
 
-        dojo.setConfig(this.node.getConfiguration().asString(WebDAVDaemon.DojoConfig));
+        dojo.setConfig(this.node.getConfiguration().asString(HTTPMessageService.DojoConfig));
         dojo.requires("dojo.parser", "sunlabs.StickyTooltip", "dijit.ProgressBar");
 
         XHTML.Head head = new XHTML.Head();
@@ -875,8 +1015,8 @@ public final class WebDAVDaemon extends AbstractTitanService implements MessageS
         super.start();
         
         if (this.daemon != null) {
-            if (WebDAVDaemon.this.log.isLoggable(Level.WARNING)) {
-                WebDAVDaemon.this.log.warning("Already started");
+            if (HTTPMessageService.this.log.isLoggable(Level.WARNING)) {
+                HTTPMessageService.this.log.warning("Already started");
             }
             // We've already been started
             return;
@@ -885,7 +1025,7 @@ public final class WebDAVDaemon extends AbstractTitanService implements MessageS
         this.setStatus("Initializing");
 
         try {
-            if (WebDAVDaemon.this.node.getConfiguration().asString(WebDAVDaemon.Protocol).equals("https")) {
+            if (HTTPMessageService.this.node.getConfiguration().asString(HTTPMessageService.Protocol).equals("https")) {
                 this.daemon = new HTTPSConnectionServer();
             } else {
                 this.daemon = new HTTPConnectionServer();
@@ -898,6 +1038,25 @@ public final class WebDAVDaemon extends AbstractTitanService implements MessageS
 
     public Thread getServerThread() {
         return (Thread) this.daemon;
+    }
+
+
+    /*
+     * http://127.0.0.1:12001/sunlabs.titan.node.services.WebDAVDaemon.inspect?acceptcount=3&exclude=[123,234,345]&props=[a1=v1,a2=v2]
+     */
+    public HTTP.Response inspect(TitanMessage request) throws ClassCastException, RemoteException, ClassNotFoundException, HTTP.BadRequestException, EOFException, IOException, URISyntaxException {
+        try {
+            byte[] bytes = (byte[]) request.getPayload(Serializable.class, this.node);
+            
+            HTTP.Request httpRequest = HttpRequest.getInstance(new ByteArrayInputStream(bytes));
+
+            XHTML.Document result = makeDocument(this.node.getNodeId().toString(), new XHTML.Body(this.node.toXHTML(httpRequest.getURI(), null)), null, null);
+
+            return new HttpResponse(HTTP.Response.Status.OK, new HttpContent.Text.HTML(result));
+        } catch (IOException e) {
+            e.printStackTrace();
+            throw e;
+        }
     }
 
     public XHTML.EFlow toXHTML(URI uri, Map<String,HTTP.Message> props) {
@@ -932,7 +1091,7 @@ public final class WebDAVDaemon extends AbstractTitanService implements MessageS
         if (root == null) { // We are inside of a .jar file.
             // paths beginning with '/' are matched directly with the path in the jar file.
             // Otherwise, it is prefixed by the package name.
-            String fullPath = "/" + WebDAVDaemon.this.node.getConfiguration().asString(WebDAVDaemon.ServerRoot) + absolutePath;
+            String fullPath = "/" + HTTPMessageService.this.node.getConfiguration().asString(HTTPMessageService.ServerRoot) + absolutePath;
             InputStream inputStream = this.getClass().getResourceAsStream(fullPath);
             if (inputStream == null) {
                 throw new FileNotFoundException(fullPath);
@@ -940,7 +1099,7 @@ public final class WebDAVDaemon extends AbstractTitanService implements MessageS
             return inputStream;
         }
         
-        File file = new File(new File(WebDAVDaemon.this.node.getConfiguration().asString(WebDAVDaemon.ServerRoot)).getAbsolutePath(), new PathName1(absolutePath).toString());
+        File file = new File(new File(HTTPMessageService.this.node.getConfiguration().asString(HTTPMessageService.ServerRoot)).getAbsolutePath(), new PathName1(absolutePath).toString());
         return new FileInputStream(file);
     }
     
@@ -952,7 +1111,7 @@ public final class WebDAVDaemon extends AbstractTitanService implements MessageS
         }
 
         public Source resolve(String href, String base) throws TransformerException {
-            HttpUtil.PathName root = new HttpUtil.PathName(WebDAVDaemon.this.node.getConfiguration().asString(WebDAVDaemon.ServerRoot));
+            HttpUtil.PathName root = new HttpUtil.PathName(HTTPMessageService.this.node.getConfiguration().asString(HTTPMessageService.ServerRoot));
             
             HttpUtil.PathName ref = new HttpUtil.PathName(href);
             if (ref.isAbsolute()) {

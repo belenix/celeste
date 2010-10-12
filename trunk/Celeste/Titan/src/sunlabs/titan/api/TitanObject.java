@@ -38,18 +38,18 @@ import sunlabs.titan.node.object.TitanObjectHandler;
 
 /**
 
- * Objects in the Beehive object pool have data (the state of the object) and
+ * Objects in the Titan object pool have data (the state of the object) and
  * behaviour (operations that get, set, or modify the state of the object).
- * Every {@code BeehiveObject} is an instantiated Java object that implements
- * the {@code BeehiveObject} interface.
+ * Every {@code TitanObject} is an instantiated Java object that implements
+ * the {@code TitanObject} interface.
  * These Java objects may store the state in the object itself or act as a
- * proxy to some external object outside of the Beehive object store.
- * Each {@code BeehiveObject} implementation controls the access to its data
+ * proxy to some external object outside of the Titan object store.
+ * Each {@code TitanObject} implementation controls the access to its data
  * through explicit access methods devised by the designer of the class
- * implementing the {@code BeehiveObject} interface.
+ * implementing the {@code TitanObject} interface.
  * <p>
- * Most data objects stored in the Beehive object pool are stored in the
- * backing-store. Other data objects stored in the Beehive object pool are
+ * Most data objects stored in the Titan object pool are stored in the
+ * backing-store. Other data objects stored in the Titan object pool are
  * ephemeral or dynamic and are not always ensured by the backing store,
  * but instead are typically computed or obtained from mechanisms outside of
  * the system when they are needed.
@@ -170,9 +170,9 @@ public interface TitanObject extends /*XHTMLInspectable,*/ Serializable {
     }
 
     /**
-     * Produce the {@link TitanGuid} that names this {@code BeehiveObject}.
+     * Produce the {@link TitanGuid} that names this {@code TitanObject}.
      * <p>
-     * NB: The validity of the object-id of a {@code BeehiveObject} is governed by rules
+     * NB: The validity of the object-id of a {@code TitanObject} is governed by rules
      * specified in the preamble documentation for this class (See {@link TitanObject}).
      * </p>
      */
@@ -180,10 +180,10 @@ public interface TitanObject extends /*XHTMLInspectable,*/ Serializable {
 
     /**
      * <p>
-     * Set the {@link TitanGuid} that names this {@code BeehiveObject}.
+     * Set the {@link TitanGuid} that names this {@code TitanObject}.
      * </p>
      * <p>
-     * NB: The validity of the {@code BeehiveObjectId} of a {@code BeehiveObject}
+     * NB: The validity of the {@code TitanGuid} of a {@code TitanObject}
      * is governed by rules specified in the preamble documentation for this class.
      * Setting an arbitrary value which is not valid is an error, but that error is not
      * checked here.
@@ -239,7 +239,7 @@ public interface TitanObject extends /*XHTMLInspectable,*/ Serializable {
     public TitanObject.Metadata getMetadata();
 
     /**
-     * Return {@code true} if this {@code BeehiveObject} is in its anti-object form.
+     * Return {@code true} if this {@code TitanObject} is in its anti-object form.
      */
     public boolean isDeleted();
 

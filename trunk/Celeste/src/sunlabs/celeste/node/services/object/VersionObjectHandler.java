@@ -71,7 +71,7 @@ import sunlabs.titan.node.object.RetrievableObject;
 import sunlabs.titan.node.object.StorableObject;
 import sunlabs.titan.node.services.AbstractTitanService;
 import sunlabs.titan.node.services.PublishDaemon;
-import sunlabs.titan.node.services.WebDAVDaemon;
+import sunlabs.titan.node.services.HTTPMessageService;
 import sunlabs.titan.node.services.api.Publish;
 import sunlabs.titan.util.DOLRStatus;
 
@@ -210,7 +210,7 @@ public final class VersionObjectHandler extends AbstractObjectHandler implements
 
             public XHTML.EFlow toXHTML(URI uri, Map<String,HTTP.Message> props) {
                 XHTML.Table.Body tbody = new XHTML.Table.Body()
-                .add(new XHTML.Table.Row(new XHTML.Table.Data(WebDAVDaemon.inspectObjectXHTML(this.objectId))))
+                .add(new XHTML.Table.Row(new XHTML.Table.Data(HTTPMessageService.inspectObjectXHTML(this.objectId))))
                 .add(new XHTML.Table.Row(new XHTML.Table.Data(this.version.toXHTML(uri, props))))
                 ;
                 return new XHTML.Table(tbody);
@@ -664,13 +664,13 @@ public final class VersionObjectHandler extends AbstractObjectHandler implements
 
         public XHTML.EFlow inspectAsXHTML(URI uri, Map<String,HTTP.Message> props) {
             XHTML.Table.Body tbody = new XHTML.Table.Body(
-                    new XHTML.Table.Row(new XHTML.Table.Data("Anchor Object Identifier"), new XHTML.Table.Data(WebDAVDaemon.inspectObjectXHTML(this.getAnchorObjectId()))),
+                    new XHTML.Table.Row(new XHTML.Table.Data("Anchor Object Identifier"), new XHTML.Table.Data(HTTPMessageService.inspectObjectXHTML(this.getAnchorObjectId()))),
                     new XHTML.Table.Row(new XHTML.Table.Data("File Length"), new XHTML.Table.Data(this.fileSize)),
                     new XHTML.Table.Row(new XHTML.Table.Data("Version"), new XHTML.Table.Data(this.version)),
                     new XHTML.Table.Row(new XHTML.Table.Data("Replication Parameters"), new XHTML.Table.Data("%s", this.replicationParams)),
                     new XHTML.Table.Row(new XHTML.Table.Data("Delete Token Identifier"), new XHTML.Table.Data(this.getDeleteTokenId()).setClass("ObjectId")),
-                    new XHTML.Table.Row(new XHTML.Table.Data("File Owner Identifier"), new XHTML.Table.Data(WebDAVDaemon.inspectObjectXHTML(this.owner))),
-                    new XHTML.Table.Row(new XHTML.Table.Data("File Group Identifier"), new XHTML.Table.Data(WebDAVDaemon.inspectObjectXHTML(this.group)))
+                    new XHTML.Table.Row(new XHTML.Table.Data("File Owner Identifier"), new XHTML.Table.Data(HTTPMessageService.inspectObjectXHTML(this.owner))),
+                    new XHTML.Table.Row(new XHTML.Table.Data("File Group Identifier"), new XHTML.Table.Data(HTTPMessageService.inspectObjectXHTML(this.group)))
             );
 
             if (this.clientMetaData != null) {
@@ -698,7 +698,7 @@ public final class VersionObjectHandler extends AbstractObjectHandler implements
                     BlockObject.Object.Reference bObjectReference = this.bObjectList.get(offset);
                     bObjectTableBody.add(new XHTML.Table.Row(new XHTML.Table.Data(offset),
                             new XHTML.Table.Data(bObjectReference.getLength()),
-                            new XHTML.Table.Data(WebDAVDaemon.inspectObjectXHTML(bObjectReference.getObjectId())))
+                            new XHTML.Table.Data(HTTPMessageService.inspectObjectXHTML(bObjectReference.getObjectId())))
                     );
                 }
                 manifestTable = new XHTML.Table(new XHTML.Table.Caption("Block Object Manifest"), bObjectTHead, bObjectTableBody).setClass("Manifest");

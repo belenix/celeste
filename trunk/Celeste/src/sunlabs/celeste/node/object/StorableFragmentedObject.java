@@ -57,7 +57,7 @@ import sunlabs.titan.node.TitanMessage;
 import sunlabs.titan.node.TitanMessage.RemoteException;
 import sunlabs.titan.node.TitanNodeIdImpl;
 import sunlabs.titan.node.object.TitanObjectHandler;
-import sunlabs.titan.node.services.WebDAVDaemon;
+import sunlabs.titan.node.services.HTTPMessageService;
 import sunlabs.titan.util.DOLRStatus;
 
 public final class StorableFragmentedObject {
@@ -220,11 +220,11 @@ public final class StorableFragmentedObject {
 
             XHTML.Table.Body tbody = new XHTML.Table.Body();
             tbody.add(new XHTML.Table.Row(new XHTML.Table.Data(new XML.Attr("colspan", "3"))
-                .add(WebDAVDaemon.inspectObjectXHTML(this.objectId))));
+                .add(HTTPMessageService.inspectObjectXHTML(this.objectId))));
             if (this.erasureCoder != null) {
                 tbody.add(new XHTML.Table.Row(indent, new XHTML.Table.Data(this.erasureCoder.toString())));
                 for (int i = 0; i < this.fragmentId.length; i++) {
-                    tbody.add(new XHTML.Table.Row(indent, emptyData, new XHTML.Table.Data(WebDAVDaemon.inspectObjectXHTML(this.fragmentId[i]))));
+                    tbody.add(new XHTML.Table.Row(indent, emptyData, new XHTML.Table.Data(HTTPMessageService.inspectObjectXHTML(this.fragmentId[i]))));
                 }
             }
 

@@ -71,6 +71,33 @@ import sunlabs.titan.node.util.DOLRLogger;
  */
 public interface TitanService extends Serializable {
     
+    public interface Operation<T extends Serializable> {
+        public interface HTTP {
+
+        }
+
+        /**
+         * Classes implementing the {@link TitanService.Operation} interface which also implement request/response
+         * communications between instances on different {@link TitanNode} instances
+         * implement this interface for requests sent to a {@code BeehiveObjectHandler}.
+         */
+        public interface Request extends Serializable {
+            
+        }
+
+        /**
+         * Classes implementing the {@link TitanService.Operation} interface which also implement request/response
+         * communications between instances on different {@link TitanNode} instances
+         * implement this interface for responses sent to a {@code BeehiveObjectHandler}.
+         */
+        public interface Response extends Serializable {
+            
+        }
+        
+        public T response(TitanMessage request);
+
+    }
+
     /**
      * Classes implementing the TitanService interface which also implement request/response
      * communications between instances on different {@link TitanNode} instances

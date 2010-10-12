@@ -23,7 +23,13 @@
  */
 package sunlabs.titan.node.services;
 
+import java.io.BufferedReader;
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.Serializable;
+import java.lang.management.ManagementFactory;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URL;
@@ -39,6 +45,7 @@ import java.util.Random;
 import java.util.Set;
 import java.util.SortedMap;
 import java.util.TreeMap;
+import java.util.concurrent.Callable;
 import java.util.logging.Level;
 
 import javax.management.JMException;
@@ -52,7 +59,11 @@ import sunlabs.asdf.web.XML.XHTML;
 import sunlabs.asdf.web.XML.XML;
 import sunlabs.asdf.web.XML.Xxhtml;
 import sunlabs.asdf.web.http.HTTP;
+import sunlabs.asdf.web.http.HTTP.BadRequestException;
+import sunlabs.asdf.web.http.HttpContent;
 import sunlabs.asdf.web.http.HttpMessage;
+import sunlabs.asdf.web.http.HttpRequest;
+import sunlabs.asdf.web.http.HttpResponse;
 import sunlabs.titan.Release;
 import sunlabs.titan.TitanGuidImpl;
 import sunlabs.titan.api.TitanGuid;
@@ -132,10 +143,6 @@ public final class CensusDaemon extends AbstractTitanService implements Census, 
             public Response(NodeAddress address, Map<TitanNodeId,OrderedProperties> census) {
                 this.address = address;
                 this.census = new HashMap<TitanNodeId,OrderedProperties>(census);
-            }
-
-            public NodeAddress getAddress() {
-                return this.address;
             }
 
             /**
@@ -345,7 +352,6 @@ public final class CensusDaemon extends AbstractTitanService implements Census, 
      *
      */
     public Select.Response select(TitanMessage message) throws ClassNotFoundException, ClassCastException, TitanMessage.RemoteException {
-
         Select.Request request = message.getPayload(Select.Request.class, this.node);
         if (this.log.isLoggable(Level.FINE)) {
             this.log.fine("%s", request);
@@ -353,10 +359,42 @@ public final class CensusDaemon extends AbstractTitanService implements Census, 
         Map<TitanNodeId,OrderedProperties> list = this.selectFromCatalogue(request.getCount(), request.getExcluded(), request.getMatch());
 
         Select.Response response = new Select.Response(list);
+
         if (this.log.isLoggable(Level.FINE)) {
             this.log.fine("%s", response);
         }
         return response;
+    }
+    
+    public HTTP.Response selectREST(TitanMessage message) throws ClassCastException, RemoteException, ClassNotFoundException {
+        byte[] bytes = (byte[]) message.getPayload(Serializable.class, this.node);
+
+        try {
+        HTTP.Request httpRequest = HttpRequest.getInstance(new ByteArrayInputStream(bytes));
+        HTTP.Message.Body messageBody = httpRequest.getMessage().getBody();
+        if (messageBody != null) {
+            InputStream in = messageBody.toInputStream();
+
+//            BufferedReader reader = new BufferedReader(new InputStreamReader(in));
+//            for (;;) {
+//                String line = reader.readLine();
+//                if (line == null)
+//                    break;
+//                Callable<String> process = new SuperviseProcess(line, 8192);
+//                try {
+//                    String result = process.call();
+//                    return new HttpResponse(HTTP.Response.Status.OK, new HttpContent.Text.Plain(result));
+//                } catch (Exception e) {
+//                    e.printStackTrace();
+//                }
+//            }
+        }
+        return new HttpResponse(HTTP.Response.Status.OK, new HttpContent.Text.Plain("Hello World from Census.selectREST"));
+        } catch (IOException e) {
+            return new HttpResponse(HTTP.Response.Status.INTERNAL_SERVER_ERROR, new HttpContent.Text.Plain(e.toString()));
+        } catch (BadRequestException e) {
+            return e.getResponse();
+        }
     }
 
     public interface ReportDaemonMBean extends ThreadMBean {
@@ -367,7 +405,6 @@ public final class CensusDaemon extends AbstractTitanService implements Census, 
 
     /**
      * This Thread periodically transmits a {@link CensusDaemon.Report.Request} containing this node's Census data to the Census keeper.
-     *
      */
     private class ReportDaemon extends Thread implements ReportDaemonMBean, Serializable {
         private final static long serialVersionUID = 1L;
@@ -381,6 +418,10 @@ public final class CensusDaemon extends AbstractTitanService implements Census, 
             this.setPriority(Thread.MIN_PRIORITY);
 
             this.myProperties = new OrderedProperties();
+            this.myProperties.setProperty(Census.OperatingSystemArchitecture, ManagementFactory.getOperatingSystemMXBean().getArch());
+            this.myProperties.setProperty(Census.OperatingSystemName, ManagementFactory.getOperatingSystemMXBean().getName());
+            this.myProperties.setProperty(Census.OperatingSystemVersion, ManagementFactory.getOperatingSystemMXBean().getVersion());
+            this.myProperties.setProperty(Census.OperatingSystemAvailableProcessors, ManagementFactory.getOperatingSystemMXBean().getAvailableProcessors());
 
             AbstractTitanService.registrar.registerMBean(JMX.objectName(CensusDaemon.this.jmxObjectNameRoot, "daemon"), this, ReportDaemonMBean.class);
         }
@@ -390,10 +431,12 @@ public final class CensusDaemon extends AbstractTitanService implements Census, 
             while (!interrupted()) {
                 this.lastReportTime = System.currentTimeMillis();
 
-                // Fill in this node's Census properties and value here...
+                // Fill in this node's dynamic Census properties here...
                 myProperties.setProperty(Census.TimeToLiveMillis, Time.secondsInMilliseconds(this.getReportRateSeconds() * 2));
+                myProperties.setProperty(Census.OperatingSystemLoadAverage, ManagementFactory.getOperatingSystemMXBean().getSystemLoadAverage());
 
                 Report.Request request = new Report.Request(CensusDaemon.this.node.getNodeAddress(), myProperties);
+                // XXX Make this a multicast message again, so nodes will cache partial info.
                 TitanMessage result = CensusDaemon.this.node.sendToNode(Census.CensusKeeper, CensusDaemon.this.getName(), "report", request);
 
                 if (result != null) {
@@ -542,7 +585,7 @@ public final class CensusDaemon extends AbstractTitanService implements Census, 
         }
 
         if (this.log.isLoggable(Level.FINEST)) {
-            this.log.finest("responder %s", reply.getSource().format());
+            this.log.finest("responds %s", reply.getSource().format());
         }
 
         try {
@@ -557,7 +600,7 @@ public final class CensusDaemon extends AbstractTitanService implements Census, 
         }
         return null;
     }
-
+    
     public XHTML.EFlow toXHTML(URI uri, Map<String,HTTP.Message> props) {
         try {
             String defaultNodeAddress = new NodeAddress(new TitanNodeIdImpl("1111111111111111111111111111111111111111111111111111111111111111"), "127.0.0.1", 12001, new URL("http", "127.0.0.1", 12002, "")).format();
@@ -640,9 +683,7 @@ public final class CensusDaemon extends AbstractTitanService implements Census, 
                     new XHTML.Table.Row(new XHTML.Table.Data("Add"), new XHTML.Table.Data(addButton), new XHTML.Table.Data(addressField))
             )));
 
-            XHTML.Table.Body dataTableBody = new XHTML.Table.Body(
-                    new XHTML.Table.Row(new XHTML.Table.Heading("Node"),
-                            new XHTML.Table.Heading("Properties")));
+            XHTML.Table.Body dataTableBody = new XHTML.Table.Body(new XHTML.Table.Row(new XHTML.Table.Heading("Node"), new XHTML.Table.Heading("Properties")));
 
             synchronized (this.catalogue) {
                 for (TitanGuid nodeId : this.catalogue.keySet()) {
@@ -659,7 +700,6 @@ public final class CensusDaemon extends AbstractTitanService implements Census, 
                     XHTML.Table.Body propertyBody = new XHTML.Table.Body();
                     for (Object key : data.keySet()) {
                         propertyBody.add(new XHTML.Table.Row(new XHTML.Table.Data(key), new XHTML.Table.Data(data.getProperty(key.toString()))));
-
                     }
                     dataTableBody.add(new XHTML.Table.Row(new XHTML.Table.Data(link), new XHTML.Table.Data(new XHTML.Table(propertyBody))));
                 }

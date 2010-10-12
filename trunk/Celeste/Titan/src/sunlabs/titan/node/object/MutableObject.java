@@ -64,7 +64,7 @@ import sunlabs.titan.node.BeehiveObjectStore;
 import sunlabs.titan.node.TitanMessage;
 import sunlabs.titan.node.TitanMessage.RemoteException;
 import sunlabs.titan.node.services.CensusDaemon;
-import sunlabs.titan.node.services.WebDAVDaemon;
+import sunlabs.titan.node.services.HTTPMessageService;
 import sunlabs.titan.node.services.api.Census;
 import sunlabs.titan.node.util.DOLRLogger;
 import sunlabs.titan.util.DOLRStatus;
@@ -665,7 +665,7 @@ public class MutableObject {
         public XHTML.EFlow toXHTML(URI uri, Map<String,HTTP.Message> props) {
             XHTML.Table.Body replicaSetBody = new XHTML.Table.Body();
             for (TitanGuid replica : this.replicas) {
-                replicaSetBody.add(new XHTML.Table.Row(new XHTML.Table.Data(WebDAVDaemon.inspectObjectXHTML(replica))));
+                replicaSetBody.add(new XHTML.Table.Row(new XHTML.Table.Data(HTTPMessageService.inspectObjectXHTML(replica))));
             }
             XHTML.Table serverTable = new XHTML.Table(replicaSetBody);
 

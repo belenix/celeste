@@ -287,7 +287,7 @@ public class HTTP {
      * 
      * @author Glenn Scott, Sun Microsystems Laboratories, Sun Microsystems, Inc.
      */
-    public interface Request {
+    public interface Request extends Serializable {
         /**
          * Return this request's method.
          */
@@ -301,7 +301,7 @@ public class HTTP {
         public URI getURI();
         
         /**
-         * Return this request's {@link HTTP.Message}.
+         * Return this request's {@link HTTP.Message} instance.
          */
         public HTTP.Message getMessage();
         
@@ -319,8 +319,7 @@ public class HTTP {
          * @return the number of bytes written.
          * @throws IOException if {@code DataOutputStream} throws {@code IOException}.
          */
-        // XXX This may go away.
-        public long writeTo(DataOutputStream out) throws IOException;
+        public long writeTo(OutputStream out) throws IOException;
         
         
         /**
@@ -335,7 +334,9 @@ public class HTTP {
          * </pre>
          * @author Glenn Scott, Sun Microsystems Laboratories, Sun Microsystems, Inc.
          */
-        public class Method {
+        public class Method implements Serializable {
+            private static final long serialVersionUID = 1L;
+            
             private String name;
 
             private Method(String name) {
@@ -876,7 +877,7 @@ public class HTTP {
      * @author Glenn Scott, Sun Microsystems Laboratories, Sun Microsystems, Inc.
      *
      */
-    public interface Response {
+    public interface Response extends Serializable {
 
         /**
          * Get the {@link HTTP.Message} contained in this response.
@@ -937,7 +938,7 @@ public class HTTP {
          * 
          * @author Glenn Scott, Sun Microsystems Laboratories, Sun Microsystems, Inc.
          */
-        public enum Status {
+        public enum Status implements Serializable {
             /**
              * The server has received the request headers,
              * and that the client should proceed to send the request body (in case of a request which needs to be sent; for example, a POST request).
@@ -1147,7 +1148,7 @@ public class HTTP {
      * 
      * @author Glenn Scott, Sun Microsystems Laboratories, Sun Microsystems, Inc.
      */
-    public interface Message {
+    public interface Message extends Serializable {
 
         /**
          * Produce a Map containing all of the {@link HTTP.Message.Header} instances in this Message.
@@ -1206,7 +1207,7 @@ public class HTTP {
          * 
          * @author Glenn Scott, Sun Microsystems Laboratories, Sun Microsystems, Inc.
          */
-        public interface Header {
+        public interface Header extends Serializable {
 
             public String getName();
 
@@ -1778,7 +1779,7 @@ public class HTTP {
          * 
          * @author Glenn Scott, Sun Microsystems Laboratories, Sun Microsystems, Inc.
          */
-        public interface Body {
+        public interface Body extends Serializable {
             /**
              * Get the {@link HTTP.Message.Header.ContentType} of this body's data.
              */

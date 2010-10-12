@@ -46,7 +46,7 @@ import sunlabs.titan.api.TitanGuid;
 import sunlabs.titan.api.TitanNodeId;
 import sunlabs.titan.api.TitanObject;
 import sunlabs.titan.node.object.DeleteableObject;
-import sunlabs.titan.node.services.WebDAVDaemon;
+import sunlabs.titan.node.services.HTTPMessageService;
 import sunlabs.titan.node.util.DOLRLogger;
 
 /**
@@ -234,7 +234,7 @@ public class Publishers extends AbstractStoredMap<TitanGuid, HashSet<Publishers.
         }
 
         public XHTML.Table.Data[] toXHTMLTableData() {
-        	XHTML.Anchor a = WebDAVDaemon.inspectNodeXHTML(this.publisher);
+        	XHTML.Anchor a = HTTPMessageService.inspectNodeXHTML(this.publisher);
 
         	String secondsToLive = (this.getObjectTTL() == TitanObject.INFINITE_TIME_TO_LIVE) ? "&infin;" : Long.toString(this.getObjectTTL());
         	String xmlClass = DeleteableObject.deleteTokenIsValid(this.metaData) ? "deleted" : "undeleted";
@@ -245,7 +245,7 @@ public class Publishers extends AbstractStoredMap<TitanGuid, HashSet<Publishers.
         	result[1] = new XHTML.Table.Data("%s (%+ds)", Time.ISO8601(Time.secondsInMilliseconds(this.getExpireTimeSeconds())),
         	        this.getExpireTimeSeconds() - Time.currentTimeInSeconds());
         	result[2] = new XHTML.Table.Data("%s", secondsToLive);
-        	result[3] = new XHTML.Table.Data(WebDAVDaemon.inspectServiceXHTML(this.getObjectClass()));
+        	result[3] = new XHTML.Table.Data(HTTPMessageService.inspectServiceXHTML(this.getObjectClass()));
         	return result;
         }
     }
@@ -499,14 +499,14 @@ public class Publishers extends AbstractStoredMap<TitanGuid, HashSet<Publishers.
         for (TitanGuid objectId : objectIds) {
             Set<Publishers.PublishRecord> publisherSet = this.getPublishers(objectId);
 
-            XHTML.Anchor inspectButton = WebDAVDaemon.inspectObjectXHTML(objectId);
+            XHTML.Anchor inspectButton = HTTPMessageService.inspectObjectXHTML(objectId);
             XHTML.Table.Data objectCell = new XHTML.Table.Data(inspectButton);
             if (this.node.getNeighbourMap().isRoot(objectId)) {
                 objectCell.setClass("root");
             }
 
             for (PublishRecord publisher : publisherSet) {
-                XHTML.Anchor publisherLink = WebDAVDaemon.inspectNodeXHTML(publisher.getNodeAddress());
+                XHTML.Anchor publisherLink = HTTPMessageService.inspectNodeXHTML(publisher.getNodeAddress());
                 if (publisher.isDeleted()) {
                     publisherLink.addClass("deleted");
                 }

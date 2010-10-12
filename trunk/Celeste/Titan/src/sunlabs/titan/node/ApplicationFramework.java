@@ -60,7 +60,7 @@ import sunlabs.titan.api.XHTMLInspectable;
 import sunlabs.titan.node.BeehiveObjectStore.NotFoundException;
 import sunlabs.titan.node.BeehiveObjectStore.ObjectExistenceException;
 import sunlabs.titan.node.services.AbstractTitanService;
-import sunlabs.titan.node.services.WebDAVDaemon;
+import sunlabs.titan.node.services.HTTPMessageService;
 import sunlabs.titan.node.services.api.AppClass;
 import sunlabs.titan.node.services.object.AppClassObjectType;
 import sunlabs.titan.node.services.xml.TitanXML;
@@ -1547,7 +1547,7 @@ public final class ApplicationFramework implements TitanServiceFramework, XHTMLI
      * <p>
      * If the given {@link URI} path component is prefixed with the String "/service/" the remainder of the path is
      * considered to be the name of a {@link AbstractTitanService} which is dispatched to produce the XHTML content.
-     * @see WebDAVDaemon
+     * @see HTTPMessageService
      * </p>
      */
     public XHTML.EFlow toXHTML(URI uri, Map<String,HTTP.Message> props) {
@@ -1573,7 +1573,7 @@ public final class ApplicationFramework implements TitanServiceFramework, XHTMLI
 
             for (String name: apps) {
                 TitanService app = this.get(name);
-                XHTML.Anchor link = WebDAVDaemon.inspectServiceXHTML(app.getName());
+                XHTML.Anchor link = HTTPMessageService.inspectServiceXHTML(app.getName());
 
                 tbody.add(new XHTML.Table.Row(new XHTML.Table.Data(link),
                         new XHTML.Table.Data(app.getDescription()),

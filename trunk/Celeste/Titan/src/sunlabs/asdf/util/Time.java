@@ -145,10 +145,13 @@ public class Time {
         return String.format("%d.%03ds", seconds, milliseconds);
     }
 
-    public static String ISO8601(long timeInMillis) {
-//        DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ"); // ISO 8601
-//        return dateFormat.format(timeInMillis);
-        
+    /**
+     * Format the given time in ISO 8601 format consisting of the string containing the components:
+     * YYYY-MM-DDThh:m:ss.sss[+-]OOOO
+     * @param timeInMillis
+     * @return the given time in ISO 8601
+     */
+    public static String ISO8601(long timeInMillis) {        
         return String.format("%1$tFT%1$tT.%1$tL%1$tz", timeInMillis);
     }
     

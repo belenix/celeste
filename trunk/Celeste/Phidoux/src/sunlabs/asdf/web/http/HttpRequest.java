@@ -1,6 +1,6 @@
 /* -*- mode: jde tab-width: 2; c-basic-indent: 2; indent-tabs-mode: nil -*- */
 /*
- * Copyright 2007-2008 Sun Microsystems, Inc. All Rights Reserved.
+ * Copyright 2007-2010 Oracle. All Rights Reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER
  *
  * This code is free software; you can redistribute it and/or modify
@@ -18,9 +18,9 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
  * 02110-1301 USA
  *
- * Please contact Sun Microsystems, Inc., 16 Network Circle, Menlo
- * Park, CA 94025 or visit www.sun.com if you need additional
- * information or have any questions.
+ * Please contact Oracle Corporation, 500 Oracle Parkway, Redwood Shores, CA 94065
+ * or visit www.oracle.com if you need additional information or
+ * have any questions.
  */
 package sunlabs.asdf.web.http;
 
@@ -30,6 +30,7 @@ import java.io.DataOutputStream;
 import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.io.PushbackInputStream;
 import java.io.UnsupportedEncodingException;
 import java.net.URI;
@@ -46,7 +47,6 @@ import sunlabs.asdf.web.http.HTTPServer;
 import sunlabs.asdf.web.http.HttpMessage;
 import sunlabs.asdf.web.http.HttpResponse;
 import sunlabs.asdf.web.http.HttpUtil;
-
 
 /**
  * This class represents an HTTP request sent from an HTTP client to an HTTP server.
@@ -65,7 +65,9 @@ import sunlabs.asdf.web.http.HttpUtil;
  * 
  * @author Glenn Scott - Sun Microsystems Laboratories, Sun Microsytems, Inc.
  */
-public class HttpRequest implements HTTP.Request {    
+public class HttpRequest implements HTTP.Request {
+    private static final long serialVersionUID = 1L;
+    
     private HTTP.Request.Method method;
     private URI requestURI;
     private byte[] httpVersion;
@@ -84,7 +86,7 @@ public class HttpRequest implements HTTP.Request {
      * @throws URISyntaxException if the received URI could not be parsed as a URI reference
      * @throws HTTP.BadRequestException if the request cannot be properly parsed.
      */
-    public static HttpRequest getInstance(PushbackInputStream in) throws HTTP.BadRequestException, EOFException, IOException {
+    public static HttpRequest getInstance(InputStream in) throws HTTP.BadRequestException, EOFException, IOException {
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
 
         // Absorb zero-length input lines.
@@ -114,7 +116,8 @@ public class HttpRequest implements HTTP.Request {
                 throw new HTTP.BadRequestException(String.format("Unsupported method '%s'", tokens[0]));
             URI requestURI = new URI(tokens[1]);
             String httpVersion = tokens[2].trim();
-            HTTP.Message message = HttpMessage.getInstance(in);
+//            HTTP.Message message = HttpMessage.getInstance(in);
+            HTTP.Message message = HttpMessage.getRequestInstance(in);
             return new HttpRequest(method, requestURI, httpVersion, message);         
         } catch (URISyntaxException e) {
             throw new HTTP.BadRequestException(String.format("Bad Request-URI: %s%n", e));
@@ -191,33 +194,34 @@ public class HttpRequest implements HTTP.Request {
 
     @Override
     public String toString() {
-        StringBuilder result = new StringBuilder(this.method.toString()).append(" ").append(this.requestURI).append(" ").append(new String(this.httpVersion)).append("\n");
+        String CRNL = "\r\n";
+        StringBuilder result = new StringBuilder(this.method.toString()).append(" ").append(this.requestURI).append(" ").append(new String(this.httpVersion)).append(CRNL);
 
         for (Entry<String,HTTP.Message.Header> entry : this.getMessage().getHeaders().entrySet()) {
-            result.append(entry.getValue().toString()).append("\n");
+            result.append(entry.getValue().toString()).append(CRNL);
         }
-        result.append("\n");
+        result.append(CRNL);
         
         HTTP.Message.Body body = this.getMessage().getBody();
         if (body != null) {
-            long contentLength = body.contentLength();
+//            long contentLength = body.contentLength();
         
-            if (contentLength > 0 && contentLength < 8192) {
-                result.append(body.toString());
-            } else {
-                if (contentLength > 0) {
-                    result.append(String.format(" (printing %d bytes of body suppressed.)", contentLength));
-                } else {
-                    //
-                }
-            }
+//            if (contentLength > 0 && contentLength < 8192) {
+            result.append("...");
+//            } else {
+//                if (contentLength > 0) {
+//                    result.append(String.format(" (printing %d bytes of body suppressed.)", contentLength));
+//                } else {
+//                    //
+//                }
+//            }
         } else {
-            result.append("(no body)\n");
+            result.append("(null body)\n");
         }
         return result.toString();
     }
 
-    public long writeTo(DataOutputStream out) throws IOException {
+    public long writeTo(OutputStream out) throws IOException {
         byte[] uriBytes = this.requestURI.toString().getBytes();
 
         out.write(this.method.toString().getBytes());
@@ -232,8 +236,8 @@ public class HttpRequest implements HTTP.Request {
             uriBytes.length +
             HttpUtil.SPACE.length +
             this.httpVersion.length + 
-            HttpUtil.CRNL.length; 
-            length += this.message.writeTo(out);
+            HttpUtil.CRNL.length;
+        length += this.message.writeTo(out);
         
         out.flush();
         

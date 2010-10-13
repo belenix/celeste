@@ -1,0 +1,23 @@
+This is Titan, a platform for building intelligent infrastructure.
+
+Use ant 1.7, or newer, to build the system.
+
+% (cd ../Phidoux ; ant clean all)
+% cp ../Phidoux/Phidoux.jar lib/
+% ant clean dojo all
+% chmod 600 etc/jmxremote.password.template
+% bin/titan clobber start
+
+
+See https://celeste.dev.java.net/
+
+README		This file.
+bin/		Shell script front-ends for invocations of Titan.
+build/		Created when building the system.
+build.xml	The Ant build script.
+lib/		Created when building the system.
+doc/		Miscellaneous documentation
+etc/		Run-time configuration data
+javadoc/	Created when building the system.
+lib/		Miscellaneous build or runtime libraries
+src/		The sources to the entire system

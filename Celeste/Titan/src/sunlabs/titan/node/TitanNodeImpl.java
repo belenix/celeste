@@ -359,7 +359,7 @@ public class TitanNodeImpl implements TitanNode, NodeMBean {
             this.getService(RoutingDaemon.class);
             this.getService(AppClassObjectType.class);
             this.getService(PublishDaemon.class);
-            this.getService(RetrieveObjectService.class);
+            //this.getService(RetrieveObjectService.class);
             this.getService(ReflectionService.class);
             this.getService(CensusDaemon.class);
         } catch (JMException e) {

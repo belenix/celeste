@@ -23,11 +23,9 @@
  */
 package sunlabs.titan.node.services;
 
-import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.io.Serializable;
 import java.lang.management.ManagementFactory;
 import java.net.MalformedURLException;
@@ -45,7 +43,6 @@ import java.util.Random;
 import java.util.Set;
 import java.util.SortedMap;
 import java.util.TreeMap;
-import java.util.concurrent.Callable;
 import java.util.logging.Level;
 
 import javax.management.JMException;
@@ -412,12 +409,16 @@ public final class CensusDaemon extends AbstractTitanService implements Census, 
         private OrderedProperties myProperties;
 
         private long lastReportTime;
+        // XXX This needs to be maintained as a persistent value across node restarts.  Otherwise the serial number will always start at zero and collide with itself.
+        // Alternatively, use the time-stamp of the report as the serial number.
+        private long serialNumber;
 
         protected ReportDaemon() throws JMException {
             super(CensusDaemon.this.node.getThreadGroup(), CensusDaemon.this.node.getNodeId() + ":" + CensusDaemon.this.getName() + ".daemon");
             this.setPriority(Thread.MIN_PRIORITY);
 
             this.myProperties = new OrderedProperties();
+            this.serialNumber = 0;
             this.myProperties.setProperty(Census.OperatingSystemArchitecture, ManagementFactory.getOperatingSystemMXBean().getArch());
             this.myProperties.setProperty(Census.OperatingSystemName, ManagementFactory.getOperatingSystemMXBean().getName());
             this.myProperties.setProperty(Census.OperatingSystemVersion, ManagementFactory.getOperatingSystemMXBean().getVersion());
@@ -434,6 +435,7 @@ public final class CensusDaemon extends AbstractTitanService implements Census, 
                 // Fill in this node's dynamic Census properties here...
                 myProperties.setProperty(Census.TimeToLiveMillis, Time.secondsInMilliseconds(this.getReportRateSeconds() * 2));
                 myProperties.setProperty(Census.OperatingSystemLoadAverage, ManagementFactory.getOperatingSystemMXBean().getSystemLoadAverage());
+                myProperties.setProperty(Census.ReportSerialNumber, this.serialNumber);
 
                 Report.Request request = new Report.Request(CensusDaemon.this.node.getNodeAddress(), myProperties);
                 // XXX Make this a multicast message again, so nodes will cache partial info.

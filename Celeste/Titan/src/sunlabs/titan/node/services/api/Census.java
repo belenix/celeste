@@ -78,6 +78,8 @@ public interface Census {
     public static final String OperatingSystemVersion = "Census.OperatingSystemVersion";
     public final static String OperatingSystemAvailableProcessors = "Census.AvailableProcessors";
 
+    public static final String ReportSerialNumber = "Census.SerialNumber";
+
     /**
      * Put all of the entries in the given {@link Map} {@code census} into the census data kept by this node.
      *

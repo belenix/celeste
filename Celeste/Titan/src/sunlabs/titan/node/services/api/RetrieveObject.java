@@ -27,5 +27,5 @@ import sunlabs.titan.TitanGuidImpl;
 import sunlabs.titan.api.TitanObject;
 
 public interface RetrieveObject {
-    public TitanObject retrieveObject(final TitanGuidImpl objectId);
+//    public TitanObject retrieveObject(final TitanGuidImpl objectId);
 }

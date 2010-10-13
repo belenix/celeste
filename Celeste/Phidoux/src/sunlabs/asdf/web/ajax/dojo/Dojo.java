@@ -142,7 +142,8 @@ public class Dojo {
     }
 
     /**
-     * Constructs an {@link XML.Script} element containing CDATA consisting of lines, each containing an invocation of {@code dojo.registerModulePath(}module{@code )}
+     * Constructs an {@link XML.Script} element containing CDATA consisting of lines,
+     * each containing an invocation of {@code dojo.registerModulePath(}module{@code )}
      * where each module is taken from {@link #modules}.
      * See {@link #addModule(String, String)}.
      * @return An {@link XML.Script} element containing invocations of {@code dojo.registerModulePath(}module{@code )}

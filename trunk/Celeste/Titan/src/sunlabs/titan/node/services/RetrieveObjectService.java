@@ -63,24 +63,24 @@ public final class RetrieveObjectService extends AbstractTitanService implements
         }
     }
 
-    public TitanObject retrieveObject(final TitanGuidImpl objectId) {
-        TitanMessage reply = RetrieveObjectService.this.node.sendToObject(objectId, RetrieveObjectService.name, "retrieveLocalObject", objectId);
-        if (!reply.getStatus().isSuccessful())
-            return null;
-
-        try {
-            return reply.getPayload(TitanObject.class, this.node);
-        } catch (ClassNotFoundException e) {
-            e.printStackTrace();
-            throw new RuntimeException(e);
-        } catch (ClassCastException e) {
-            e.printStackTrace();
-            throw new RuntimeException(e);
-        } catch (RemoteException e) {
-            e.printStackTrace();
-            throw new RuntimeException(e);
-        }
-    }
+//    public TitanObject retrieveObject(final TitanGuidImpl objectId) {
+//        TitanMessage reply = RetrieveObjectService.this.node.sendToObject(objectId, RetrieveObjectService.name, "retrieveLocalObject", objectId);
+//        if (!reply.getStatus().isSuccessful())
+//            return null;
+//
+//        try {
+//            return reply.getPayload(TitanObject.class, this.node);
+//        } catch (ClassNotFoundException e) {
+//            e.printStackTrace();
+//            throw new RuntimeException(e);
+//        } catch (ClassCastException e) {
+//            e.printStackTrace();
+//            throw new RuntimeException(e);
+//        } catch (RemoteException e) {
+//            e.printStackTrace();
+//            throw new RuntimeException(e);
+//        }
+//    }
 
     public XHTML.EFlow toXHTML(URI uri, Map<String,HTTP.Message> props) {
         return new XHTML.Div("nothing here");

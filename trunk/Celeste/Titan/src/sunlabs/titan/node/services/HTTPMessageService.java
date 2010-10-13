@@ -862,12 +862,27 @@ public final class HTTPMessageService extends AbstractTitanService implements Me
      * 
      * In version 2, the message could be handed off to the specified service name from there it is handled.
      * http://127.0.0.1:12001/sunlabs.titan.node.services.HTTPMessageService.inspect/urn:titan-nid-256:C98088B940445D549BB33FE41D4B0D927451386BFFB543CB99DD7F6C4DACF371
+     * http://127.0.0.1:12001/sunlabs.titan.node.services.HTTPMessageService.inspect?urn=urn:titan-nid-256:C98088B940445D549BB33FE41D4B0D927451386BFFB543CB99DD7F6C4DACF371
      * 
      * It depends on how it's to be modeled in terms operation and operand.
      * Is the service the operation and the object or node the operand?  Otherwise, the object or node is the operator and the object id is the operand.
+     * 
+     * Perhaps there is no class to invoke, only a method.  The class is implicit in the 'type' of named object (nodes are objects).
+     * 
+     * http://127.0.0.1:12001/urn:titan-nid-256:C98088B940445D549BB33FE41D4B0D927451386BFFB543CB99DD7F6C4DACF371/inspect invokes TitanNode.inspect(TitanMessage)
+     * http://127.0.0.1:12001/urn:titan-oid-256:XX8088B940445D549BB33FE41D4B0D927451386BFFB543CB99DD7F6C4DACF371/inspect invokes <object-type>.inspect(TitanMessage)
+     * This means all services that are intrinsic to the node have access methods in TitanNode.java
+
+     * http://127.0.0.1:12001/urn:titan-oid-256:XX8088B940445D549BB33FE41D4B0D927451386BFFB543CB99DD7F6C4DACF371.inspect?param=value invokes <object-type>.inspect(TitanMessage)
+     * with the params encoded in a Properties object.
+
+     * http://127.0.0.1:12001/urn:titan-nid-256:~C98088B940445D549BB33FE41D4B0D927451386BFFB543CB99DD7F6C4DACF371.inspect invokes TitanNode.inspect(TitanMessage)
+     * with the params encoded in a Properties object. The message is sent via LOOSE routing.
+     * 
+     * 
      */
     private HTTP.Response routeToURN(HTTP.Request request) {
-        String[] tokens = request.getURI().getPath().split("/", 3); // Don't forget about the leading empty token
+        String[] tokens = request.getURI().getPath().split("/", 3); // Don't forget about the leading empty token <empty>/...
         URN urn = new URN(tokens[1]);
         
         // Clean this up such that TitanNodeId and TitanGuid instances can identify themselves as a URN.

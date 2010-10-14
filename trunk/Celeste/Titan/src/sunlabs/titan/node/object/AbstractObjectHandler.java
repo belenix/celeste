@@ -68,6 +68,8 @@ public abstract class AbstractObjectHandler extends AbstractTitanService impleme
      * XXX How many copies of a publish record to push around?
      */
     public static void publishObjectBackup(AbstractObjectHandler handler, Publish.PublishUnpublishRequest publishRequest) throws ClassNotFoundException {
+        // This is implicit in the fact that this node would not be the root of the published object..
+        // Perhaps there is a simplification to be made in the request because of this.
     	if (publishRequest.isBackup()) {
     		for (Map.Entry<TitanGuid,TitanObject.Metadata> entry : publishRequest.getObjects().entrySet()) {
     			if (handler.getLogger().isLoggable(Level.FINEST)) {

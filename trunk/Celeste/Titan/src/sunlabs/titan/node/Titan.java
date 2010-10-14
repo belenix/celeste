@@ -339,7 +339,7 @@ public class Titan {
                     System.out.printf("%s [%d ms] %s%n", Time.ISO8601(System.currentTimeMillis()),
                             System.currentTimeMillis() - node[i].getConfiguration().asLong(TitanNodeImpl.StartTime),
                             node[i].getNodeAddress().format());
-
+                                   
                     try {
                         Thread.sleep(Time.secondsInMilliseconds(interprocessStartupDelayTimeSeconds));
                     } catch (InterruptedException e) {
@@ -351,7 +351,7 @@ public class Titan {
                     properties.setProperty(HTTPMessageService.ServerSocketPort.getName(), properties.getPropertyAsInt(HTTPMessageService.ServerSocketPort.getName()) + webdavPortIncrement);
                 }
                 if (n_nodes > 1) {
-                    System.out.printf("%s All node threads running.%n", Time.ISO8601(System.currentTimeMillis()));
+                    System.out.printf("%s All %d node threads running.%n", Time.ISO8601(System.currentTimeMillis()), n_nodes);
                 }
 
                 // Wait for all the threads to terminate.

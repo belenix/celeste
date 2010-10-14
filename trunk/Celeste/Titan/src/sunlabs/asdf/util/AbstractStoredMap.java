@@ -140,24 +140,26 @@ abstract public class AbstractStoredMap<K,V extends Serializable> implements Ite
      * </p>
      */
     public synchronized long getCurrentSpoolSize() {
+        // If the current size is unknown (-1) compute it here.  This could take a long time.
     	if (this.currentSpoolSize == -1)
     		this.computeCurrentSpoolSize();
     	return this.currentSpoolSize;
     }
     
-    /**
-     * Get the maximum number of bytes that this file store is allowed to consume.
-     */
-    public long getSpoolCapacity() {
-    	return this.maxCapacity;
-    }
+//    /**
+//     * Get the maximum number of bytes that this file store is allowed to consume.
+//     */
+//    public long getSpoolCapacity() {        
+//    	return Math.min(this.maxCapacity, this.root.getFreeSpace());
+//    }
 
     /**
      * Get the number of bytes that are available for this file store to consume.
+     * This is the current maximum capacity minus the current used space.
      * @return the number of bytes that are available for this file store to consume.
      */
     public long getSpoolAvailable() {
-    	return this.maxCapacity - this.currentSpoolSize;
+    	return Math.min(this.maxCapacity, this.root.getFreeSpace()) - this.currentSpoolSize;
     }
 
     /**

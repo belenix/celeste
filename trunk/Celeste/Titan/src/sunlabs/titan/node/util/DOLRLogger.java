@@ -23,8 +23,10 @@
  */
 package sunlabs.titan.node.util;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
+import java.io.PrintStream;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.logging.ConsoleHandler;
@@ -269,6 +271,13 @@ public class DOLRLogger implements DOLRLoggerMBean {
         this.logger.logp(Level.SEVERE, this.getCallingClass(), this.getCallingMethod(), msg);
     }
 
+    public void severe(Exception exception) {
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        PrintStream s = new java.io.PrintStream(out);
+        exception.printStackTrace(s);
+        this.logger.logp(Level.SEVERE, this.getCallingClass(), this.getCallingMethod(), out.toString());
+    }
+    
     public void severe(String format, Object... args) {
         this.logger.logp(Level.SEVERE, this.getCallingClass(), this.getCallingMethod(), String.format(format, args));
     }

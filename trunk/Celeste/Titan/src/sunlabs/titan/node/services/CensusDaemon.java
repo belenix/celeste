@@ -91,13 +91,15 @@ public final class CensusDaemon extends AbstractTitanService implements Census, 
 
     /** The number of seconds between each Census report transmitted by this {@link TitanNode}. */
     public final static Attributes.Prototype ReportRateSeconds = new Attributes.Prototype(CensusDaemon.class,
-            "ReportRateSeconds",
-            60,
+            "ReportRateSeconds", 60,
     "The number of seconds between each Census report transmitted by this TitanNode.");
 
+    /** The number of milliseconds in deviation between timestamps sent by a sender versus the receiver of a Census report */
+    public final static Attributes.Prototype ClockSlopToleranceSeconds = new Attributes.Prototype(CensusDaemon.class,
+            "ClockSlopToleranceSeconds", Time.minutesInSeconds(1),
+    "The number of milliseconds in deviation between timestamps sent by a sender versus the receiver of a Census report");
     private static String release = Release.ThisRevision();
 
-    transient private ReportDaemon daemon;
 
     /**
      * A single Census report.
@@ -128,6 +130,10 @@ public final class CensusDaemon extends AbstractTitanService implements Census, 
 
             public OrderedProperties getProperties() {
                 return this.properties;
+            }
+            
+            public String toString() {
+                return new StringBuilder("Request: ").append(this.address.format()).append(" ").append(this.properties.toString()).toString();
             }
         }
 
@@ -227,9 +233,6 @@ public final class CensusDaemon extends AbstractTitanService implements Census, 
         }
     }
 
-    // This ought to just be the Dossier file.  But the Dossier may have information that is not up-to-date.
-    private SortedMap<TitanNodeId,OrderedProperties> catalogue;
-
     /**
      * For each census report in the given {@link Map}, if it does not already exist add it to the current census.
      * Otherwise, if there is already a report in the current census so not replace it.
@@ -285,9 +288,17 @@ public final class CensusDaemon extends AbstractTitanService implements Census, 
         return result;
     }
 
+    transient private ReportDaemon daemon;
+
+    // This ought to just be the Dossier file.  But the Dossier may have information that is not up-to-date.
+    private SortedMap<TitanNodeId,OrderedProperties> catalogue;
+
+    private OrderedProperties myProperties;
+
     public CensusDaemon(TitanNode node) throws JMException {
         super(node, CensusDaemon.name, "Catalogue all Nodes");
 
+        node.getConfiguration().add(CensusDaemon.ClockSlopToleranceSeconds);
         node.getConfiguration().add(CensusDaemon.ReportRateSeconds);
 
         if (this.log.isLoggable(Level.CONFIG)) {
@@ -295,53 +306,75 @@ public final class CensusDaemon extends AbstractTitanService implements Census, 
         }
 
         this.catalogue = Collections.synchronizedSortedMap(new TreeMap<TitanNodeId,OrderedProperties>());
+
+        this.myProperties = new OrderedProperties();
+        if (this.log.isLoggable(Level.CONFIG)) {
+            this.log.config("%s", node.getConfiguration().get(CensusDaemon.ClockSlopToleranceSeconds));
+            this.log.config("%s", node.getConfiguration().get(CensusDaemon.ReportRateSeconds));
+        }
     }
 
     /**
      * Receive a {@link CensusDaemon.Report.Request} from a {@link TitanNode}.
      * The report must contain a positive value for the {@link Census#TimeToLiveMillis} property.
      * <p>
-     * If a report does not exist, create one.  If a report already exists, this will
-     * update it.  An individual report is the only way an existing report can be updated.
+     * If a report does not already exist, create it.
+     * If a report already exists, this will update it
+     * An individual report is the only way an existing report can be updated.
      * </p>
      * <p>
-     * Bulk reporting does not update an existing report, as it only creates missing reports.
+     * Bulk reporting does not update an existing reports.
      * </p>
+     * This must be modified to allow bulk updating of existing reports by updating only those reports with a larger timestamp than the existing report.
      * @param message
      */
     public Report.Response report(TitanMessage message) throws ClassCastException, ClassNotFoundException, TitanMessage.RemoteException {
-        if (message.isTraced()) {
-            this.log.info(message.traceReport());
-        }
-
         Report.Request request = message.getPayload(Report.Request.class, this.node);
 
+        if (this.log.isLoggable(Level.FINE)) {
+            this.log.fine("%s", request);
+        }
+
         OrderedProperties properties = request.getProperties();
-        properties.setProperty(Census.Timestamp, System.currentTimeMillis());
-        if (properties.contains(Census.TimeToLiveMillis)) {
-            throw new IllegalArgumentException(String.format("Report.Request failed to include the property %s%n", Census.TimeToLiveMillis));
+
+        if (!properties.containsKey(Census.TimeToLiveSeconds)) {
+            throw new IllegalArgumentException(String.format("Report.Request failed to include the property %s%n", Census.TimeToLiveSeconds));
+        }
+        if (!properties.containsKey(Census.SenderTimestamp)) {
+            throw new IllegalArgumentException(String.format("Report.Request failed to include the property %s%n", Census.SenderTimestamp));
         }
 
-        if (this.log.isLoggable(Level.FINEST)) {
-            this.log.finest("from %s", message.getSource().getObjectId());
-        }
+        long senderTimeStamp = properties.getPropertyAsLong(Census.SenderTimestamp, 0);
+        long receiverTimeStamp = Time.millisecondsInSeconds(System.currentTimeMillis());
+        long clockSlop = this.getNode().getConfiguration().get(CensusDaemon.ClockSlopToleranceSeconds).asLong();
+        long hi = receiverTimeStamp + clockSlop;
+        long low = receiverTimeStamp - clockSlop;
 
-        synchronized (this.catalogue) {
-            this.catalogue.put(message.getSource().getObjectId(), properties);
-            Report.Response response = new Report.Response(CensusDaemon.this.node.getNodeAddress(), this.catalogue);
-            return response;
-        }
+        if (senderTimeStamp >= low && senderTimeStamp <= hi) {
+            properties.setProperty(Census.ReceiverTimestamp, receiverTimeStamp);
 
-        //            // Update the Dossier...
-        //            Dossier.Entry dossier = CensusDaemon.this.node.getDossier().getEntryAndLock(message.getSource());
-        //            try {
-        //              CensusDaemon.this.node.getDossier().put(dossier);
-        //            } finally {
-        //              if (!dossier.getNodeAddress().equals(message.getSource())) {
-        //                  System.err.printf("Unlocking %s vs %s%n", message.getSource(), dossier.getNodeAddress());
-        //              }
-        //              CensusDaemon.this.node.getDossier().unlockEntry(dossier);
-        //            }
+            synchronized (this.catalogue) {
+                this.log.info("update %s", message.getSource().getObjectId());
+                this.catalogue.put(message.getSource().getObjectId(), properties);
+                Report.Response response = new Report.Response(CensusDaemon.this.node.getNodeAddress(), this.catalogue);
+                this.log.info("updated %s", this.catalogue.toString());
+                return response;
+            }
+        }
+        throw new IllegalArgumentException(String.format("Timestamps differ by more than allowed amount %ds", clockSlop));
+    }
+    
+    public Report.Response report() throws ClassCastException, RemoteException, ClassNotFoundException {
+        // Fill in this node's dynamic Census properties here...
+        myProperties.setProperty(Census.SenderTimestamp, Time.millisecondsInSeconds(System.currentTimeMillis()));
+        myProperties.setProperty(Census.TimeToLiveSeconds, CensusDaemon.this.node.getConfiguration().asLong(CensusDaemon.ReportRateSeconds) * 2);
+        myProperties.setProperty(Census.OperatingSystemLoadAverage, ManagementFactory.getOperatingSystemMXBean().getSystemLoadAverage());
+
+        Report.Request request = new Report.Request(CensusDaemon.this.node.getNodeAddress(), myProperties);
+        
+        // XXX Make this a multicast message again, so nodes will cache partial info.
+        TitanMessage result = CensusDaemon.this.node.sendToNode(Census.CensusKeeper, CensusDaemon.this.getName(), "report", request);
+        return result.getPayload(Report.Response.class, this.node);
     }
 
     /**
@@ -396,7 +429,7 @@ public final class CensusDaemon extends AbstractTitanService implements Census, 
 
     public interface ReportDaemonMBean extends ThreadMBean {
         public long getReportRateSeconds();
-        public void setRefreshRate(long refreshRate);
+        public void setReportRateSeconds(long refreshRate);
         public String getInfo();
     }
 
@@ -406,7 +439,7 @@ public final class CensusDaemon extends AbstractTitanService implements Census, 
     private class ReportDaemon extends Thread implements ReportDaemonMBean, Serializable {
         private final static long serialVersionUID = 1L;
 
-        private OrderedProperties myProperties;
+//        private OrderedProperties myProperties;
 
         private long lastReportTime;
         // XXX This needs to be maintained as a persistent value across node restarts.  Otherwise the serial number will always start at zero and collide with itself.
@@ -417,12 +450,13 @@ public final class CensusDaemon extends AbstractTitanService implements Census, 
             super(CensusDaemon.this.node.getThreadGroup(), CensusDaemon.this.node.getNodeId() + ":" + CensusDaemon.this.getName() + ".daemon");
             this.setPriority(Thread.MIN_PRIORITY);
 
-            this.myProperties = new OrderedProperties();
             this.serialNumber = 0;
-            this.myProperties.setProperty(Census.OperatingSystemArchitecture, ManagementFactory.getOperatingSystemMXBean().getArch());
-            this.myProperties.setProperty(Census.OperatingSystemName, ManagementFactory.getOperatingSystemMXBean().getName());
-            this.myProperties.setProperty(Census.OperatingSystemVersion, ManagementFactory.getOperatingSystemMXBean().getVersion());
-            this.myProperties.setProperty(Census.OperatingSystemAvailableProcessors, ManagementFactory.getOperatingSystemMXBean().getAvailableProcessors());
+            
+            CensusDaemon.this.myProperties = new OrderedProperties();
+            CensusDaemon.this.myProperties.setProperty(Census.OperatingSystemArchitecture, ManagementFactory.getOperatingSystemMXBean().getArch());
+            CensusDaemon.this.myProperties.setProperty(Census.OperatingSystemName, ManagementFactory.getOperatingSystemMXBean().getName());
+            CensusDaemon.this.myProperties.setProperty(Census.OperatingSystemVersion, ManagementFactory.getOperatingSystemMXBean().getVersion());
+            CensusDaemon.this.myProperties.setProperty(Census.OperatingSystemAvailableProcessors, ManagementFactory.getOperatingSystemMXBean().getAvailableProcessors());
 
             AbstractTitanService.registrar.registerMBean(JMX.objectName(CensusDaemon.this.jmxObjectNameRoot, "daemon"), this, ReportDaemonMBean.class);
         }
@@ -431,49 +465,31 @@ public final class CensusDaemon extends AbstractTitanService implements Census, 
         public void run() {
             while (!interrupted()) {
                 this.lastReportTime = System.currentTimeMillis();
-
-                // Fill in this node's dynamic Census properties here...
-                myProperties.setProperty(Census.TimeToLiveMillis, Time.secondsInMilliseconds(this.getReportRateSeconds() * 2));
-                myProperties.setProperty(Census.OperatingSystemLoadAverage, ManagementFactory.getOperatingSystemMXBean().getSystemLoadAverage());
-                myProperties.setProperty(Census.ReportSerialNumber, this.serialNumber);
-
-                Report.Request request = new Report.Request(CensusDaemon.this.node.getNodeAddress(), myProperties);
-                // XXX Make this a multicast message again, so nodes will cache partial info.
-                TitanMessage result = CensusDaemon.this.node.sendToNode(Census.CensusKeeper, CensusDaemon.this.getName(), "report", request);
-
-                if (result != null) {
-                    if (result.getStatus().isSuccessful()) {
-                        try {
-                            Report.Response response = result.getPayload(Report.Response.class, CensusDaemon.this.node);
-                            CensusDaemon.this.putAllLocal(response.getCensus());
-                        } catch (ClassNotFoundException e) {
-                            if (CensusDaemon.this.log.isLoggable(Level.SEVERE)) {
-                                CensusDaemon.this.log.severe("%s when parsing Response.", e.toString());
-                            }
-                        } catch (ClassCastException e) {
-                            if (CensusDaemon.this.log.isLoggable(Level.SEVERE)) {
-                                CensusDaemon.this.log.severe("%s when parsing Response.", e.toString());
-                            }
-                        } catch (RemoteException e) {
-                            if (CensusDaemon.this.log.isLoggable(Level.SEVERE)) {
-                                CensusDaemon.this.log.severe("%s when parsing Response.", e.getCause().toString());
-                            }
-                        }
-                    } else {
-                        if (CensusDaemon.this.log.isLoggable(Level.SEVERE)) {
-                            CensusDaemon.this.log.severe("Census report bad status: %s", result.getStatus());
-                        }
+                try {
+                    Report.Response response = CensusDaemon.this.report();
+                    CensusDaemon.this.putAllLocal(response.getCensus());
+                } catch (ClassNotFoundException e) {
+                    if (CensusDaemon.this.log.isLoggable(Level.SEVERE)) {
+                        CensusDaemon.this.log.severe(e);
+                    }
+                } catch (ClassCastException e) {
+                    if (CensusDaemon.this.log.isLoggable(Level.SEVERE)) {
+                        CensusDaemon.this.log.severe(e);
+                    }
+                } catch (RemoteException e) {
+                    if (CensusDaemon.this.log.isLoggable(Level.SEVERE)) {
+                        CensusDaemon.this.log.severe(e);
                     }
                 }
 
                 // Expire/Clean up the local Census data.
-                SortedMap<TitanNodeId,OrderedProperties> newCatalogue = new TreeMap<TitanNodeId,OrderedProperties>();;
+                SortedMap<TitanNodeId,OrderedProperties> newCatalogue = new TreeMap<TitanNodeId,OrderedProperties>();
                 synchronized (CensusDaemon.this.catalogue) {
                     for (TitanNodeId nodeId : CensusDaemon.this.catalogue.keySet()) {
                         OrderedProperties report = CensusDaemon.this.catalogue.get(nodeId);
-                        long lastUpdateTime = report.getPropertyAsLong(Census.Timestamp, 0);
-                        long timeToLive = report.getPropertyAsLong(Census.TimeToLiveMillis, 0);
-                        if ((lastUpdateTime + timeToLive) > System.currentTimeMillis()) {
+                        long receiverTimestamp = report.getPropertyAsLong(Census.ReceiverTimestamp, 0);
+                        long timeToLiveSeconds = report.getPropertyAsLong(Census.TimeToLiveSeconds, 0);
+                        if ((receiverTimestamp + timeToLiveSeconds) > Time.millisecondsInSeconds(System.currentTimeMillis())) {
                             newCatalogue.put(nodeId, report);
                         }
                     }
@@ -510,8 +526,8 @@ public final class CensusDaemon extends AbstractTitanService implements Census, 
             return CensusDaemon.this.node.getConfiguration().asLong(CensusDaemon.ReportRateSeconds);
         }
 
-        public void setRefreshRate(long refreshPeriodMillis) {
-            CensusDaemon.this.node.getConfiguration().set(CensusDaemon.ReportRateSeconds, refreshPeriodMillis);
+        public void setReportRateSeconds(long reportRateSeconds) {
+            CensusDaemon.this.node.getConfiguration().set(CensusDaemon.ReportRateSeconds, reportRateSeconds);
         }
     }
 
@@ -650,20 +666,15 @@ public final class CensusDaemon extends AbstractTitanService implements Census, 
 
             XML.Attribute nameAction = new XML.Attr("name", "action");
 
-            XHTML.Input start = new XHTML.Input(XHTML.Input.Type.SUBMIT)
-            .setName("action").setValue("start").setTitle("Start the census");
-            XHTML.Input stop = new XHTML.Input(XHTML.Input.Type.SUBMIT)
-            .setName("action").setValue("stop").setTitle("Stop the census");
+            XHTML.Input start = new XHTML.Input(XHTML.Input.Type.SUBMIT).setName("action").setValue("start").setTitle("Start the census");
+            XHTML.Input stop = new XHTML.Input(XHTML.Input.Type.SUBMIT).setName("action").setValue("stop").setTitle("Stop the census");
             XHTML.Input controlButton = (this.daemon == null) ? start : stop;
 
-            XHTML.Input setButton = new XHTML.Input(XHTML.Input.Type.SUBMIT)
-            .setName("action").setValue("set-config").setTitle("Set Parameters");
+            XHTML.Input setButton = new XHTML.Input(XHTML.Input.Type.SUBMIT).setName("action").setValue("set-config").setTitle("Set Parameters");
 
-            XHTML.Input resetButton = new XHTML.Input(XHTML.Input.Type.SUBMIT)
-            .setName("action").setValue("reset").setTitle("Reset the collected census");
+            XHTML.Input resetButton = new XHTML.Input(XHTML.Input.Type.SUBMIT).setName("action").setValue("reset").setTitle("Reset the collected census");
 
-            XHTML.Input go = new XHTML.Input(XHTML.Input.Type.SUBMIT)
-            .setName("action").setValue("run").setTitle("Send census report now.");
+            XHTML.Input go = new XHTML.Input(XHTML.Input.Type.SUBMIT).setName("action").setValue("run").setTitle("Send census report now.");
 
             XHTML.Input addressField = Xxhtml.InputText(new XML.Attr("name", "NodeAddress"),
                     new XML.Attr("value", defaultNodeAddress),
@@ -680,7 +691,7 @@ public final class CensusDaemon extends AbstractTitanService implements Census, 
             .add(new XHTML.Table.Body(
                     new XHTML.Table.Row(new XHTML.Table.Data(""), new XHTML.Table.Data(controlButton, XHTML.CharacterEntity.nbsp, go, XHTML.CharacterEntity.nbsp, resetButton)),
                     new XHTML.Table.Row(new XHTML.Table.Data("Logging Level"), new XHTML.Table.Data(Xxhtml.selectJavaUtilLoggingLevel("LoggerLevel", this.log.getEffectiveLevel()), XHTML.CharacterEntity.nbsp, this.log.getName())),
-                    new XHTML.Table.Row(new XHTML.Table.Data("Refresh Rate (ms)"), new XHTML.Table.Data(this.node.getConfiguration().asLong(CensusDaemon.ReportRateSeconds))),
+                    new XHTML.Table.Row(new XHTML.Table.Data("Report Rate (seconds)"), new XHTML.Table.Data(this.node.getConfiguration().asLong(CensusDaemon.ReportRateSeconds))),
                     new XHTML.Table.Row(new XHTML.Table.Data("Set Configuration"), new XHTML.Table.Data(setButton)),
                     new XHTML.Table.Row(new XHTML.Table.Data("Add"), new XHTML.Table.Data(addButton), new XHTML.Table.Data(addressField))
             )));

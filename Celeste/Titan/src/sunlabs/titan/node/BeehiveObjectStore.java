@@ -980,11 +980,11 @@ public final class BeehiveObjectStore implements ObjectStore {
         if (row.getChildren().size() > 0) {
             tbody.add(row);
         }
+        
 
-        XHTML.Table.Caption caption = new XHTML.Table.Caption("%s: %d used, %d available",
-        		Units.longToCapacityString(this.fileStore.getSpoolCapacity()),
+        XHTML.Table.Caption caption = new XHTML.Table.Caption("%s used, %s available",
         		this.fileStore.computeCurrentSpoolSize(),
-        		this.fileStore.getSpoolAvailable());
+        		Units.longToCapacityString(this.fileStore.getSpoolAvailable()));
 //        		this.fileStore.getCacheHit);
         XHTML.Table table = new XHTML.Table(caption, thead, tbody);
         table.setClass("objectStore");

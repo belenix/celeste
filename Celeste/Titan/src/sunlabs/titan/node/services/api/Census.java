@@ -56,15 +56,16 @@ public interface Census {
      */
     public final static TitanNodeId CensusKeeper = TitanNodeIdImpl.ZERO;
 
-    /**
-     * The time-stamp for this record.
-     */
-    public final static String Timestamp = "Census.Timestamp";
+    /** The time-stamp in seconds for this record as recorded by the receiver. */
+    public final static String ReceiverTimestamp = "Census.ReceiverTimestamp";
+
+    /** The time-stamp in seconds for this record as recorded by the sender. */
+    public final static String SenderTimestamp = "Census.SenderTimestamp";
 
     /**
      * The number of milliseconds for this record to live.
      */
-    public final static String TimeToLiveMillis = "Census.TimeToLiveMillis";
+    public final static String TimeToLiveSeconds = "Census.TimeToLiveSeconds";
 
     public final static String NodeAddress = "Census.NodeAddress";
     public final static String Version = "Census.Version";
@@ -112,7 +113,7 @@ public interface Census {
     public Map<TitanNodeId,OrderedProperties> select(int count) throws ClassCastException, RemoteException;
 
     /**
-     * Get the current system-wide Census data, using an already existing node in the system to proxy the request.
+     * Get the current system-wide Census data, using the specified node in the system to proxy the request.
      *
      * @param gateway the {@link NodeAddress} of the node used to proxy this request.
      * @param count the number of nodes to select

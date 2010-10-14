@@ -357,7 +357,7 @@ public class TitanNodeImpl implements TitanNode, NodeMBean {
             
             this.getService(HTTPMessageService.class);
             this.getService(RoutingDaemon.class);
-            this.getService(AppClassObjectType.class);
+            //this.getService(AppClassObjectType.class);
             this.getService(PublishDaemon.class);
             //this.getService(RetrieveObjectService.class);
             this.getService(ReflectionService.class);
@@ -1233,14 +1233,7 @@ public class TitanNodeImpl implements TitanNode, NodeMBean {
                     throw new RuntimeException(String.format("Cannot join with gateway: %s. Cannot start this node.", gateway.format()));
                 }
                 this.networkObjectId = join.getNetworkObjectId();
-
-                Census census = this.getService(CensusDaemon.class);
-
-                // Initialise the local Census data with data obtained from the gateway.
-                Map<TitanNodeId,OrderedProperties> list = census.select(gateway, 0, null, null);
-                census.putAllLocal(list);
             }
-
 
             // Start up the services. For those Services that must be started in
             // order, start them manually here. In particular the MessageService
@@ -1262,6 +1255,9 @@ public class TitanNodeImpl implements TitanNode, NodeMBean {
             // neighbors are - it is now safe to start arbitrary services.
             this.services.startAll();
 
+//            synchronized (this) {
+//                this.notify();
+//            }
             return this.messageService.getServerThread();
         } catch (IOException e) {
             throw new RuntimeException(e);
@@ -1373,7 +1369,7 @@ public class TitanNodeImpl implements TitanNode, NodeMBean {
         long upSeconds = Time.millisecondsToSeconds(upTime % Time.MINUTES_IN_MILLISECONDS);
 
         XHTML.Span uptimeSpan = new XHTML.Span("Uptime: %dd %dh %dm %ds", upDays, upHours, upMinutes, upSeconds);
-        XHTML.Span dateTimeSpan = new XHTML.Span("Time: %1$td/%1$tm/%1$ty %1$tH:%1$tM:%1$tS", new Date());
+        XHTML.Span dateTimeSpan = new XHTML.Span("Current Time: %1$td/%1$tm/%1$ty %1$tH:%1$tM:%1$tS", new Date());
         XHTML.Div metaInfo = new XHTML.Div(new XHTML.Heading.H1(this.address.getObjectId()), new XHTML.Break(), uptimeSpan, dateTimeSpan);
 
         new XHTML.Div(this.resourcesToXHTML()).setClass("section");
@@ -1387,7 +1383,6 @@ public class TitanNodeImpl implements TitanNode, NodeMBean {
                 metaInfo,
                 this.services.toXHTML(uri, props),
                 new XHTML.Div(this.map.toXHTML(uri, props)).setClass("section"),
-//                new XHTML.Div(routeTable.toString()),
                 this.store.toXHTML(uri, props),
                 new XHTML.Div(this.resourcesToXHTML()).setClass("section"),
                 new XHTML.Para("This page composed in: " + (System.currentTimeMillis() - currentTime) + "ms"));

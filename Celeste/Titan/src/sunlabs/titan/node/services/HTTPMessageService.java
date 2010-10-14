@@ -846,10 +846,27 @@ public final class HTTPMessageService extends AbstractTitanService implements Me
             this.nss = tokens[2];
         }
         
+        /**
+         * Get this URN's Namespace Identifier.
+         * @return this URN's Namespace Identifier.
+         */
+        public String getNid() {
+            return this.nid;
+        }
+
+        /**
+         * Get this URN's Namespace Specific String.
+         * @return this URN's Namespace Specific String.
+         */
+        public String getNss() {
+            return this.nss;
+        }
+
         public String toString() {
             StringBuilder result = new StringBuilder("urn:").append(this.nid).append(":").append(this.nss);
             return result.toString();
         }
+
     }
     
     /*
@@ -878,6 +895,9 @@ public final class HTTPMessageService extends AbstractTitanService implements Me
 
      * http://127.0.0.1:12001/urn:titan-nid-256:~C98088B940445D549BB33FE41D4B0D927451386BFFB543CB99DD7F6C4DACF371.inspect invokes TitanNode.inspect(TitanMessage)
      * with the params encoded in a Properties object. The message is sent via LOOSE routing.
+
+     * http://127.0.0.1:12001/urn:titan-nid-256:.inspect invokes TitanNode.inspect(TitanMessage) on the local node
+     * with the params encoded in a Properties object.
      * 
      * 
      */
@@ -899,7 +919,7 @@ public final class HTTPMessageService extends AbstractTitanService implements Me
             try {
                 Serializable payload = new byte[0];
                 // The HTTP.Request isn't entirely serializable because it needs to read in the content.
-                // So we fake it here.
+                // So we fake it here by writing the whole request into a byte array and sending that.
 
                 ByteArrayOutputStream out = new ByteArrayOutputStream();
                 request.writeTo(new DataOutputStream(out));

@@ -54,12 +54,15 @@ import sunlabs.asdf.web.http.HttpMessage;
 import sunlabs.titan.TitanGuidImpl;
 import sunlabs.titan.api.TitanGuid;
 import sunlabs.titan.api.TitanNode;
+import sunlabs.titan.api.TitanNodeId;
 import sunlabs.titan.node.Dossier;
 import sunlabs.titan.node.NodeAddress;
 import sunlabs.titan.node.Publishers;
 import sunlabs.titan.node.Reputation;
 import sunlabs.titan.node.TitanMessage;
 import sunlabs.titan.node.TitanMessage.RemoteException;
+import sunlabs.titan.node.services.api.Census;
+import sunlabs.titan.util.OrderedProperties;
 
 /**
  * A Titan Node routing table maintenance daemon.
@@ -277,11 +280,13 @@ public final class RoutingDaemon extends AbstractTitanService implements Routing
             private TitanGuid networkObjectId;
             private Set<NodeAddress> routingTable;
             private Map<TitanGuid,Set<Publishers.PublishRecord>> publishRecords;
+            private Map<TitanNodeId,OrderedProperties> census;
 
-            public Response(TitanGuid networkObjectId, Set<NodeAddress> map, Map<TitanGuid,Set<Publishers.PublishRecord>> roots) {
+            public Response(TitanGuid networkObjectId, Set<NodeAddress> map, Map<TitanGuid,Set<Publishers.PublishRecord>> roots, Map<TitanNodeId,OrderedProperties> census) {
                 this.networkObjectId = networkObjectId;
                 this.routingTable = map;
                 this.publishRecords = roots;
+                this.census = census;
             }
 
             public Set<NodeAddress> getMap() {
@@ -302,6 +307,10 @@ public final class RoutingDaemon extends AbstractTitanService implements Routing
 
             public void setMap(Set<NodeAddress> map) {
                 this.routingTable = map;
+            }
+
+            public Map<TitanNodeId, OrderedProperties> getCensus() {
+                return this.census;
             }
         }
     }
@@ -647,13 +656,15 @@ public final class RoutingDaemon extends AbstractTitanService implements Routing
                     objectRoots.put(objectId, this.node.getObjectPublishers().getPublishers(objectId));
                 }
             }
+            Census censusService = this.node.getService(CensusDaemon.class);
+            Map<TitanNodeId,OrderedProperties> census = censusService.select(this.node.getNodeAddress(), 0, null, null);
 
-            return new JoinOperation.Response(this.node.getNetworkObjectId(), this.node.getNeighbourMap().keySet(), objectRoots);
+            return new JoinOperation.Response(this.node.getNetworkObjectId(), this.node.getNeighbourMap().keySet(), objectRoots, census);
         }
     }
 
     /**
-     * "Top-side" {@link AbstractTitanService} method to perform a "join" with a Titan system,
+     * "Top-side" {@link TitanService} method to perform a "join" with a Titan system,
      * using the given {@link NodeAddress NodeAddress} gateway as the joining server for the network.
      */
     public JoinOperation.Response join(NodeAddress gateway) throws IOException {
@@ -680,7 +691,6 @@ public final class RoutingDaemon extends AbstractTitanService implements Routing
 
         TitanMessage reply = this.node.getMessageService().transmit(gateway, message);
         
-//        TitanMessage reply = this.node.getService(TCPMessageService.class).transmit(gateway, message);
         if (reply == null) {
             return null;
         }
@@ -706,6 +716,10 @@ public final class RoutingDaemon extends AbstractTitanService implements Routing
                     this.node.getNeighbourMap().add(nodeAddress);
                 }
             }
+            
+            Map<TitanNodeId,OrderedProperties> census = response.getCensus();
+            Census censusService = this.node.getService(CensusDaemon.class);
+            censusService.putAllLocal(census);
 
             // At this point this node should be setup and ready to participate.
             // Object publishers has been copied from the old-root.

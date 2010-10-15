@@ -273,7 +273,8 @@ public class Titan {
                     System.out.printf(" [--java <file name>] (%s)%n", javaFile);
                     System.out.printf(" [--jmx-port <integer>[,<integer>]] (%d,%d)%n] (%d)%n", jmxPort, jmxPortIncrement);
                     System.out.printf(" [--titan-port <integer>[,<integer>]] (%d,%d)%n", properties.getPropertyAsInt(TitanNodeImpl.Port.getName()), titanPortIncrement);
-                    System.out.printf(" [--V<option>]%n");
+                    System.out.printf(" [-V<option>]%n");
+                    System.out.printf(" [--jvmarg<option>]%n");
                     System.out.printf(" [--D<option>]%n");
                     System.exit(0);
                 } else {
@@ -285,7 +286,7 @@ public class Titan {
                 } else {
                     properties.setProperty(tokens[0], tokens[1]);
                 }
-            } else if (args[i].startsWith("-V")) {
+            } else if (args[i].startsWith("-V") || args[i].startsWith("--jvmarg")) {
                 String v = args[i].substring(3);
                 if (v.startsWith("'")) {
                     v.substring(1, v.length()-1);

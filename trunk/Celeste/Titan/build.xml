@@ -65,7 +65,7 @@
     <property name="build.deprecation" value="no" />
 
     <!-- properties used by manifests for jar files -->
-    <property name="manifest.vendor" value="Sun Microsystems, Inc." />
+    <property name="manifest.vendor" value="Oracle" />
     <property name="manifest.celeste.spec.version" value="0.1" />
 
     <!--target name="classdepandjar.jar">
@@ -86,8 +86,10 @@
     <!-- =================================
           target: all
          ================================= -->
-    <target name="all" depends="doc, jars"
-        description="==> builds everything, including javadocs"/>
+    <target name="all" depends="-splash, doc, jars"
+        description="==> builds everything, including javadocs">
+    	<chmod file="etc/jmxremote.password.template" perm="600"/>
+    </target>
 	
     <!-- =================================
           target: init
@@ -308,6 +310,20 @@
         </javadoc>
         <touch file="${javadoc.dir}/doctimestamp" />
     </target>
+	
+	<target name="install" depends="all">
+        <tar destfile="${DSTAMP}-install.tgz"
+             defaultexcludes="yes"
+             compression="gzip" >
+            <tarfileset dir="." filemode="755" includes="bin/**" />
+            <tarfileset dir="." filemode="644" includes="lib/**" />
+            <tarfileset dir="." filemode="600"
+                includes="etc/jmxremote.password.template \
+                        etc/titan.cf \
+                        etc/logging.properties \
+                        titan.xml" />
+        </tar>
+	</target>
 
     <!-- =================================
           target: clean
@@ -374,4 +390,8 @@
             <!-- arg line="log -rtip - -template 'Revision: {branches}{rev} of {date|isodate}. Built {localdate|isodate}'"/ -->
         </exec>
     </target>
+	
+	<target name="-splash">
+	   <!-- splash showduration="500" / -->
+	</target>
 </project>

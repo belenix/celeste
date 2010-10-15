@@ -2,10 +2,7 @@ This is Titan, a platform for building intelligent infrastructure.
 
 Use ant 1.7, or newer, to build the system.
 
-% (cd ../Phidoux ; ant clean all)
-% cp ../Phidoux/Phidoux.jar lib/
-% ant clean dojo all
-% chmod 600 etc/jmxremote.password.template
+% ant
 % bin/titan clobber start
 
 

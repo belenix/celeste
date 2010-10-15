@@ -3,13 +3,9 @@ byzantine and fault-tolerant mutable data store.
 
 Use ant 1.7, or newer, to build the system.
 
-% (cd Phidoux ; ant clean all)
-% cp Phidoux/Phidoux.jar Titan/lib/
-% (cd Titan ; ant clean dojo all)
-% mkdir dist/
-% cp Titan/lib/titan*.jar dist/
-% ant clean all
-# chmod 600 etc/jmxremote.password.template
+% ant
+% bin/celeste clobber start
+
 
 See https://celeste.dev.java.net/
 

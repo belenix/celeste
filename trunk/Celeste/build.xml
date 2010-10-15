@@ -66,23 +66,8 @@
     <property name="build.deprecation" value="no" />
 
     <!-- properties used by manifests for jar files -->
-    <property name="manifest.vendor" value="Sun Microsystems, Inc." />
+    <property name="manifest.vendor" value="Oracle" />
     <property name="manifest.celeste.spec.version" value="0.1" />
-
-    <!--target name="classdepandjar.jar">
-      <exec executable="/usr/bin/curl" >
-        <arg value="-k" />
-        <arg value="-o" />
-        <arg value="lib/classdepandjar.jar" />
-        <arg value="https://classdepandjar.dev.java.net/downloads/classdepandjar.jar" />
-      </exec>
-      <echo message="${os.name}" />
-    </target>
-
-    <taskdef name="classdepandjar"
-             classname="org.jini.rio.tools.ant.ClassDepAndJarTask" >
-        <classpath location="${lib.dir}/classdepandjar.jar" />
-    </taskdef-->
 
     <!-- =================================
           target: init
@@ -101,14 +86,16 @@
           target: all
          ================================= -->
     <target name="all" depends="jars, javadoc"
-        description="==> Builds everything, including javadocs"/>
+        description="==> Builds everything, including javadocs">
+
+    <chmod file="etc/jmxremote.password.template" perm="600"/>
+	</target>
 
     <!-- =================================
           target: jars
          ================================= -->
     <target name="jars" depends="Phidoux.jar, titan.jar, celeste.jar, sortgen.jar, wordcount.jar"
         description="==> Builds all jar files"/>
-
 	
 	<target name="rebuild" depends="all" description="Rebuild everything">
 	</target>
@@ -199,8 +186,7 @@
             </manifest>
          </jar>
     </target>
-
-
+	
     <!-- =================================
          target: Phidoux.jar
          ================================= -->
@@ -414,7 +400,6 @@
         <delete dir="${build.dir}" />
         <delete dir="${dist.dir}" />
     </target>
-
 
     <!-- =================================
           target: clobber

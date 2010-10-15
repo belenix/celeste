@@ -22,8 +22,8 @@
  or visit www.oracle.com if you need additional information or
  have any questions.
 -->
-<project name="Celeste" default="jars" basedir="." >
-        <description>Build the Celeste project</description>
+<project name="Celeste" default="all" basedir="." >
+    <description>Build the Celeste project</description>
 
     <!-- Load up user properties first;  these can be used
          to override any of the properties below  -->
@@ -96,18 +96,19 @@
              for javadoc commands -->
         <loadfile property="copyright.mini" srcFile="${doc.dir}/copyright-mini.html" />
     </target>
-
-    <!-- =================================
-          target: jars
-         ================================= -->
-    <target name="jars" depends="titan.jar, celeste.jar, sortgen.jar, wordcount.jar, Phidoux.jar"
-        description="==> Builds all jar files"/>
-
+	
     <!-- =================================
           target: all
          ================================= -->
     <target name="all" depends="jars, javadoc"
         description="==> Builds everything, including javadocs"/>
+
+    <!-- =================================
+          target: jars
+         ================================= -->
+    <target name="jars" depends="Phidoux.jar, titan.jar, celeste.jar, sortgen.jar, wordcount.jar"
+        description="==> Builds all jar files"/>
+
 	
 	<target name="rebuild" depends="all" description="Rebuild everything">
 	</target>
@@ -115,7 +116,7 @@
     <!-- =================================
           target: compile
          ================================= -->
-    <target name="compile" depends="init, Phidoux.jar, titan.jar" description="==> Compile all sources">
+    <target name="compile" depends="init, Phidoux.jar, titan.jar" description="==> Compile all Celeste sources">
         <mkdir dir="${build.classes.dir}"/>
         <depend srcdir="${src.dir}"
                 destdir="${build.classes.dir}"
@@ -205,6 +206,7 @@
          ================================= -->
     <target name="Phidoux.jar"
             description="==> Get the Phidoux.jar file from the Phidoux sub-project.">
+        <ant dir="Phidoux" output="ant.out" inheritAll="false" />
         <mkdir dir="${dist.dir}" />
     	<copy file="Phidoux/Phidoux.jar" toDir="${dist.dir}" />
     </target>
@@ -214,6 +216,7 @@
          ================================= -->
     <target name="titan.jar"
             description="==> Get the titan.jar file from the Titan sub-project.">
+    	<ant dir="Titan" output="ant.out" inheritAll="false" />
         <mkdir dir="${dist.dir}" />
         <copy file="Titan/lib/titan.jar" toDir="${dist.dir}" />
     </target>

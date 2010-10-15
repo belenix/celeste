@@ -22,7 +22,7 @@
  or visit www.oracle.com if you need additional information or
  have any questions.
 -->
-<project name="Titan" default="jars" basedir="." >
+<project name="Titan" default="all" basedir="." >
         <description>Build the Titan system</description>
 
     <!-- Load up user properties first;  these can be used
@@ -104,7 +104,7 @@
     <!-- =================================
           target: jars
          ================================= -->
-    <target name="jars" depends="titan.jar, titan-src.jar"
+    <target name="jars" depends="Phidoux.jar, titan.jar, titan-src.jar, dojo.jar"
         description="==> builds all jar files"/>
 
     <!-- =================================
@@ -129,7 +129,16 @@
             <compilerarg value="-Xlint:unchecked"/>
         </javac>
     </target>
-
+	
+    <!-- =================================
+         target: Phidoux.jar
+         ================================= -->
+    <target name="Phidoux.jar"
+            description="==> Build the Phidoux.jar file from the Phidoux sub-project.">
+        <ant dir="../Phidoux" output="ant.out" inheritAll="false" />
+        <mkdir dir="${lib.dir}" />
+        <copy file="../Phidoux/Phidoux.jar" toDir="${lib.dir}" />
+    </target>
 
     <!-- =================================
           target: titan.jar
@@ -138,10 +147,11 @@
         <mkdir dir="${lib.dir}" />
         <jar destfile="${lib.dir}/titan.jar" filesonly="true">
             <fileset dir="${build.classes.dir}" includes="sunlabs/titan/** sunlabs/asdf/**" />
-            <fileset dir="." includes="web/**" />
+            <!-- fileset dir="." includes="web/**" /  -->
+            <fileset dir="." includes="web/**" excludes="web/dojo/dojo-release-1.5.0/**" />
             <manifest>
                 <attribute name="Main-Class" value="sunlabs.titan.node.Titan" />
-                <attribute name="Class-Path" value="${Phidoux.jar}" />
+                <attribute name="Class-Path" value="${Phidoux.jar} dojo.jar" />
                 <attribute name="Built-By" value="${user.name}.${DSTAMP}" />
                 <attribute name="Sealed" value="true" />
                 <attribute name="Specification-Title" value="Oracle Sun Labs Titan" />
@@ -153,6 +163,32 @@
             </manifest>
         </jar>
     </target>
+
+    <target name="dojo-download" depends="set-dojo-downloaded" description="Download the Dojo toolkit" unless="dojo-downloaded">
+        <get src="http://download.dojotoolkit.org/release-1.5.0/dojo-release-1.5.0.tar.gz" dest="dojo-release-1.5.0.tar.gz" verbose="true"/>
+    </target>
+	
+    <target name="dojo.jar" depends="dojo-download" description="==> make dojo.jar">
+        <untar src="dojo-release-1.5.0.tar.gz" dest="dojo/web/dojo" compression="gzip" />
+        <mkdir dir="${lib.dir}" />
+        <jar destfile="${lib.dir}/dojo.jar" filesonly="true">
+            <fileset dir="dojo" includes="web/dojo/dojo-release-1.5.0/**" />
+            <manifest>
+                <attribute name="Built-By" value="${user.name}.${DSTAMP}" />
+                <attribute name="Sealed" value="true" />
+                <attribute name="Specification-Title" value="Oracle Sun Labs Titan" />
+                <attribute name="Specification-Version" value="2010.8.26" />
+                <attribute name="Specification-Vendor" value="${manifest.vendor}" />
+                <attribute name="Implementation-Title" value="sunlabs.titan" />
+                <attribute name="Implementation-Version" value="${scm_version}" />
+                <attribute name="Implementation-Vendor" value="${manifest.vendor}" />
+            </manifest>
+        </jar>
+    </target>
+	
+	<target name="set-dojo-downloaded">
+		<available file="dojo-release-1.5.0.tar.gz" property="dojo-downloaded"/>
+	</target>
 	
 	<target name="titan-src.jar">
         <jar destfile="${lib.dir}/titan-src.jar" filesonly="true">
@@ -170,11 +206,6 @@
             </manifest>
         </jar>
 	</target>
-
-    <target name="dojo" description="Download and install the Dojo toolkit">
-    	<get src="http://download.dojotoolkit.org/release-1.5.0/dojo-release-1.5.0.tar.gz" dest="dojo-release-1.5.0.tar.gz" verbose="true"/>
-    	<untar src="dojo-release-1.5.0.tar.gz" dest="web/dojo/" compression="gzip" />
-  	</target>
 
 
     <!-- =================================
@@ -246,7 +277,7 @@
     <!-- =================================
           target: doc
          ================================= -->
-    <target name="doc" depends="init, check.javadoc.isuptodate, proxy.args" unless="javadoc.isuptodate" description="==> build javadocs">
+    <target name="doc" depends="Phidoux.jar, init, check.javadoc.isuptodate, proxy.args" unless="javadoc.isuptodate" description="==> build javadocs">
         <delete dir="${javadoc.dir}" />
         <mkdir dir="${javadoc.dir}" />
         <mkdir dir="${javadoc.dir}/doc-files" />
@@ -282,8 +313,9 @@
           target: clean
          ================================= -->
     <target name="clean"  description="==> Remove all build artifacts">
-        <delete dir="${build.dir}" />
-        <delete dir="${dist.dir}" />
+        <delete dir="${build.dir}" quiet="true" />
+        <delete dir="${dist.dir}" quiet="true" />
+    	<delete file="ant.out" quiet="true" />
     </target>
 
 
@@ -292,7 +324,10 @@
          ================================= -->
     <target name="clobber" depends="clean"
             description="==> Remove all build artifacts, including javadoc">
-        <delete dir="${javadoc.dir}" />
+    	<delete dir="${javadoc.dir}" />
+        <delete file="${lib.dir}/Phidoux.jar" quiet="true" />
+        <delete file="${lib.dir}/titan.jar" quiet="true" />
+    	<delete file="${lib.dir}/titan-src.jar" quiet="true" />
     </target>
 
     <!-- =================================

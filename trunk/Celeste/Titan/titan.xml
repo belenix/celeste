@@ -41,7 +41,7 @@
 			<jvmarg line="-Dtitan-node -server" />
 			<arg line="--delay 5 --n-nodes 6 --jmx-port ${jmx.port} ${per-node-config-properties}" />
 			<arg value="-V=${per-node-jvmarg}" />
-			<redirector output="${log-file}" />
+			<redirector output="${log-file}" input="/dev/null" />
 		</java>
 	</target>
 
@@ -49,7 +49,7 @@
 	</target>
 
 	<target name="-stop-init">
-		<exec executable="/bin/sh" os="Mac OS X">
+		<exec executable="/bin/sh" os="Mac OS X,Linux">
 		  <arg value="-c" />
 			<arg value="/bin/ps axww | grep Dtitan-node | grep -v grep | awk '{print $$1}'" />
 			<redirector outputproperty="pidlist">
@@ -67,7 +67,7 @@
 	</target>
 
 	<target name="-stop" if="-stop-must-kill">
-		<echo message="kill ${pidlist}" />
+		<echo message="kill -9 ${pidlist}" />
 		<exec executable="/bin/kill">
 			<arg line="${pidlist}" />
 		</exec>

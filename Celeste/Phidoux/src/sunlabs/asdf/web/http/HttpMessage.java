@@ -68,12 +68,18 @@ public final class HttpMessage implements HTTP.Message {
     /**
      * Create a new {@link HTTP.Message} containing HTTP Headers read from the given {@link InputStream},
      * and adding the given {@code InputStream} to the resulting {@code HTTP.Message} containing any message body unread.
-     * @param in
+     * <blockquote>
+     * The presence of a message-body in a request is signaled by the inclusion of a Content-Length or Transfer-Encoding header field in the request's message-headers.
+     * A message-body MUST NOT be included in a request if the specification of the request method (section 5.1.1) does not allow sending an entity-body in requests.
+     * A server SHOULD read and forward a message-body on any request;
+     * if the request method does not include defined semantics for an entity-body, then the message-body SHOULD be ignored when handling the request.
+     * </blockquote>
+     * @param in The InputStream from which to read the request.
      * @return A new {@link HTTP.Message} containing HTTP Headers read from the given {@link InputStream}.
      * @throws IOException if the underlying I/O operations threw an {@code IOException}.
      * @throws HTTP.BadRequestException if the input didn't not conform to an HTTP Request message.
      */
-    public static HTTP.Message getRequestInstance(InputStream in) throws IOException, HTTP.BadRequestException {
+    public static HTTP.Message getRequestInstance(InputStream in, OutputStream out) throws IOException, HTTP.BadRequestException {
         HTTP.Message result = new HttpMessage();
         byte[] CRNLCRNL = "\r\n\r\n".getBytes();
 
@@ -82,53 +88,38 @@ public final class HttpMessage implements HTTP.Message {
 
         // parse headers
         ByteArrayInputStream bin = new ByteArrayInputStream(headers.toByteArray());
-        if (true) {
-            String line = null;
-            // Read each line from the buffer.
-            // If the line is empty, then we're done.
-            // If the line is a continuation, append it to the line accumulator.
-            // If the line is NOT a continuation, add the line accumulator (if not null) to the set of headers.
-            try {
-                for (;;) {
-                    ByteArrayOutputStream buffer = new ByteArrayOutputStream();
-                    if (HttpUtil.transferToUntilIncludedSequence(bin, HttpUtil.CRNL, buffer) < 3)
-                        break;
-                    if (buffer.toByteArray()[0] != '\t') {
-                        if (line != null) {
-                            result.addHeader(HttpHeader.getInstance(line));
-                        }
-                        line = buffer.toString();
-                    } else {
-                        line += buffer.toString();                        
-                    }
-                }
-                if (line != null) {
-                    result.addHeader(HttpHeader.getInstance(line));
-                }
-            } catch (EOFException e) {
-                throw new RuntimeException(e);
-            }
-        } else {
+        String line = null;
+        // Read each line from the buffer.
+        // If the line is empty, then we're done.
+        // If the line is a continuation, append it to the line accumulator.
+        // If the line is NOT a continuation, add the line accumulator (if not null) to the set of headers.
+        try {
             for (;;) {
-                try {
-                    ByteArrayOutputStream header = new ByteArrayOutputStream();
-                    HttpUtil.transferToUntilIncludedSequence(bin, HttpUtil.CRNL, header);
-                    // XXX Need to handle header continuations
-                    if (header.size() < 3)
-                        break;
-                    result.addHeader(HttpHeader.getInstance(header.toString()));
-                } catch (EOFException e) {
+                ByteArrayOutputStream buffer = new ByteArrayOutputStream();
+                if (HttpUtil.transferToUntilIncludedSequence(bin, HttpUtil.CRNL, buffer) < 3)
                     break;
+                if (buffer.toByteArray()[0] != '\t') {
+                    if (line != null) {
+                        result.addHeader(HttpHeader.getInstance(line));
+                    }
+                    line = buffer.toString();
+                } else {
+                    line += buffer.toString();                        
                 }
             }
+            if (line != null) {
+                result.addHeader(HttpHeader.getInstance(line));
+            }
+        } catch (EOFException e) {
+            throw new RuntimeException(e);
         }
 
-        // Do we require a message body?
+        // Determine if we are expecting a message body.
 
         HttpHeader.ContentType contentTypeHeader;
-        
+
         try {
-           contentTypeHeader = (HttpHeader.ContentType) result.getHeader(HTTP.Message.Header.CONTENTTYPE);
+            contentTypeHeader = (HttpHeader.ContentType) result.getHeader(HTTP.Message.Header.CONTENTTYPE);
         } catch (ClassCastException e) {
             e.printStackTrace();
             for (String key : result.getHeaders().keySet()) {
@@ -139,17 +130,12 @@ public final class HttpMessage implements HTTP.Message {
 
         HttpHeader.TransferEncoding transferEncoding = (HttpHeader.TransferEncoding) result.getHeader(HTTP.Message.Header.TRANSFERENCODING);
         HttpHeader.ContentLength contentLength = (HttpHeader.ContentLength) result.getHeader(HTTP.Message.Header.CONTENTLENGTH);
-        
-        // The presence of a message-body in a request is signaled by the inclusion of a Content-Length or Transfer-Encoding header field in the request's message-headers.
-        // A message-body MUST NOT be included in a request if the specification of the request method (section 5.1.1) does not allow sending an entity-body in requests.
-        // A server SHOULD read and forward a message-body on any request;
-        // if the request method does not include defined semantics for an entity-body, then the message-body SHOULD be ignored when handling the request.
-        
+
         // If this is a regular body, we can just read it normally.
         // If this is a Transfer-Encoded body, then we need a way to parse the encoding to get the actual data.
         if (transferEncoding != null || contentLength != null) {
             if (transferEncoding != null) {
-                result.setBody(new HttpContent.TransferEncodedInputStream(contentTypeHeader, in, transferEncoding));
+                result.setBody(new HttpContent.TransferEncodedInputStream(contentTypeHeader, in, out, transferEncoding));
             } else {    
                 result.setBody(new HttpContent.RawInputStream(contentTypeHeader, in));
             }
@@ -174,6 +160,7 @@ public final class HttpMessage implements HTTP.Message {
      * An attempt to obtain a non-existent body from the input-stream will hang because no data will be available. 
      * </p>
      * @throws IOException
+     * @throws HTTP.BadRequestException
      */
     public static HTTP.Message getInstance(PushbackInputStream in) throws IOException, HTTP.BadRequestException {
         HTTP.Message message = new HttpMessage();
@@ -219,7 +206,7 @@ public final class HttpMessage implements HTTP.Message {
         // If this is a regular body, we can just read it normally.
         // If this is a Transfer-Encoded body, then we need a way to parse the encoding to get the actual data.
         if (transferEncoding != null) {
-            message.setBody(new HttpContent.TransferEncodedInputStream(contentTypeHeader, in, transferEncoding));
+            message.setBody(new HttpContent.TransferEncodedInputStream(contentTypeHeader, in, null, transferEncoding));
         } else {    
             message.setBody(new HttpContent.RawInputStream(contentTypeHeader, in));
         }
@@ -235,22 +222,22 @@ public final class HttpMessage implements HTTP.Message {
         this.headers = new HashMap<String,HTTP.Message.Header>();        
     }
     
-    public HttpMessage(byte[] header, InputStream in) {
-        // XXX parse header
-
-        HttpHeader.ContentType contentTypeHeader;
-        
-        try {
-           contentTypeHeader = (HttpHeader.ContentType) this.getHeader(HTTP.Message.Header.CONTENTTYPE);
-        } catch (ClassCastException e) {
-            e.printStackTrace();
-            for (String key : this.getHeaders().keySet()) {
-                System.out.printf("%s -> %s: %s%n", key, this.getHeader(key), this.getHeader(key).getClass());                
-            }
-            throw e;
-        }
-        this.setBody(new HttpContent.RawInputStream(contentTypeHeader, in));        
-    }
+//    public HttpMessage(byte[] header, InputStream in) {
+//        // XXX parse header
+//
+//        HttpHeader.ContentType contentTypeHeader;
+//        
+//        try {
+//           contentTypeHeader = (HttpHeader.ContentType) this.getHeader(HTTP.Message.Header.CONTENTTYPE);
+//        } catch (ClassCastException e) {
+//            e.printStackTrace();
+//            for (String key : this.getHeaders().keySet()) {
+//                System.out.printf("%s -> %s: %s%n", key, this.getHeader(key), this.getHeader(key).getClass());                
+//            }
+//            throw e;
+//        }
+//        this.setBody(new HttpContent.RawInputStream(contentTypeHeader, in));        
+//    }
 
     /**
      * Construct an HTTPMessage from an Map of {@link HTTP.Message.Header} instances and an {@link HTTP.Message.Body} instance.
@@ -286,7 +273,7 @@ public final class HttpMessage implements HTTP.Message {
      * <p>
      * Equivalent to calling:
      * <pre>
-     * {@code HttpMessage(new HashMap<String,HTTP.Message.Header>(), content)}
+     * {@link HttpMessage#HttpMessage(Map)}
      * </pre>
      * </p>
      * 
@@ -305,7 +292,8 @@ public final class HttpMessage implements HTTP.Message {
      * 
      * @param bytes - the byte array containing the message
      *
-     * @throws HttpHeader.InvalidFormatException
+     * @throws HTTP.BadRequestException
+     * @throws IOException
      */
     public HttpMessage(byte[] bytes) throws IOException, HTTP.BadRequestException {
         this(new PushbackInputStream(new ByteArrayInputStream(bytes)));
@@ -322,6 +310,7 @@ public final class HttpMessage implements HTTP.Message {
      * Users of this class should never assume that a message actually contains a body.
      * An attempt to obtain a non-existent body from the input-stream will hang because no data will be available. 
      * </p>
+     * @throws HTTP.BadRequestException
      * @throws IOException
      */
     @Deprecated
@@ -369,7 +358,7 @@ public final class HttpMessage implements HTTP.Message {
         // If this is a regular body, we can just read it normally.
         // If this is a Transfer-Encoded body, then we need a way to parse the encoding to get the actual data.
         if (transferEncoding != null) {
-            this.messageBody = new HttpContent.TransferEncodedInputStream(contentTypeHeader, in, transferEncoding);
+            this.messageBody = new HttpContent.TransferEncodedInputStream(contentTypeHeader, in, null, transferEncoding);
         } else {    
             this.messageBody = new HttpContent.RawInputStream(contentTypeHeader, in);
         }
@@ -388,6 +377,10 @@ public final class HttpMessage implements HTTP.Message {
         this.messageBody = body;
     }
 
+    /**
+     * @throws IOException
+     * @throws HTTP.BadRequestException
+     */
     public HTTP.Message.Body.MultiPart.FormData decodeMultiPartFormData() throws IOException, HTTP.BadRequestException {
         HTTP.Message.Header.ContentType contentTypeHeader = this.getContentType();
 
@@ -463,11 +456,6 @@ public final class HttpMessage implements HTTP.Message {
         }
         return this;
     }
-
-//    @SuppressWarnings("unchecked")
-//    public <C extends HTTP.Message.Header> C getHeader(Class<? extends C> klasse) {
-//        return (C) this.headers.get(klasse);        
-//    }
     
     public HTTP.Message.Header getHeader(String name) {
         return this.headers.get(name.toLowerCase());        

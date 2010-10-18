@@ -137,7 +137,7 @@ public final class HttpUtil {
 
     /**
      * Transfer bytes from the given {@link InputStream} {@code in} to the
-     * {@link OutputStream} {@code output} looking for the byte {@code sequence}
+     * {@link OutputStream} {@code output} scanning for the byte {@code sequence}
      * to terminate the transfer.
      * The terminating sequence IS included in the transfer.
      * 
@@ -162,6 +162,62 @@ public final class HttpUtil {
             }
         }
         throw new EOFException("EOF");
+    }
+    
+    public static class ByteAccumulator {
+        private byte[] terminationSequence;
+        private int position;
+        private ByteArrayOutputStream out;
+
+        public ByteAccumulator(byte[] terminationSequence) {
+            this.terminationSequence = terminationSequence;
+            this.out = new ByteArrayOutputStream();
+            this.position = 0;
+        }
+        
+        public boolean accumulate(ByteBuffer buffer) {
+            while (buffer.hasRemaining()) {
+                byte b = buffer.get();
+                if (this.accumulate(b) == true)
+                    return true;
+            }
+            return false;
+        }
+
+        /**
+         * Return {@code true} if done, {@code false} otherwise.
+         * @param b
+         * @return {@code true} if done, {@code false} otherwise.
+         */
+        public boolean accumulate(byte b) {
+            if (this.position >= this.terminationSequence.length) {
+                throw new IllegalStateException("Cannot accumulate past the termination sequence.");
+            }
+            this.out.write(b);
+            if (b == this.terminationSequence[this.position]) {
+                this.position++;
+            } else {
+                this.position = 0;
+            }        
+            
+            if (this.position >= this.terminationSequence.length) {
+                return true;
+            }
+            return false;
+        }
+        
+        public void reset() {
+            this.position = 0;
+            this.out.reset();
+        }
+
+        public byte[] toByteArray() {
+            return this.out.toByteArray();
+        }
+
+        public String toString() {
+            return this.out.toString();
+        }
     }
 
     /**
@@ -1095,49 +1151,30 @@ public final class HttpUtil {
                 return false;
             }
         }
-        public static void main(String[] args) {
-            test("/", "/");
-            test(".", ".");
-            test("./", ".");
-            test("./a", "a");
-            test("./..", "..");
-            test("./../..", "../..");
-            test("./../../a/..", "../..");
-
-            test("/a/b", "/a/b");
-            test("/a/b/..", "/a");
-            test("/a/../", "/");
-            test("/a/../..", "/");
-            test("/a/b/../../", "/");
-
-            test("a/b//c", "a/b/c");
-            test("/a/b//c/", "/a/b/c");
-
-
-            //            System.out.printf("%s: head(2)='%s' tail(5)='%s' basename='%s' dirname='%s'%n", a, a.head(2), a.tail(5), a.baseName(), a.dirName());
-            //            System.out.printf("head(5): %s%n", a.head(5));
-            //            a.dump();
-            //            a = new PathName("./");
-            //            System.out.printf("%s%n", a.toString());
-            //            a.dump();
-            //            
-            //            BinaryIterator bi = new BinaryIterator(32);
-            //            int[] signum = {-1, 1, 1, 1, 1, 1};
-            //            for (int i = 0; i < signum.length; i++) {
-            //                System.out.printf("%d%n", bi.value());
-            //                bi.signum(signum[i]);
-            //            }
-            //            System.out.printf("%d%n", bi.value());
-            //            
-            //            a = new PathName("a/b/c");
-            //            System.out.printf("%s: head(2)='%s' tail(5)='%s' basename='%s' dirname='%s'%n", a, a.head(2), a.tail(5), a.baseName(), a.dirName());
-            //            a.dump();
-
-
-        }
 
         public Iterator<String> iterator() {
             return this.path.iterator();
         }
+    }
+    
+
+    
+    public static void main(String[] args) {
+        ByteAccumulator ba = new ByteAccumulator(" ".getBytes());
+        
+        byte[] bytes = "hello world".getBytes();
+        for (int i = 0; i < bytes.length; i++) {
+            if (ba.accumulate(bytes[i])) {
+                System.out.printf("done: '%s'%n", ba.toString());
+                ba.reset();
+            }
+        }
+        System.out.printf("done: '%s'%n", ba.toString());
+        
+        ByteBuffer buffer = ByteBuffer.wrap(bytes);
+        ba.reset();
+        ba.accumulate(buffer);
+        System.out.printf("done: '%s' buffer=%s%n", ba.toString(), buffer);
+                
     }
 }

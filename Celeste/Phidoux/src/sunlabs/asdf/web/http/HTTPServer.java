@@ -323,7 +323,7 @@ public class HTTPServer extends Thread implements HTTP.Server, Runnable, HTTPSer
         try {
             for (;;) {
                 try {
-                    HTTP.Request request = HttpRequest.getInstance(this.inputStream);
+                    HTTP.Request request = HttpRequest.getInstance(this.inputStream, this.outputStream);
                     if (this.getTrace()) {
                         this.log(request);
                     }

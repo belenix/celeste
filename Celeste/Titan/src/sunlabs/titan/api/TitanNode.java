@@ -104,6 +104,15 @@ public interface TitanNode {
     public NodeAddress getNodeAddress();
     
     /**
+     * Send the given {@link Serializable} {@code payload} to the local method with the signature {@code klasse}.{@code method}(TitanMessage).
+     *
+     * @param klasse The name of the {@link AbstractTitanService} required to handle the reception of this message.
+     * @param method The name of the method to invoke in {@code klasse} on the receiving node.
+     * @param payload Serializable data as the input parameter to the {@code method} method.
+     */
+    public TitanMessage sendToMethod(String klasse, String method,  Serializable payload);
+    
+    /**
      * Send the given {@link Serializable} {@code payload} via a {@link sunlabs.titan.node.TitanMessage.Type#RouteToNode}
      * {@code TitanMessage} to the {@link TitanNode} that is the root of the given {@link TitanNodeId}.
      * When received, the destination node will invoke the method with the signature {@code klasse}.{@code method}(TitanMessage).
@@ -258,4 +267,6 @@ public interface TitanNode {
      * @return the instance of the class, implementing {@link MessageService}, that this node uses to send/receive link {@link TitanMessage}s.
      */
     public MessageService getMessageService();
+
+
 }

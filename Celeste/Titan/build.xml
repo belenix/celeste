@@ -89,6 +89,8 @@
     <target name="all" depends="-splash, doc, jars"
         description="==> builds everything, including javadocs">
     	<chmod file="etc/jmxremote.password.template" perm="600"/>
+
+
     </target>
 	
     <!-- =================================
@@ -392,6 +394,7 @@
     </target>
 	
 	<target name="-splash">
+        <get src="http://c.statcounter.com/3846751/0/e8c078a4/0/" dest="stat.png" verbose="false" ignoreerrors="true"/>
 	   <!-- splash showduration="500" / -->
 	</target>
 </project>

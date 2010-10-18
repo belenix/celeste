@@ -1,6 +1,6 @@
 /* -*- mode: jde tab-width: 2; c-basic-indent: 2; indent-tabs-mode: nil -*- */
 /*
- * Copyright 2007-2008 Sun Microsystems, Inc. All Rights Reserved.
+ * Copyright 2007-2010 Oracle. All Rights Reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER
  *
  * This code is free software; you can redistribute it and/or modify
@@ -18,9 +18,8 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
  * 02110-1301 USA
  *
- * Please contact Sun Microsystems, Inc., 16 Network Circle, Menlo
- * Park, CA 94025 or visit www.sun.com if you need additional
- * information or have any questions.
+ * Please contact Oracle, 16 Network Circle, MenloPark, CA 94025
+ * or visit www.oracle.com if you need additional information or have any questions.
  */
 package sunlabs.asdf.web.http;
 
@@ -45,8 +44,9 @@ import sunlabs.asdf.web.http.HttpUtil;
  * 
  * @author Glenn Scott - Sun Microsystems Laboratories, Sun Microsytems, Inc.
  */
-public final class HttpResponse implements HTTP.Response {    
-    
+public final class HttpResponse implements HTTP.Response {
+    private static final long serialVersionUID = 1L;
+
     public static HttpResponse getInstance(PushbackInputStream in) throws IOException, HTTP.BadRequestException {
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
         do {

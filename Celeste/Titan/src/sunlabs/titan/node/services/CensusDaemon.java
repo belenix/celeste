@@ -354,10 +354,14 @@ public final class CensusDaemon extends AbstractTitanService implements Census, 
             properties.setProperty(Census.ReceiverTimestamp, receiverTimeStamp);
 
             synchronized (this.catalogue) {
-                this.log.info("update %s", message.getSource().getObjectId());
+                if (this.log.isLoggable(Level.FINE)) {
+                    this.log.fine("update %s", message.getSource().getObjectId());
+                }
                 this.catalogue.put(message.getSource().getObjectId(), properties);
                 Report.Response response = new Report.Response(CensusDaemon.this.node.getNodeAddress(), this.catalogue);
-                this.log.info("updated %s", this.catalogue.toString());
+                if (this.log.isLoggable(Level.FINE)) {
+                    this.log.fine("updated %s", this.catalogue.toString());
+                }
                 return response;
             }
         }
@@ -400,26 +404,12 @@ public final class CensusDaemon extends AbstractTitanService implements Census, 
         byte[] bytes = (byte[]) message.getPayload(Serializable.class, this.node);
 
         try {
-        HTTP.Request httpRequest = HttpRequest.getInstance(new ByteArrayInputStream(bytes));
-        HTTP.Message.Body messageBody = httpRequest.getMessage().getBody();
-        if (messageBody != null) {
-            InputStream in = messageBody.toInputStream();
-
-//            BufferedReader reader = new BufferedReader(new InputStreamReader(in));
-//            for (;;) {
-//                String line = reader.readLine();
-//                if (line == null)
-//                    break;
-//                Callable<String> process = new SuperviseProcess(line, 8192);
-//                try {
-//                    String result = process.call();
-//                    return new HttpResponse(HTTP.Response.Status.OK, new HttpContent.Text.Plain(result));
-//                } catch (Exception e) {
-//                    e.printStackTrace();
-//                }
-//            }
-        }
-        return new HttpResponse(HTTP.Response.Status.OK, new HttpContent.Text.Plain("Hello World from Census.selectREST"));
+            HTTP.Request httpRequest = HttpRequest.getInstance(new ByteArrayInputStream(bytes));
+            HTTP.Message.Body messageBody = httpRequest.getMessage().getBody();
+            if (messageBody != null) {
+                InputStream in = messageBody.toInputStream();
+            }
+            return new HttpResponse(HTTP.Response.Status.OK, new HttpContent.Text.Plain("Hello World from Census.selectREST"));
         } catch (IOException e) {
             return new HttpResponse(HTTP.Response.Status.INTERNAL_SERVER_ERROR, new HttpContent.Text.Plain(e.toString()));
         } catch (BadRequestException e) {
@@ -583,7 +573,7 @@ public final class CensusDaemon extends AbstractTitanService implements Census, 
         }
     }
 
-    public Map<TitanNodeId,OrderedProperties> select(NodeAddress gateway, int count, Set<TitanNodeId> exclude, OrderedProperties match) {
+    public Map<TitanNodeId,OrderedProperties> select(NodeAddress gateway, int count, Set<TitanNodeId> exclude, OrderedProperties match) throws ClassCastException, ClassNotFoundException, RemoteException {
         Select.Request request = new Select.Request(count, exclude, match);
 
         TitanMessage message = new TitanMessage(TitanMessage.Type.RouteToNode,
@@ -606,17 +596,8 @@ public final class CensusDaemon extends AbstractTitanService implements Census, 
             this.log.finest("responds %s", reply.getSource().format());
         }
 
-        try {
-            Select.Response response = reply.getPayload(Select.Response.class, this.node);
-            return response.getCensusData();
-        } catch (ClassNotFoundException e) {
-            e.printStackTrace();
-        } catch (ClassCastException e) {
-            e.printStackTrace();
-        } catch (RemoteException e) {
-            e.printStackTrace();
-        }
-        return null;
+        Select.Response response = reply.getPayload(Select.Response.class, this.node);
+        return response.getCensusData();
     }
     
     public XHTML.EFlow toXHTML(URI uri, Map<String,HTTP.Message> props) {

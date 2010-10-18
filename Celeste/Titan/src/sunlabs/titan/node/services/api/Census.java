@@ -62,9 +62,7 @@ public interface Census {
     /** The time-stamp in seconds for this record as recorded by the sender. */
     public final static String SenderTimestamp = "Census.SenderTimestamp";
 
-    /**
-     * The number of milliseconds for this record to live.
-     */
+    /** The number of milliseconds for this record to live. */
     public final static String TimeToLiveSeconds = "Census.TimeToLiveSeconds";
 
     public final static String NodeAddress = "Census.NodeAddress";
@@ -97,7 +95,7 @@ public interface Census {
      * @param matchedAttributes an {@link OrderedProperties} instance containing the set of properties that selected nodes much match.
      * @return A {@link Map} of {@link TitanGuid} to {@link OrderedProperties} for each node selected.
      * @throws RemoteException if the remote node threw an Exception.
-     * @throws ClassCastException 
+     * @throws ClassCastException if a ClassCastException which obtaining the internal response.
      */
     public Map<TitanNodeId,OrderedProperties> select(int count, Set<TitanNodeId> excludedNodes, OrderedProperties matchedAttributes) throws ClassCastException;
 
@@ -108,7 +106,7 @@ public interface Census {
      * @param count the number of nodes to select.
      * @return A {@link Map} of {@link TitanGuid} to {@link OrderedProperties} for each node selected.
      * @throws RemoteException if the remote node threw an Exception.
-     * @throws ClassCastException 
+     * @throws ClassCastException if a ClassCastException which obtaining the internal response.
      */
     public Map<TitanNodeId,OrderedProperties> select(int count) throws ClassCastException, RemoteException;
 
@@ -120,6 +118,9 @@ public interface Census {
      * @param excludedNodes a {@link Set} of nodes to specifically exclude from the selection, or {@code null}.
      * @param matchedAttributes an {@link OrderedProperties} instance containing the set of properties that selected nodes much match, or {@code null}.
      * @return A {@link Map} of {@link TitanGuid} to {@link OrderedProperties} for each node selected.
+     * @throws ClassNotFoundException 
+     * @throws RemoteException if the remote node threw an Exception.
+     * @throws ClassCastException if a ClassCastException which obtaining the internal response.
      */
-    public Map<TitanNodeId, OrderedProperties> select(NodeAddress gateway, int count, Set<TitanNodeId> excludedNodes, OrderedProperties matchedAttributes);
+    public Map<TitanNodeId, OrderedProperties> select(NodeAddress gateway, int count, Set<TitanNodeId> excludedNodes, OrderedProperties matchedAttributes) throws ClassCastException, ClassNotFoundException, RemoteException;
 }

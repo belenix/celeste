@@ -811,12 +811,14 @@ public abstract class HttpContent implements HTTP.Message.Body {
         private long contentLength;
         private HttpHeader.TransferEncoding transferEncoding;
         private InputStream input;
+        private OutputStream output;
 
-        public TransferEncodedInputStream(HttpHeader.ContentType type, InputStream in, HttpHeader.TransferEncoding transferEncoding) {
+        public TransferEncodedInputStream(HttpHeader.ContentType type, InputStream in, OutputStream out, HttpHeader.TransferEncoding transferEncoding) {
             super(type);
             System.out.printf("TransferEncodedInputStream%n");
             this.transferEncoding = transferEncoding;
             this.input = in;
+            this.output = out;
             this.contentLength = -1;
         }
 

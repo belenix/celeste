@@ -36,17 +36,9 @@ import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URLDecoder;
-import java.nio.channels.ClosedChannelException;
-import java.nio.channels.ClosedSelectorException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
-
-import sunlabs.asdf.web.http.HTTP;
-import sunlabs.asdf.web.http.HTTPServer;
-import sunlabs.asdf.web.http.HttpMessage;
-import sunlabs.asdf.web.http.HttpResponse;
-import sunlabs.asdf.web.http.HttpUtil;
 
 /**
  * This class represents an HTTP request sent from an HTTP client to an HTTP server.
@@ -72,6 +64,10 @@ public class HttpRequest implements HTTP.Request {
     private URI requestURI;
     private byte[] httpVersion;
     private HTTP.Message message;
+
+    public static HttpRequest getInstance(InputStream in) throws HTTP.BadRequestException, EOFException, IOException {
+        return HttpRequest.getInstance(in, null);
+    }
     
     /**
      * Factory method to create an {@link HttpRequest}
@@ -83,28 +79,17 @@ public class HttpRequest implements HTTP.Request {
      * 
      * @throws IOException is an IOException occurred.
      * @throws EOFException if and attempt to read past EOF occurred.
-     * @throws URISyntaxException if the received URI could not be parsed as a URI reference
      * @throws HTTP.BadRequestException if the request cannot be properly parsed.
      */
-    public static HttpRequest getInstance(InputStream in) throws HTTP.BadRequestException, EOFException, IOException {
+    public static HttpRequest getInstance(InputStream in, OutputStream out) throws HTTP.BadRequestException, EOFException, IOException {
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
 
         // Absorb zero-length input lines.
         // Parse the first non-zero length input line as an HTTP Request header.
-        try {
-            do {
-                bos.reset();
-                HttpUtil.transferToUntilIncludedSequence(in, HttpUtil.CRNL, bos);
-
-                if (bos.size() == 0) {
-                    throw new IOException("EOF from input stream");
-                }
-            } while (bos.size() <= 2);
-        } catch (ClosedChannelException e) {
-            throw new EOFException(e.toString());
-        } catch (ClosedSelectorException e) {
-            throw new EOFException(e.toString());
-        }
+        do {
+            bos.reset();
+            HttpUtil.transferToUntilIncludedSequence(in, HttpUtil.CRNL, bos);
+        } while (bos.size() <= 2);
 
         try {
             String tokens[] = bos.toString().split(" ");
@@ -116,20 +101,19 @@ public class HttpRequest implements HTTP.Request {
                 throw new HTTP.BadRequestException(String.format("Unsupported method '%s'", tokens[0]));
             URI requestURI = new URI(tokens[1]);
             String httpVersion = tokens[2].trim();
-//            HTTP.Message message = HttpMessage.getInstance(in);
-            HTTP.Message message = HttpMessage.getRequestInstance(in);
+            HTTP.Message message = HttpMessage.getRequestInstance(in, out);
             return new HttpRequest(method, requestURI, httpVersion, message);         
         } catch (URISyntaxException e) {
             throw new HTTP.BadRequestException(String.format("Bad Request-URI: %s%n", e));
         }
     }
-    
-
-    public HttpRequest(byte[] header, InputStream in) {
-        // XXX parse request-line
-        
-        this.message = new HttpMessage(header, in);        
-    }
+//    
+//
+//    public HttpRequest(byte[] header, InputStream in) {
+//        // XXX parse request-line
+//        
+//        this.message = new HttpMessage(header, in);        
+//    }
     
     /**
      * Create an HTTP client to HTTP server request.
@@ -250,8 +234,7 @@ public class HttpRequest implements HTTP.Request {
             + "\t127.0.0.1:12345\r\n"
             + "\r\n";
         ByteArrayInputStream bin = new ByteArrayInputStream(request.getBytes());
-        PushbackInputStream in = new PushbackInputStream(bin);
-        HttpRequest r = HttpRequest.getInstance(in);
+        HttpRequest r = HttpRequest.getInstance(bin);
         r.writeTo(new DataOutputStream(System.out));
     }
 }

@@ -107,6 +107,7 @@ import sunlabs.titan.Release;
 import sunlabs.titan.TitanGuidImpl;
 import sunlabs.titan.api.TitanGuid;
 import sunlabs.titan.api.TitanNode;
+import sunlabs.titan.api.TitanNode.NoSuchNodeException;
 import sunlabs.titan.api.TitanNodeId;
 import sunlabs.titan.api.TitanObject;
 import sunlabs.titan.node.BeehiveObjectStore;
@@ -643,6 +644,8 @@ public final class HTTPMessageService extends AbstractTitanService implements Me
                  * http://127.0.0.1:12001/urn:titan-oid-256:objectC98088B940445D549BB33FE41D4B0D927451386BFFB543CB99DD7F6C4DACF371/sunlabs.titan.node.services.HTTPMessageService.inspect
                  * http://127.0.0.1:12001/nC98088B940445D549BB33FE41D4B0D927451386BFFB543CB99DD7F6C4DACF371/sunlabs.titan.node.services.HTTPMessageService.inspect
                  */
+                if (uri.getPath().startsWith("/rest")) 
+                    return this.REST(request);        
                 if (uri.getPath().startsWith("/urn:")) {
                     return this.routeToURN(request);                    
                 } else if (uri.getPath().equals("/map")) {
@@ -899,22 +902,124 @@ public final class HTTPMessageService extends AbstractTitanService implements Me
      * http://127.0.0.1:12001/urn:titan-nid-256:.inspect invokes TitanNode.inspect(TitanMessage) on the local node
      * with the params encoded in a Properties object.
      * 
+     * http://127.0.0.1:12001/urn:titan-oid-256:.inspect is an error.
+     * 
+     * There are three components: the object, the node, and the method.
+     * The node is incidental and not relevant (except you can send a message to a node specifying an object and a method).
+     * The node is the most significant component, followed by the method, then the object.
+     * So that means it's node, method, object.
+     * Leaving out one of them causes the use of a default.
+     * The default node is the local node.
+     * There is no default method(?)
+     * There is no default object.
+     * 
+     * http://127.0.0.1:12001/titan-nid:1234/class.method/titan.oid:ABCD?a=v (route-to-node 1234, invoke class.method with object-id ABCD)
+     * 
+     * http://127.0.0.1:12001/class.method/titan.oid:ABCD?a=v (route-to-object ABCD, invoke class.method)
+     * 
+     * http://127.0.0.1:12001/titan-oid:ABCD?a=v (would invoked some 'default' method)
+     * 
+     * http://127.0.0.1:1201/[node-id]/[method]/[object-id]
+     * 
+     * http://127.0.0.1:1201/AnchorObject.fetch/titan-oid:ABCD  (route-to-object ABCD invoke fetch)
+     * http://127.0.0.1:1201/AnchorVersionObjectMap.fetch/titan-oid:ABCD  (route-to-object ABCD invoke fetch)
+     * http://127.0.0.1:1201/AnchorObject.fetch/titan-oid:ABCD  (route-to-object ABCD invoke fetch)
+     * http://127.0.0.1:1201/titan-nid:~0000/Census.select (route-to-node 0000 invoke Census.select)
+     * http://127.0.0.1:1201/Census.select (using local node, invoke Census.select)
+     * http://127.0.0.1:1201/Reflect.getType/titan-oid-256:ABCD/ (using local node, invoke Reflect.getType with object ABCD)
+     *
+     * http://127.0.0.1:1201/titan-nid:~ABCD/Publishers.getPublishers/titan-oid-256:ABCD/ (using local node, invoke Reflect.getType with object ABCD)
+     *
+     * http://127.0.0.1:1201/TitanNode.storeObject (using local node, store the body of this message as a local object).
+     * http://127.0.0.1:1201/AnchorObject.storeObject (using local node, store the body of this message as an Anchor object).
      * 
      */
+
+
+    private sunlabs.asdf.web.http.HTTP.Response REST(HTTP.Request request) {
+        String[] tokens = request.getURI().getPath().split("/", 4); // Don't forget about the leading empty token <empty>/...
+
+        TitanNodeId nodeId = null;
+        TitanGuid objectId = null;
+        String method = null;
+        boolean exactRouting = true;
+
+        // Parse the Request URI into the parts for the TitanMessage.
+        for (int i = 2; i < tokens.length; i++) {
+            try {
+                URN urn = new URN(tokens[i]);
+                if (urn.nid.equals("titan-nid-256")) {
+                    if (urn.nss.startsWith("~")) {
+                        exactRouting = false;
+                        nodeId = new TitanNodeIdImpl(urn.nss.substring(1));
+                    } else {
+                        nodeId = new TitanNodeIdImpl(urn.nss);
+                    }
+                } else if (urn.nid.equals("titan-oid-256")) {
+                    objectId = new TitanGuidImpl(urn.nss);
+                }
+            } catch (IllegalArgumentException e) {
+                method = tokens[i];
+            }
+        }
+        int lastPeriod = method.lastIndexOf('.');
+        String klasse = method.substring(0, lastPeriod);
+        method = method.substring(lastPeriod+1);
+        
+        System.out.printf("node=%s object=%s method=%s exactRouting=%b%n", nodeId, objectId, method, exactRouting);
+        
+        try {
+            Serializable payload = new byte[0];
+            // The HTTP.Request isn't entirely serializable because it needs to read in the content.
+            // So we fake it here by writing the whole request into a byte array and sending that.
+
+            ByteArrayOutputStream out = new ByteArrayOutputStream();
+            request.writeTo(new DataOutputStream(out));
+            payload = out.toByteArray();
+
+            TitanMessage response = null;
+            if (nodeId != null) {
+                response = exactRouting ? this.node.sendToNodeExactly(nodeId, klasse, method, payload) : this.node.sendToNode(nodeId, klasse, method, payload);
+            } else if (objectId != null) {
+                response = this.node.sendToObject(objectId, klasse, method, payload);
+            } else {
+                response = this.node.sendToMethod(klasse, method, payload);
+            }
+            // Package up return value.
+
+            return response.getPayload(HTTP.Response.class, node);
+        } catch (ClassCastException e) {
+            return new HttpResponse(HTTP.Response.Status.INTERNAL_SERVER_ERROR, new HttpContent.Text.Plain("%s", e));
+        } catch (RemoteException e) {
+            return new HttpResponse(HTTP.Response.Status.INTERNAL_SERVER_ERROR, new HttpContent.Text.Plain("%s", e));
+        } catch (ClassNotFoundException e) {
+            return new HttpResponse(HTTP.Response.Status.INTERNAL_SERVER_ERROR, new HttpContent.Text.Plain("%s", e));
+        } catch (IOException e) {
+            return new HttpResponse(HTTP.Response.Status.INTERNAL_SERVER_ERROR, new HttpContent.Text.Plain("%s", e));
+        } catch (NoSuchNodeException e) {
+            return new HttpResponse(HTTP.Response.Status.INTERNAL_SERVER_ERROR, new HttpContent.Text.Plain("%s", e));
+        }
+    }
+    
     private HTTP.Response routeToURN(HTTP.Request request) {
         String[] tokens = request.getURI().getPath().split("/", 3); // Don't forget about the leading empty token <empty>/...
+
+        TitanNodeId nodeId = null;
+        TitanGuid objectId = null;
+        String method = null;
+
         URN urn = new URN(tokens[1]);
-        
-        // Clean this up such that TitanNodeId and TitanGuid instances can identify themselves as a URN.
+
+        // Clean this up such that TitanNodeId and TitanGuid instances can identify themselves in URN form.
         if (urn.nid.equals("titan-nid-256")) {
-            TitanNodeId nodeId = new TitanNodeIdImpl(urn.nss);
+            nodeId = new TitanNodeIdImpl(urn.nss);
 
             String klasse = tokens[2].substring(0, tokens[2].lastIndexOf('.'));
-            String method = tokens[2].substring(tokens[2].lastIndexOf('.')+1);
+            method = tokens[2].substring(tokens[2].lastIndexOf('.')+1);
 
             System.out.printf("nodeId %s klasse '%s' '%s'%n", nodeId, klasse, method);
-            
-//            System.out.printf("%s%n", request.toString());
+
+            //            System.out.printf("%s%n", request.toString());
 
             try {
                 Serializable payload = new byte[0];

@@ -78,16 +78,12 @@ import sunlabs.titan.node.TitanMessage.RemoteException;
 import sunlabs.titan.node.object.AbstractObjectHandler;
 import sunlabs.titan.node.object.TitanObjectHandler;
 import sunlabs.titan.node.services.CensusDaemon;
+import sunlabs.titan.node.services.HTTPMessageService;
 import sunlabs.titan.node.services.PublishDaemon;
 import sunlabs.titan.node.services.ReflectionService;
-import sunlabs.titan.node.services.RetrieveObjectService;
 import sunlabs.titan.node.services.RoutingDaemon;
-import sunlabs.titan.node.services.TCPMessageService;
-import sunlabs.titan.node.services.HTTPMessageService;
-import sunlabs.titan.node.services.api.Census;
 import sunlabs.titan.node.services.api.MessageService;
 import sunlabs.titan.node.services.api.Publish;
-import sunlabs.titan.node.services.object.AppClassObjectType;
 import sunlabs.titan.node.services.xml.TitanXML;
 import sunlabs.titan.node.services.xml.TitanXML.XMLNode;
 import sunlabs.titan.node.util.DOLRLogger;
@@ -1063,6 +1059,34 @@ public class TitanNodeImpl implements TitanNode, NodeMBean {
         return reply;
     }
 
+    public TitanMessage sendToMethod(String klasse, String method, Serializable data) {
+        TitanMessage request = new TitanMessage(TitanMessage.Type.RouteToNode,
+                this.getNodeAddress(),
+                this.getNodeId(),
+                this.getNodeId(),
+                klasse,
+                method,
+                TitanMessage.Transmission.UNICAST,
+                TitanMessage.Route.LOOSELY,
+                data);
+
+            try {
+                return this.services.dispatch(request);
+            } catch (IllegalArgumentException e) {
+                return request.composeReply(this.getNodeAddress(), e);
+            } catch (ClassNotFoundException e) {
+                return request.composeReply(this.getNodeAddress(), e);
+            } catch (NoSuchMethodException e) {
+                return request.composeReply(this.getNodeAddress(), e);
+            } catch (InstantiationException e) {
+                return request.composeReply(this.getNodeAddress(), e);
+            } catch (IllegalAccessException e) {
+                return request.composeReply(this.getNodeAddress(), e);
+            } catch (InvocationTargetException e) {
+                return request.composeReply(this.getNodeAddress(), e);
+            }
+    }
+    
     public TitanMessage sendToNode(TitanNodeId nodeId, String klasse, String method, Serializable data) {
         TitanMessage msg = new TitanMessage(TitanMessage.Type.RouteToNode,
                 this.getNodeAddress(),

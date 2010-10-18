@@ -1180,6 +1180,7 @@ public class HTTP {
         
         /**
          * Get the body of this message.
+         * If this Message has not entity-body, {@code null} is returned.
          * 
          * @return the body of this message.
          */

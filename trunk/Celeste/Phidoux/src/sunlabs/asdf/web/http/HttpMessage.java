@@ -30,6 +30,7 @@ import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.ObjectInputStream;
+import java.io.ObjectStreamException;
 import java.io.OutputStream;
 import java.io.PushbackInputStream;
 import java.util.HashMap;
@@ -525,6 +526,7 @@ public final class HttpMessage implements HTTP.Message {
         
         return length;
     }
+   
     
     /**
      * Given an {@link HttpMessage} containing a serialized java object,
@@ -570,6 +572,27 @@ public final class HttpMessage implements HTTP.Message {
     public static long asLong(HTTP.Message message, long defaultValue) throws IOException {
         String value = HttpMessage.asString(message, null);
         return (value == null ? defaultValue : Long.parseLong(value));
+    }
+    
+    @SuppressWarnings("unchecked")
+    private void readObject(java.io.ObjectInputStream stream) throws IOException, ClassNotFoundException {        
+        this.headers = (Map<String, Header>) stream.readObject();
+        this.messageBody = (Body) stream.readObject();        
+    }
+    
+    private void writeObject(java.io.ObjectOutputStream stream) throws IOException {
+        // If the input is a RawInputStream, cause it to read in the data and form an array.
+        if (this.messageBody instanceof HttpContent.RawInputStream) {
+            HttpContent.RawInputStream rin = (HttpContent.RawInputStream) this.messageBody;
+            this.messageBody = new HttpContent.RawByteArray(this.messageBody.getContentType(), rin.toByteArray());
+        }
+        stream.writeObject(this.headers);
+        stream.writeObject(this.messageBody);        
+    }
+    
+    @SuppressWarnings("unused")
+    private void readObjectNoData() throws ObjectStreamException {
+        throw new RuntimeException("HttpMessage.readObjectNoData");
     }
 
     public static void main(String[] args) {

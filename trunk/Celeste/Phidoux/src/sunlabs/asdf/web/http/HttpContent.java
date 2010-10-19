@@ -51,12 +51,7 @@ import java.util.Map;
 import java.util.Set;
 
 import sunlabs.asdf.web.XML.XHTML;
-import sunlabs.asdf.web.http.HTTP;
 import sunlabs.asdf.web.http.HTTP.Message;
-import sunlabs.asdf.web.http.HttpHeader;
-import sunlabs.asdf.web.http.HttpMessage;
-import sunlabs.asdf.web.http.HttpUtil;
-import sunlabs.asdf.web.http.InternetMediaType;
 import sunlabs.asdf.web.http.HttpUtil.PathName1;
 
 /**
@@ -580,25 +575,58 @@ public abstract class HttpContent implements HTTP.Message.Body {
             }
         }
     }
-
+    
     public static class RawByteArray extends HttpContent {
-    	private final static long serialVersionUID = 1L;
-    	private ByteBuffer bytes;
-    	
+        private final static long serialVersionUID = 1L;
+        private byte[] bytes;
+        private int offset;
         private int length;
 
         public RawByteArray(HTTP.Message.Header.ContentType type, byte[] bytes, int offset, int length) {
             super(type);
-            this.bytes = ByteBuffer.wrap(bytes, offset, length);
-            this.length = this.bytes.remaining();
+            this.bytes = bytes;
+            this.offset = offset;
+            this.length = length;
         }
 
         public RawByteArray(HTTP.Message.Header.ContentType type, byte[] bytes) {
             this(type, bytes, 0, bytes.length);
         }
 
-        public RawByteArray(HTTP.Message.Header.ContentType type, String string) {
-            this(type, string.getBytes());
+        public long contentLength() {
+            return this.length;
+        }
+
+        public long writeTo(OutputStream out) throws IOException {
+            out.write(this.bytes, this.offset, this.length);
+            return length;
+        }
+
+        @Override
+        public InputStream toInputStream() {
+            return new ByteArrayInputStream(this.bytes, this.offset, this.length);
+        }
+
+        @Override
+        public String toString() {
+            return new String(this.bytes, this.offset, this.length);
+        }
+    }
+    
+    public static class RawByteBuffer extends HttpContent {
+    	private final static long serialVersionUID = 1L;
+    	private ByteBuffer bytes;
+    	
+        private int length;
+
+        public RawByteBuffer(HTTP.Message.Header.ContentType type, byte[] bytes, int offset, int length) {
+            super(type);
+            this.bytes = ByteBuffer.wrap(bytes, offset, length);
+            this.length = this.bytes.remaining();
+        }
+
+        public RawByteBuffer(HTTP.Message.Header.ContentType type, byte[] bytes) {
+            this(type, bytes, 0, bytes.length);
         }
 
         public long contentLength() {
@@ -655,17 +683,17 @@ public abstract class HttpContent implements HTTP.Message.Body {
         private long contentLength;
         private byte[] content; // This is non-null when the input stream has read the content.
         private boolean closeInputStream;
-
-        public RawInputStream(HttpHeader.ContentType type, InputStream in, long contentLength) {
-            super(type);
-            this.inputStream = in;
-            this.contentLength = contentLength;            
-        }
         
         public RawInputStream(HttpHeader.ContentType type, InputStream in) {
             super(type);
             this.inputStream = in;
             this.contentLength = -1;
+        }
+        
+        public RawInputStream(HttpHeader.ContentType type, InputStream in, long contentLength) {
+            super(type);
+            this.inputStream = in;
+            this.contentLength = contentLength;            
         }
 
         /**
@@ -779,7 +807,7 @@ public abstract class HttpContent implements HTTP.Message.Body {
          * Subsequent calls to this method will return the previously stored byte array.
          * </p>
          */
-        private byte[] toByteArray() {
+        public byte[] toByteArray() {
         	try {
         		ByteArrayOutputStream os = new ByteArrayOutputStream();
         		this.writeTo(os);
@@ -803,6 +831,7 @@ public abstract class HttpContent implements HTTP.Message.Body {
         public String toString() {
             return new String(this.toByteArray());
         }
+
     }
     
     public static class TransferEncodedInputStream extends HttpContent {

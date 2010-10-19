@@ -245,7 +245,7 @@ public final class HTTPMessageService extends AbstractTitanService implements Me
                     response.writeObject(new DataOutputStream(bos));
                     bos.close();
                     byte[] bytes = bos.toByteArray();
-                    return new HttpResponse(HTTP.Response.Status.OK, new HttpContent.RawByteArray(new HttpHeader.ContentType(InternetMediaType.Application.OctetStream), bytes));
+                    return new HttpResponse(HTTP.Response.Status.OK, new HttpContent.RawByteBuffer(new HttpHeader.ContentType(InternetMediaType.Application.OctetStream), bytes));
                 } catch (IOException e) {
                     e.printStackTrace();
                     return new HttpResponse(HTTP.Response.Status.INTERNAL_SERVER_ERROR, new HttpContent.Text.Plain("%s", e));
@@ -969,21 +969,13 @@ public final class HTTPMessageService extends AbstractTitanService implements Me
         System.out.printf("node=%s object=%s method=%s exactRouting=%b%n", nodeId, objectId, method, exactRouting);
         
         try {
-            Serializable payload = new byte[0];
-            // The HTTP.Request isn't entirely serializable because it needs to read in the content.
-            // So we fake it here by writing the whole request into a byte array and sending that.
-
-            ByteArrayOutputStream out = new ByteArrayOutputStream();
-            request.writeTo(new DataOutputStream(out));
-            payload = out.toByteArray();
-
             TitanMessage response = null;
             if (nodeId != null) {
-                response = exactRouting ? this.node.sendToNodeExactly(nodeId, klasse, method, payload) : this.node.sendToNode(nodeId, klasse, method, payload);
+                response = exactRouting ? this.node.sendToNodeExactly(nodeId, klasse, method, request) : this.node.sendToNode(nodeId, klasse, method, request);
             } else if (objectId != null) {
-                response = this.node.sendToObject(objectId, klasse, method, payload);
+                response = this.node.sendToObject(objectId, klasse, method, request);
             } else {
-                response = this.node.sendToMethod(klasse, method, payload);
+                response = this.node.sendToMethod(klasse, method, request);
             }
             // Package up return value.
 
@@ -993,8 +985,6 @@ public final class HTTPMessageService extends AbstractTitanService implements Me
         } catch (RemoteException e) {
             return new HttpResponse(HTTP.Response.Status.INTERNAL_SERVER_ERROR, new HttpContent.Text.Plain("%s", e));
         } catch (ClassNotFoundException e) {
-            return new HttpResponse(HTTP.Response.Status.INTERNAL_SERVER_ERROR, new HttpContent.Text.Plain("%s", e));
-        } catch (IOException e) {
             return new HttpResponse(HTTP.Response.Status.INTERNAL_SERVER_ERROR, new HttpContent.Text.Plain("%s", e));
         } catch (NoSuchNodeException e) {
             return new HttpResponse(HTTP.Response.Status.INTERNAL_SERVER_ERROR, new HttpContent.Text.Plain("%s", e));

@@ -26,10 +26,12 @@ package sunlabs.asdf.web.http;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
-import java.io.DataOutputStream;
 import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.io.ObjectStreamException;
 import java.io.OutputStream;
 import java.io.PushbackInputStream;
 import java.io.UnsupportedEncodingException;
@@ -107,13 +109,6 @@ public class HttpRequest implements HTTP.Request {
             throw new HTTP.BadRequestException(String.format("Bad Request-URI: %s%n", e));
         }
     }
-//    
-//
-//    public HttpRequest(byte[] header, InputStream in) {
-//        // XXX parse request-line
-//        
-//        this.message = new HttpMessage(header, in);        
-//    }
     
     /**
      * Create an HTTP client to HTTP server request.
@@ -188,19 +183,8 @@ public class HttpRequest implements HTTP.Request {
         
         HTTP.Message.Body body = this.getMessage().getBody();
         if (body != null) {
-//            long contentLength = body.contentLength();
-        
-//            if (contentLength > 0 && contentLength < 8192) {
-            result.append("...");
-//            } else {
-//                if (contentLength > 0) {
-//                    result.append(String.format(" (printing %d bytes of body suppressed.)", contentLength));
-//                } else {
-//                    //
-//                }
-//            }
+            result.append(body.toString());
         } else {
-            result.append("(null body)\n");
         }
         return result.toString();
     }
@@ -227,14 +211,42 @@ public class HttpRequest implements HTTP.Request {
         
         return length;
     }
+
+//    private void readObject(java.io.ObjectInputStream stream)  throws IOException, ClassNotFoundException {
+//        
+//    }
+//    
+//    private void writeObject(java.io.ObjectOutputStream stream) throws IOException {
+//        stream.writeObject(this.method);
+//        stream.writeObject(this.requestURI);
+//        stream.writeObject(this.message);        
+//    }
+//
+//    private void readObjectNoData() throws ObjectStreamException {
+//        
+//    }
     
     public static void main(String[] args) throws Exception {
         String request = "GET / HTTP/1.1\r\n"
             + "Host:\r\n"
             + "\t127.0.0.1:12345\r\n"
-            + "\r\n";
+            + "Content-Length: 11\r\n"
+            + "\r\n"
+            + "Hello World";
         ByteArrayInputStream bin = new ByteArrayInputStream(request.getBytes());
         HttpRequest r = HttpRequest.getInstance(bin);
-        r.writeTo(new DataOutputStream(System.out));
+        
+        System.out.printf("%s", r.toString());
+        
+        ByteArrayOutputStream bout = new ByteArrayOutputStream();
+        ObjectOutputStream out = new ObjectOutputStream(bout);
+        out.writeObject(r);
+        bout.close();
+        
+        ByteArrayInputStream b2 = new ByteArrayInputStream(bout.toByteArray());
+        ObjectInputStream in = new ObjectInputStream(b2);
+        Object o = in.readObject();
+        System.out.printf("%s", o.toString());
+        
     }
 }

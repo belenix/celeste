@@ -23,8 +23,6 @@
  */
 package sunlabs.titan.node.services;
 
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
 import java.io.InputStream;
 import java.io.Serializable;
 import java.lang.management.ManagementFactory;
@@ -56,10 +54,8 @@ import sunlabs.asdf.web.XML.XHTML;
 import sunlabs.asdf.web.XML.XML;
 import sunlabs.asdf.web.XML.Xxhtml;
 import sunlabs.asdf.web.http.HTTP;
-import sunlabs.asdf.web.http.HTTP.BadRequestException;
 import sunlabs.asdf.web.http.HttpContent;
 import sunlabs.asdf.web.http.HttpMessage;
-import sunlabs.asdf.web.http.HttpRequest;
 import sunlabs.asdf.web.http.HttpResponse;
 import sunlabs.titan.Release;
 import sunlabs.titan.TitanGuidImpl;
@@ -328,9 +324,7 @@ public final class CensusDaemon extends AbstractTitanService implements Census, 
      * This must be modified to allow bulk updating of existing reports by updating only those reports with a larger timestamp than the existing report.
      * @param message
      */
-    public Report.Response report(TitanMessage message) throws ClassCastException, ClassNotFoundException, TitanMessage.RemoteException {
-        Report.Request request = message.getPayload(Report.Request.class, this.node);
-
+    public Report.Response report(TitanMessage message, Report.Request request) {
         if (this.log.isLoggable(Level.FINE)) {
             this.log.fine("%s", request);
         }
@@ -385,8 +379,7 @@ public final class CensusDaemon extends AbstractTitanService implements Census, 
      * Respond to a {@link CensusDaemon.Select.Request} operation.
      *
      */
-    public Select.Response select(TitanMessage message) throws ClassNotFoundException, ClassCastException, TitanMessage.RemoteException {
-        Select.Request request = message.getPayload(Select.Request.class, this.node);
+    public Select.Response select(TitanMessage message, Select.Request request) {
         if (this.log.isLoggable(Level.FINE)) {
             this.log.fine("%s", request);
         }
@@ -399,22 +392,13 @@ public final class CensusDaemon extends AbstractTitanService implements Census, 
         }
         return response;
     }
-    
-    public HTTP.Response selectREST(TitanMessage message) throws ClassCastException, RemoteException, ClassNotFoundException {
-        byte[] bytes = (byte[]) message.getPayload(Serializable.class, this.node);
 
-        try {
-            HTTP.Request httpRequest = HttpRequest.getInstance(new ByteArrayInputStream(bytes));
-            HTTP.Message.Body messageBody = httpRequest.getMessage().getBody();
-            if (messageBody != null) {
-                InputStream in = messageBody.toInputStream();
-            }
-            return new HttpResponse(HTTP.Response.Status.OK, new HttpContent.Text.Plain("Hello World from Census.selectREST"));
-        } catch (IOException e) {
-            return new HttpResponse(HTTP.Response.Status.INTERNAL_SERVER_ERROR, new HttpContent.Text.Plain(e.toString()));
-        } catch (BadRequestException e) {
-            return e.getResponse();
+    public HTTP.Response select(TitanMessage message, HTTP.Request httpRequest) {
+        HTTP.Message.Body messageBody = httpRequest.getMessage().getBody();
+        if (messageBody != null) {
+            InputStream in = messageBody.toInputStream();
         }
+        return new HttpResponse(HTTP.Response.Status.OK, new HttpContent.Text.Plain("Hello World from Census.select"));        
     }
 
     public interface ReportDaemonMBean extends ThreadMBean {
@@ -428,8 +412,6 @@ public final class CensusDaemon extends AbstractTitanService implements Census, 
      */
     private class ReportDaemon extends Thread implements ReportDaemonMBean, Serializable {
         private final static long serialVersionUID = 1L;
-
-//        private OrderedProperties myProperties;
 
         private long lastReportTime;
         // XXX This needs to be maintained as a persistent value across node restarts.  Otherwise the serial number will always start at zero and collide with itself.

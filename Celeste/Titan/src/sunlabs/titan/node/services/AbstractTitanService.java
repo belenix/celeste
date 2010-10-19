@@ -27,6 +27,7 @@ import java.io.File;
 import java.io.Serializable;
 import java.lang.management.ManagementFactory;
 import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.net.URI;
 import java.util.Map;
 
@@ -44,6 +45,7 @@ import sunlabs.titan.api.TitanNode;
 import sunlabs.titan.api.TitanService;
 import sunlabs.titan.api.management.TitanServiceMBean;
 import sunlabs.titan.node.TitanMessage;
+import sunlabs.titan.node.TitanMessage.RemoteException;
 import sunlabs.titan.node.TitanNodeImpl;
 import sunlabs.titan.node.util.DOLRLogger;
 import sunlabs.titan.node.util.DOLRLoggerMBean;
@@ -148,12 +150,46 @@ public abstract class AbstractTitanService extends NotificationBroadcasterSuppor
     
     public TitanMessage invokeMethod(String methodName, TitanMessage request) {
         try {
-            Object object = this.getClass().getMethod(methodName, TitanMessage.class).invoke(this, request);
-            if (object instanceof TitanMessage) {
-                System.out.printf("%s.%s returns deprecated return value%n", this.getClass(), methodName);
-                return (TitanMessage) object;
+            if (true) {
+                Serializable payload = (Serializable) request.getPayload(Serializable.class, this.node);
+                Class<?> klasse = payload.getClass();
+                for (Class<?> k : klasse.getInterfaces()) {
+                    try {
+                        Method m = this.getClass().getMethod(methodName, TitanMessage.class, k);
+//                        System.out.printf("    found: %s(%s)%n", this.getClass().getName(), k.getName());
+                        Serializable result = (Serializable) m.invoke(this, request, payload);
+                        if (result instanceof TitanMessage) {
+                            System.out.printf("%s.%s returns deprecated return value%n", this.getClass(), methodName);
+                            return (TitanMessage) result;
+                        }
+                        return request.composeReply(this.node.getNodeAddress(), (Serializable) result);
+                    } catch (NoSuchMethodException e) {
+                        // ignore
+                    }
+                }
+                try {
+                    Method m = this.getClass().getMethod(methodName, TitanMessage.class, klasse);
+//                    System.out.printf("    found: %s(%s)%n", this.getClass().getName(), klasse.getName());
+                    Serializable result = (Serializable) m.invoke(this, request, payload);
+                    if (result instanceof TitanMessage) {
+                        System.out.printf("%s.%s returns deprecated return value%n", this.getClass(), methodName);
+                        return (TitanMessage) result;
+                    }
+                    return request.composeReply(this.node.getNodeAddress(), (Serializable) result);
+                } catch (NoSuchMethodException e) {
+                    // ignore
+                }
+                // fall out of this clause and invoke the old-fashioned method.
+                System.out.printf("%s.%s(TitanMessage) should be replaced with %s(TitanMessage, %s)%n", this.getClass().getName(), methodName, methodName, klasse.getName());
             }
-            return request.composeReply(this.node.getNodeAddress(), (Serializable) object);
+
+//            System.out.printf("    found: %s(%s)%n", this.getClass().getName(), TitanMessage.class.getName());
+            Serializable result = (Serializable) this.getClass().getMethod(methodName, TitanMessage.class).invoke(this, request);
+            if (result instanceof TitanMessage) {
+                System.out.printf("%s.%s returns deprecated return value%n", this.getClass(), methodName);
+                return (TitanMessage) result;
+            }
+            return request.composeReply(this.node.getNodeAddress(), (Serializable) result);
         } catch (IllegalArgumentException e) {
             this.log.severe(e.toString());
             e.printStackTrace();
@@ -167,10 +203,22 @@ public abstract class AbstractTitanService extends NotificationBroadcasterSuppor
             e.printStackTrace();
             return request.composeReply(this.node.getNodeAddress(), e);
         } catch (InvocationTargetException e) {
-            // The invoked method threw an Exception so package it up as a reply to the requestor.
             this.log.info("%s.%s(...) threw %s", this.getClass().getName(), methodName, e.getCause());
             return request.composeReply(this.node.getNodeAddress(), e.getCause());
         } catch (NoSuchMethodException e) {
+            return request.composeReply(this.node.getNodeAddress(), e);
+        } catch (ClassCastException e) {
+            this.log.severe(e.toString());
+            e.printStackTrace();
+            return request.composeReply(this.node.getNodeAddress(), e);
+        } catch (RemoteException e) {
+            // The payload contained an Exception.  We don't take Exceptions as payload, although we could.
+            this.log.severe(e.toString());
+            e.printStackTrace();
+            return request.composeReply(this.node.getNodeAddress(), e);
+        } catch (ClassNotFoundException e) {
+            this.log.severe(e.toString());
+            e.printStackTrace();
             return request.composeReply(this.node.getNodeAddress(), e);
         }
     }

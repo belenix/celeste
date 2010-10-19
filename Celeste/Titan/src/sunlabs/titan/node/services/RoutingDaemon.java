@@ -633,7 +633,7 @@ public final class RoutingDaemon extends AbstractTitanService implements Routing
      * to drop into place.
      * </p>
      */
-    public JoinOperation.Response join(TitanMessage message) throws ClassNotFoundException, ClassCastException, TitanMessage.RemoteException {
+    public JoinOperation.Response join(TitanMessage message, JoinOperation.Request request) throws ClassNotFoundException, ClassCastException, TitanMessage.RemoteException {
         //this.log.entering(message.toString());
 
         if (this.node.getNeighbourMap().getRoute(message.getDestinationNodeId()) != null) {
@@ -781,10 +781,10 @@ public final class RoutingDaemon extends AbstractTitanService implements Routing
      * Add the pinging node to our neighbour table.
      * </p>
      */
-    public PingOperation.Response ping(TitanMessage message) throws ClassNotFoundException, ClassCastException, RemoteException {
+    public PingOperation.Response ping(TitanMessage message, PingOperation.Request request) throws ClassNotFoundException, ClassCastException, RemoteException {
         this.node.getNeighbourMap().add(message.getSource());
 
-        PingOperation.Request request = message.getPayload(PingOperation.Request.class, this.node);
+//        PingOperation.Request request = message.getPayload(PingOperation.Request.class, this.node);
 
         if (this.node.getNeighbourMap().isRoot(message.getDestinationNodeId())) {
             //

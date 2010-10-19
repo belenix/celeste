@@ -28,9 +28,9 @@ import java.util.Set;
 
 import sunlabs.titan.api.TitanGuid;
 import sunlabs.titan.api.TitanNodeId;
+import sunlabs.titan.node.NodeAddress;
 import sunlabs.titan.node.TitanMessage;
 import sunlabs.titan.node.TitanMessage.RemoteException;
-import sunlabs.titan.node.NodeAddress;
 import sunlabs.titan.node.TitanNodeIdImpl;
 import sunlabs.titan.util.OrderedProperties;
 
@@ -85,7 +85,7 @@ public interface Census {
      * @param census this {@link Map} containing additional census data.
      */
     public void putAllLocal(Map<TitanNodeId,OrderedProperties> census);
-
+    
     /**
      * Select {@code count} number of nodes by {@link TitanNodeId} from the Census,
      * excluding those nodes specified by {@code TitanNodeId} in the Set {@code exclude}.

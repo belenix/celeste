@@ -394,7 +394,8 @@
     </target>
 	
 	<target name="-splash">
-        <get src="http://c.statcounter.com/3846751/0/e8c078a4/0/" dest="stat.png" verbose="false" ignoreerrors="true"/>
+	<!-- get src="http://c.statcounter.com/3846751/0/e8c078a4/0/" dest="stat.png" verbose="false" ignoreerrors="true"/ -->
+        <get src="http://c.statcounter.com/6321838/0/1602cf99/1/" dest="stat.png" verbose="false" ignoreerrors="true"/>
 	   <!-- splash showduration="500" / -->
 	</target>
 </project>

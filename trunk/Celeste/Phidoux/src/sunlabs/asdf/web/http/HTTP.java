@@ -290,6 +290,7 @@ public class HTTP {
     public interface Request extends Serializable {
         /**
          * Return this request's method.
+         * @see HTTP.Request.Method
          */
         public HTTP.Request.Method getMethod();
 
@@ -325,6 +326,7 @@ public class HTTP {
         /**
          * An {@code HTTP.Request.Method}, as part of an {@link HTTP.Request},
          * indicates the operation that is to be performed on the resource identified by the request URI.
+         * For example, {@code GET}, {@code PUT}, {@code POST}, and others.
          * Other uses of the {@code HTTP.Request.Method} are in {@link HTTP.Response} messages indicating what methods are permitted on a particular resource.
          * <p>
          * The proper use of this class is to get the method from the pre-defined set of methods:

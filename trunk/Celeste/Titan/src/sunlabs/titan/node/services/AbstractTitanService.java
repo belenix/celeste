@@ -204,6 +204,7 @@ public abstract class AbstractTitanService extends NotificationBroadcasterSuppor
             return request.composeReply(this.node.getNodeAddress(), e);
         } catch (InvocationTargetException e) {
             this.log.info("%s.%s(...) threw %s", this.getClass().getName(), methodName, e.getCause());
+            e.printStackTrace();
             return request.composeReply(this.node.getNodeAddress(), e.getCause());
         } catch (NoSuchMethodException e) {
             return request.composeReply(this.node.getNodeAddress(), e);
@@ -217,6 +218,10 @@ public abstract class AbstractTitanService extends NotificationBroadcasterSuppor
             e.printStackTrace();
             return request.composeReply(this.node.getNodeAddress(), e);
         } catch (ClassNotFoundException e) {
+            this.log.severe(e.toString());
+            e.printStackTrace();
+            return request.composeReply(this.node.getNodeAddress(), e);
+        } catch (Exception e) {
             this.log.severe(e.toString());
             e.printStackTrace();
             return request.composeReply(this.node.getNodeAddress(), e);

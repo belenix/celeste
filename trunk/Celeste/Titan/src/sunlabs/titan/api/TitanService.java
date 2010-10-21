@@ -28,6 +28,8 @@ import java.net.URI;
 import java.util.Map;
 
 import sunlabs.asdf.web.XML.XHTML;
+import sunlabs.asdf.web.XML.XML;
+import sunlabs.asdf.web.XML.XML.Content;
 import sunlabs.asdf.web.http.HTTP;
 import sunlabs.titan.node.TitanMessage;
 import sunlabs.titan.node.util.DOLRLogger;
@@ -114,6 +116,7 @@ public interface TitanService extends Serializable {
      */
     public interface Response extends Serializable {
         
+        public XML.Content toXML();
     }
 
     /**

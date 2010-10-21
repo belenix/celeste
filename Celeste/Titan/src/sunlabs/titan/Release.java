@@ -8,7 +8,7 @@ public class Release {
 			return Release.thisRelease;
 		Release.thisRelease = Release.class.getPackage().getImplementationVersion();
 		if (Release.thisRelease == null) {
-			Release.thisRelease = "Revision: Working copy.";			
+			Release.thisRelease = "Revision: Uranus.";			
 		}
 		return Release.thisRelease;
 	}

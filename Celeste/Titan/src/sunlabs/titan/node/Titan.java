@@ -131,7 +131,30 @@ public class Titan {
     }
     
 
-    private static String release = String.valueOf(Titan.class.getPackage().getImplementationVersion());
+
+    protected OrderedProperties properties;
+
+    public Titan() {
+        this.properties = new OrderedProperties();
+
+        properties.setProperty(TitanNodeImpl.LocalFileSystemRoot.getName(), File.listRoots()[0] + "tmp" + File.separator + "titan" + File.separator);
+
+
+        // This way to construct the default spool directory is very UNIX-centric.
+        properties.setProperty(TitanNodeImpl.LocalFileSystemRoot.getName(), File.listRoots()[0] + "tmp" + File.separator + "titan" + File.separator);
+        
+        properties.setProperty(HTTPMessageService.ServerSocketPort.getName(), 12001);
+        properties.setProperty(TitanNodeImpl.Port.getName(), 12000);
+        properties.setProperty(TCPMessageService.ConnectionType.getName(), "plain");
+        properties.setProperty(TitanNodeImpl.InterNetworkAddress.getName(), "127.0.0.1");
+        properties.setProperty(TitanNodeImpl.GatewayRetryDelaySeconds.getName(), 30);        
+    }
+    
+    public OrderedProperties setProperty(String name, Object value) {
+        return this.properties.setProperty(name, value);
+    }
+    
+    protected static String release = String.valueOf(Titan.class.getPackage().getImplementationVersion());
 
     /**
      *
@@ -140,22 +163,24 @@ public class Titan {
         System.out.println(Titan.release);
         System.out.println(Copyright.miniNotice);
         
+        Titan titan = new Titan();
+        
         //
         // Establish default values.  The argument processing code below can
         // override them.
     	//
-    	OrderedProperties properties = new OrderedProperties();
+//    	OrderedProperties properties = new OrderedProperties();
 
         String gatewayArgument = null;
 
         // This way to construct the default spool directory is very UNIX-centric.
-        properties.setProperty(TitanNodeImpl.LocalFileSystemRoot.getName(), File.listRoots()[0] + "tmp" + File.separator + "titan" + File.separator);
-
-        properties.setProperty(HTTPMessageService.ServerSocketPort.getName(), 12001);
-        properties.setProperty(TitanNodeImpl.Port.getName(), 12000);
-        properties.setProperty(TCPMessageService.ConnectionType.getName(), "plain");
-        properties.setProperty(TitanNodeImpl.InterNetworkAddress.getName(), "127.0.0.1");
-        properties.setProperty(TitanNodeImpl.GatewayRetryDelaySeconds.getName(), 30);
+//        properties.setProperty(TitanNodeImpl.LocalFileSystemRoot.getName(), File.listRoots()[0] + "tmp" + File.separator + "titan" + File.separator);
+//
+//        properties.setProperty(HTTPMessageService.ServerSocketPort.getName(), 12001);
+//        properties.setProperty(TitanNodeImpl.Port.getName(), 12000);
+//        properties.setProperty(TCPMessageService.ConnectionType.getName(), "plain");
+//        properties.setProperty(TitanNodeImpl.InterNetworkAddress.getName(), "127.0.0.1");
+//        properties.setProperty(TitanNodeImpl.GatewayRetryDelaySeconds.getName(), 30);
 
         String javaFile = System.getenv("JAVA");
         if (javaFile == null)
@@ -200,7 +225,7 @@ public class Titan {
         jarFile = mxbean.getClassPath();
 
         try {
-            properties.setProperty(TitanNodeImpl.InterNetworkAddress.getName(), InetAddress.getLocalHost().getHostAddress());
+            titan.properties.setProperty(TitanNodeImpl.InterNetworkAddress.getName(), InetAddress.getLocalHost().getHostAddress());
         } catch (UnknownHostException e) {
             e.printStackTrace();
             System.exit(1);
@@ -211,7 +236,7 @@ public class Titan {
                 if (args[i].equals("--url")) {
                     try {
                         OrderedProperties p = new OrderedProperties(new URL(args[++i]));
-                        properties.putAll(p);
+                        titan.properties.putAll(p);
                     } catch (IOException e) {
                         e.printStackTrace();
                         System.exit(1);
@@ -235,13 +260,13 @@ public class Titan {
                     String port = tokens[0];
                     if (tokens.length > 1)
                         titanPortIncrement = Integer.parseInt(tokens[1]);
-                    properties.setProperty(TitanNodeImpl.Port.getName(), port);
+                    titan.properties.setProperty(TitanNodeImpl.Port.getName(), port);
                 } else if (args[i].equals("--http-port")) {
                     String[] tokens = args[++i].split(",");
                     String port = tokens[0];
                     if (tokens.length > 1)
                         webdavPortIncrement = Integer.parseInt(tokens[1]);
-                    properties.setProperty(HTTPMessageService.ServerSocketPort.getName(), port);
+                    titan.properties.setProperty(HTTPMessageService.ServerSocketPort.getName(), port);
                 } else if (args[i].equals("--jmx-port")) {
                     String[] tokens = args[++i].split(",");
                     String port = tokens[0];
@@ -268,11 +293,11 @@ public class Titan {
                     System.out.printf(" [--delay <integer>] (%d)%n", interprocessStartupDelayTimeSeconds);
                     System.out.printf(" [--n-nodes <integer>] (%d)%n", n_nodes);
                     System.out.printf(" [--threads] (use threads instead of spawning a JVM for each node)%n");
-                    System.out.printf(" [--http-port <integer>[,<integer>]] (%d,%d)%n", properties.getPropertyAsInt(HTTPMessageService.ServerSocketPort.getName()), webdavPortIncrement);
+                    System.out.printf(" [--http-port <integer>[,<integer>]] (%d,%d)%n", titan.properties.getPropertyAsInt(HTTPMessageService.ServerSocketPort.getName()), webdavPortIncrement);
                     System.out.printf(" [--jar <file name>] (%s)%n", String.valueOf(jarFile));
                     System.out.printf(" [--java <file name>] (%s)%n", javaFile);
                     System.out.printf(" [--jmx-port <integer>[,<integer>]] (%d,%d)%n] (%d)%n", jmxPort, jmxPortIncrement);
-                    System.out.printf(" [--titan-port <integer>[,<integer>]] (%d,%d)%n", properties.getPropertyAsInt(TitanNodeImpl.Port.getName()), titanPortIncrement);
+                    System.out.printf(" [--titan-port <integer>[,<integer>]] (%d,%d)%n", titan.properties.getPropertyAsInt(TitanNodeImpl.Port.getName()), titanPortIncrement);
                     System.out.printf(" [-V<option>]%n");
                     System.out.printf(" [--jvmarg<option>]%n");
                     System.out.printf(" [--D<option>]%n");
@@ -284,7 +309,7 @@ public class Titan {
                 String[] tokens = args[i].substring(2).split("=");
                 if (tokens.length == 1) {
                 } else {
-                    properties.setProperty(tokens[0], tokens[1]);
+                    titan.properties.setProperty(tokens[0], tokens[1]);
                 }
             } else if (args[i].startsWith("-V") || args[i].startsWith("--jvmarg")) {
                 String v = args[i].substring(3);
@@ -297,7 +322,7 @@ public class Titan {
                 // These properties are overridden by options subsequent on the command line.
                 try {
                     OrderedProperties p = new OrderedProperties(new URL(args[i]));
-                    properties.putAll(p);
+                    titan.properties.putAll(p);
                 } catch (IOException e) {
                     e.printStackTrace();
                     System.exit(1);
@@ -305,10 +330,10 @@ public class Titan {
             }
         }
 
-        File rootDirectory = new File(properties.getProperty(TitanNodeImpl.LocalFileSystemRoot.getName()));
+        File rootDirectory = new File(titan.properties.getProperty(TitanNodeImpl.LocalFileSystemRoot.getName()));
         if (!rootDirectory.exists()) {
             if (rootDirectory.mkdirs() == false) {
-                System.err.printf("Failed to create %s%n", properties.getProperty(TitanNodeImpl.LocalFileSystemRoot.getName()));
+                System.err.printf("Failed to create %s%n", titan.properties.getProperty(TitanNodeImpl.LocalFileSystemRoot.getName()));
                 System.exit(1);
             }
         }
@@ -320,6 +345,8 @@ public class Titan {
             }
         }
 
+        // Start the server(s)
+        
         // Start all of the nodes as threads in one JVM.
         if (useThreads) {
             TitanNode[] node = new TitanNode[n_nodes];
@@ -328,7 +355,7 @@ public class Titan {
             try {
                 for (int i = 0; i < n_nodes; i++) {
                     OrderedProperties configurationProperties = new OrderedProperties();
-                    configurationProperties.putAll(properties);
+                    configurationProperties.putAll(titan.properties);
                     if (keyStoreNames != null) {
                         configurationProperties.setProperty(TitanNodeImpl.KeyStoreFileName.getName(), keyStoreNames[i]);
                     }
@@ -347,9 +374,9 @@ public class Titan {
                         e.printStackTrace();
                     }
 
-                    properties.setProperty(TitanNodeImpl.GatewayURL.getName(), node[0].getNodeAddress().getInspectorInterface());
-                    properties.setProperty(TitanNodeImpl.Port.getName(), properties.getPropertyAsInt(TitanNodeImpl.Port.getName()) + titanPortIncrement);
-                    properties.setProperty(HTTPMessageService.ServerSocketPort.getName(), properties.getPropertyAsInt(HTTPMessageService.ServerSocketPort.getName()) + webdavPortIncrement);
+                    titan.properties.setProperty(TitanNodeImpl.GatewayURL.getName(), node[0].getNodeAddress().getInspectorInterface());
+                    titan.properties.setProperty(TitanNodeImpl.Port.getName(), titan.properties.getPropertyAsInt(TitanNodeImpl.Port.getName()) + titanPortIncrement);
+                    titan.properties.setProperty(HTTPMessageService.ServerSocketPort.getName(), titan.properties.getPropertyAsInt(HTTPMessageService.ServerSocketPort.getName()) + webdavPortIncrement);
                 }
                 if (n_nodes > 1) {
                     System.out.printf("%s All %d node threads running.%n", Time.ISO8601(System.currentTimeMillis()), n_nodes);
@@ -364,7 +391,7 @@ public class Titan {
                 }
             } catch (java.net.BindException e) {
                 System.out.printf("%s titan-port=%d http-port=%d jmx-port=%d%n",
-                        e.toString(),  properties.getPropertyAsInt(TitanNodeImpl.Port.getName()), properties.getPropertyAsInt(HTTPMessageService.ServerSocketPort.getName()),
+                        e.toString(),  titan.properties.getPropertyAsInt(TitanNodeImpl.Port.getName()), titan.properties.getPropertyAsInt(HTTPMessageService.ServerSocketPort.getName()),
                         jmxPort);
             } catch (IOException e) {
                 e.printStackTrace();
@@ -388,7 +415,7 @@ public class Titan {
             OrderedProperties configurationProperties = new OrderedProperties();
             // Copy all of the properties into this node's properties.
             // Customise this node's properties.
-            configurationProperties.putAll(properties);
+            configurationProperties.putAll(titan.properties);
             if (keyStoreNames != null) {
                 configurationProperties.setProperty(TitanNodeImpl.KeyStoreFileName.getName(), keyStoreNames[i]);
             }
@@ -431,20 +458,16 @@ public class Titan {
             // subsequent nodes use it as a gateway.
             //
             if (i == 0) {
-                gatewayArgument = "http://" +  properties.getProperty(TitanNodeImpl.InterNetworkAddress.getName()) + ":" + properties.getProperty(HTTPMessageService.ServerSocketPort.getName());
-                properties.setProperty(TitanNodeImpl.GatewayURL.getName(), gatewayArgument);
+                gatewayArgument = "http://" +  titan.properties.getProperty(TitanNodeImpl.InterNetworkAddress.getName()) + ":" + titan.properties.getProperty(HTTPMessageService.ServerSocketPort.getName());
+                titan.properties.setProperty(TitanNodeImpl.GatewayURL.getName(), gatewayArgument);
             }
 
-            properties.setProperty(TitanNodeImpl.Port.getName(), properties.getPropertyAsInt(TitanNodeImpl.Port.getName()) + titanPortIncrement);
-            properties.setProperty(HTTPMessageService.ServerSocketPort.getName(), properties.getPropertyAsInt(HTTPMessageService.ServerSocketPort.getName()) + webdavPortIncrement);
+            titan.properties.setProperty(TitanNodeImpl.Port.getName(), titan.properties.getPropertyAsInt(TitanNodeImpl.Port.getName()) + titanPortIncrement);
+            titan.properties.setProperty(HTTPMessageService.ServerSocketPort.getName(), titan.properties.getPropertyAsInt(HTTPMessageService.ServerSocketPort.getName()) + webdavPortIncrement);
             if (jmxPort != null) {
                 jmxPort += jmxPortIncrement;
             }
         }
         System.out.println(Time.ISO8601(System.currentTimeMillis()) + ": " + "done.");
-    }
-
-    public Titan() {
-        
     }
 }

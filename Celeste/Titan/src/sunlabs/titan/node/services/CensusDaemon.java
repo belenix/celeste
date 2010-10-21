@@ -62,6 +62,7 @@ import sunlabs.titan.TitanGuidImpl;
 import sunlabs.titan.api.TitanGuid;
 import sunlabs.titan.api.TitanNode;
 import sunlabs.titan.api.TitanNodeId;
+import sunlabs.titan.api.TitanService;
 import sunlabs.titan.node.NodeAddress;
 import sunlabs.titan.node.TitanMessage;
 import sunlabs.titan.node.TitanMessage.RemoteException;
@@ -80,7 +81,7 @@ import sunlabs.titan.util.OrderedProperties;
  * received node information.
  * </p>
  */
-public final class CensusDaemon extends AbstractTitanService implements Census, CensusDaemonMBean {
+public class CensusDaemon extends AbstractTitanService implements Census, CensusDaemonMBean {
     private final static long serialVersionUID = 1L;
 
     private final static String name = AbstractTitanService.makeName(CensusDaemon.class, CensusDaemon.serialVersionUID);
@@ -209,7 +210,7 @@ public final class CensusDaemon extends AbstractTitanService implements Census, 
             }
         }
 
-        private static class Response implements Serializable {
+        private static class Response implements TitanService.Response {
             private final static long serialVersionUID = 1L;
 
             private Map<TitanNodeId,OrderedProperties> censusData;
@@ -225,6 +226,10 @@ public final class CensusDaemon extends AbstractTitanService implements Census, 
             public String toString() {
                 StringBuilder result = new StringBuilder(this.getClass().getName()).append(" ").append(this.censusData);
                 return result.toString();
+            }
+            
+            public XML.Node toXML() {
+                return null;
             }
         }
     }
@@ -290,9 +295,10 @@ public final class CensusDaemon extends AbstractTitanService implements Census, 
     private SortedMap<TitanNodeId,OrderedProperties> catalogue;
 
     private OrderedProperties myProperties;
-
-    public CensusDaemon(TitanNode node) throws JMException {
-        super(node, CensusDaemon.name, "Catalogue all Nodes");
+    
+    protected CensusDaemon(TitanNode node, String name, String description) throws JMException {
+        super(node, name, description);
+        this.catalogue = Collections.synchronizedSortedMap(new TreeMap<TitanNodeId,OrderedProperties>());
 
         node.getConfiguration().add(CensusDaemon.ClockSlopToleranceSeconds);
         node.getConfiguration().add(CensusDaemon.ReportRateSeconds);
@@ -308,6 +314,25 @@ public final class CensusDaemon extends AbstractTitanService implements Census, 
             this.log.config("%s", node.getConfiguration().get(CensusDaemon.ClockSlopToleranceSeconds));
             this.log.config("%s", node.getConfiguration().get(CensusDaemon.ReportRateSeconds));
         }
+    }
+
+    public CensusDaemon(TitanNode node) throws JMException {
+        this(node, CensusDaemon.name, "Catalogue all Nodes");
+
+//        node.getConfiguration().add(CensusDaemon.ClockSlopToleranceSeconds);
+//        node.getConfiguration().add(CensusDaemon.ReportRateSeconds);
+//
+//        if (this.log.isLoggable(Level.CONFIG)) {
+//            this.log.config("%s",node.getConfiguration().get(CensusDaemon.ReportRateSeconds));
+//        }
+//
+//        this.catalogue = Collections.synchronizedSortedMap(new TreeMap<TitanNodeId,OrderedProperties>());
+//
+//        this.myProperties = new OrderedProperties();
+//        if (this.log.isLoggable(Level.CONFIG)) {
+//            this.log.config("%s", node.getConfiguration().get(CensusDaemon.ClockSlopToleranceSeconds));
+//            this.log.config("%s", node.getConfiguration().get(CensusDaemon.ReportRateSeconds));
+//        }
     }
 
     /**
@@ -398,7 +423,15 @@ public final class CensusDaemon extends AbstractTitanService implements Census, 
         if (messageBody != null) {
             InputStream in = messageBody.toInputStream();
         }
-        return new HttpResponse(HTTP.Response.Status.OK, new HttpContent.Text.Plain("Hello World from Census.select"));        
+
+        int count = 0;
+        Set<TitanNodeId> excluded = new HashSet<TitanNodeId>();
+        OrderedProperties match = new OrderedProperties();
+
+        Map<TitanNodeId,OrderedProperties> list = this.selectFromCatalogue(count, excluded, match);
+        Select.Response response = new Select.Response(list);
+        
+        return new HttpResponse(HTTP.Response.Status.OK, new HttpContent.Text.Plain(response.toString()));
     }
 
     public interface ReportDaemonMBean extends ThreadMBean {
@@ -585,7 +618,6 @@ public final class CensusDaemon extends AbstractTitanService implements Census, 
     public XHTML.EFlow toXHTML(URI uri, Map<String,HTTP.Message> props) {
         try {
             String defaultNodeAddress = new NodeAddress(new TitanNodeIdImpl("1111111111111111111111111111111111111111111111111111111111111111"), "127.0.0.1", 12001, new URL("http", "127.0.0.1", 12002, "")).format();
-
 
             String action = HttpMessage.asString(props.get("action"), null);
             if (action != null) {

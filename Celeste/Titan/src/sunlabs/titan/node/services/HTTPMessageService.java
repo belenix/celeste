@@ -690,7 +690,7 @@ public final class HTTPMessageService extends AbstractTitanService implements Me
                         return response;
                     }
                     
-                    String xml = applyXSLT("/xsl/beehive-route-table.xsl", document);
+                    String xml = this.applyXSLT("/xsl/beehive-route-table.xsl", document);
                     HttpContent.Text.XML content = new HttpContent.Text.XML(xml);
                     content.setContentType(new HttpHeader.ContentType(InternetMediaType.Text.HTML));
                     return new HttpResponse(HTTP.Response.Status.OK, content);

@@ -393,7 +393,7 @@ public class TCPMessageService extends AbstractTitanService implements MessageSe
             
             this.server.socket().setReuseAddress(true);
             this.server.socket().bind(
-            new InetSocketAddress(service.node.getNodeAddress().getMessageURL().getHost(), service.node.getNodeAddress().getMessageURL().getPort()));
+                    new InetSocketAddress(service.node.getNodeAddress().getMessageURL().getHost(), service.node.getNodeAddress().getMessageURL().getPort()));
 
             this.sockets = new SocketCache(service.node.getConfiguration().asInt(TCPMessageService.SocketCacheSize),
                     service.node.getConfiguration().asInt(TCPMessageService.SocketTimeoutSeconds));

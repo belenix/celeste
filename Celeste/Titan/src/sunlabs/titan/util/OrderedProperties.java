@@ -36,6 +36,7 @@ import java.net.URI;
 import java.net.URL;
 import java.nio.ByteBuffer;
 import java.util.Map;
+import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
 
@@ -141,6 +142,12 @@ public class OrderedProperties extends java.util.Properties implements XHTMLInsp
     public ByteBuffer toByteBuffer() {
         return ByteBuffer.wrap(this.toByteArray());
     }
+    
+    public Set<Object> keySet() {
+        TreeSet<Object> sortedKeys = new TreeSet<Object>();
+        sortedKeys.addAll(super.keySet());
+        return sortedKeys;        
+    }
 
     public void load(ByteBuffer buffer) {
         ByteArrayInputStream bin = new ByteArrayInputStream(buffer.array(), buffer.arrayOffset(), buffer.limit());
@@ -175,10 +182,7 @@ public class OrderedProperties extends java.util.Properties implements XHTMLInsp
             writeln(awriter, "#" + comments);
         writeln(awriter, "#");
         
-        TreeSet<Object> sortedKeys = new TreeSet<Object>();
-        sortedKeys.addAll(this.keySet());
-        
-        for (Object key : sortedKeys) {
+        for (Object key : this.keySet()) {
             String val = null;
             try {
                 val = (String) get(key);

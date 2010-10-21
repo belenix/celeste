@@ -63,9 +63,9 @@ import sunlabs.titan.api.XHTMLInspectable;
 import sunlabs.titan.node.BeehiveObjectStore;
 import sunlabs.titan.node.TitanMessage;
 import sunlabs.titan.node.TitanMessage.RemoteException;
-import sunlabs.titan.node.services.CensusDaemon;
+import sunlabs.titan.node.services.Census;
 import sunlabs.titan.node.services.HTTPMessageService;
-import sunlabs.titan.node.services.api.Census;
+import sunlabs.titan.node.services.census.CensusDaemon;
 import sunlabs.titan.node.util.DOLRLogger;
 import sunlabs.titan.util.DOLRStatus;
 

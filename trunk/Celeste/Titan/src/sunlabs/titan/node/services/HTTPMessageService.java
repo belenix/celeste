@@ -117,9 +117,9 @@ import sunlabs.titan.node.TitanMessage;
 import sunlabs.titan.node.TitanMessage.RemoteException;
 import sunlabs.titan.node.TitanNodeIdImpl;
 import sunlabs.titan.node.TitanNodeImpl;
-import sunlabs.titan.node.services.api.Census;
 import sunlabs.titan.node.services.api.MessageService;
 import sunlabs.titan.node.services.api.Reflection;
+import sunlabs.titan.node.services.census.CensusDaemon;
 import sunlabs.titan.util.OrderedProperties;
 
 /**

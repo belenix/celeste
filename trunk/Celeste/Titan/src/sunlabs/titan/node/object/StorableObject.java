@@ -45,9 +45,9 @@ import sunlabs.titan.api.TitanObject;
 import sunlabs.titan.node.BeehiveObjectPool;
 import sunlabs.titan.node.BeehiveObjectStore;
 import sunlabs.titan.node.TitanMessage;
-import sunlabs.titan.node.services.CensusDaemon;
-import sunlabs.titan.node.services.api.Census;
+import sunlabs.titan.node.services.Census;
 import sunlabs.titan.node.services.api.Publish;
+import sunlabs.titan.node.services.census.CensusDaemon;
 import sunlabs.titan.util.DOLRStatus;
 import sunlabs.titan.util.OrderedProperties;
 

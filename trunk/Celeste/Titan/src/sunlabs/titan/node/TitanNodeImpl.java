@@ -77,13 +77,13 @@ import sunlabs.titan.api.management.NodeMBean;
 import sunlabs.titan.node.TitanMessage.RemoteException;
 import sunlabs.titan.node.object.AbstractObjectHandler;
 import sunlabs.titan.node.object.TitanObjectHandler;
-import sunlabs.titan.node.services.CensusDaemon;
 import sunlabs.titan.node.services.HTTPMessageService;
 import sunlabs.titan.node.services.PublishDaemon;
 import sunlabs.titan.node.services.ReflectionService;
 import sunlabs.titan.node.services.RoutingDaemon;
 import sunlabs.titan.node.services.api.MessageService;
 import sunlabs.titan.node.services.api.Publish;
+import sunlabs.titan.node.services.census.CensusDaemon;
 import sunlabs.titan.node.services.xml.TitanXML;
 import sunlabs.titan.node.services.xml.TitanXML.XMLNode;
 import sunlabs.titan.node.util.DOLRLogger;
@@ -353,9 +353,7 @@ public class TitanNodeImpl implements TitanNode, NodeMBean {
             
             this.getService(HTTPMessageService.class);
             this.getService(RoutingDaemon.class);
-            //this.getService(AppClassObjectType.class);
             this.getService(PublishDaemon.class);
-            //this.getService(RetrieveObjectService.class);
             this.getService(ReflectionService.class);
             this.getService(CensusDaemon.class);
         } catch (JMException e) {

@@ -21,7 +21,7 @@
  * Park, CA 94025 or visit www.sun.com if you need additional
  * information or have any questions.
  */
-package sunlabs.titan.node.services;
+package sunlabs.titan.node.services.census;
 
 import sunlabs.titan.api.management.TitanServiceMBean;
 

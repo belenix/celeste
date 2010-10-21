@@ -61,7 +61,7 @@ import sunlabs.titan.node.Publishers;
 import sunlabs.titan.node.Reputation;
 import sunlabs.titan.node.TitanMessage;
 import sunlabs.titan.node.TitanMessage.RemoteException;
-import sunlabs.titan.node.services.api.Census;
+import sunlabs.titan.node.services.census.CensusDaemon;
 import sunlabs.titan.util.OrderedProperties;
 
 /**

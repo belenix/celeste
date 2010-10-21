@@ -21,17 +21,21 @@
  * or visit www.oracle.com if you need additional information or
  * have any questions.
  */
-package sunlabs.titan.node.services.api;
+package sunlabs.titan.node.services;
 
+import java.io.Serializable;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
 import sunlabs.titan.api.TitanGuid;
 import sunlabs.titan.api.TitanNodeId;
+import sunlabs.titan.api.TitanService;
 import sunlabs.titan.node.NodeAddress;
 import sunlabs.titan.node.TitanMessage;
 import sunlabs.titan.node.TitanMessage.RemoteException;
 import sunlabs.titan.node.TitanNodeIdImpl;
+import sunlabs.titan.node.services.census.SelectComparator;
 import sunlabs.titan.util.OrderedProperties;
 
 /**
@@ -50,7 +54,29 @@ import sunlabs.titan.util.OrderedProperties;
  *
  * @author Glenn Scott - Sun Microsystems Laboratories
  */
-public interface Census {
+public interface Census extends TitanService {
+    public interface Select {
+
+        public interface Request extends TitanService.Request {
+
+        }
+
+        public interface Response extends TitanService.Response {
+
+        }
+    }
+
+    public interface Report {
+
+        public interface Request extends TitanService.Request {
+
+        }
+
+        public interface Response extends TitanService.Response {
+
+        }
+    }
+
     /**
      * The Census keeper is the node the receives messages sent to the {@code CensusKeeper} object-id.
      */
@@ -97,7 +123,7 @@ public interface Census {
      * @throws RemoteException if the remote node threw an Exception.
      * @throws ClassCastException if a ClassCastException which obtaining the internal response.
      */
-    public Map<TitanNodeId,OrderedProperties> select(int count, Set<TitanNodeId> excludedNodes, OrderedProperties matchedAttributes) throws ClassCastException;
+    public Map<TitanNodeId,OrderedProperties> select(int count, Set<TitanNodeId> exclude, List<SelectComparator> comparatorList) throws ClassCastException;
 
     /**
      * Select {@code count} number of nodes by {@link TitanGuid} from the Census system.
@@ -113,7 +139,7 @@ public interface Census {
     /**
      * Get the current system-wide Census data, using the specified node in the system to proxy the request.
      *
-     * @param gateway the {@link NodeAddress} of the node used to proxy this request.
+     * @param proxy the {@link NodeAddress} of the node used to proxy this request.
      * @param count the number of nodes to select
      * @param excludedNodes a {@link Set} of nodes to specifically exclude from the selection, or {@code null}.
      * @param matchedAttributes an {@link OrderedProperties} instance containing the set of properties that selected nodes much match, or {@code null}.
@@ -122,5 +148,7 @@ public interface Census {
      * @throws RemoteException if the remote node threw an Exception.
      * @throws ClassCastException if a ClassCastException which obtaining the internal response.
      */
-    public Map<TitanNodeId, OrderedProperties> select(NodeAddress gateway, int count, Set<TitanNodeId> excludedNodes, OrderedProperties matchedAttributes) throws ClassCastException, ClassNotFoundException, RemoteException;
+    public Map<TitanNodeId, OrderedProperties> select(NodeAddress gateway, int count, Set<TitanNodeId> exclude, List<SelectComparator> comparatorList)
+    throws ClassCastException, ClassNotFoundException, RemoteException;
+
 }

@@ -314,7 +314,7 @@
     </target>
 	
 	<target name="install" depends="all">
-        <tar destfile="${DSTAMP}-install.tgz"
+        <tar destfile="titan-install.tgz"
              defaultexcludes="yes"
              compression="gzip" >
             <tarfileset dir="." filemode="755" includes="bin/**" />

@@ -83,7 +83,7 @@ import sunlabs.titan.node.services.ReflectionService;
 import sunlabs.titan.node.services.RoutingDaemon;
 import sunlabs.titan.node.services.api.MessageService;
 import sunlabs.titan.node.services.api.Publish;
-import sunlabs.titan.node.services.census.CensusDaemon;
+import sunlabs.titan.node.services.census.CensusService;
 import sunlabs.titan.node.services.xml.TitanXML;
 import sunlabs.titan.node.services.xml.TitanXML.XMLNode;
 import sunlabs.titan.node.util.DOLRLogger;
@@ -355,7 +355,7 @@ public class TitanNodeImpl implements TitanNode, NodeMBean {
             this.getService(RoutingDaemon.class);
             this.getService(PublishDaemon.class);
             this.getService(ReflectionService.class);
-            this.getService(CensusDaemon.class);
+            this.getService(CensusService.class);
         } catch (JMException e) {
             throw new RuntimeException(e);
         } catch (IllegalStateException e) {

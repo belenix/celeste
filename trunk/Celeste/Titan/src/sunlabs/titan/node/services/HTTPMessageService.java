@@ -119,7 +119,7 @@ import sunlabs.titan.node.TitanNodeIdImpl;
 import sunlabs.titan.node.TitanNodeImpl;
 import sunlabs.titan.node.services.api.MessageService;
 import sunlabs.titan.node.services.api.Reflection;
-import sunlabs.titan.node.services.census.CensusDaemon;
+import sunlabs.titan.node.services.census.CensusService;
 import sunlabs.titan.util.OrderedProperties;
 
 /**
@@ -658,7 +658,7 @@ public final class HTTPMessageService extends AbstractTitanService implements Me
                 	}
                 	return new HttpResponse(HTTP.Response.Status.BAD_REQUEST, new HttpContent.Text.Plain("Unknown service: " + name));
                 } else if (uri.getPath().startsWith("/census")) {
-                    Census census = this.node.getService(CensusDaemon.class);
+                    Census census = this.node.getService(CensusService.class);
                     Map<TitanNodeId,OrderedProperties> list = census.select(0);
 
                     StringBuilder string = new StringBuilder().append(list.size()).append("\n");

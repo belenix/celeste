@@ -47,7 +47,7 @@ import sunlabs.titan.node.BeehiveObjectStore;
 import sunlabs.titan.node.TitanMessage;
 import sunlabs.titan.node.services.Census;
 import sunlabs.titan.node.services.api.Publish;
-import sunlabs.titan.node.services.census.CensusDaemon;
+import sunlabs.titan.node.services.census.CensusService;
 import sunlabs.titan.util.DOLRStatus;
 import sunlabs.titan.util.OrderedProperties;
 
@@ -272,7 +272,7 @@ public final class StorableObject {
         object.setProperty(ObjectStore.METADATA_CLASS, handler.getName());
         object.setProperty(ObjectStore.METADATA_DATAHASH, object.getDataId());
 
-        Census census = (Census) handler.getNode().getService(CensusDaemon.class);
+        Census census = (Census) handler.getNode().getService(CensusService.class);
 
         // Make a local copy to be modified below.
         Set<TitanNodeId> excludedNodes = new HashSet<TitanNodeId>(nodesToExclude);

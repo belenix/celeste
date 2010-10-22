@@ -61,7 +61,7 @@ import sunlabs.titan.node.Publishers;
 import sunlabs.titan.node.Reputation;
 import sunlabs.titan.node.TitanMessage;
 import sunlabs.titan.node.TitanMessage.RemoteException;
-import sunlabs.titan.node.services.census.CensusDaemon;
+import sunlabs.titan.node.services.census.CensusService;
 import sunlabs.titan.util.OrderedProperties;
 
 /**
@@ -656,7 +656,7 @@ public final class RoutingDaemon extends AbstractTitanService implements Routing
                     objectRoots.put(objectId, this.node.getObjectPublishers().getPublishers(objectId));
                 }
             }
-            Census censusService = this.node.getService(CensusDaemon.class);
+            Census censusService = this.node.getService(CensusService.class);
             Map<TitanNodeId,OrderedProperties> census = censusService.select(this.node.getNodeAddress(), 0, null, null);
 
             return new JoinOperation.Response(this.node.getNetworkObjectId(), this.node.getNeighbourMap().keySet(), objectRoots, census);
@@ -718,7 +718,7 @@ public final class RoutingDaemon extends AbstractTitanService implements Routing
             }
             
             Map<TitanNodeId,OrderedProperties> census = response.getCensus();
-            Census censusService = this.node.getService(CensusDaemon.class);
+            Census censusService = this.node.getService(CensusService.class);
             censusService.putAllLocal(census);
 
             // At this point this node should be setup and ready to participate.

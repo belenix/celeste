@@ -7,7 +7,7 @@ import java.util.Properties;
 import sunlabs.asdf.util.Time;
 import sunlabs.titan.api.TitanService;
 import sunlabs.titan.node.services.Census;
-import sunlabs.titan.node.services.census.CensusDaemon;
+import sunlabs.titan.node.services.census.CensusService;
 import sunlabs.titan.node.services.census.CensusReportGenerator;
 import sunlabs.titan.util.OrderedProperties;
 
@@ -28,7 +28,7 @@ public class BasicReport implements CensusReportGenerator {
     public Properties report() {
         // Fill in this node's dynamic Census properties here...
         this.report.setProperty(Census.SenderTimestamp, Time.millisecondsInSeconds(System.currentTimeMillis()));
-        this.report.setProperty(Census.TimeToLiveSeconds, this.service.getNode().getConfiguration().asLong(CensusDaemon.ReportRateSeconds) * 2);
+        this.report.setProperty(Census.TimeToLiveSeconds, this.service.getNode().getConfiguration().asLong(CensusService.ReportRateSeconds) * 2);
         this.report.setProperty(Census.OperatingSystemLoadAverage, ManagementFactory.getOperatingSystemMXBean().getSystemLoadAverage());
         return this.report;
     }

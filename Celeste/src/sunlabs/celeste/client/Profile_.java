@@ -44,7 +44,7 @@ import sunlabs.titan.TitanGuidImpl;
 import sunlabs.titan.api.Credential;
 import sunlabs.titan.api.TitanGuid;
 import sunlabs.titan.api.TitanObject;
-import sunlabs.titan.node.AbstractBeehiveObject;
+import sunlabs.titan.node.AbstractTitanObject;
 import sunlabs.titan.node.services.object.CredentialObjectHandler;
 
 /**
@@ -84,7 +84,7 @@ import sunlabs.titan.node.services.object.CredentialObjectHandler;
  *
  * </p><p>
  */
-public class Profile_ extends AbstractBeehiveObject implements Credential {
+public class Profile_ extends AbstractTitanObject implements Credential {
     private static final long serialVersionUID = 1L;
     private final static String KEY_TYPE = "RSA";
     private final static String DIGITAL_SIGNATURE_ALGORITHM = "SHA256withRSA";
@@ -358,7 +358,7 @@ public class Profile_ extends AbstractBeehiveObject implements Credential {
     }
 
     public XHTML.EFlow inspectAsXHTML(URI uri, Map<String,HTTP.Message> props) {
-    	XHTML.Div result = super.toXHTML(uri, props);
+    	XHTML.Div result = (XHTML.Div) super.toXHTML(uri, props);
     	
     	XHTML.Table table = new XHTML.Table(
     			new XHTML.Table.Caption("Credential"),

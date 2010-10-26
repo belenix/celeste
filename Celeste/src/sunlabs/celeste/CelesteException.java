@@ -23,8 +23,9 @@
  */
 package sunlabs.celeste;
 
+import sunlabs.celeste.client.operation.CelesteOperation;
 import sunlabs.titan.exception.BeehiveException;
-import sunlabs.titan.node.AbstractBeehiveObject;
+import sunlabs.titan.node.AbstractTitanObject;
 import sunlabs.titan.util.OrderedProperties;
 
 public abstract class CelesteException extends BeehiveException {
@@ -413,7 +414,7 @@ public abstract class CelesteException extends BeehiveException {
     
     public CelesteException() {
         super();
-        this.metadata = new AbstractBeehiveObject.Metadata();
+        this.metadata = new AbstractTitanObject.Metadata();
     }
 
     public CelesteException(String format, Object...args) {
@@ -422,12 +423,12 @@ public abstract class CelesteException extends BeehiveException {
 
     public CelesteException(String message) {
         super(message);
-        this.metadata = new AbstractBeehiveObject.Metadata();
+        this.metadata = new AbstractTitanObject.Metadata();
     }
 
     public CelesteException(Throwable reason) {
         super(reason);
-        this.metadata = new AbstractBeehiveObject.Metadata();
+        this.metadata = new AbstractTitanObject.Metadata();
     }
     
     public CelesteException(OrderedProperties metadata) {

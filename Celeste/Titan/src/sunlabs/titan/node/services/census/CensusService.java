@@ -54,8 +54,57 @@ import sunlabs.titan.node.services.Census;
 import sunlabs.titan.util.OrderedProperties;
 
 /**
+ * An extensible system-wide census service.
+ * <p>
+ * The system census is produced by having each node periodically transmit to the root-node of {@link TitanNodeId}
+ * of all zeros a {@link Census.Report.Request} containing a {@code Map} holding key-value pairs containing arbitrary data. 
+ * </p>
+ * <p>
+ * The service also provides a method to select matching {@code Census.Report} instances matching the union of a set of {@link SelectComparator}
+ * instances specifying keys, values and operations such as equal, less, greater, etc.
+ * The programmatic API is available through the {@link Census#select(int)}, {@link Census#select(int, Set, List)} and
+ * {@link Census#select(NodeAddress, int, Set, List)} methods
+ * and a REST API is available through the {@link CensusService#select(TitanMessage, sunlabs.asdf.web.http.HTTP.Request)}
+ * API invoked via the Titan Message services.
+ * </p>
+ * <p>
+ * Using the {@link HTTPMessageService} the simplest query returns the entire census as an XML document:
+ * <code>http://host:port/titan-node-urn/sunlabs.titan.node.services.census.CensusService.select</code>
+ * Where <code>host</code> and <code>port</code> are the host name or IP-address and the port of the HTTP service (see {@link HTTPMessageService}),
+ * <code>titan-node-urn</code> is the URN of the node to perform the selection
+ * (typically <code>urn:titan-nid-256:~0000000000000000000000000000000000000000000000000000000000000000</code> or equivalent).
+ * </p>
+ * <p>
+ * Selection is governed further by specifying two URL query parameters: <code>count</code> and <code>select</code>.
+ * </p>
+ * <p>
+ * The <code>count</code> query parameter limits the number of census reports to the specified integer value.
+ * For example, <code>count=2</code> will return no more than 2 reports.
+ * </p>
+ * <p>
+ * The <code>select</code> query parameter specifies requirements for matching name/value pairs in the reports by stipulating the name of
+ * the attribute, a comparison operator and a value to compare.  The query parameter may consist of multiple specifications separated by the comma character.
+ * For a match to occur, all specifications must evaluate to {@code true}.
+ * </p>
+ * <p>
+ * For example, <code>select=Census.ReceiverTimestamp%3E1287765221</code> returns all census reports newer than the timestamp 1287765221.
+ * Similarly, <code>select=Census.ReceiverTimestamp%3E1287765221,Census.OperatingSystemLoadAverage%3C%3D2.0</code> returns all census reports
+ * newer than the timestamp 1287765221 and for which the load average is less than or equal to 2.0.
+ * </p>
+ * <p>
+ * Note the encoding of the special characters '<' as %3E, '=' as %3D and '>' as %3E.
+ * </p>
+ * <p>
+ * Taken together, a valid query looks like this:
+ * 
+ * <pre>
+ * https://127.0.0.1:12001/rest
+ *     /urn:titan-nid-256:~0000000000000000000000000000000000000000000000000000000000000000
+ *     /sunlabs.titan.node.services.census.CensusService.select
+ *     ?count=2&select=Census.ReceiverTimestamp%3E1287765221,Census.OperatingSystemLoadAverage%3C%3D2.0
+ * </pre>
+ *  
  * @author Glenn Scott - Sun Labs, Oracle
- *
  */
 public class CensusService extends AbstractTitanService implements Census {
     private final static long serialVersionUID = 1L;
@@ -72,11 +121,11 @@ public class CensusService extends AbstractTitanService implements Census {
             "ClockSlopToleranceSeconds", Time.minutesInSeconds(1),
     "The number of milliseconds of deviation between timestamps sent by a sender versus the receiver of a CensusService report");
 
-    /** The list of the CensusReport generators, invoked in order. */
+    /** The list of the {@link CensusReportGenerator} classes, invoked in order. */
     public final static Attributes.Prototype ReportGenerators = new Attributes.Prototype(CensusService.class,
             "ReportGenerators",
             "sunlabs.titan.node.services.census.BasicReport",
-    "The list of the CensusReport generators, invoked in order.");
+    "The list of the CensusReportGenerator classes, invoked in order.");
     
     private static String release = Release.ThisRevision();
 
@@ -558,7 +607,8 @@ public class CensusService extends AbstractTitanService implements Census {
                     if (key.equals("count")) {
                         count = Integer.valueOf(params.get(key));
                     } else if (key.equals("select")) {
-                        for (String token : params.get(key).split(",")) {
+                        String value = params.get(key);
+                        for (String token : value.split(",")) {
                             SelectComparator comparator = new SelectComparator(token);
                             comparatorList.add(comparator);
                         }
@@ -594,7 +644,7 @@ public class CensusService extends AbstractTitanService implements Census {
         if (this.log.isLoggable(Level.FINE)) {
             this.log.fine("%s", request);
         }
-        Map<TitanNodeId,OrderedProperties> list = this.selectFromCatalogue(request.getCount(), request.getExcluded(), null);
+        Map<TitanNodeId,OrderedProperties> list = this.selectFromCatalogue(request.getCount(), request.getExcluded(), new LinkedList<SelectComparator>());
 
         Select.Response response = new Select.Response(list);
 
@@ -638,7 +688,6 @@ public class CensusService extends AbstractTitanService implements Census {
             this.setPriority(Thread.MIN_PRIORITY);
 
             this.serialNumber = 0;
-            
 
             AbstractTitanService.registrar.registerMBean(JMX.objectName(CensusService.this.jmxObjectNameRoot, "daemon"), this, ReportDaemonMBean.class);
         }

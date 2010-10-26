@@ -27,8 +27,13 @@
 
     <property name="jmx.port"        value="16000,1" />
     <property name="per-node-spool"  value="/var/tmp/titan" />
-		
-	<property name="per-node-jvmarg" value="-Dcom.sun.management.jmxremote -Dcom.sun.management.jmxremote.password.file=etc/jmxremote.password.template -Djava.util.logging.config.file=etc/logging.properties" />
+	
+	<property name="per-node-jmx" value="-Dcom.sun.management.jmxremote 
+		-Dcom.sun.management.jmxremote.password.file=etc/jmxremote.password.template 
+		-Dcom.sun.management.jmxremote.authenticate=true 
+		-Dcom.sun.management.jmxremote.ssl=false" />
+
+	<property name="per-node-jvmarg" value="${per-node-jmx} -Djava.util.logging.config.file=etc/logging.properties" />
     <property name="per-node-config-properties" value="-Dsunlabs.titan.node.TitanNodeImpl.LocalFileSystemRoot=${per-node-spool}" />
     <property name="log-file" value="/var/tmp/titan.log" />
 

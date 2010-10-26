@@ -58,7 +58,7 @@ import sunlabs.titan.api.TitanGuid;
 import sunlabs.titan.api.TitanNode;
 import sunlabs.titan.api.TitanNodeId;
 import sunlabs.titan.api.TitanObject;
-import sunlabs.titan.node.AbstractBeehiveObject;
+import sunlabs.titan.node.AbstractTitanObject;
 import sunlabs.titan.node.BeehiveObjectPool;
 import sunlabs.titan.node.BeehiveObjectStore;
 import sunlabs.titan.node.TitanMessage;
@@ -91,7 +91,7 @@ public final class BlockObjectHandler extends AbstractObjectHandler implements B
     /**
      * A BObject is a segment (Block) of data from a Celeste file.
      */
-    public static class BObject extends AbstractBeehiveObject implements BlockObject.Object {
+    public static class BObject extends AbstractTitanObject implements BlockObject.Object {
         private static final long serialVersionUID = 2L;
 
         /**

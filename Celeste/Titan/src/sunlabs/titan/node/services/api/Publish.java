@@ -169,7 +169,7 @@ public interface Publish {
      * @throws ClassNotFoundException
      * @throws RemoteException
      */
-	public TitanMessage getPublishers(TitanMessage message) throws ClassCastException, ClassNotFoundException, RemoteException;
+	public TitanMessage getPublishers(TitanMessage message, GetPublishers.Request request) throws ClassCastException, ClassNotFoundException;
 	
     /**
      * Get the set of publishers of a specified {@link TitanObject}.

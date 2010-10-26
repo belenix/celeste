@@ -815,7 +815,7 @@ public final class BeehiveObjectStore implements ObjectStore {
             throw e;
         } catch (NullPointerException e) {
             this.fileStore.remove(object.getObjectId());
-            throw new RuntimeException(e);
+            throw e;
         } catch (IllegalArgumentException e) {
             this.fileStore.remove(object.getObjectId());
             throw new RuntimeException(e);

@@ -50,9 +50,8 @@ import sunlabs.titan.api.ObjectStore;
 import sunlabs.titan.api.TitanGuid;
 import sunlabs.titan.api.TitanNode;
 import sunlabs.titan.api.TitanObject.Metadata;
-import sunlabs.titan.node.AbstractBeehiveObject;
+import sunlabs.titan.node.AbstractTitanObject;
 import sunlabs.titan.node.BeehiveObjectStore;
-import sunlabs.titan.node.BeehiveObjectStore.ObjectExistenceException;
 import sunlabs.titan.node.Publishers.PublishRecord;
 import sunlabs.titan.node.TitanMessage;
 import sunlabs.titan.node.TitanMessage.RemoteException;
@@ -81,7 +80,7 @@ import sunlabs.titan.util.DOLRStatus;
  * the set of servers is dynamic instead of fixed.
  * In the Beehive DOLR servers are initially located by using non-specific object-id identifiers for
  * servers.
- * Because of the way the Beehive message routing works, the ssytem will always find the node with the
+ * Because of the way the Beehive message routing works, the system will always find the node with the
  * object-id closest to the identifier (in DHT algebra).
  * Once located, the node that responds is bound to the set of servers participating in the Q/U protocol quorum.
  * If any server participating in the Q/U protocol quorum becomes unavailable,
@@ -283,7 +282,7 @@ public class AObjectVersionService extends AbstractObjectHandler implements AObj
      *
      * @author Glenn Scott - Sun Microsystems Laboratories
      */
-    public static class FSBFTObject extends AbstractBeehiveObject implements AObjectVersionMapAPI.ObjectAPI {
+    public static class FSBFTObject extends AbstractTitanObject implements AObjectVersionMapAPI.ObjectAPI {
         private static final long serialVersionUID = 1L;
 
         private MutableObject.ObjectHistory history;
@@ -327,13 +326,13 @@ public class AObjectVersionService extends AbstractObjectHandler implements AObj
             return this.history;
         }
 
-		public EFlow inspectAsXHTML(URI uri, Map<String, HTTP.Message> props) {
+		public XHTML.EFlow inspectAsXHTML(URI uri, Map<String, HTTP.Message> props) {
         	XHTML.Table.Body tbody = new XHTML.Table.Body();
         	tbody.add(new XHTML.Table.Row(new XHTML.Table.Data(this.history.toXHTML(uri, props))));
         	
         	XHTML.Table table = new XHTML.Table(new XHTML.Table.Caption("History"), tbody);
 
-            XHTML.Div result = super.toXHTML(uri, props);
+            XHTML.Div result = (XHTML.Div) super.toXHTML(uri, props);
             result.add(new XHTML.Div(table).setClass("section").addClass("FSBFTObject"));
 
             return result;

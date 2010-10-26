@@ -47,7 +47,7 @@ import sunlabs.titan.api.TitanGuid;
 import sunlabs.titan.api.TitanNode;
 import sunlabs.titan.api.TitanNodeId;
 import sunlabs.titan.api.TitanObject;
-import sunlabs.titan.node.AbstractBeehiveObject;
+import sunlabs.titan.node.AbstractTitanObject;
 import sunlabs.titan.node.BeehiveObjectPool;
 import sunlabs.titan.node.BeehiveObjectStore;
 import sunlabs.titan.node.TitanMessage;
@@ -63,7 +63,7 @@ import sunlabs.titan.node.services.PublishDaemon;
 import sunlabs.titan.node.services.api.Publish;
 import sunlabs.titan.util.DOLRStatus;
 
-public final class AnchorObjectHandler extends AbstractObjectHandler implements AnchorObject {
+public final class AnchorObjectHandler extends AbstractObjectHandler implements AnchorObject.Handler {
     private final static long serialVersionUID = 1L;
     private final static String name = AbstractTitanService.makeName(AnchorObjectHandler.class, AnchorObjectHandler.serialVersionUID);
 
@@ -74,7 +74,7 @@ public final class AnchorObjectHandler extends AbstractObjectHandler implements 
      * This class represents the top-level data structure
      * (stored in the Beehive object pool) for a stored Celeste file.
      */
-    public static final class AObject extends AbstractBeehiveObject implements AnchorObject.Object {
+    public static final class AObject extends AbstractTitanObject implements AnchorObject.Object {
         private static final long serialVersionUID = 1L;
 
         /**

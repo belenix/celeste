@@ -391,7 +391,7 @@ public abstract class AbstractTitanService extends NotificationBroadcasterSuppor
     /**
      * <p>
      * Overrides of this method must protect themselves if start() is called
-     * multiple times, and if it is called by two threads at the same time.
+     * multiple times either in succession, or simultaneously.
      * </p>
      * This default implementation uses a {@link Boolean} protected field variable, {@link #started},
      * to signal whether or not the service has been started.  See also {@link #stop()}.

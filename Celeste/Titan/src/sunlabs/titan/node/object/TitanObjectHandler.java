@@ -69,7 +69,7 @@ import sunlabs.titan.node.services.api.Publish;
  */
 public interface TitanObjectHandler extends TitanService {
     /**
-     * Every Beehive object handled by instances of {@code BeehiveObjectHandler}
+     * Every {@link TitanObject} handled by instances of {@code TitanObjectHandler}
      * must implement this interface.
      */
     public interface ObjectAPI extends TitanObject {

@@ -94,7 +94,7 @@ import sunlabs.titan.util.OrderedProperties;
  * </ol>
  *
  */
-public abstract class AbstractBeehiveObject implements TitanObject {
+public abstract class AbstractTitanObject implements TitanObject {
     private static final long serialVersionUID = 1L;
 
     public static final class Metadata extends OrderedProperties implements TitanObject.Metadata {
@@ -122,7 +122,7 @@ public abstract class AbstractBeehiveObject implements TitanObject {
         }
 
         public void putAll(TitanObject.Metadata meta) {
-            if (meta != null && meta != AbstractBeehiveObject.Metadata.NONE) {
+            if (meta != null && meta != AbstractTitanObject.Metadata.NONE) {
                 for (Iterator<Object> i = meta.keySet().iterator(); i.hasNext(); /**/) {
                     String key = (String) i.next();
                     this.setProperty(key, meta.getProperty(key, null));
@@ -154,14 +154,14 @@ public abstract class AbstractBeehiveObject implements TitanObject {
 
     /**
      * 
-     * @param handler
-     * @param deleteTokenId
-     * @param timeToLive
+     * @param handler the class extending this abstract class.
+     * @param deleteTokenId The delete-token-id for this {@code TitanObject}.
+     * @param timeToLive The time in seconds for this {@code TitanObject} to live (See also {@link TitanObject#INFINITE_TIME_TO_LIVE}.
      */
-    public AbstractBeehiveObject(Class <? extends AbstractObjectHandler> handler, TitanGuid deleteTokenId, long timeToLive) {
+    public AbstractTitanObject(Class <? extends AbstractObjectHandler> handler, TitanGuid deleteTokenId, long timeToLive) {
         this.objectId = TitanGuidImpl.ANY;
 
-        this.metaData = new AbstractBeehiveObject.Metadata();
+        this.metaData = new AbstractTitanObject.Metadata();
         this.setProperty(ObjectStore.METADATA_CLASS, handler.getName());
 
         this.setDeleteTokenId(deleteTokenId);
@@ -266,7 +266,7 @@ public abstract class AbstractBeehiveObject implements TitanObject {
     /**
      * Create an XHTML {@code div} element to which subclasses can append additional XHTML elements.
      */
-    public XHTML.Div toXHTML(URI uri, Map<String,HTTP.Message> props) {
+    public XHTML.EFlow toXHTML(URI uri, Map<String,HTTP.Message> props) {
         XHTML.Div div = new XHTML.Div().setClass("section").addClass("BeehiveObject");
         div.add(new XHTML.Heading.H1(this.getObjectId()).setClass("ObjectId"));
         div.add(new XHTML.Span(this.getObjectType()));

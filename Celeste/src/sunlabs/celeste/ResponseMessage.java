@@ -26,7 +26,7 @@ package sunlabs.celeste;
 
 import java.io.Serializable;
 
-import sunlabs.titan.node.AbstractBeehiveObject;
+import sunlabs.titan.node.AbstractTitanObject;
 import sunlabs.titan.util.OrderedProperties;
 
 /**
@@ -62,7 +62,7 @@ public class ResponseMessage implements Serializable {
     }
     
     public ResponseMessage(Serializable object) {
-        this(new AbstractBeehiveObject.Metadata(), object);
+        this(new AbstractTitanObject.Metadata(), object);
     }
     
     public OrderedProperties getMetadata() {

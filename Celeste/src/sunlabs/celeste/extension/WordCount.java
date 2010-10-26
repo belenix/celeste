@@ -120,7 +120,7 @@ public class WordCount implements ExtensibleObject.Extension<HashMap<String,Long
         	System.out.printf("%s%n", arg);
         }
 
-        AnchorObject anchorObjectHandler = (AnchorObject) this.node.getService(AnchorObjectHandler.class);
+        AnchorObject.Handler anchorObjectHandler = this.node.getService(AnchorObjectHandler.class);
         VersionObject versionObjectHandler = this.node.getService(VersionObjectHandler.class);
         AnchorObject.Object aObject = anchorObjectHandler.retrieve(operation.getFileIdentifier());
 

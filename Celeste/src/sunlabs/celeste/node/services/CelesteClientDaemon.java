@@ -101,13 +101,13 @@ import sunlabs.titan.api.ObjectStore;
 import sunlabs.titan.api.TitanGuid;
 import sunlabs.titan.api.TitanNode;
 import sunlabs.titan.api.TitanObject;
-import sunlabs.titan.node.AbstractBeehiveObject;
-import sunlabs.titan.node.TitanNodeImpl;
+import sunlabs.titan.node.AbstractTitanObject;
 import sunlabs.titan.node.BeehiveObjectPool;
 import sunlabs.titan.node.BeehiveObjectStore;
 import sunlabs.titan.node.BeehiveObjectStore.DeleteTokenException;
 import sunlabs.titan.node.BeehiveObjectStore.UnacceptableObjectException;
 import sunlabs.titan.node.TitanMessage.RemoteException;
+import sunlabs.titan.node.TitanNodeImpl;
 import sunlabs.titan.node.object.MutableObject;
 import sunlabs.titan.node.services.AbstractTitanService;
 import sunlabs.titan.node.services.object.CredentialObject;
@@ -560,7 +560,7 @@ public class CelesteClientDaemon extends AbstractTitanService {
     // Celeste interface method invocation.
     //
     public OrderedProperties fillMetadata(AnchorObject.Object aObject, VersionObject.Object vObject, AObjectVersionMapAPI.Lock lock) {
-        OrderedProperties metadata = new AbstractBeehiveObject.Metadata();
+        OrderedProperties metadata = new AbstractTitanObject.Metadata();
         if (aObject != null) {
             metadata
             .setProperty(CelesteAPI.AOBJECTID_NAME, aObject.getObjectId())
@@ -866,7 +866,7 @@ public class CelesteClientDaemon extends AbstractTitanService {
             //      permits the operation?
             //
 
-            AnchorObject anchorObjectHandler = this.node.getService(AnchorObjectHandler.class);
+            AnchorObject.Handler anchorObjectHandler = this.node.getService(AnchorObjectHandler.class);
 
             DOLRStatus status = anchorObjectHandler.delete(operation.getFileIdentifier(), operation.getDeleteToken(), operation.getTimeToLive());
             if (this.log.isLoggable(Level.FINE)) {
@@ -900,7 +900,7 @@ public class CelesteClientDaemon extends AbstractTitanService {
         try {
 //            this.checkOperationSignature(signature, operation);
 
-            AnchorObject anchorObjectHandler = this.node.getService(AnchorObjectHandler.class);
+            AnchorObject.Handler anchorObjectHandler = this.node.getService(AnchorObjectHandler.class);
             AObjectVersionMapAPI lineariser = this.node.getService(AObjectVersionService.class);
             VersionObject versionObjectHandler = this.node.getService(VersionObjectHandler.class);
 
@@ -947,7 +947,7 @@ public class CelesteClientDaemon extends AbstractTitanService {
 
         TimeProfiler timingProfiler = new TimeProfiler(operation.getOperationName());
         try {
-            AnchorObject anchorObjectHandler = this.node.getService(AnchorObjectHandler.class);
+            AnchorObject.Handler anchorObjectHandler = this.node.getService(AnchorObjectHandler.class);
             VersionObject versionObjectHandler = this.node.getService(VersionObjectHandler.class);
 
             timingProfiler.stamp("init");
@@ -1025,7 +1025,7 @@ public class CelesteClientDaemon extends AbstractTitanService {
         try {
             this.checkOperationSignature(signature, operation);
 
-            AnchorObject anchorObjectHandler = this.node.getService(AnchorObjectHandler.class);
+            AnchorObject.Handler anchorObjectHandler = this.node.getService(AnchorObjectHandler.class);
             AObjectVersionMapAPI lineariser = this.node.getService(AObjectVersionService.class);
             VersionObject versionObjectHandler = this.node.getService(VersionObjectHandler.class);
 
@@ -1124,7 +1124,7 @@ public class CelesteClientDaemon extends AbstractTitanService {
                 throw new CelesteException.VerificationException("Data lengths do not match.  %d vs %d", operation.getLength(), buffer.remaining());
             }
 
-            AnchorObject anchorObjectHandler = this.node.getService(AnchorObjectHandler.class);
+            AnchorObject.Handler anchorObjectHandler = this.node.getService(AnchorObjectHandler.class);
             AObjectVersionMapAPI lineariser = this.node.getService(AObjectVersionService.class);
             VersionObject versionObjectHandler = this.node.getService(VersionObjectHandler.class);
             BlockObject blockObjectHandler = this.node.getService(BlockObjectHandler.class);
@@ -1196,7 +1196,7 @@ public class CelesteClientDaemon extends AbstractTitanService {
             //
             // Set up the metadata properties for the yet-to-be-built BlockObjects.
             //
-            TitanObject.Metadata bObjectMetaData = new AbstractBeehiveObject.Metadata();
+            TitanObject.Metadata bObjectMetaData = new AbstractTitanObject.Metadata();
             TitanGuid deleteTokenHash = aObject.getDeleteTokenId();
 
             final long start = operation.getFileOffset();
@@ -1389,7 +1389,7 @@ public class CelesteClientDaemon extends AbstractTitanService {
 
             AnchorObject.Object aObject = null;
 
-            AnchorObject anchorObjectHandler = (AnchorObject) this.node.getService(AnchorObjectHandler.class);
+            AnchorObject.Handler anchorObjectHandler = this.node.getService(AnchorObjectHandler.class);
             VersionObject versionObjectHandler = (VersionObject) this.node.getService(VersionObjectHandler.class);
             final BlockObject blockObjectHandler = (BlockObject) this.node.getService(BlockObjectHandler.class);
             timeProfiler.stamp("init");
@@ -1613,7 +1613,7 @@ public class CelesteClientDaemon extends AbstractTitanService {
 
             long stop = operation.getLength();
 
-            AnchorObject anchorObjectHandler = (AnchorObject) this.node.getService(AnchorObjectHandler.class);
+            AnchorObject.Handler anchorObjectHandler = this.node.getService(AnchorObjectHandler.class);
             VersionObject versionObjectHandler = (VersionObject) this.node.getService(VersionObjectHandler.class);
             AObjectVersionMapAPI lineariser = (AObjectVersionMapAPI) this.node.getService(AObjectVersionService.class);
             BlockObject blockObjectHandler = (BlockObject) this.node.getService(BlockObjectHandler.class);
@@ -1916,7 +1916,7 @@ public class CelesteClientDaemon extends AbstractTitanService {
         try {
             this.checkOperationSignature(signature, operation);
 
-            AnchorObject anchorObjectHandler = (AnchorObject) this.node.getService(AnchorObjectHandler.class);
+            AnchorObject.Handler anchorObjectHandler = this.node.getService(AnchorObjectHandler.class);
             AObjectVersionMapAPI lineariser = (AObjectVersionMapAPI) this.node.getService(AObjectVersionService.class);
             VersionObject versionObjectHandler = (VersionObject)  this.node.getService(VersionObjectHandler.class);
 
@@ -2030,7 +2030,7 @@ public class CelesteClientDaemon extends AbstractTitanService {
         try {
             this.checkOperationSignature(signature, operation);
 
-            AnchorObject anchorObjectHandler = (AnchorObject) this.node.getService(AnchorObjectHandler.class);
+            AnchorObject.Handler anchorObjectHandler = this.node.getService(AnchorObjectHandler.class);
             AObjectVersionMapAPI lineariser = (AObjectVersionMapAPI) this.node.getService(AObjectVersionService.class);
             VersionObject versionObjectHandler = (VersionObject) this.node.getService(VersionObjectHandler.class);
 
@@ -2160,7 +2160,7 @@ public class CelesteClientDaemon extends AbstractTitanService {
             //
             this.checkOperationSignature(signature, operation);
 
-            AnchorObject anchorObjectHandler = (AnchorObject) this.node.getService(AnchorObjectHandler.class);
+            AnchorObject.Handler anchorObjectHandler = this.node.getService(AnchorObjectHandler.class);
             AObjectVersionMapAPI lineariser = (AObjectVersionMapAPI) this.node.getService(AObjectVersionService.class);
             VersionObject versionObjectHandler = (VersionObject) this.node.getService(VersionObjectHandler.class);
 

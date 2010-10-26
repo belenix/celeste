@@ -14,10 +14,10 @@ import sunlabs.titan.api.TitanObject;
 import sunlabs.titan.node.AbstractTitanObject;
 import sunlabs.titan.node.BeehiveObjectPool;
 import sunlabs.titan.node.BeehiveObjectStore;
-import sunlabs.titan.node.BeehiveObjectStore.DeleteTokenException;
 import sunlabs.titan.node.TitanMessage;
 import sunlabs.titan.node.object.AbstractObjectHandler;
 import sunlabs.titan.node.services.AbstractTitanService;
+import sunlabs.titan.node.services.api.Publish;
 import sunlabs.titan.node.services.api.Publish.PublishUnpublishResponse;
 
 public class NodeObjectHandler extends AbstractObjectHandler implements NodeObject.Handler {
@@ -51,13 +51,13 @@ public class NodeObjectHandler extends AbstractObjectHandler implements NodeObje
         super(node, NodeObjectHandler.name, "Node Object");
     }
 
-    public PublishUnpublishResponse publishObject(TitanMessage message)  throws ClassNotFoundException, ClassCastException,
+    public PublishUnpublishResponse publishObject(TitanMessage message, Publish.PublishUnpublishRequest request) throws ClassNotFoundException, ClassCastException,
         BeehiveObjectPool.Exception, BeehiveObjectStore.Exception {
 
         return null;
     }
 
-    public PublishUnpublishResponse unpublishObject(TitanMessage message) throws ClassNotFoundException, ClassCastException {
+    public PublishUnpublishResponse unpublishObject(TitanMessage message, Publish.PublishUnpublishRequest request) throws ClassNotFoundException, ClassCastException {
 
         return null;
     }

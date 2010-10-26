@@ -218,6 +218,18 @@ public class TitanMessage implements Serializable, XHTMLInspectable {
     private transient Serializable dataObject = null;
     private transient byte[] payload = null;
 
+    /**
+     * 
+     * @param type
+     * @param source
+     * @param destination
+     * @param subjectId
+     * @param subjectClass
+     * @param subjectClassMethod
+     * @param isMulticast
+     * @param isExactRouting
+     * @param payLoad
+     */
     public TitanMessage(TitanMessage.Type type,
             NodeAddress source,
             TitanNodeId destination,
@@ -568,7 +580,6 @@ public class TitanMessage implements Serializable, XHTMLInspectable {
         message.setStatus(replyStatus);
         return message;
     }
-
 
     /**
      * Compose a reply to the given Message with the specified data as the payload.

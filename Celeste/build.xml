@@ -332,7 +332,7 @@
     <!-- =================================
           target: doc
          ================================= -->
-    <target name="javadoc" depends="init, check.javadoc.isuptodate, proxy.args" unless="javadoc.isuptodate" description="==> Build javadocs">
+    <target name="javadoc" depends="init, Phidoux.jar, titan.jar, check.javadoc.isuptodate, proxy.args" unless="javadoc.isuptodate" description="==> Build javadocs">
         <delete dir="${javadoc.dir}" />
         <mkdir dir="${javadoc.dir}" />
         <mkdir dir="${javadoc.dir}/doc-files" />

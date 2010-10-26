@@ -17,6 +17,7 @@ import sunlabs.titan.node.BeehiveObjectStore;
 import sunlabs.titan.node.TitanMessage;
 import sunlabs.titan.node.object.AbstractObjectHandler;
 import sunlabs.titan.node.services.AbstractTitanService;
+import sunlabs.titan.node.services.api.Publish;
 import sunlabs.titan.node.services.api.Publish.PublishUnpublishResponse;
 
 public class ExampleObjectHandler extends AbstractObjectHandler implements ExampleObject.Handler {
@@ -50,13 +51,13 @@ public class ExampleObjectHandler extends AbstractObjectHandler implements Examp
         super(node, ExampleObjectHandler.name, "Node Object");
     }
 
-    public PublishUnpublishResponse publishObject(TitanMessage message)  throws ClassNotFoundException, ClassCastException,
+    public PublishUnpublishResponse publishObject(TitanMessage message, Publish.PublishUnpublishRequest request) throws ClassNotFoundException, ClassCastException,
         BeehiveObjectPool.Exception, BeehiveObjectStore.Exception {
 
         return null;
     }
 
-    public PublishUnpublishResponse unpublishObject(TitanMessage message) throws ClassNotFoundException, ClassCastException {
+    public PublishUnpublishResponse unpublishObject(TitanMessage message, Publish.PublishUnpublishRequest request) throws ClassNotFoundException, ClassCastException {
 
         return null;
     }

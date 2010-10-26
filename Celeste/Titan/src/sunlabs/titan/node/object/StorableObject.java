@@ -143,7 +143,7 @@ public final class StorableObject {
          * @throws BeehiveObjectStore.InvalidObjectIdException 
          * @throws BeehiveObjectStore.Exception 
          */
-        public Publish.PublishUnpublishResponse storeLocalObject(TitanMessage message) throws ClassNotFoundException, ClassCastException,
+        public Publish.PublishUnpublishResponse storeLocalObject(TitanMessage message, T object) throws ClassNotFoundException, ClassCastException,
             BeehiveObjectStore.NoSpaceException, BeehiveObjectStore.DeleteTokenException, BeehiveObjectStore.UnacceptableObjectException,
             BeehiveObjectPool.Exception, BeehiveObjectStore.InvalidObjectIdException, BeehiveObjectStore.InvalidObjectException, BeehiveObjectStore.Exception;
     }

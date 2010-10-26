@@ -26,6 +26,7 @@ package sunlabs.titan.node.services;
 import java.net.URI;
 import java.nio.ByteBuffer;
 import java.util.Map;
+import java.util.logging.Level;
 
 import javax.management.JMException;
 
@@ -73,24 +74,32 @@ public class IntegerObjectType extends AbstractObjectHandler implements MutableO
     public IntegerObjectType.IntegerObject create(TitanObject object) {
         return null;
     }
+    
+    public MutableObject.CreateOperation.Response createObjectHistory(TitanMessage message, MutableObject.CreateOperation.Request request) throws ClassCastException, ClassNotFoundException {
+
+        if (this.log.isLoggable(Level.FINE)) {
+            this.log.info("%s", request.getReplicaId());
+        }        MutableObject.CreateOperation.Response result = new MutableObject.CreateOperation.Response(null);
+        return result;
+    }
 
     public IntegerObjectType(TitanNode node) throws JMException {
         super(node, IntegerObjectType.name, "Mutable Object");
     }
 
-    public MutableObject.SetOperation.Response setObjectHistory(TitanMessage message) {
+    public MutableObject.SetOperation.Response setObjectHistory(TitanMessage message, MutableObject.SetOperation.Request request) {
         return null;
     }
 
-    public MutableObject.GetOperation.Response getObjectHistory(TitanMessage message) {
+    public MutableObject.GetOperation.Response getObjectHistory(TitanMessage message, MutableObject.GetOperation.Request request) {
         return null;
     }
 
-    public Publish.PublishUnpublishResponse publishObject(TitanMessage message) {
+    public Publish.PublishUnpublishResponse publishObject(TitanMessage message, Publish.PublishUnpublishRequest request) {
         return new PublishDaemon.PublishObject.PublishUnpublishResponseImpl(this.node.getNodeAddress());
     }
 
-    public Publish.PublishUnpublishResponse unpublishObject(TitanMessage msg) {
+    public Publish.PublishUnpublishResponse unpublishObject(TitanMessage message, Publish.PublishUnpublishRequest request) {
         return new PublishDaemon.PublishObject.PublishUnpublishResponseImpl(this.node.getNodeAddress());
     }
 

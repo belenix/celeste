@@ -75,7 +75,7 @@ public class RetrievableObject {
          * </p>
          * @throws BeehiveObjectStore.NotFoundException 
          */
-        public TitanObject retrieveLocalObject(TitanMessage message) throws IOException, BeehiveObjectStore.NotFoundException;
+        public TitanObject retrieveLocalObject(TitanMessage message, TitanGuid objectId) throws IOException, BeehiveObjectStore.NotFoundException;
     }
 
     /**

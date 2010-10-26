@@ -46,7 +46,6 @@ import sunlabs.titan.node.BeehiveObjectStore;
 import sunlabs.titan.node.BeehiveObjectStore.InvalidObjectException;
 import sunlabs.titan.node.BeehiveObjectStore.NoSpaceException;
 import sunlabs.titan.node.TitanMessage;
-import sunlabs.titan.node.TitanMessage.RemoteException;
 import sunlabs.titan.node.object.AbstractObjectHandler;
 import sunlabs.titan.node.object.RetrievableObject;
 import sunlabs.titan.node.object.StorableObject;
@@ -184,15 +183,15 @@ public class AppClassObjectType extends AbstractObjectHandler implements AppClas
         return object;
     }
 
-    public PublishDaemon.PublishObject.PublishUnpublishResponseImpl publishObject(TitanMessage message) {
+    public PublishDaemon.PublishObject.PublishUnpublishResponseImpl publishObject(TitanMessage message, Publish.PublishUnpublishRequest request) {
         return new PublishDaemon.PublishObject.PublishUnpublishResponseImpl(this.node.getNodeAddress());
     }
 
-    public Publish.PublishUnpublishResponse unpublishObject(TitanMessage message) {
+    public Publish.PublishUnpublishResponse unpublishObject(TitanMessage message, Publish.PublishUnpublishRequest request) {
         return new PublishDaemon.PublishObject.PublishUnpublishResponseImpl(this.node.getNodeAddress());
     }
 
-    public TitanObject retrieveLocalObject(TitanMessage message) throws BeehiveObjectStore.NotFoundException {
+    public TitanObject retrieveLocalObject(TitanMessage message, TitanGuid objectId) throws BeehiveObjectStore.NotFoundException {
         return this.node.getObjectStore().get(TitanObject.class, message.subjectId);
     }
 
@@ -202,16 +201,11 @@ public class AppClassObjectType extends AbstractObjectHandler implements AppClas
         return object;
     }
     
-    public  Publish.PublishUnpublishResponse storeLocalObject(TitanMessage message) throws ClassCastException, ClassNotFoundException,
+    public  Publish.PublishUnpublishResponse storeLocalObject(TitanMessage message, AppClass.AppClassObject aObject) throws ClassCastException, ClassNotFoundException,
     BeehiveObjectStore.UnacceptableObjectException, BeehiveObjectStore.DeleteTokenException, BeehiveObjectStore.InvalidObjectIdException, NoSpaceException,
     InvalidObjectException, BeehiveObjectPool.Exception, BeehiveObjectStore.Exception {
-        try {
-            AppClassObjectType.AppClassObject aObject = message.getPayload(AppClassObjectType.AppClassObject.class, this.node);
-            Publish.PublishUnpublishResponse reply = StorableObject.storeLocalObject(this, aObject, message);
-            return reply;
-        } catch (RemoteException e) {
-            throw new IllegalArgumentException(e.getCause());
-        }
+        Publish.PublishUnpublishResponse reply = StorableObject.storeLocalObject(this, aObject, message);
+        return reply;
     }
 
     public AppClass.AppClassObject storeObject(AppClass.AppClassObject aObject)

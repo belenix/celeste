@@ -161,8 +161,7 @@ public final class PublishDaemon extends AbstractTitanService implements Publish
      * object was not found and the node transmits a remedial unpublish message to the rest
      * of the system to remove any spurious back-pointers for the object that point to this node.
      */
-    public Publish.PublishUnpublishResponse unpublishObject(TitanMessage message) throws ClassCastException, ClassNotFoundException, TitanMessage.RemoteException {
-        Publish.PublishUnpublishRequest request = message.getPayload(Publish.PublishUnpublishRequest.class, this.getNode());
+    public Publish.PublishUnpublishResponse unpublishObject(TitanMessage message, Publish.PublishUnpublishRequest request) throws ClassCastException, ClassNotFoundException {
         if (this.log.isLoggable(Level.FINEST)) {                
             this.log.finest("%s", request);
         }

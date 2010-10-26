@@ -189,9 +189,13 @@ public interface ObjectStore extends XHTMLInspectable, Iterable<TitanGuid> {
      * Update an existing {@link TitanObject} in the object store.
      * The object <em>must</em> already exist.
      * The object <em>must</em> be locked by the current Thread (see {@link #lock(TitanGuid)}).
+     * @throws BeehiveObjectStore.InvalidObjectException
+     * @throws BeehiveObjectStore.ObjectExistenceException
+     * @throws BeehiveObjectStore.NoSpaceException
+     * @throws UnacceptableObjectException
+     * @throws IOException;
      */
-    public TitanGuid update(TitanObject object) throws InvalidObjectException, ObjectExistenceException, NoSpaceException,
-        UnacceptableObjectException, IOException;
+    public TitanGuid update(TitanObject object) throws BeehiveObjectStore.InvalidObjectException, BeehiveObjectStore.ObjectExistenceException, BeehiveObjectStore.NoSpaceException, UnacceptableObjectException;
 
     /**
      * Remove a (locked) {@link TitanObject} from the local object store.

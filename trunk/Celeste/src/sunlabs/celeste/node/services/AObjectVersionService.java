@@ -54,7 +54,6 @@ import sunlabs.titan.node.AbstractTitanObject;
 import sunlabs.titan.node.BeehiveObjectStore;
 import sunlabs.titan.node.Publishers.PublishRecord;
 import sunlabs.titan.node.TitanMessage;
-import sunlabs.titan.node.TitanMessage.RemoteException;
 import sunlabs.titan.node.object.AbstractObjectHandler;
 import sunlabs.titan.node.object.MutableObject;
 import sunlabs.titan.node.services.AbstractTitanService;
@@ -390,12 +389,12 @@ public class AObjectVersionService extends AbstractObjectHandler implements AObj
      * @throws BeehiveObjectStore.NotFoundException 
      * @throws BeehiveObjectStore.ObjectExistenceException 
      */
-    public MutableObject.CreateOperation.Response createObjectHistory(TitanMessage message) throws ClassCastException, TitanMessage.RemoteException, ClassNotFoundException, BeehiveObjectStore.DeleteTokenException,
+    public MutableObject.CreateOperation.Response createObjectHistory(TitanMessage message, MutableObject.CreateOperation.Request request) throws ClassCastException, TitanMessage.RemoteException, ClassNotFoundException, BeehiveObjectStore.DeleteTokenException,
         BeehiveObjectStore.UnacceptableObjectException, BeehiveObjectStore.InvalidObjectException, BeehiveObjectStore.NoSpaceException, BeehiveObjectStore.NotFoundException,
         BeehiveObjectStore.ObjectExistenceException {
 
         // The message contains a CreateOperation.Request as the payload.
-        MutableObject.CreateOperation.Request request = message.getPayload(MutableObject.CreateOperation.Request.class, this.node);
+//        MutableObject.CreateOperation.Request request = message.getPayload(MutableObject.CreateOperation.Request.class, this.node);
         if (this.log.isLoggable(Level.FINE)) {
             this.log.info("%s", request.getReplicaId());
         }
@@ -445,9 +444,8 @@ public class AObjectVersionService extends AbstractObjectHandler implements AObj
      * replica to be created (because some previous replica became unavailable).
      * </p>
      */
-    public MutableObject.GetOperation.Response getObjectHistory(TitanMessage message) throws ClassNotFoundException, ClassCastException,
-        BeehiveObjectStore.NotFoundException, TitanMessage.RemoteException {
-        MutableObject.GetOperation.Request request = message.getPayload(MutableObject.GetOperation.Request.class, this.node);
+    public MutableObject.GetOperation.Response getObjectHistory(TitanMessage message, MutableObject.GetOperation.Request request) throws ClassCastException, BeehiveObjectStore.NotFoundException {
+//        MutableObject.GetOperation.Request request = message.getPayload(MutableObject.GetOperation.Request.class, this.node);
         TitanGuid replicaId = request.getReplicaId();
         AObjectVersionService.FSBFTObject linearizerObject =
             AObjectVersionService.this.node.getObjectStore().get(AObjectVersionService.FSBFTObject.class, replicaId);
@@ -460,11 +458,11 @@ public class AObjectVersionService extends AbstractObjectHandler implements AObj
 //        this.linearizedObjects.remove(objectId.toString());
     }
 
-    public MutableObject.SetOperation.Response setObjectHistory(TitanMessage message) throws ClassNotFoundException, ClassCastException, IOException,
+    public MutableObject.SetOperation.Response setObjectHistory(TitanMessage message, MutableObject.SetOperation.Request request) throws ClassNotFoundException, ClassCastException, IOException,
         MutableObject.ObjectHistory.OutOfDateException, BeehiveObjectStore.DeleteTokenException, BeehiveObjectStore.InvalidObjectException,
         BeehiveObjectStore.UnacceptableObjectException, BeehiveObjectStore.ObjectExistenceException, BeehiveObjectStore.NoSpaceException,
-        BeehiveObjectStore.NotFoundException, TitanMessage.RemoteException {
-        MutableObject.SetOperation.Request request = message.getPayload(MutableObject.SetOperation.Request.class, this.node);
+        BeehiveObjectStore.NotFoundException {
+
         //this.log.info("Update: %s ohsId=%s %s", message.subjectId, request.getObjectHistorySet().getHash(), request.getObjectHistorySet().state);
 
         // Check the consistency of the request.
@@ -535,68 +533,62 @@ public class AObjectVersionService extends AbstractObjectHandler implements AObj
      * is obligated to not publish the object again, and all intermediate nodes are obligated
      * to remove any back-pointer to this object.
      */
-    public Publish.PublishUnpublishResponse publishObject(TitanMessage message) throws ClassNotFoundException, ClassCastException, BeehiveObjectStore.ObjectExistenceException {
-    	try {
-    	    Publish.PublishUnpublishRequest publishRequest = message.getPayload(Publish.PublishUnpublishRequest.class, this.node);;
-    		
-            // Because the message may come from the root of a published object, in it's attempts make backup copies of the publish record,
-            // the message.source can be different than the publisher encoded in the request.
-    	    
-            //
-            // All of this is just to ensure there is only one of these objects in the pool at a time.
-            // For each published object in the request...
-    	    // Don't add a new object if it differs from the objects we already have with this object-id.
-            for (Map.Entry<TitanGuid, Metadata> entry : publishRequest.getObjects().entrySet()) {
-                Set<PublishRecord> alreadyPublishedObjects = this.node.getObjectPublishers().getPublishers(entry.getKey());
-                if (alreadyPublishedObjects.size() >= 1) { // The number used here is the total number allowed in the system.
-                    for (PublishRecord record : alreadyPublishedObjects) {
-                        if (!record.getNodeId().equals(publishRequest.getPublisherAddress().getObjectId())) {
-                            throw new BeehiveObjectStore.ObjectExistenceException();                            
-                        }
+    public Publish.PublishUnpublishResponse publishObject(TitanMessage message, Publish.PublishUnpublishRequest request) throws ClassNotFoundException, ClassCastException, BeehiveObjectStore.ObjectExistenceException {
+        // Because the message may come from the root of a published object, in it's attempts make backup copies of the publish record,
+        // the message.source can be different than the publisher encoded in the request.
+
+        //
+        // All of this is just to ensure there is only one of these objects in the pool at a time.
+        // For each published object in the request...
+        // Don't add a new object if it differs from the objects we already have with this object-id.
+        for (Map.Entry<TitanGuid, Metadata> entry : request.getObjects().entrySet()) {
+            Set<PublishRecord> alreadyPublishedObjects = this.node.getObjectPublishers().getPublishers(entry.getKey());
+            if (alreadyPublishedObjects.size() >= 1) { // The number used here is the total number allowed in the system.
+                for (PublishRecord record : alreadyPublishedObjects) {
+                    if (!record.getNodeId().equals(request.getPublisherAddress().getObjectId())) {
+                        throw new BeehiveObjectStore.ObjectExistenceException();                            
                     }
                 }
             }
-            //
-            // All of this is just to ensure there is only one of these objects in the pool at a time.
-            // For each published object in the request...
-//    		for (Map.Entry<TitanGuid, TitanObject.Metadata> entry : publishRequest.getObjects().entrySet()) {
-//    			// This should be part of a new ReplicatedObject helper.
-//    			Set<Publishers.PublishRecord> publisherSet = this.node.getObjectPublishers().getPublishersAndLock(entry.getKey());
-//    			try {
-//    				if (publisherSet != null) {
-//    					// Only permit one of each AObjectVersionService.Object to exist in the system.
-//    					// If the existing set of publishers of the published object exists and has one (or more) publishers already,
-//    					// look through the publisher set to see if this publish message is from one of the existing publishers.
-//    					// If so, then it's okay.  Otherwise, return a failure status.
-//    					// Note that when a PublishObjectMessage results in a fail status,
-//    					// all nodes are obligated to NOT store any backpointers and the publishing node is obligated to remove the object.
-//    					if (publisherSet.size() >= 1) {
-//    						for (Publishers.PublishRecord publisher : publisherSet) {
-//    							//this.log.info("Existing publisher " + publisher.getNodeId() + " id=" + message.getObjectId().toString());
-//    							if (!publisher.getNodeId().equals(publishRequest.getPublisherAddress().getObjectId())) {
-//    								//this.log.info("Root sees too many copies of " + message.getObjectId().toString());
-//    							    throw new BeehiveObjectStore.ObjectExistenceException();
-////    								return message.composeReply(this.getNode().getNodeAddress(), DOLRStatus.CONFLICT, new BeehiveObjectStore.ObjectExistenceException());
-//    							} else {
-//    								//this.log.info("Republish " + message.getObjectId().toString() + " from " + message.getSource().getNodeId().toString());
-//    							}
-//    						}
-//    					}
-//    				}
-//    			} finally {
-//    				this.node.getObjectPublishers().unlock(entry.getKey());
-//    			}
-//    		}
-
-    		AbstractObjectHandler.publishObjectBackup(this, publishRequest);
-        } catch (RemoteException e) {
-            throw new IllegalArgumentException(e.getCause());
         }
+        //
+        // All of this is just to ensure there is only one of these objects in the pool at a time.
+        // For each published object in the request...
+        //    		for (Map.Entry<TitanGuid, TitanObject.Metadata> entry : publishRequest.getObjects().entrySet()) {
+        //    			// This should be part of a new ReplicatedObject helper.
+        //    			Set<Publishers.PublishRecord> publisherSet = this.node.getObjectPublishers().getPublishersAndLock(entry.getKey());
+        //    			try {
+        //    				if (publisherSet != null) {
+        //    					// Only permit one of each AObjectVersionService.Object to exist in the system.
+        //    					// If the existing set of publishers of the published object exists and has one (or more) publishers already,
+        //    					// look through the publisher set to see if this publish message is from one of the existing publishers.
+        //    					// If so, then it's okay.  Otherwise, return a failure status.
+        //    					// Note that when a PublishObjectMessage results in a fail status,
+        //    					// all nodes are obligated to NOT store any backpointers and the publishing node is obligated to remove the object.
+        //    					if (publisherSet.size() >= 1) {
+        //    						for (Publishers.PublishRecord publisher : publisherSet) {
+        //    							//this.log.info("Existing publisher " + publisher.getNodeId() + " id=" + message.getObjectId().toString());
+        //    							if (!publisher.getNodeId().equals(publishRequest.getPublisherAddress().getObjectId())) {
+        //    								//this.log.info("Root sees too many copies of " + message.getObjectId().toString());
+        //    							    throw new BeehiveObjectStore.ObjectExistenceException();
+        ////    								return message.composeReply(this.getNode().getNodeAddress(), DOLRStatus.CONFLICT, new BeehiveObjectStore.ObjectExistenceException());
+        //    							} else {
+        //    								//this.log.info("Republish " + message.getObjectId().toString() + " from " + message.getSource().getNodeId().toString());
+        //    							}
+        //    						}
+        //    					}
+        //    				}
+        //    			} finally {
+        //    				this.node.getObjectPublishers().unlock(entry.getKey());
+        //    			}
+        //    		}
+
+        AbstractObjectHandler.publishObjectBackup(this, request);
 
         return new PublishDaemon.PublishObject.PublishUnpublishResponseImpl(this.node.getNodeAddress());
     }
 
-    public Publish.PublishUnpublishResponse unpublishObject(TitanMessage msg) {
+    public Publish.PublishUnpublishResponse unpublishObject(TitanMessage message, Publish.PublishUnpublishRequest request) {
         return new PublishDaemon.PublishObject.PublishUnpublishResponseImpl(this.node.getNodeAddress());
     }
 

@@ -37,7 +37,6 @@ import sunlabs.titan.node.object.StorableObject;
 public interface FObjectType extends
         StorableObject.Handler<FObjectType.FObject>,
         RetrievableObject.Handler<FObjectType.FObject>,
-//        InspectableObject.Handler<FObjectType.FObject>,
         DeleteableObject.Handler<FObjectType.FObject> {
 
     public static interface FObject extends StorableObject.Handler.Object, RetrievableObject.Handler.Object, DeleteableObject.Handler.Object/*, InspectableObject.Handler.Object*/ {

@@ -98,7 +98,7 @@ public interface TitanObjectHandler extends TitanService {
      * @throws BeehiveObjectPool.Exception
      * @throws BeehiveObjectStore.Exception
      */
-    public Publish.PublishUnpublishResponse publishObject(TitanMessage message) throws ClassNotFoundException, ClassCastException, BeehiveObjectPool.Exception, BeehiveObjectStore.Exception;
+    public Publish.PublishUnpublishResponse publishObject(TitanMessage message, Publish.PublishUnpublishRequest request) throws ClassNotFoundException, ClassCastException, BeehiveObjectPool.Exception, BeehiveObjectStore.Exception;
 
     /**
      * Receive and process a {@link UnpublishObjectMessage} for a
@@ -114,5 +114,5 @@ public interface TitanObjectHandler extends TitanService {
      * @throws ClassCastException 
      * @throws ClassNotFoundException 
      */
-    public Publish.PublishUnpublishResponse unpublishObject(TitanMessage message) throws ClassNotFoundException, ClassCastException;
+    public Publish.PublishUnpublishResponse unpublishObject(TitanMessage message, Publish.PublishUnpublishRequest request) throws ClassNotFoundException, ClassCastException;
 }

@@ -103,10 +103,29 @@ public class MutableObject {
          * @throws BeehiveObjectStore.NotFoundException 
          * @throws TitanMessage.RemoteException if the given {@code TitanMessage} contains an Exception thrown by the {@link TitanMessage#getPayload(Class, TitanNode)} method.
          */
-        public MutableObject.SetOperation.Response setObjectHistory(TitanMessage message) throws ClassNotFoundException, ClassCastException, IOException,
+        public MutableObject.SetOperation.Response setObjectHistory(TitanMessage message, MutableObject.SetOperation.Request request) throws ClassNotFoundException, ClassCastException, IOException,
             MutableObject.ObjectHistory.OutOfDateException, BeehiveObjectStore.DeleteTokenException, BeehiveObjectStore.InvalidObjectException,
             BeehiveObjectStore.UnacceptableObjectException, BeehiveObjectStore.ObjectExistenceException, BeehiveObjectStore.NoSpaceException,
-            BeehiveObjectStore.NotFoundException, TitanMessage.RemoteException;
+            BeehiveObjectStore.NotFoundException;
+        
+        /**
+         * 
+         * @param message
+         * @param request
+         * @return
+         * @throws ClassCastException
+         * @throws TitanMessage.RemoteException
+         * @throws ClassNotFoundException
+         * @throws BeehiveObjectStore.DeleteTokenException
+         * @throws BeehiveObjectStore.UnacceptableObjectException
+         * @throws BeehiveObjectStore.InvalidObjectException
+         * @throws BeehiveObjectStore.NoSpaceException
+         * @throws BeehiveObjectStore.NotFoundException
+         * @throws BeehiveObjectStore.ObjectExistenceException
+         */
+        public MutableObject.CreateOperation.Response createObjectHistory(TitanMessage message, MutableObject.CreateOperation.Request request) throws ClassCastException, TitanMessage.RemoteException, ClassNotFoundException, BeehiveObjectStore.DeleteTokenException,
+        BeehiveObjectStore.UnacceptableObjectException, BeehiveObjectStore.InvalidObjectException, BeehiveObjectStore.NoSpaceException, BeehiveObjectStore.NotFoundException,
+        BeehiveObjectStore.ObjectExistenceException ;
 
         /**
          * Get this node's object history for the specified object.
@@ -117,7 +136,7 @@ public class MutableObject {
          * @throws ClassNotFoundException 
          * @throws BeehiveObjectStore.NotFoundException 
          */
-        public MutableObject.GetOperation.Response getObjectHistory(TitanMessage message) throws ClassNotFoundException, ClassCastException,
+        public MutableObject.GetOperation.Response getObjectHistory(TitanMessage message, MutableObject.GetOperation.Request request) throws ClassNotFoundException, ClassCastException,
             TitanMessage.RemoteException, BeehiveObjectStore.NotFoundException;
     }
 

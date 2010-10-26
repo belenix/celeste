@@ -37,7 +37,6 @@ import java.util.TreeSet;
 import java.util.logging.Level;
 
 import sunlabs.asdf.util.AbstractStoredMap;
-import sunlabs.asdf.util.AbstractStoredMap.OutOfSpace;
 import sunlabs.asdf.util.ObjectLock;
 import sunlabs.asdf.util.Time;
 import sunlabs.asdf.util.Units;
@@ -48,8 +47,8 @@ import sunlabs.titan.api.ObjectStore;
 import sunlabs.titan.api.TitanGuid;
 import sunlabs.titan.api.TitanObject;
 import sunlabs.titan.exception.BeehiveException;
-import sunlabs.titan.node.services.PublishDaemon;
 import sunlabs.titan.node.services.HTTPMessageService;
+import sunlabs.titan.node.services.PublishDaemon;
 import sunlabs.titan.node.services.api.Publish;
 import sunlabs.titan.node.services.xml.TitanXML;
 import sunlabs.titan.node.services.xml.TitanXML.XMLObject;
@@ -501,8 +500,6 @@ public final class BeehiveObjectStore implements ObjectStore {
             throw new InvalidObjectException(e);
         } catch (InvalidObjectIdException e) {
             throw new InvalidObjectException(e);
-        } catch (IOException e){
-            throw new BeehiveObjectStore.UnacceptableObjectException(e);
         }
     }
 
@@ -517,8 +514,6 @@ public final class BeehiveObjectStore implements ObjectStore {
             }
             this.put(object);
             return actualObjectId;
-        } catch (IOException e) {
-            throw new UnacceptableObjectException(e);
         } catch (DeleteTokenException e) {
             throw new InvalidObjectException(e);
         } catch (InvalidObjectIdException e) {
@@ -536,7 +531,7 @@ public final class BeehiveObjectStore implements ObjectStore {
      * @throws BeehiveObjectStore.InvalidObjectException
      * @throws IOException
      */
-    private TitanObject put(TitanObject object) throws BeehiveObjectStore.InvalidObjectException, IOException {
+    private TitanObject put(TitanObject object) throws BeehiveObjectStore.InvalidObjectException, BeehiveObjectStore.NoSpaceException {
         try {
             object.setProperty(BeehiveObjectStore.METADATA_CREATEDTIME, Time.currentTimeInSeconds());
             this.fileStore.put(object.getObjectId(), object);
@@ -545,8 +540,8 @@ public final class BeehiveObjectStore implements ObjectStore {
             throw new IllegalArgumentException(e);
         } catch (IllegalStateException e) {
             throw e;
-        } catch (OutOfSpace e) {
-            throw new IllegalArgumentException(e);
+        } catch (AbstractStoredMap.OutOfSpace e) {
+            throw new BeehiveObjectStore.NoSpaceException("No space for object %s", object.getObjectId());
         }
     }
 
@@ -570,8 +565,6 @@ public final class BeehiveObjectStore implements ObjectStore {
             this.locks.assertLock(actualObjectId);
             this.put(object);
             return actualObjectId;
-        } catch (IOException e) {
-            throw new IllegalArgumentException(e);
         } catch (BeehiveObjectStore.InvalidObjectIdException e) {
             throw new InvalidObjectException(e);
         } catch (BeehiveObjectStore.DeleteTokenException e) {

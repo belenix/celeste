@@ -35,7 +35,7 @@ import sunlabs.titan.TitanGuidImpl;
 import sunlabs.titan.api.TitanGuid;
 import sunlabs.titan.api.TitanNode;
 import sunlabs.titan.api.TitanObject;
-import sunlabs.titan.node.AbstractBeehiveObject;
+import sunlabs.titan.node.AbstractTitanObject;
 import sunlabs.titan.node.TitanMessage;
 import sunlabs.titan.node.object.AbstractObjectHandler;
 import sunlabs.titan.node.object.MutableObject;
@@ -49,7 +49,7 @@ public class IntegerObjectType extends AbstractObjectHandler implements MutableO
      * Instances of this class are actually object replicas,
      * for which a quorum of a subset need to be examined to determine the actual state of the object.
      */
-    public static class IntegerObject extends AbstractBeehiveObject implements MutableObject.Handler.ObjectAPI {
+    public static class IntegerObject extends AbstractTitanObject implements MutableObject.Handler.ObjectAPI {
         private static final long serialVersionUID = 1L;
 
         public IntegerObject(TitanGuid deleteTokenId, long timeToLive) {

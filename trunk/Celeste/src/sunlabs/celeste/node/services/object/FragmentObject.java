@@ -39,7 +39,7 @@ import sunlabs.titan.api.ObjectStore;
 import sunlabs.titan.api.TitanGuid;
 import sunlabs.titan.api.TitanNode;
 import sunlabs.titan.api.TitanObject;
-import sunlabs.titan.node.AbstractBeehiveObject;
+import sunlabs.titan.node.AbstractTitanObject;
 import sunlabs.titan.node.BeehiveObjectPool;
 import sunlabs.titan.node.BeehiveObjectStore;
 import sunlabs.titan.node.PublishObjectMessage;
@@ -63,7 +63,7 @@ public final class FragmentObject extends AbstractObjectHandler implements FObje
     private final static int replicationStore = 2;
     private final static int replicationCache = 2;
 
-    public class FObject extends AbstractBeehiveObject implements FObjectType.FObject {
+    public class FObject extends AbstractTitanObject implements FObjectType.FObject {
         private static final long serialVersionUID = 1L;
 
         private int replicationMinimum;

@@ -58,7 +58,7 @@ import sunlabs.titan.api.TitanGuid;
 import sunlabs.titan.api.TitanNode;
 import sunlabs.titan.api.TitanNodeId;
 import sunlabs.titan.api.TitanObject;
-import sunlabs.titan.node.AbstractBeehiveObject;
+import sunlabs.titan.node.AbstractTitanObject;
 import sunlabs.titan.node.BeehiveObjectPool;
 import sunlabs.titan.node.BeehiveObjectStore;
 import sunlabs.titan.node.BeehiveObjectStore.DeletedObjectException;
@@ -70,8 +70,8 @@ import sunlabs.titan.node.object.ReplicatableObject;
 import sunlabs.titan.node.object.RetrievableObject;
 import sunlabs.titan.node.object.StorableObject;
 import sunlabs.titan.node.services.AbstractTitanService;
-import sunlabs.titan.node.services.PublishDaemon;
 import sunlabs.titan.node.services.HTTPMessageService;
+import sunlabs.titan.node.services.PublishDaemon;
 import sunlabs.titan.node.services.api.Publish;
 import sunlabs.titan.util.DOLRStatus;
 
@@ -88,7 +88,7 @@ public final class VersionObjectHandler extends AbstractObjectHandler implements
      * a particular version of a file.
      * <p>
      */
-    public static final class VObject extends AbstractBeehiveObject implements VersionObject.Object, Iterable<BlockObject.Object.Reference> {
+    public static final class VObject extends AbstractTitanObject implements VersionObject.Object, Iterable<BlockObject.Object.Reference> {
         private static final long serialVersionUID = 2L;
 
         //

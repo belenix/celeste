@@ -539,9 +539,7 @@ public final class PublishDaemon extends AbstractTitanService implements Publish
     	}
     }
 
-    public TitanMessage getPublishers(TitanMessage message) throws ClassCastException, ClassNotFoundException, RemoteException {
-        GetPublishers.Request request = message.getPayload(GetPublishers.Request.class, this.node);
-
+    public TitanMessage getPublishers(TitanMessage message, GetPublishers.Request request) throws ClassCastException, ClassNotFoundException {
         Set<Publishers.PublishRecord> publishers = PublishDaemon.this.node.getObjectPublishers().getPublishers(request.getObjectId());
 
         return message.composeReply(this.node.getNodeAddress(), new GetPublishers.Response(publishers)); 

@@ -482,6 +482,9 @@ public class TitanMessage implements Serializable, XHTMLInspectable {
 
     private synchronized void loadPayloadObject(ClassLoader classLoader, TitanNode node) throws ClassCastException, ClassNotFoundException {
         if (this.dataObject == null) {
+            if (this.payload == null) {
+                return ;
+            }
             //
             // Give the ApplicationFramework active on the Node hosting
             // this copy of the message a chance to substitute its own

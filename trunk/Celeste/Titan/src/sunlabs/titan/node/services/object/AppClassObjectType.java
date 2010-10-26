@@ -40,7 +40,7 @@ import sunlabs.titan.api.ObjectStore;
 import sunlabs.titan.api.TitanGuid;
 import sunlabs.titan.api.TitanNode;
 import sunlabs.titan.api.TitanObject;
-import sunlabs.titan.node.AbstractBeehiveObject;
+import sunlabs.titan.node.AbstractTitanObject;
 import sunlabs.titan.node.BeehiveObjectPool;
 import sunlabs.titan.node.BeehiveObjectStore;
 import sunlabs.titan.node.BeehiveObjectStore.InvalidObjectException;
@@ -70,7 +70,7 @@ public class AppClassObjectType extends AbstractObjectHandler implements AppClas
     private final static long serialVersionUID = 2L;
     public final static String name = AbstractTitanService.makeName(AppClassObjectType.class, AppClassObjectType.serialVersionUID);
 
-    public final static class AppClassObject extends AbstractBeehiveObject implements AppClass.AppClassObject {
+    public final static class AppClassObject extends AbstractTitanObject implements AppClass.AppClassObject {
         private final static long serialVersionUID = 1L;
 
         //

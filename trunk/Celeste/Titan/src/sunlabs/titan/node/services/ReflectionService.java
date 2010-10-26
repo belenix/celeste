@@ -69,9 +69,7 @@ public final class ReflectionService extends AbstractTitanService implements Ref
         }
     }
     
-    public Reflection.ObjectInspect.Response inspectObject(TitanMessage message) throws ClassCastException, ClassNotFoundException, TitanMessage.RemoteException, BeehiveObjectStore.NotFoundException {
-        Reflection.ObjectInspect.Request request = message.getPayload(Reflection.ObjectInspect.Request.class, this.node);
-
+    public Reflection.ObjectInspect.Response inspectObject(TitanMessage message, Reflection.ObjectInspect.Request request) throws ClassCastException, ClassNotFoundException, TitanMessage.RemoteException, BeehiveObjectStore.NotFoundException {
         Publish publish = this.node.getService(PublishDaemon.class);
         Set<PublishRecord> publishers = publish.getPublishers(message.subjectId);
 

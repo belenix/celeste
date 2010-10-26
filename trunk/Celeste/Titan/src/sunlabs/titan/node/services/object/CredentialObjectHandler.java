@@ -42,7 +42,6 @@ import sunlabs.titan.api.TitanObject.Metadata;
 import sunlabs.titan.node.BeehiveObjectPool;
 import sunlabs.titan.node.BeehiveObjectPool.DisallowedDuplicateException;
 import sunlabs.titan.node.BeehiveObjectStore;
-import sunlabs.titan.node.BeehiveObjectStore.Exception;
 import sunlabs.titan.node.Publishers.PublishRecord;
 import sunlabs.titan.node.TitanMessage;
 import sunlabs.titan.node.TitanMessage.RemoteException;
@@ -168,7 +167,7 @@ public final class CredentialObjectHandler extends AbstractObjectHandler impleme
         //
         // That would only work for objects that are immutable after they've
         // been constructed which isn't a constraint placed upon
-        // BeehiveObjects.  Implementors are free to set the object-id in
+        // TitanObjects.  Implementors are free to set the object-id in
         // either place.  Setting an object's object-id is only advisory
         // anyway.  The actual object-id is computed by the storing node and
         // returned in the reply.

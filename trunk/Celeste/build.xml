@@ -103,7 +103,7 @@
     <!-- =================================
           target: compile
          ================================= -->
-    <target name="compile" depends="init, Phidoux.jar, titan.jar" description="==> Compile all Celeste sources">
+    <target name="compile" depends="init, Phidoux.jar, titan.jar, dojo.jar" description="==> Compile all Celeste sources">
         <mkdir dir="${build.classes.dir}"/>
         <depend srcdir="${src.dir}"
                 destdir="${build.classes.dir}"
@@ -137,7 +137,7 @@
             <fileset dir=""                     includes="web/**" />
             <manifest>
                 <attribute name="Main-Class"             value="sunlabs.celeste.node.Celeste" />
-                <attribute name="Class-Path"             value="titan.jar ${Phidoux.jar}" />
+                <attribute name="Class-Path"             value="titan.jar ${Phidoux.jar} dojo.jar" />
                 <attribute name="Built-By"               value="${user.name}.${DSTAMP}" />
                 <attribute name="Sealed"                 value="true" />
                 <attribute name="Specification-Title"    value="Oracle Sun Labs Celeste" />
@@ -205,6 +205,15 @@
     	<ant dir="Titan" output="ant.out" inheritAll="false" />
         <mkdir dir="${dist.dir}" />
         <copy file="Titan/lib/titan.jar" toDir="${dist.dir}" />
+    </target>
+	
+    <!-- =================================
+         target: dojo.jar
+         ================================= -->
+    <target name="dojo.jar" depends="titan.jar"
+            description="==> Get the dojo.jar file from the Titan sub-project.">
+        <mkdir dir="${dist.dir}" />
+        <copy file="Titan/lib/dojo.jar" toDir="${dist.dir}" />
     </target>
 
 

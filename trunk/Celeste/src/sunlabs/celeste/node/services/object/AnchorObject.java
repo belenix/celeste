@@ -1,5 +1,5 @@
 /*
- * Copyright 2007-2009 Sun Microsystems, Inc. All Rights Reserved.
+ * Copyright 2007-2010 Oracle. All Rights Reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER
  *
  * This code is free software; you can redistribute it and/or modify
@@ -17,11 +17,10 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
  * 02110-1301 USA
  *
- * Please contact Sun Microsystems, Inc., 16 Network Circle, Menlo
- * Park, CA 94025 or visit www.sun.com if you need additional
- * information or have any questions.
+ * Please contact Oracle Corporation, 500 Oracle Parkway, Redwood Shores, CA 94065
+ * or visit www.oracle.com if you need additional information or
+ * have any questions.
  */
-
 package sunlabs.celeste.node.services.object;
 
 import java.io.IOException;
@@ -50,12 +49,36 @@ import sunlabs.titan.util.DOLRStatus;
  *
  * @author Glenn Scott - Sun Microsystems Laboratories
  */
-public interface AnchorObject extends
-        RetrievableObject.Handler<AnchorObject.Object>,
-        InspectableObject.Handler<AnchorObject.Object>,
-        DeleteableObject.Handler<AnchorObject.Object>,
-        ReplicatableObject.Handler<AnchorObject.Object> {
+public interface AnchorObject {
 
+    public interface Handler extends RetrievableObject.Handler<AnchorObject.Object>, InspectableObject.Handler<AnchorObject.Object>,
+    DeleteableObject.Handler<AnchorObject.Object>, ReplicatableObject.Handler<AnchorObject.Object> {
+        public AnchorObject.Object.Version makeVersion(TitanGuid generationId, long serialNumber);
+
+        public AnchorObject.Object create(FileIdentifier fileIdentifier,
+                ReplicationParameters replicationParams,
+                TitanGuid deleteTokenHash,
+                long timeToLive,
+                int bObjectSize,
+                boolean signWrites);
+        
+        public DOLRStatus delete(FileIdentifier fileIdentifier, TitanGuid deletionToken, long timeToLive) throws IOException, BeehiveObjectStore.NoSpaceException,
+            ClassCastException, RemoteException, DeleteTokenException, ClassNotFoundException;
+
+        /**
+         * Retrieve the {@link AnchorObject} given the Celeste {@link FileIdentifier}.
+         *
+         * @param fileIdentifier
+         * @return An instance of the {@code AnchorObject}.
+         * @throws BeehiveObjectStore.DeletedObjectException  If the {@code AnchorObject} exists, but has been deleted.
+         * @throws BeehiveObjectStore.NotFoundException If the {@code AnchorObject} was not found.
+         * @throws RemoteException 
+         * @throws ClassCastException 
+         * @throws ClassNotFoundException 
+         */
+        public AnchorObject.Object retrieve(FileIdentifier fileIdentifier) throws BeehiveObjectStore.DeletedObjectException, BeehiveObjectStore.NotFoundException, ClassCastException, ClassNotFoundException;
+    }
+    
     /**
      * A file anchor object implements this interface.
      *
@@ -118,29 +141,4 @@ public interface AnchorObject extends
          */
         public AObjectVersionMapAPI.Parameters getAObjectVersionMapParams();
     }
-
-    public AnchorObject.Object.Version makeVersion(TitanGuid generationId, long serialNumber);
-
-    public AnchorObject.Object create(FileIdentifier fileIdentifier,
-            ReplicationParameters replicationParams,
-            TitanGuid deleteTokenHash,
-            long timeToLive,
-            int bObjectSize,
-            boolean signWrites);
-    
-    public DOLRStatus delete(FileIdentifier fileIdentifier, TitanGuid deletionToken, long timeToLive) throws IOException, BeehiveObjectStore.NoSpaceException,
-        ClassCastException, RemoteException, DeleteTokenException, ClassNotFoundException;
-
-    /**
-     * Retrieve the {@link AnchorObject} given the Celeste {@link FileIdentifier}.
-     *
-     * @param fileIdentifier
-     * @return An instance of the {@code AnchorObject}.
-     * @throws BeehiveObjectStore.DeletedObjectException  If the {@code AnchorObject} exists, but has been deleted.
-     * @throws BeehiveObjectStore.NotFoundException If the {@code AnchorObject} was not found.
-     * @throws RemoteException 
-     * @throws ClassCastException 
-     * @throws ClassNotFoundException 
-     */
-    public AnchorObject.Object retrieve(FileIdentifier fileIdentifier) throws BeehiveObjectStore.DeletedObjectException, BeehiveObjectStore.NotFoundException, ClassCastException, ClassNotFoundException;
 }

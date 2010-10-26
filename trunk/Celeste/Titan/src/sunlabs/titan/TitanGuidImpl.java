@@ -88,6 +88,9 @@ public class TitanGuidImpl implements TitanGuid {
      */
     public final static int radix = 16;
 
+    /**
+     * <b>Caution:</b> Do not use this value directly, make a copy via {@link TitanGuidImpl#TitanGuidImpl(TitanGuidImpl.ZERO)}.
+     */
     public final static TitanGuid ZERO = new TitanGuidImpl(new byte[TitanGuidImpl.n_digits / 2], "");
 
 

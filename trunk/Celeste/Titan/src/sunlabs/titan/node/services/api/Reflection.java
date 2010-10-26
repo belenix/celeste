@@ -121,7 +121,7 @@ public interface Reflection extends TitanService {
         }
     }
     
-    public ObjectInspect.Response inspectObject(TitanMessage message) throws ClassCastException, ClassNotFoundException, TitanMessage.RemoteException, NotFoundException;
+    public ObjectInspect.Response inspectObject(TitanMessage message, Reflection.ObjectInspect.Request request) throws ClassCastException, ClassNotFoundException, TitanMessage.RemoteException, NotFoundException;
     
     public XHTML.EFlow inspectObject(TitanGuid objectId, URI uri, Map<String,HTTP.Message> props) throws ClassCastException, ClassNotFoundException, BeehiveObjectStore.NotFoundException;
     

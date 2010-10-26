@@ -243,16 +243,52 @@ public interface TitanObject extends /*XHTMLInspectable,*/ Serializable {
      */
     public boolean isDeleted();
 
+    /**
+     * Get the name of the Java class of this {@link TitanObject}.
+     * @return
+     */
     public String getObjectType();
 
+    /**
+     * Set the meta-data property {@code name} to {@code value}.
+     * @param name the meta-data property name 
+     * @param value the value.
+     * @return The new {@link TitanObject.Metadata}.
+     */
     public TitanObject.Metadata setProperty(String name, Object value);
 
+    /**
+     * Get the value of the meta-data property {@code name} as a {@code String}.
+     * If the property is not set, return the {@link String#valueOf(defaultValue)}.
+     * @param name the name of the meta-data property to get
+     * @param defaultValue the value to return if the named property is not set.
+     * @return the value of the meta-data property {@code name} or {@link String#valueOf(defaultValue)}.
+     */
     public String getProperty(String name, Object defaultValue);
 
+    /**
+     * Get the value of the meta-data property {@code name} as a {@code String}.
+     * @param name the name of the meta-data property to get
+     * @return the value of the meta-data property {@code name}.
+     */
     public String getProperty(String name);
 
+    /**
+     * Get the value of the meta-data property {@code name} as a {@link TitanGuid}.
+     * If the property is not set, return the {@code defaultValue}.
+     * @param name the name of the meta-data property to get
+     * @param defaultValue the value to return if the named property is not set.
+     * @return the value of the meta-data property {@code name} or {@code defaultValue}.
+     */
     public TitanGuid getPropertyAsObjectId(String name, TitanGuid defaultValue);
 
+    /**
+     * Get the value of the meta-data property {@code name} as a {@code long}.
+     * If the property is not set, return the {@code defaultValue}.
+     * @param name the name of the meta-data property to get
+     * @param defaultValue the value to return if the named property is not set.
+     * @return the value of the meta-data property {@code name} or {@code defaultValue}.
+     */
     public long getPropertyAsLong(String name, long defaultValue);
     
     public XHTML.EFlow toXHTML(URI uri, Map<String,HTTP.Message> props);

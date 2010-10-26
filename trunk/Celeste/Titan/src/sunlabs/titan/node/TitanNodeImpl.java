@@ -32,6 +32,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.net.HttpURLConnection;
 import java.net.InetAddress;
 import java.net.MalformedURLException;
+import java.net.NetworkInterface;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
@@ -77,6 +78,8 @@ import sunlabs.titan.api.management.NodeMBean;
 import sunlabs.titan.node.TitanMessage.RemoteException;
 import sunlabs.titan.node.object.AbstractObjectHandler;
 import sunlabs.titan.node.object.TitanObjectHandler;
+import sunlabs.titan.node.object.nodeobject.NodeObject;
+import sunlabs.titan.node.object.nodeobject.NodeObjectHandler;
 import sunlabs.titan.node.services.HTTPMessageService;
 import sunlabs.titan.node.services.PublishDaemon;
 import sunlabs.titan.node.services.ReflectionService;
@@ -133,7 +136,6 @@ public class TitanNodeImpl implements TitanNode, NodeMBean {
     }
 
     protected final static String nodeBackingStorePrefix = "node-";
-    private static final String SERVICES_PACKAGENAME = "sunlabs.titan.node.services";
     
     /** The full pathname to a local directory to use as the "spool" directory for this node. */
     public final static Attributes.Prototype LocalFileSystemRoot = new Attributes.Prototype(TitanNodeImpl.class, "LocalFileSystemRoot", "/tmp/titan",
@@ -272,6 +274,14 @@ public class TitanNodeImpl implements TitanNode, NodeMBean {
 
         if (this.configuration.isUnset(TitanNodeImpl.InterNetworkAddress)) {
             this.configuration.set(TitanNodeImpl.InterNetworkAddress, InetAddress.getLocalHost().getHostAddress());
+        } else {
+            String internetworkAddress = this.configuration.asString(TitanNodeImpl.InterNetworkAddress);
+            InetAddress address = InetAddress.getByName(this.configuration.asString(TitanNodeImpl.InterNetworkAddress));
+            // Check for sanity in the specification of the InterNetworkAddress.
+            NetworkInterface netInterface = NetworkInterface.getByInetAddress(address);
+            if (netInterface == null) {
+                System.err.printf("WARNING %s=%s does not specify an IP address on this host.%n", TitanNodeImpl.InterNetworkAddress.getName(), internetworkAddress);
+            }
         }
         String internetworkAddress = this.configuration.asString(TitanNodeImpl.InterNetworkAddress);
 
@@ -333,14 +343,14 @@ public class TitanNodeImpl implements TitanNode, NodeMBean {
             this.store = new BeehiveObjectStore(this, this.configuration.asString(TitanNodeImpl.ObjectStoreCapacity));
             this.objectPublishers = new Publishers(this, this.spoolDirectory);
 
-            if (true) {
+//            if (true) {
                 this.services = new SimpleServiceFramework(this);
-            } else {
-                this.services = new ApplicationFramework(this,
-                        new DOLRLogger(ApplicationFramework.class.getName(),
-                                getNodeId(), getSpoolDirectory(),
-                                this.configuration.asInt(TitanNodeImpl.LogFileSize), this.configuration.asInt(TitanNodeImpl.LogFileCount)));
-            }
+//            } else {
+//                this.services = new ApplicationFramework(this,
+//                        new DOLRLogger(ApplicationFramework.class.getName(),
+//                                getNodeId(), getSpoolDirectory(),
+//                                this.configuration.asInt(TitanNodeImpl.LogFileSize), this.configuration.asInt(TitanNodeImpl.LogFileCount)));
+//            }
 
             // Load the services that are integral to the operation of the node.
             // Services are not started until the node is started.
@@ -350,6 +360,9 @@ public class TitanNodeImpl implements TitanNode, NodeMBean {
 
             // This will cause the class implementing the MessageService to be loaded.
             this.messageService = (MessageService) this.getService(this.configuration.asString(TitanNodeImpl.MessageService));
+
+            NodeObject.Handler nodeObjectHandler = this.getService(NodeObjectHandler.class);
+            nodeObjectHandler.createObject();
             
             this.getService(HTTPMessageService.class);
             this.getService(RoutingDaemon.class);
@@ -373,6 +386,16 @@ public class TitanNodeImpl implements TitanNode, NodeMBean {
         } catch (IllegalAccessException e) {
             throw new RuntimeException(e);
         } catch (InvocationTargetException e) {
+            throw new RuntimeException(e);
+        } catch (BeehiveObjectStore.InvalidObjectException e) {
+            throw new RuntimeException(e);
+        } catch (BeehiveObjectStore.ObjectExistenceException e) {
+            throw new RuntimeException(e);
+        } catch (BeehiveObjectStore.NoSpaceException e) {
+            throw new RuntimeException(e);
+        } catch (BeehiveObjectStore.UnacceptableObjectException e) {
+            throw new RuntimeException(e);
+        } catch (BeehiveObjectStore.DeleteTokenException e) {
             throw new RuntimeException(e);
         }
 

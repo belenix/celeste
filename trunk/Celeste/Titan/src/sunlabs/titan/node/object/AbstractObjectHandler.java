@@ -40,13 +40,19 @@ import sunlabs.titan.node.services.AbstractTitanService;
 import sunlabs.titan.node.services.api.Publish;
 
 /**
- * The base class for all Beehive object-handler implementations.
- *
- * This class contains helper methods for implementors.
+ * The base class for all Titan object-handler implementations.
+ * This class extends {@link AbstractTitanService} and implements the {@link TitanObjectHandler} interface.
+ * <p>
+ * <b>NOTE</b> Classes must implement a constructor {@code Constructor(TitanNode node)}.
+ * </p>
  */
 public abstract class AbstractObjectHandler extends AbstractTitanService implements TitanObjectHandler {
     private final static long serialVersionUID = 1L;
 
+    public AbstractObjectHandler(TitanNode node) throws JMException {
+        this(node, "AbstractObjectHandler", "An incomplete class implementation extending AbstractObjectHandler");
+    }
+    
     /**
      * Instantiate a new object handler.
      *
@@ -54,7 +60,7 @@ public abstract class AbstractObjectHandler extends AbstractTitanService impleme
      * @param name
      * @param description
      */
-    public AbstractObjectHandler(TitanNode node, String name, String description) throws JMException {
+    protected AbstractObjectHandler(TitanNode node, String name, String description) throws JMException {
         super(node, name, description);
     }
     

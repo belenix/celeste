@@ -504,7 +504,7 @@ public final class HttpMessage implements HTTP.Message {
      * @return The number of bytes written.
      * @throws IOException if the underlying output threw an {@code IOException}.
      */
-    public long writeHeadTo(OutputStream out) throws IOException {            
+    public long writeHeadTo(DataOutputStream out) throws IOException {            
         long length = 0;
         
         for (Map.Entry<String,HTTP.Message.Header> entry : this.getHeaders().entrySet()) {
@@ -518,7 +518,7 @@ public final class HttpMessage implements HTTP.Message {
         return length;
     }
     
-    public long writeTo(OutputStream out) throws IOException {
+    public long writeTo(DataOutputStream out) throws IOException {
         long length = this.writeHeadTo(out);
         if (this.messageBody != null) {
             length += this.messageBody.writeTo(out);

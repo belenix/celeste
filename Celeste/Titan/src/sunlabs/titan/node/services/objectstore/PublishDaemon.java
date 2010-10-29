@@ -21,9 +21,10 @@
  * or visit www.oracle.com if you need additional information or
  * have any questions.
  */
-package sunlabs.titan.node.services;
+package sunlabs.titan.node.services.objectstore;
 
 import java.io.Serializable;
+import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -41,8 +42,11 @@ import sunlabs.asdf.jmx.ThreadMBean;
 import sunlabs.asdf.util.Attributes;
 import sunlabs.asdf.util.Time;
 import sunlabs.asdf.web.XML.XHTML;
+import sunlabs.asdf.web.XML.XML;
 import sunlabs.asdf.web.http.HTTP;
+import sunlabs.asdf.web.http.HttpContent;
 import sunlabs.asdf.web.http.HttpMessage;
+import sunlabs.asdf.web.http.HttpResponse;
 import sunlabs.titan.api.ObjectStore;
 import sunlabs.titan.api.TitanGuid;
 import sunlabs.titan.api.TitanNode;
@@ -58,6 +62,7 @@ import sunlabs.titan.node.TitanNodeIdImpl;
 import sunlabs.titan.node.UnpublishObjectMessage;
 import sunlabs.titan.node.object.AbstractObjectHandler;
 import sunlabs.titan.node.object.TitanObjectHandler;
+import sunlabs.titan.node.services.AbstractTitanService;
 import sunlabs.titan.node.services.api.Publish;
 
 /**
@@ -505,43 +510,33 @@ public final class PublishDaemon extends AbstractTitanService implements Publish
                 throw (BeehiveObjectStore.Exception) e.getCause();
             throw new IllegalArgumentException(e);
         }
-    }    
-
-    public static class GetPublishers implements Serializable {
-		private static final long serialVersionUID = 1L;
-		
-		public static class Request /*extends AbstractBeehiveObjectHandler.Request*/ implements Serializable {
-			private static final long serialVersionUID = 1L;
-
-			private TitanGuid objectId;
-			
-			public Request(TitanGuid objectId) {
-				this.objectId = objectId;
-			}
-
-			public TitanGuid getObjectId() {
-				return objectId;
-			}
-    	}
-		
-    	public static class Response implements Serializable {
-    		private static final long serialVersionUID = 1L;
-    		private Set<Publishers.PublishRecord> publishers;
-    		
-    		public Response(Set<Publishers.PublishRecord> publishers) {
-    			this.publishers = publishers;
-    		}
-    		
-    		public Set<Publishers.PublishRecord> getPublishers() {
-    			return this.publishers;
-    		}
-    	}
     }
 
-    public TitanMessage getPublishers(TitanMessage message, GetPublishers.Request request) throws ClassCastException, ClassNotFoundException {
+    public GetPublishers.Response getPublishers(TitanMessage message, GetPublishers.Request request) throws ClassCastException, ClassNotFoundException {
         Set<Publishers.PublishRecord> publishers = PublishDaemon.this.node.getObjectPublishers().getPublishers(request.getObjectId());
+        return new GetPublishers.Response(publishers); 
+    }
 
-        return message.composeReply(this.node.getNodeAddress(), new GetPublishers.Response(publishers)); 
+    public HTTP.Response getPublishers(TitanMessage message, HTTP.Request httpRequest) throws UnsupportedEncodingException, ClassCastException, ClassNotFoundException {
+        Map<String,String> params = null;
+        if (httpRequest.getMethod().equals(HTTP.Request.Method.GET)) {
+            params = httpRequest.getURLEncoded();
+        }
+        
+        Set<Publishers.PublishRecord> publishers = this.getPublishers(message.getObjectId());
+        
+        GetPublishers.Response response = new GetPublishers.Response(publishers);
+        
+        XML.Content xml = response.toXML();
+        XML.Document document = new XML.Document(xml);
+//        Select.Response response = new Select.Response(list);
+//        XML.Content xml = response.toXML();
+//        XML.Document document = this.makeXMLDocument(xml, "/xsl/titan/CensusService/Select.xsl");
+
+        //        String xml = applyXSLT("/xsl/titan/CensusService/Select.xsl", document);
+
+//        return new HttpResponse(HTTP.Response.Status.OK, new HttpContent.Text.XML(XML.formatXMLDocument(document.toString())));     
+        return new HttpResponse(HTTP.Response.Status.OK, new HttpContent.Text.XML(document));        
     }
 	
     public Set<Publishers.PublishRecord> getPublishers(TitanGuid objectId) throws ClassNotFoundException, ClassCastException {
@@ -564,6 +559,7 @@ public final class PublishDaemon extends AbstractTitanService implements Publish
 		}
         return response.getPublishers();
     }
+    
 
     public XHTML.EFlow toXHTML(URI uri, Map<String,HTTP.Message> props) {
     	String action = HttpMessage.asString(props.get("action"), null);

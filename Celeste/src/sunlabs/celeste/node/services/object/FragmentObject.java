@@ -50,8 +50,8 @@ import sunlabs.titan.node.object.DeleteableObject;
 import sunlabs.titan.node.object.RetrievableObject;
 import sunlabs.titan.node.object.StorableObject;
 import sunlabs.titan.node.services.AbstractTitanService;
-import sunlabs.titan.node.services.PublishDaemon;
 import sunlabs.titan.node.services.api.Publish;
+import sunlabs.titan.node.services.objectstore.PublishDaemon;
 import sunlabs.titan.util.DOLRStatus;
 
 public final class FragmentObject extends AbstractObjectHandler implements FObjectType {

@@ -937,7 +937,7 @@ public final class HTTPMessageService extends AbstractTitanService implements Me
 
 
     private sunlabs.asdf.web.http.HTTP.Response REST(HTTP.Request request) {
-        String[] tokens = request.getURI().getPath().split("/", 4); // Don't forget about the leading empty token <empty>/...
+        String[] tokens = request.getURI().getPath().split("/", 5); // Don't forget about the leading empty token <empty>/...
 
         TitanNodeId nodeId = null;
         TitanGuid objectId = null;
@@ -971,7 +971,7 @@ public final class HTTPMessageService extends AbstractTitanService implements Me
         try {
             TitanMessage response = null;
             if (nodeId != null) {
-                response = exactRouting ? this.node.sendToNodeExactly(nodeId, klasse, method, request) : this.node.sendToNode(nodeId, klasse, method, request);
+                response = exactRouting ? this.node.sendToNodeExactly(nodeId, objectId, klasse, method, request) : this.node.sendToNode(nodeId, objectId, klasse, method, request);
             } else if (objectId != null) {
                 response = this.node.sendToObject(objectId, klasse, method, request);
             } else {
@@ -1098,8 +1098,8 @@ public final class HTTPMessageService extends AbstractTitanService implements Me
         stylesheet.addAttribute(new XML.Attr("type", InternetMediaType.Application.XSLT), new XML.Attr("href", "/xsl/beehive-route-table.xsl" ));
 
         XHTML.Document document = new XHTML.Document();
-        document.add(stylesheet);
-        document.add(new XHTML.Html(head, body));
+        document.append(stylesheet);
+        document.append(new XHTML.Html(head, body));
         
         return document;
     }

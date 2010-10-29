@@ -128,13 +128,12 @@ public interface TitanNode {
      * Send to a specific object-id on a specific node.
      * This directly violates the separation of nodes and objects.
      * 
-     * @param nodeId The {@link TitanNodeId} of the destination.
+     * @param nodeId The {@link TitanNodeId} of the destination node.
      * @param objectId The {@link TitanGuid} of the destination object.
      * @param klasse The name of the {@link AbstractTitanService} to handle the reception of this message.
      * @param method The name of the method to invoke in {@code klasse} on the receiving node.
      * @param payload Serializable data as the input parameter to the {@code method} method.
      */
-    @Deprecated
     public TitanMessage sendToNode(TitanNodeId nodeId, TitanGuid objectId, String klasse, String method, Serializable payload);
 
     /**
@@ -151,6 +150,9 @@ public interface TitanNode {
      * @throws ClassCastException 
      */
     public TitanMessage sendToNodeExactly(TitanNodeId nodeId, String klasse, String method, Serializable payload) throws NoSuchNodeException, ClassCastException, RemoteException, ClassNotFoundException;
+
+
+    public TitanMessage sendToNodeExactly(TitanNodeId nodeId, TitanGuid objectId, String klasse, String method, Serializable payload) throws NoSuchNodeException, ClassCastException, RemoteException, ClassNotFoundException;
 
     /**
      * Send the given {@link Serializable} {@code data} to the {@link TitanObject}

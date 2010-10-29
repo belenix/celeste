@@ -153,7 +153,7 @@ public final class StorableObject {
      * Typically, this helper method is invoked on the receiver-side of a store object operation.
      * <p>
      * The returned {@link TitanMessage} is the message from the object's root node indicating the status of the publish operation of the stored object.
-     * The payload of the returned message is either an instance of {@link sunlabs.titan.node.services.PublishDaemon.PublishObject.PublishUnpublishResponseImpl}
+     * The payload of the returned message is either an instance of {@link sunlabs.titan.node.services.objectstore.PublishDaemon.PublishObject.PublishUnpublishResponseImpl}
      * or an Exception (see {@link TitanMessage#getPayload(Class, TitanNode)}.
      * </p>
      * @param handler The instance implementing {@link StorableObject.Handler} invoking this method.

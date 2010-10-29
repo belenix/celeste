@@ -148,7 +148,7 @@ public abstract class HttpContent implements HTTP.Message.Body {
                 return this.length;
             }
 
-            public long writeTo(OutputStream out) throws IOException {
+            public long writeTo(DataOutputStream out) throws IOException {
                 if (this.inputStream == null) {
                     long length = this.bytes.remaining(); 
                     if (this.bytes.hasArray()) {
@@ -401,7 +401,7 @@ public abstract class HttpContent implements HTTP.Message.Body {
             return ByteBuffer.wrap(this.toByteArray());
         }
 
-        public long writeTo(OutputStream out) throws IOException {
+        public long writeTo(DataOutputStream out) throws IOException {
             long length = 0;
             if (this.size() > 0) {
                 byte[] startBoundary = ("\r\n--" + this.getBoundaryString() + "\r\n").getBytes();
@@ -597,7 +597,7 @@ public abstract class HttpContent implements HTTP.Message.Body {
             return this.length;
         }
 
-        public long writeTo(OutputStream out) throws IOException {
+        public long writeTo(DataOutputStream out) throws IOException {
             out.write(this.bytes, this.offset, this.length);
             return length;
         }
@@ -633,7 +633,7 @@ public abstract class HttpContent implements HTTP.Message.Body {
             return this.length;
         }
 
-        public long writeTo(OutputStream out) throws IOException {
+        public long writeTo(DataOutputStream out) throws IOException {
             long length = this.bytes.remaining(); 
             ByteBuffer scratch = this.bytes.duplicate();
             if (scratch.hasArray()) {
@@ -651,7 +651,7 @@ public abstract class HttpContent implements HTTP.Message.Body {
             ByteArrayOutputStream bos = new ByteArrayOutputStream();
             OutputStream dos = new DataOutputStream(bos);
             try {
-                this.writeTo(dos);
+                this.writeTo(new DataOutputStream(dos));
                 dos.close();
             } catch (IOException e) {
                 throw new RuntimeException(e);
@@ -664,7 +664,7 @@ public abstract class HttpContent implements HTTP.Message.Body {
             ByteArrayOutputStream bos = new ByteArrayOutputStream();
             OutputStream dos = new DataOutputStream(bos);
             try {
-                this.writeTo(dos);
+                this.writeTo(new DataOutputStream(dos));
                 dos.close();
             } catch (IOException e) {
                 throw new RuntimeException(e);
@@ -784,7 +784,7 @@ public abstract class HttpContent implements HTTP.Message.Body {
          * {@link RawInputStream#inputStream} is closed.
          * </p>
          */
-        public long writeTo(OutputStream out) throws IOException {
+        public long writeTo(DataOutputStream out) throws IOException {
             if (this.content == null) {
                 long length = HttpUtil.transferTo(this.toInputStream(), out, HttpContent.BUFFERSIZE, this.contentLength());
                 if (this.closeInputStream) {
@@ -810,7 +810,7 @@ public abstract class HttpContent implements HTTP.Message.Body {
         public byte[] toByteArray() {
         	try {
         		ByteArrayOutputStream os = new ByteArrayOutputStream();
-        		this.writeTo(os);
+        		this.writeTo(new DataOutputStream(os));
         		this.content = os.toByteArray();
         	} catch (IOException e) {
         		throw new RuntimeException(e);
@@ -860,7 +860,7 @@ public abstract class HttpContent implements HTTP.Message.Body {
             return null;
         }
 
-        public long writeTo(OutputStream out) throws IOException {
+        public long writeTo(DataOutputStream out) throws IOException {
             return 0;
         }
     }
@@ -883,7 +883,7 @@ public abstract class HttpContent implements HTTP.Message.Body {
                 return this.xhtml.streamLength();
             }
 
-            public long writeTo(OutputStream out) throws IOException {
+            public long writeTo(DataOutputStream out) throws IOException {
                 return this.xhtml.streamTo(out);
             }
 
@@ -925,10 +925,10 @@ public abstract class HttpContent implements HTTP.Message.Body {
                 return this.plain.getBytes().length;
             }
 
-            public long writeTo(OutputStream out) throws IOException {
-                byte[] bytes = this.plain.getBytes();
-                out.write(bytes);
-                return bytes.length;
+            public long writeTo(DataOutputStream out) throws IOException {
+                long startSize = out.size();
+                out.writeBytes(this.plain);
+                return out.size() - startSize;
             }
 
             @Override
@@ -961,9 +961,10 @@ public abstract class HttpContent implements HTTP.Message.Body {
                 return this.xml.length();
             }
 
-            public long writeTo(OutputStream out) throws IOException {
+            public long writeTo(DataOutputStream out) throws IOException {
+                long startSize = out.size();
                 out.write(this.xml.getBytes());
-                return this.xml.length();
+                return out.size() - startSize;
             }
 
             @Override
@@ -992,7 +993,7 @@ public abstract class HttpContent implements HTTP.Message.Body {
     /**
      * Write this content to the {@link OutputStream} {@code out}.
      */
-    abstract public long writeTo(OutputStream out) throws IOException;
+    abstract public long writeTo(DataOutputStream out) throws IOException;
 
     public HTTP.Message.Header.ContentType getContentType() {
         return this.contentType;

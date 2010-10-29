@@ -25,9 +25,7 @@ package sunlabs.asdf.web.XML;
 
 import java.io.DataOutputStream;
 import java.io.IOException;
-import java.io.OutputStream;
 import java.io.Serializable;
-import java.util.LinkedList;
 
 
 /**
@@ -413,81 +411,24 @@ public class XHTML extends XML.Node {
         return type.cast(this);
     }
 
-    public static class Document implements Serializable {
+    public static class Document extends XML.Document implements Serializable {
         private static final long serialVersionUID = 1L;
 
-        private final static byte[] DocumentType = "<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Strict//EN\" \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd\">\n".getBytes();
-
-        private java.util.List<XML.ProcessingInstruction> pi;
-        private XHTML.Html html;
+        private final static String DocumentType = "<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Strict//EN\" \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd\">\n";
 
         /**
          * Create an empty Document.
-         * See {@link XHTML.Document#add(XHTML.Html)}.
+         * See {@link XML.Document#append(sunlabs.asdf.web.XML.XML.Content...)} {@link XML.Document#append(sunlabs.asdf.web.XML.XML.ProcessingInstruction...)}
          */
         public Document() {
             super();
-            this.pi = new LinkedList<XML.ProcessingInstruction>();
+            this.append(new XML.Node(XHTML.Document.DocumentType));
         }
 
         public Document(XHTML.Html content) {
             this();
-            this.html = content;
+            this.append(content);
         }
-
-        public String toString() {
-            try {
-                return this.toString(new StringBuilder()).toString();
-            } catch (IOException cantHappen) {
-                cantHappen.printStackTrace();
-                return cantHappen.getLocalizedMessage();
-            }
-        }
-
-        public Appendable toString(Appendable appendTo) throws IOException {
-            if (this.html != null) {
-                appendTo.append(new String(XML.Prolog));
-                for (XML.ProcessingInstruction p : this.pi) {
-                    appendTo.append(p.toString()).append("\n");
-                }
-                appendTo.append(new String(XHTML.Document.DocumentType));
-                this.html.toString(appendTo);
-            }
-            return appendTo;
-        }
-
-        public long streamTo(OutputStream out) throws IOException {
-            long count = 0;
-            if (this.html != null) {
-                count += XML.Prolog.length + XHTML.Document.DocumentType.length;
-                out.write(XML.Prolog);
-                out.write(XHTML.Document.DocumentType);
-                count += this.html.streamTo(out);
-            }
-            return count;
-        }
-        
-        public long streamLength() {
-            long count = 0;
-            if (this.html != null) {
-                count += XML.Prolog.length + XHTML.Document.DocumentType.length;
-                count += this.html.streamLength();
-            }
-            return count;
-        }
-
-        public Document add(XHTML.Html html) {
-            this.html = html;
-            return this;
-        }
-        
-        public Document add(XML.ProcessingInstruction... processingInstruction) {
-            for (XML.ProcessingInstruction p : processingInstruction) {
-                this.pi.add(p);
-            }
-            return this;
-        }
-        
     }
 
     public interface Empty extends XML.Content {}
@@ -6275,11 +6216,8 @@ public class XHTML extends XML.Node {
                 (XHTML.Div) new XHTML.Div(new XHTML.Para("Goodbye World 1")).addAttribute(new XML.Attr("id", "key")),
                 (XHTML.Div) new XHTML.Div(new XHTML.Para("Goodbye World 2")).addAttribute(new XML.Attr("id", "key"))
                                          );
-        System.out.println(body.toString());
-
-        int count = XML.replaceElement(body, XHTML.Div.class, new XML.Attr("id", "key"), new XHTML.Span("replacement"), System.err, 0);
-        System.out.printf("replaced %d%n", count);
-        
-        System.out.println(body.toString());
+        XHTML.Html html = new XHTML.Html(body);
+        XHTML.Document document = new XHTML.Document(html);
+        System.out.println(document.toString());
     }
 }

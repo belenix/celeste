@@ -69,8 +69,8 @@ import sunlabs.titan.node.object.ReplicatableObject;
 import sunlabs.titan.node.object.RetrievableObject;
 import sunlabs.titan.node.object.StorableObject;
 import sunlabs.titan.node.services.AbstractTitanService;
-import sunlabs.titan.node.services.PublishDaemon;
 import sunlabs.titan.node.services.api.Publish;
+import sunlabs.titan.node.services.objectstore.PublishDaemon;
 import sunlabs.titan.util.BufferableExtent;
 import sunlabs.titan.util.BufferableExtentImpl;
 import sunlabs.titan.util.DOLRStatus;
@@ -655,9 +655,9 @@ public final class BlockObjectHandler extends AbstractObjectHandler implements B
         return object;
     }
 
-    public Serializable extensibleOperation(TitanMessage message) throws ClassCastException, TitanMessage.RemoteException, SecurityException,
+    public Serializable extensibleOperation(TitanMessage message, ExtensibleObject.Operation.Request request) throws ClassCastException, SecurityException,
         IllegalArgumentException, ClassNotFoundException, NoSuchMethodException, InstantiationException, IllegalAccessException, InvocationTargetException {
-        return ExtensibleObject.extensibleOperation(this, message);
+        return ExtensibleObject.extensibleOperation(this, request, message.getObjectId());
     }
 
     public <C> C extension(Class<? extends C> klasse, TitanGuid objectId, ExtensibleObject.Operation.Request op) throws ClassCastException, ClassNotFoundException, RemoteException {

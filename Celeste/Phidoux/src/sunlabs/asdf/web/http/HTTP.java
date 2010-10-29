@@ -320,7 +320,7 @@ public class HTTP {
          * @return the number of bytes written.
          * @throws IOException if {@code DataOutputStream} throws {@code IOException}.
          */
-        public long writeTo(OutputStream out) throws IOException;
+        public long writeTo(DataOutputStream out) throws IOException;
         
         
         /**
@@ -1166,8 +1166,6 @@ public class HTTP {
          */
         public HTTP.Message addHeader(HTTP.Message.Header...header);
         
-//        public <C extends HTTP.Message.Header> C getHeader(Class<? extends C> klasse);
-
         /**
          * Get the {@link HTTP.Message.Header} {@code name} from this {@code HTTP.Message}.
          * <p>
@@ -1192,11 +1190,10 @@ public class HTTP {
         
         public HTTP.Message.Body.MultiPart.FormData decodeMultiPartFormData() throws IOException, HTTP.BadRequestException;
 
-        // XXX This may go away.
-        public long writeTo(OutputStream out) throws IOException;
+        public long writeTo(DataOutputStream out) throws IOException;
 
         // XXX This may go away.
-        public long writeHeadTo(OutputStream out) throws IOException;
+        public long writeHeadTo(DataOutputStream out) throws IOException;
         
         /**
          * From <cite><a href="http://www.w3.org/Protocols/rfc2616/rfc2616-sec4.html#sec4.2">RFC 2616 &sect;4.2 Message Headers</a></cite>
@@ -1806,7 +1803,7 @@ public class HTTP {
              */
             public InputStream toInputStream();
             
-            public long writeTo(OutputStream out) throws IOException;
+            public long writeTo(DataOutputStream out) throws IOException;
             
             public interface MultiPart extends HTTP.Message.Body, Iterable<HTTP.Message> {
 

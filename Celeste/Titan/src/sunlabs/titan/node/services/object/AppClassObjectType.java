@@ -50,9 +50,9 @@ import sunlabs.titan.node.object.AbstractObjectHandler;
 import sunlabs.titan.node.object.RetrievableObject;
 import sunlabs.titan.node.object.StorableObject;
 import sunlabs.titan.node.services.AbstractTitanService;
-import sunlabs.titan.node.services.PublishDaemon;
 import sunlabs.titan.node.services.api.AppClass;
 import sunlabs.titan.node.services.api.Publish;
+import sunlabs.titan.node.services.objectstore.PublishDaemon;
 
 /**
  * This service currently does nothing except mark

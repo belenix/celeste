@@ -22,7 +22,7 @@ Please contact Sun Microsystems, Inc., 16 Network Circle, Menlo
 Park, CA 94025 or visit www.sun.com if you need additional
 information or have any questions.
 -->
-<project name="Phidoux" default="jars" basedir="." >
+<project name="Phidoux" default="all" basedir="." >
         <description>Build the Phidoux WebDAV/HTTP Server</description>
 
     <!-- Load up user properties first;  these can be used to override any of the properties below  -->

@@ -416,6 +416,8 @@
     <target name="clobber" depends="clean"
             description="==> Remove all built components and the generated documentation">
         <delete dir="${javadoc.dir}" />
+        <ant dir="Phidoux" output="ant.out" inheritAll="false" target="clobber"/>
+        <ant dir="Titan" output="ant.out" inheritAll="false" target="clobber"/>
     </target>
 
     <!-- =================================

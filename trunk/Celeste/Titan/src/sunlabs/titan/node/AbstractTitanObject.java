@@ -32,11 +32,12 @@ import java.util.Map;
 import java.util.TreeSet;
 
 import sunlabs.asdf.web.XML.XHTML;
+import sunlabs.asdf.web.XML.XML;
 import sunlabs.asdf.web.http.HTTP;
 import sunlabs.titan.TitanGuidImpl;
-import sunlabs.titan.api.TitanObject;
 import sunlabs.titan.api.ObjectStore;
 import sunlabs.titan.api.TitanGuid;
+import sunlabs.titan.api.TitanObject;
 import sunlabs.titan.node.object.AbstractObjectHandler;
 import sunlabs.titan.node.object.DeleteableObject;
 import sunlabs.titan.util.OrderedProperties;
@@ -144,6 +145,63 @@ public abstract class AbstractTitanObject implements TitanObject {
                         new XHTML.Table.Data((Object) this.getProperty(key.toString()))));
             }
             return new XHTML.Table(caption, thead, tbody).setClass("MetaData");
+        }
+
+        public Metadata.XMLMetadataFactory.XMLMetadata toXML() {
+            Metadata.XMLMetadataFactory xml = new XMLMetadataFactory();
+            Metadata.XMLMetadataFactory.XMLMetadata metadata = xml.newMetadata();
+            for (Object key : this.keySet()) {
+                Metadata.XMLMetadataFactory.XMLProperty property = xml.newProperty(key.toString(), this.getProperty(key.toString()));
+                metadata.add(property);
+            }
+            
+            return metadata;
+        }
+        
+        public static class XMLMetadataFactory extends XML.ElementFactoryImpl {
+            public final static String XmlNameSpace = "http://labs.oracle.com/TitanObject/Metadata/Version1";
+
+            public XMLMetadataFactory() {
+                this(new XML.NameSpace("TitanObject.Metadata", XMLMetadataFactory.XmlNameSpace));
+            }
+
+            public XMLMetadataFactory(XML.NameSpace nameSpacePrefix) {
+                super(nameSpacePrefix);
+            }
+            
+            public XMLProperty newProperty(String name, String value) {
+                return new XMLProperty(name, value);
+            }
+            
+            public XMLMetadata newMetadata() {
+                return new XMLMetadata();
+            }
+            
+            public static class XMLMetadata extends XML.Node implements XML.Content {
+                private static final long serialVersionUID = 1L;
+                public static final String name = "metadata";
+                public interface SubElement extends XML.Content {}
+                
+                public XMLMetadata() {
+                    super(XMLMetadata.name, XML.Node.EndTagDisposition.REQUIRED);
+                }
+
+                public XMLMetadata add(XMLMetadata.SubElement... content) {
+                    super.append(content);
+                    return this;
+                }
+            }        
+            
+            public static class XMLProperty extends XML.Node implements XML.Content, XMLMetadata.SubElement {
+                private static final long serialVersionUID = 1L;
+                public static final String name = "property";
+                public interface SubElement extends XML.Content {}
+                
+                public XMLProperty(String name, String value) {
+                    super(XMLProperty.name, XML.Node.EndTagDisposition.REQUIRED);
+                    this.addAttribute(new XML.Attr(name, value));
+                }            
+            }      
         }
     }
 

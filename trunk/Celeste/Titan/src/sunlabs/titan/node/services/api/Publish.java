@@ -39,7 +39,7 @@ import sunlabs.titan.node.TitanMessage;
 import sunlabs.titan.node.TitanMessage.RemoteException;
 import sunlabs.titan.node.object.AbstractObjectHandler;
 import sunlabs.titan.node.services.AbstractTitanService;
-import sunlabs.titan.node.services.PublishDaemon.GetPublishers;
+import sunlabs.titan.node.services.objectstore.GetPublishers;
 
 /**
  * Implementors of this interface are extensions of the {@link AbstractTitanService} class and cause
@@ -164,12 +164,12 @@ public interface Publish {
     /**
      * Get the set of publishers of a specified {@link TitanObject}. 
      * @param message
-     * @return {@link TitanMessage} containing an instance of {@link sunlabs.titan.node.services.PublishDaemon.GetPublishers.Response} as payload.
+     * @return {@link TitanMessage} containing an instance of {@link sunlabs.titan.node.services.objectstore.PublishDaemon.GetPublishers.Response} as payload.
      * @throws ClassCastException
      * @throws ClassNotFoundException
      * @throws RemoteException
      */
-	public TitanMessage getPublishers(TitanMessage message, GetPublishers.Request request) throws ClassCastException, ClassNotFoundException;
+	public GetPublishers.Response getPublishers(TitanMessage message, GetPublishers.Request request) throws ClassCastException, ClassNotFoundException;
 	
     /**
      * Get the set of publishers of a specified {@link TitanObject}.

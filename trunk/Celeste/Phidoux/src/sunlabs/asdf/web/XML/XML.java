@@ -23,6 +23,7 @@
  */
 package sunlabs.asdf.web.XML;
 
+import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -45,6 +46,8 @@ import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.TransformerFactoryConfigurationError;
 import javax.xml.transform.stream.StreamResult;
 import javax.xml.transform.stream.StreamSource;
+
+import sunlabs.asdf.web.http.InternetMediaType;
 
 /**
  * 
@@ -79,14 +82,51 @@ public class XML {
      * </p>
      * <pre>
      * public class XHTML implements XML.ContentGenerator {
-     *     private XML.NameSpace nameSpacePrefix;
+     *     private XML.NameSpace nameSpace;
      *     
      *     public XHTML() {
      *         this.nameSpace = new XML.NameSpace("xhtml", "http://www.w3.org/1999/xhtml");    
      *     }
+     *     
+     *     public Html newHtml() {
+     *       Html result = new XHTML.Html();
+     *       result.setNameSpace(this.getNameSpace());    
+     *       return result;
+     *     }
+     *     
+     *     public static class Html extends XML.Node implements XML.Content {
+     *       private static final long serialVersionUID = 1L;
+     *       public static final String name = "html";
+     *       public interface SubElement extends XML.Content {}
+     *       
+     *       public Html() {
+     *           super(Html.name, XML.Node.EndTagDisposition.REQUIRED);
+     *       }
+     *       
+     *       public Html add(Html.SubElement... content) {
+     *           super.append(content);
+     *           return this;
+     *       }
+     *       
+     *       public Html add(String...content) {
+     *           super.addCDATA((Object[]) content);
+     *           return this;
+     *       }
+     *   }
      * }
      * </pre>
-     * 
+     * <p>
+     * Using the ElementFactory generates elements for which the final operation must be an invocation of the {@link XML.Node#bindNameSpace()} method.
+     * </p>
+     * <p>
+     * Guidelines on whether to encode values as elements or as attributes are roughly:
+     * </p>
+     * <ul>
+     * <li>If the data could be itself marked up with elements, put it in an element.</li>
+     * <li>If the data is suitable for attribute form, but could end up as multiple attributes of the same name on the same element, use child elements instead.</li>
+     * <li>If the data is required to be in a standard DTD-like attribute type such as ID, IDREF, or ENTITY, use an attribute.</li>
+     * <li>If the data should not be normalized for white space, use elements. (XML processors normalize attributes in ways that can change the raw text of the attribute value.)</li>
+     * </ul>
      */
     public interface ElementFactory {
 
@@ -97,12 +137,48 @@ public class XML {
     }
     
     /**
+     * An extensible implementation of the {@link XML.ElementFactory} interface.
+     *
+     */
+    public static class ElementFactoryImpl implements XML.ElementFactory {
+        protected XML.NameSpace nameSpacePrefix;
+        protected long nameSpaceReferenceCount;
+        /**
+         * Construct a new XML content factory using the given {@link XML.NameSpace} specification.
+         * <p>
+         * This will create elements within the given XML name-space.
+         * </p>
+         * @param nameSpacePrefix
+         */
+        public ElementFactoryImpl(XML.NameSpace nameSpacePrefix) {
+            this.nameSpacePrefix = nameSpacePrefix;
+            this.nameSpaceReferenceCount = 0;            
+        }
+
+        public NameSpace getNameSpace() {
+            return this.nameSpacePrefix;
+        }
+    }
+    
+    /**
      * 
      *
      */
     public interface Content extends Serializable {
+        /**
+         * Set the attributes
+         */
         public XML.Node setAttribute(XML.Attribute... attributes);
+        
+        /**
+         * Get the attribute with the given name.
+         * @param name
+         */
         public XML.Attribute getAttribute(String name);
+        /**
+         * Remove the attribute with the given name.
+         * @param name
+         */
         public XML.Attribute removeAttribute(String name);
 
         /**
@@ -116,10 +192,11 @@ public class XML {
          * Get the children of this node.
          */
         public List<XML.Content> getChildren();
-        public void setSubNodes(List<XML.Content> newList);
-        public Appendable toString(Appendable appendTo) throws IOException;
         
-
+        public void setSubNodes(List<XML.Content> newList);
+        
+//        public Appendable toString(Appendable appendTo) throws IOException;
+        
         /**
          * Write a representation of this object to the {@link DataOutputStream}.
          * 
@@ -127,10 +204,8 @@ public class XML {
          * @return The number of bytes sent.
          * @throws IOException
          */
-        public long streamTo(OutputStream out) throws IOException;
-        
-        // public static T streamFrom(DataInputStream in, Object... parameter) throws IOException;
-        
+        public long streamTo(DataOutputStream out) throws IOException;
+                
         /**
          * The number of bytes streamTo() would produce if invoked.
          */
@@ -142,8 +217,6 @@ public class XML {
      * 
      */
     public interface Attribute extends Serializable {
-        public String toString();
-        public Appendable toString(Appendable appendTo) throws IOException;
         public String getName();
         public String getValue();
     }
@@ -184,33 +257,35 @@ public class XML {
         private static final String equalsQuote = "=\"";
         private static final String quote = "\"";
 
-        public Appendable toString(Appendable appendTo) throws IOException {
-            appendTo.append(this.name);
-            if (this.value != null) {
-                String escapedValue = this.value.replace("\"", "&quot");
-                appendTo.append(equalsQuote).append(escapedValue).append(quote);
-            }
-            return appendTo;
-        }
-
         @Override
         public String toString() {
-            try {
-                return this.toString(new StringBuilder()).toString();
-            } catch (IOException cantHappen) {
-                cantHappen.printStackTrace();
-                throw new RuntimeException(cantHappen);
+            StringBuilder result = new StringBuilder(this.name);
+            if (this.value != null) {
+                String escapedValue = this.value.replace("\"", "&quot");
+                result.append(equalsQuote).append(escapedValue).append(quote);
             }
+            return result.toString();            
         }
     }
 
     /**
      * Represent an entire XML document.
-     *
      */
     public static class Document {
-        protected boolean xmlInhibit = false;
+        /**
+         * If {@code true} invocations of {@link #toString()} or {@link #toString(Appendable)} will <b>not</b> contain any XML processing instructions.
+         * 
+         */
+        protected boolean piInhibit = false;
+        protected List<XML.ProcessingInstruction> piNodes;
         protected List<XML.Content> subNodes;
+        
+        protected Document() {
+            this.piInhibit = false;
+            this.subNodes = new LinkedList<XML.Content>();
+            this.piNodes = new LinkedList<XML.ProcessingInstruction>();
+            this.piNodes.add(XML.ProcessingInstruction.newXML("1.0", "utf-8"));
+        }
         
         /**
          * Class constructor specifying the XML content and whether or not to output the ?xml processing directive.
@@ -218,28 +293,38 @@ public class XML {
          * @param xmlInhibit {@code true} if the output of this document will not contain the ?xml processing directive.
          * @param content the XML content for this document.
          */
-        public Document(boolean xmlInhibit, XML.Content...content) {
-            this(content);
-            this.xmlInhibit = xmlInhibit;
+        public Document(boolean piInhibit, XML.Content...content) {
+            this();
+            this.append(content);
+            this.piInhibit = piInhibit;
         }
         
         /**
          * Class constructor specifying the XML content.
+         * The constructor differentiates between instances of {@link XML.ProcessingInstruction}, segregating those to the list of processing instructions.
+         * See {@link #setXMLInhibit(boolean)}.
          * 
-         * @param content
+         * @param content a variable list of {@link XML.Content} instances.
          */
         public Document(XML.Content...content) {
-            this.subNodes = new LinkedList<XML.Content>();
-            this.append(content);
+            this();
+            for (XML.Content c : content) {
+                if (c instanceof XML.ProcessingInstruction) {
+                    this.append((XML.ProcessingInstruction) c);
+                } else {
+                    this.append(c);
+                }
+            }
         }
         
         /**
-         * Do not output an initial &lt;?xml ?&gt; declaration.
+         * Do not output an initial &lt;?xml ?&gt; processing instruction.
+         * This is useful when creating components of another XML document.
          * 
          * @param xmlInhibit
          */
         public void setXMLInhibit(boolean xmlInhibit) {
-            this.xmlInhibit = xmlInhibit;
+            this.piInhibit = xmlInhibit;
         }
         
         public void append(XML.Content...content) {
@@ -247,28 +332,55 @@ public class XML {
                 this.subNodes.add(c);
             }
         }
+        
+        /**
+         * Add the given XML processing instructions to the preamble of this XML Document.
+         * See {@link #setXMLInhibit(boolean)}.
+         * 
+         * @param processingInstruction
+         */
+        public void append(XML.ProcessingInstruction...processingInstruction) {
+            for (XML.ProcessingInstruction c : processingInstruction) {
+                this.piNodes.add(c);
+            }
+        }
+
 
         @Override
         public String toString() {
             try {
-                return this.toString(new StringBuilder()).toString();
+                ByteArrayOutputStream bout = new ByteArrayOutputStream();
+                this.streamTo(new DataOutputStream(bout));
+                return bout.toString();
             } catch (IOException cantHappen) {
-                cantHappen.printStackTrace();
                 return cantHappen.getLocalizedMessage();
             }
         }
 
-        public Appendable toString(Appendable appendTo) throws IOException {
+        public long streamTo(DataOutputStream out) throws IOException {
+            long startingSize = out.size();
             if (this.subNodes != null) {
-                if (!this.xmlInhibit) {
-                    appendTo.append(new String(XML.Prolog));
+                if (!this.piInhibit) {
+                    for (XML.ProcessingInstruction pi : this.piNodes) {
+                        pi.streamTo(out);
+                    }
+                    out.write("\n".getBytes());
                 }
                 for (XML.Content c : this.subNodes) {
-                    c.toString(appendTo);
-                    appendTo.append("\n");
-                }                
+                    c.streamTo(out);
+                }
             }
-            return appendTo;
+            return out.size() - startingSize;
+        }
+
+        public long streamLength() {
+            ByteArrayOutputStream bout = new ByteArrayOutputStream();
+            DataOutputStream out = new DataOutputStream(bout);
+            try {
+                return this.streamTo(out);
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
         }
     }
 
@@ -297,7 +409,7 @@ public class XML {
         /**
          * Create an XML NameSpace specifying the given element name prefix {@code prefix} and the name-space URI as {@code uri}.
          * <p>
-         * If {@code prefix} is {@code null} it is ignored and the result is equivalent to using {@link #NameSpace(String)}.
+         * If {@code prefix} is {@code null} it is ignored and the result is equivalent to using {@link XML.NameSpace#NameSpace(String)}.
          * </p>
          * @param prefix the element prefix to use for this element.
          * @param uri the XML name-space URI.
@@ -318,32 +430,23 @@ public class XML {
         private static final String equalsQuote = "=\"";
         private static final String quote = "\"";
 
-        @Override
-        public Appendable toString(Appendable appendTo) throws IOException {
+        @Override        
+        public String toString() {
+            StringBuilder result = new StringBuilder();
             if (this.prefix == null) {
-                appendTo.append("xmlns");
+                result.append("xmlns");
                 if (this.value != null) {
                     String escapedValue = this.value.replace("\"", "&quot");
-                    appendTo.append(equalsQuote).append(escapedValue).append(quote);
+                    result.append(equalsQuote).append(escapedValue).append(quote);
                 }
             } else {
-                appendTo.append("xmlns:").append(this.prefix);
+                result.append("xmlns:").append(this.prefix);
                 if (this.value != null) {
                     String escapedValue = this.value.replace("\"", "&quot");
-                    appendTo.append(equalsQuote).append(escapedValue).append(quote);
+                    result.append(equalsQuote).append(escapedValue).append(quote);
                 }
             }
-            return appendTo;
-        }
-
-        @Override
-        public String toString() {
-            try {
-                return this.toString(new StringBuilder()).toString();
-            } catch (IOException cantHappen) {
-                cantHappen.printStackTrace();
-                throw new RuntimeException(cantHappen);
-            }
+            return result.toString();            
         }
     }
 
@@ -357,51 +460,67 @@ public class XML {
     public static class ProcessingInstruction extends XML.Node {
         private static final long serialVersionUID = 1L;
         
+        /**
+         * Create an {@code xml} {@link XML.ProcessingInstruction}
+         * 
+         * @param version
+         * @param encoding
+         */
+        public static XML.ProcessingInstruction newXML(String version, String encoding) {
+            XML.ProcessingInstruction result = new XML.ProcessingInstruction("xml");
+            // XXX We are leaving out the encoding attribute because although I think the order of attributes is not supposed to matter,
+            // it does matter here because later, when formatting the XML, it complains if version is not the first attribute.
+            result.addAttribute(/*new XML.Attr("encoding", encoding),*/ new XML.Attr("version", version));
+            return result;
+        }
+        
+        /**
+         * Create an {@code xml-stylesheet} {@link XML.ProcessingInstruction}
+         * 
+         * @param url
+         */
+        public static XML.ProcessingInstruction newStyleSheet(String url) {
+            XML.ProcessingInstruction result = new XML.ProcessingInstruction("xml-stylesheet");
+            result.addAttribute(new XML.Attr("type", InternetMediaType.Application.XSLT), new XML.Attr("href", url.toString()));
+            return result;
+        }
+        
         public ProcessingInstruction(String tag) {
             super(tag, XML.Node.EndTagDisposition.FORBIDDEN);
         }
         
-        public Appendable toString(Appendable out) throws IOException {
+        public long streamTo(DataOutputStream out) throws IOException {
+            long startSize = out.size();
             // If this node is just text, append it.
             if (this.pcdata != null) {
-                return out.append(this.pcdata);
+                out.writeBytes(this.pcdata);
+                return out.size() - startSize;
             }
 
-            // This should encode the xmlns attribute if and only if this node has a namespace, and the namespace is different from the parent namespace.
+            // This should encode the xmlns attribute if and only if this node has a namespace,
+            // and the namespace is different from the parent namespace.
             // For this to happen, each node needs to have a link to its parent node.
 
-            String elementName = this.getElementName();            
+            String elementName = this.getElementName();
             
-            out.append(openQuestion);
-            out.append(elementName);          
+            out.writeBytes(openQuestion);            
+            out.writeBytes(elementName);
 
             if (this.attrs != null) {
                 for (String key : this.attrs.keySet()) {
-                    out.append(space).append(this.attrs.get(key).toString());
+                    out.writeBytes(space);
+                    out.writeBytes(this.attrs.get(key).toString());
                 }
             }
-
-//            if (this.endTag == EndTagDisposition.ABBREVIABLE) {
-//                if (this.pcdata == null && this.getChildren().size() == 0) {
-//                    out.append(slashCloseAngle);
-//                } else {
-//                    out.append(closeAngle);
-//                    for (XML.Content n : this.getChildren()) {
-//                        n.toString(out);
-//                    }
-//                    out.append(openAngleSlash);
-//                    out.append(elementName).append(closeAngle);
-//                }
-//            } else if (this.endTag == EndTagDisposition.FORBIDDEN) {
-                out.append(questionCloseAngle);
-//            } else {
-//                out.append(closeAngle);
-//                for (XML.Content n : this.getChildren()) {
-//                    n.toString(out);
-//                }
-//                out.append(openAngleSlash);
-//                out.append(elementName).append(closeAngle);
-//            }
+            out.writeBytes(questionCloseAngle);            
+            out.writeBytes("\n");
+            return out.size() - startSize;
+        }
+        
+        public Appendable toString(Appendable out) throws IOException {
+            ByteArrayOutputStream bout = new ByteArrayOutputStream();
+            this.streamTo(new DataOutputStream(bout));
+            out.append(bout.toString());
             return out;
         }
     }
@@ -482,7 +601,9 @@ public class XML {
          */
         public Node(String tag, EndTagDisposition endTag, XML.ElementFactory factory) {
             this.factory = factory;
-            this.nameSpace = factory.getNameSpace();
+            if (factory != null) {
+                this.nameSpace = factory.getNameSpace();
+            }
 
             this.pcdata = null;
 
@@ -499,15 +620,7 @@ public class XML {
          * @param endTag the {@code EndTagDisposition} for this node.
          */
         public Node(String tag, EndTagDisposition endTag) {
-            this.factory = null;
-            this.nameSpace = null;
-
-            this.pcdata = null;
-
-            this.tag = tag;
-            this.attrs = new TreeMap<String,XML.Attribute>();
-            this.endTag = endTag;
-            this.subNodes = new LinkedList<XML.Content>();
+            this(tag, endTag, null);
         }
 
         public Node addCDATA(Object... cdata) {
@@ -563,7 +676,8 @@ public class XML {
         }
         
         /**
-         * Bind this Node's name-space using the prefix and XML name-space defined for this Node.
+         * Bind this Node's name-space using the prefix and XML name-space defined for this Node (see {@link #setNameSpace(NameSpace)}).
+         * 
          * The effect of this operation is to set an attribute in the node specifying the {@code xmlns} value.
          * <p>
          * This method should be eliminated in favour of a mechanism that automatically binds all name-space definitions to elements and sub-elements in one recursive operation.
@@ -633,7 +747,8 @@ public class XML {
         /**
          * Compute this node's fully qualified element name.
          * <p>
-         * The fully qualified element name includes the node's name-space prefix (if appropriate).
+         * The fully qualified element name includes the node's name-space prefix (if defined for this node).
+         * See {@link #bindNameSpace()}.
          * </p>
          */
         protected String getElementName() {
@@ -649,170 +764,76 @@ public class XML {
         
         @Override
         public String toString() {
+            ByteArrayOutputStream bout = new ByteArrayOutputStream();
             try {
-                return this.toString(new StringBuilder()).toString();
+                this.streamTo(new DataOutputStream(bout));
+                return bout.toString();
             } catch (IOException e) {
-                e.printStackTrace();
                 throw new RuntimeException(e);
             }
         }
-
-        public Appendable toString(Appendable out) throws IOException {
-            // If this node is just text, append it.
-            if (this.pcdata != null) {
-                return out.append(this.pcdata);
-            }
-
-            // This should encode the xmlns attribute if and only if this node has a namespace, and the namespace is different from the parent namespace.
-            // For this to happen, each node needs to have a link to its parent node.
-
-            String elementName = this.getElementName();            
-            
-            out.append(openAngle);
-
-            out.append(elementName);          
-
-            if (this.attrs != null) {
-                for (String key : this.attrs.keySet()) {
-                    out.append(space).append(this.attrs.get(key).toString());
-                }
-            }
-
-            if (this.endTag == EndTagDisposition.ABBREVIABLE) {
-                if (this.pcdata == null && this.getChildren().size() == 0) {
-                    out.append(slashCloseAngle);
-                } else {
-                    out.append(closeAngle);
-                    for (XML.Content n : this.getChildren()) {
-                        n.toString(out);
-                    }
-                    out.append(openAngleSlash);
-                    out.append(elementName).append(closeAngle);
-                }
-            } else if (this.endTag == EndTagDisposition.FORBIDDEN) {
-                out.append(slashCloseAngle);
-            } else {
-                out.append(closeAngle);
-                for (XML.Content n : this.getChildren()) {
-                    n.toString(out);
-                }
-                out.append(openAngleSlash);
-                out.append(elementName).append(closeAngle);
-            }
-            return out;
-        }
-
-        private long streamTo(OutputStream out, Object...objects) throws IOException {
-            long count = 0;
+        
+        private long streamTo(DataOutputStream out, Object...objects) throws IOException {
+            long startSize = out.size();
             for (Object o : objects) {
                 if (o != null) {
-                    byte[] bytes;
                     if (o instanceof byte[]) {
-                        bytes = (byte[]) o;
+                        out.write((byte[]) o);
                     } else {
-                        bytes = o.toString().getBytes();
+                        out.writeBytes(o.toString());
                     }
-                    out.write(bytes);
-                    count += bytes.length;
                 }
-            }
-            return count;
+            }            
+            return out.size() - startSize;
         }
-
-        public long streamTo(OutputStream out) throws IOException {
+        
+        public long streamTo(DataOutputStream out) throws IOException {
             if (this.pcdata != null) {
                 return this.streamTo(out, this.pcdata);
             }
-            long count = 0;
+            long startSize = out.size();
             String elementName = this.getElementName();
-           
-            count += this.streamTo(out, openAngleBytes, elementName);
+
+            this.streamTo(out, openAngleBytes, elementName);
 
             if (this.attrs != null) {
                 for (String key : this.attrs.keySet()) {
-                    count += this.streamTo(out, spaceBytes, this.attrs.get(key));
+                    this.streamTo(out, spaceBytes, this.attrs.get(key));
                 }
             }
 
             if (this.endTag == EndTagDisposition.ABBREVIABLE) {
                 if (this.pcdata == null && this.getChildren().size() == 0) {
-                    count += this.streamTo(out, slashCloseAngleBytes);
+                    this.streamTo(out, slashCloseAngleBytes);
                 } else {
-                    count += this.streamTo(out, closeAngleBytes);
+                    this.streamTo(out, closeAngleBytes);
                     for (XML.Content n : this.getChildren()) {
-                        count += n.streamTo(out);
+                        n.streamTo(out);
                     }
-                    count += this.streamTo(out, openAngleSlashBytes, elementName, closeAngleBytes);
+                    this.streamTo(out, openAngleSlashBytes, elementName, closeAngleBytes);
                 }
             } else if (this.endTag == EndTagDisposition.FORBIDDEN) {
-                count += this.streamTo(out, slashCloseAngleBytes);
+                this.streamTo(out, slashCloseAngleBytes);
             } else {
-                count += this.streamTo(out, closeAngleBytes);
+                this.streamTo(out, closeAngleBytes);
 
                 for (XML.Content n : this.getChildren()) {
-                    count += n.streamTo(out);
+                    n.streamTo(out);
                 }
-                count += this.streamTo(out, openAngleSlashBytes, elementName, closeAngleBytes);
+                this.streamTo(out, openAngleSlashBytes, elementName, closeAngleBytes);
             }
-            return count;
-        }
-
-        private long streamLength(Object...objects) {
-            long count = 0;
-            for (Object o : objects) {
-                if (o != null) {
-                    byte[] bytes;
-                    if (o instanceof byte[]) {
-                        bytes = (byte[]) o;
-                    } else {
-                        bytes = o.toString().getBytes();
-                    }
-                    count += bytes.length;
-                }
-            }
-            return count;
+            return out.size() - startSize;
         }
 
         public long streamLength() {
-            if (this.pcdata != null) {
-                return this.streamLength(this.pcdata);
+            ByteArrayOutputStream bout = new ByteArrayOutputStream();
+            DataOutputStream out = new DataOutputStream(bout);
+            try {
+                long length = this.streamTo(out);
+                return length;
+            } catch (IOException e) {
+                throw new RuntimeException(e);
             }
-
-            String elementName = this.getElementName();
-            
-            long count = this.streamLength(openAngleBytes, elementName);
-
-            if (this.attrs != null) {
-                for (String key : this.attrs.keySet()) {
-                    count += this.streamLength(spaceBytes, this.attrs.get(key));
-                }
-            }
-
-            if (this.endTag == EndTagDisposition.ABBREVIABLE) {
-                if (this.pcdata == null && this.getChildren().size() == 0) {
-                    count += this.streamLength(slashCloseAngleBytes);
-                } else {
-                    count += this.streamLength(closeAngleBytes);
-                    for (XML.Content n : this.getChildren()) {
-                        count += n.streamLength();
-                    }
-                    count += this.streamLength(openAngleSlashBytes, elementName, closeAngleBytes);
-                }
-            } else if (this.endTag == EndTagDisposition.FORBIDDEN) {
-                count += this.streamLength(slashCloseAngleBytes);
-            } else {
-                count += this.streamLength(closeAngleBytes);
-
-                for (XML.Content n : this.getChildren()) {
-                    count += n.streamLength();
-                }
-                count += this.streamLength(openAngleSlashBytes, elementName, closeAngleBytes);
-            }
-            
-            if (count != this.toString().length()) {
-                System.out.printf("node length discrepency (unicode?): actual %d reported %d '%s'%n", this.toString().length(), count, this.toString());
-            }
-            return count;
         }
     }
 
@@ -944,8 +965,7 @@ public class XML {
         }
 
         
-        XML.ProcessingInstruction stylesheet = new XML.ProcessingInstruction("xml-stylesheet");
-        stylesheet.addAttribute(new XML.Attr("type", "text/xsl"));
+        XML.ProcessingInstruction stylesheet = XML.ProcessingInstruction.newStyleSheet("/foo.xsl");
         XML.Document document = new XML.Document(stylesheet, cell);
 
         System.out.printf("%s%n", document);

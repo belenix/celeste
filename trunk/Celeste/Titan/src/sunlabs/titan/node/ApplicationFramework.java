@@ -988,7 +988,7 @@ public final class ApplicationFramework implements TitanServiceFramework, XHTMLI
             ApplicationFramework.fillAppInfo(infoList, app.getClass());
             //this.log.info("infoList: %s", infoList.toString());
 
-            AppClass appClass = (AppClass) this.node.getService("sunlabs.titan.node.services.object.AppClassObjectType");
+            AppClass appClass = (AppClass) this.node.getService(AppClassObjectType.class);
             AppClass.AppClassObject object = appClass.create(id, infoList);
             try {
                 this.node.getObjectStore().create(object);
@@ -1003,18 +1003,6 @@ public final class ApplicationFramework implements TitanServiceFramework, XHTMLI
                 ioe.printStackTrace(System.err);
             }
         } catch (NullPointerException e) {
-            throw new RuntimeException(e);
-        } catch (ClassNotFoundException e) {
-            throw new RuntimeException(e);
-        } catch (IllegalArgumentException e) {
-            throw new RuntimeException(e);
-        } catch (NoSuchMethodException e) {
-            throw new RuntimeException(e);
-        } catch (InstantiationException e) {
-            throw new RuntimeException(e);
-        } catch (IllegalAccessException e) {
-            throw new RuntimeException(e);
-        } catch (InvocationTargetException e) {
             throw new RuntimeException(e);
         } finally {
             this.log.exiting();

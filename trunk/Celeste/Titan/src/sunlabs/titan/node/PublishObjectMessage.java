@@ -25,7 +25,7 @@ package sunlabs.titan.node;
 
 import sunlabs.titan.api.TitanGuid;
 import sunlabs.titan.node.object.AbstractObjectHandler;
-import sunlabs.titan.node.services.PublishDaemon;
+import sunlabs.titan.node.services.objectstore.PublishDaemon;
 
 /**
  * Compose the Beehive Publish-Object message.

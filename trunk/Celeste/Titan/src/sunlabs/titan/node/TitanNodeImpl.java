@@ -81,12 +81,12 @@ import sunlabs.titan.node.object.TitanObjectHandler;
 import sunlabs.titan.node.object.nodeobject.NodeObject;
 import sunlabs.titan.node.object.nodeobject.NodeObjectHandler;
 import sunlabs.titan.node.services.HTTPMessageService;
-import sunlabs.titan.node.services.PublishDaemon;
 import sunlabs.titan.node.services.ReflectionService;
 import sunlabs.titan.node.services.RoutingDaemon;
 import sunlabs.titan.node.services.api.MessageService;
 import sunlabs.titan.node.services.api.Publish;
 import sunlabs.titan.node.services.census.CensusService;
+import sunlabs.titan.node.services.objectstore.PublishDaemon;
 import sunlabs.titan.node.services.xml.TitanXML;
 import sunlabs.titan.node.services.xml.TitanXML.XMLNode;
 import sunlabs.titan.node.util.DOLRLogger;
@@ -1168,6 +1168,35 @@ public class TitanNodeImpl implements TitanNode, NodeMBean {
         return reply;
     }
 
+    public TitanMessage sendToNodeExactly(TitanNodeId nodeId, TitanGuid objectId, String objectClass, String method, Serializable data) throws NoSuchNodeException, ClassCastException, RemoteException, ClassNotFoundException {
+        TitanMessage msg = new TitanMessage(TitanMessage.Type.RouteToNode,
+                this.getNodeAddress(),
+                nodeId,
+                objectId,
+                objectClass,
+                method,
+                TitanMessage.Transmission.UNICAST,
+                TitanMessage.Route.EXACTLY,
+                data);
+
+        TitanMessage reply = this.receive(msg);
+        
+        if (reply.getStatus().equals(DOLRStatus.THROWABLE)) {
+            try {
+                reply.getPayload(Serializable.class, this);
+            } catch (RemoteException e) {
+                if (e.getCause() instanceof TitanNode.NoSuchNodeException) {
+                    throw (TitanNode.NoSuchNodeException) e.getCause();
+                }
+                throw e;
+            }            
+        }
+        if (reply.getStatus().equals(DOLRStatus.SERVICE_UNAVAILABLE)) {
+            this.getLogger().info("NoSuchNodeException: %5.5s...", nodeId);
+            throw new TitanNode.NoSuchNodeException(nodeId, "%s %s", nodeId, reply.getStatus());
+        }
+        return reply;
+    }
     public TitanMessage sendToObject(TitanGuid objectId, String klasse, String method, Serializable data) {
         // It would be interesting to have a MULTICAST route-to-object
         // message which is sent to each known object.

@@ -73,7 +73,7 @@ public class WebDAVNameSpace extends NameSpace {
         try {
             // XXX There is some problem in the interaction between the HTTP.Message.Body.toInputStream() and the DocumentBuilder that makes the builder hang waiting for input.
             ByteArrayOutputStream os = new ByteArrayOutputStream();
-            request.getMessage().getBody().writeTo(os);
+            request.getMessage().getBody().writeTo(new DataOutputStream(os));
             return parseXMLBody(new ByteArrayInputStream(os.toByteArray()));
         } catch (IOException e) {
             throw new RuntimeException(e);

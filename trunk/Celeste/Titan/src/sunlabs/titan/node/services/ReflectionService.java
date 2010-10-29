@@ -43,6 +43,7 @@ import sunlabs.titan.node.TitanMessage.RemoteException;
 import sunlabs.titan.node.object.InspectableObject;
 import sunlabs.titan.node.services.api.Publish;
 import sunlabs.titan.node.services.api.Reflection;
+import sunlabs.titan.node.services.objectstore.PublishDaemon;
 
 public final class ReflectionService extends AbstractTitanService implements Reflection, ReflectionServiceMBean {
     private final static long serialVersionUID = 1L;

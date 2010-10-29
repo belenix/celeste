@@ -26,12 +26,12 @@ package sunlabs.asdf.web.http;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.DataOutputStream;
 import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
-import java.io.ObjectStreamException;
 import java.io.OutputStream;
 import java.io.PushbackInputStream;
 import java.io.UnsupportedEncodingException;
@@ -189,7 +189,7 @@ public class HttpRequest implements HTTP.Request {
         return result.toString();
     }
 
-    public long writeTo(OutputStream out) throws IOException {
+    public long writeTo(DataOutputStream out) throws IOException {
         byte[] uriBytes = this.requestURI.toString().getBytes();
 
         out.write(this.method.toString().getBytes());

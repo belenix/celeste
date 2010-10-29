@@ -33,13 +33,11 @@ import sunlabs.asdf.util.Time;
 import sunlabs.asdf.util.TimeProfiler;
 import sunlabs.asdf.web.XML.XHTML;
 import sunlabs.asdf.web.XML.XML;
-import sunlabs.asdf.web.XML.XML.NameSpace;
 import sunlabs.asdf.web.XML.Xxhtml;
 import sunlabs.asdf.web.http.HTTP;
 import sunlabs.asdf.web.http.HttpContent;
 import sunlabs.asdf.web.http.HttpMessage;
 import sunlabs.asdf.web.http.HttpResponse;
-import sunlabs.asdf.web.http.InternetMediaType;
 import sunlabs.titan.Release;
 import sunlabs.titan.TitanGuidImpl;
 import sunlabs.titan.api.TitanGuid;
@@ -51,6 +49,7 @@ import sunlabs.titan.node.TitanMessage.RemoteException;
 import sunlabs.titan.node.TitanNodeIdImpl;
 import sunlabs.titan.node.services.AbstractTitanService;
 import sunlabs.titan.node.services.Census;
+import sunlabs.titan.node.services.HTTPMessageService;
 import sunlabs.titan.util.OrderedProperties;
 
 /**
@@ -285,56 +284,31 @@ public class CensusService extends AbstractTitanService implements Census {
         }
     }
     
-    /**
-     * 
-     *
-     */
-    public static class ElementFactoryImpl implements XML.ElementFactory {
-        protected XML.NameSpace nameSpacePrefix;
-        protected long nameSpaceReferenceCount;
-        /**
-         * Construct a new XML content factory using the given {@link sunlabs.asdf.web.xml XML.NameSpace} specification.
-         * <p>
-         * This will create elements within the given XML name-space.
-         * </p>
-         * @param nameSpacePrefix
-         */
-        public ElementFactoryImpl(XML.NameSpace nameSpacePrefix) {
-            this.nameSpacePrefix = nameSpacePrefix;
-            this.nameSpaceReferenceCount = 0;            
-        }
+    public static class SelectXML extends XML.ElementFactoryImpl {
+        public final static String XmlNameSpace = "http://labs.oracle.com/" + SelectXML.class.getCanonicalName();
 
-        public NameSpace getNameSpace() {
-            return this.nameSpacePrefix;
-        }
-        
-    }
-    public static class SelectXML extends ElementFactoryImpl {
-
-        public final static String XmlNameSpace = "http://labs.oracle.com/CensusService/Select/Response/Version1";
-
-        public SelectXML() {
-            this(new XML.NameSpace("CensusService", SelectXML.XmlNameSpace));
-        }
-        
         public XMLProperty newProperty(Object key, Object value) {
-            XMLProperty result = new SelectXML.XMLProperty(key.toString(), value.toString());
+            XMLProperty result = new SelectXML.XMLProperty(this, key.toString(), value.toString());
             result.setNameSpace(this.getNameSpace());    
             return result;
         }
 
         public XMLReport newReport(TitanNodeId nodeId) {
-            XMLReport result = new SelectXML.XMLReport(nodeId);
+            XMLReport result = new SelectXML.XMLReport(this, nodeId);
             result.setNameSpace(this.getNameSpace());    
             return result;
         }
 
         public XMLResponse newReponse() {
-            XMLResponse result = new SelectXML.XMLResponse();
+            XMLResponse result = new SelectXML.XMLResponse(this);
             result.setNameSpace(this.getNameSpace());    
             return result;
         }
 
+        public SelectXML() {
+            this(new XML.NameSpace("CensusService", SelectXML.XmlNameSpace));
+        }
+        
         public SelectXML(XML.NameSpace nameSpacePrefix) {
             super(nameSpacePrefix);
         }
@@ -354,8 +328,8 @@ public class CensusService extends AbstractTitanService implements Census {
             public static final String name = "select-response";
             public interface SubElement extends XML.Content {}
             
-            public XMLResponse() {
-                super(XMLResponse.name, XML.Node.EndTagDisposition.REQUIRED);
+            public XMLResponse(XML.ElementFactory factory) {
+                super(XMLResponse.name, XML.Node.EndTagDisposition.REQUIRED, factory);
             }
             
             public XMLResponse add(XMLResponse.SubElement... content) {
@@ -368,13 +342,14 @@ public class CensusService extends AbstractTitanService implements Census {
                 return this;
             }
         }
+        
         public static class XMLReport extends XML.Node implements XML.Content, XMLResponse.SubElement {
             private static final long serialVersionUID = 1L;
             public static final String name = "report";
             public interface SubElement extends XML.Content {}
             
-            public XMLReport(TitanNodeId nodeId) {
-                super(XMLReport.name, XML.Node.EndTagDisposition.REQUIRED);
+            public XMLReport(XML.ElementFactory factory, TitanNodeId nodeId) {
+                super(XMLReport.name, XML.Node.EndTagDisposition.REQUIRED, factory);
                 this.addAttribute(new XML.Attr("titanNodeId", nodeId));
             }
             
@@ -394,8 +369,8 @@ public class CensusService extends AbstractTitanService implements Census {
             public static final String name = "property";
             public interface SubElement extends XML.Content {}
             
-            public XMLProperty(String name, String value) {
-                super(XMLProperty.name, XML.Node.EndTagDisposition.ABBREVIABLE);
+            public XMLProperty(XML.ElementFactory factory, String name, String value) {
+                super(XMLProperty.name, XML.Node.EndTagDisposition.ABBREVIABLE, factory);
                 this.addAttribute(new XML.Attr("name", name), new XML.Attr("value", value));
             }
         }
@@ -620,11 +595,9 @@ public class CensusService extends AbstractTitanService implements Census {
                 }
             }
 
-
-            Map<TitanNodeId,OrderedProperties> list = this.selectFromCatalogue(count, excluded, comparatorList);
-            Select.Response response = new Select.Response(list);
+            Select.Response response = new Select.Response(this.selectFromCatalogue(count, excluded, comparatorList));
             XML.Content xml = response.toXML();
-            XML.Document document = this.makeXMLDocument(xml, "/xsl/titan/CensusService/Select.xsl");
+            XML.Document document = new XML.Document(XML.ProcessingInstruction.newStyleSheet(String.format("/xsl/%s.xsl", Select.class.getName())), xml);
 
             //        String xml = applyXSLT("/xsl/titan/CensusService/Select.xsl", document);
 
@@ -652,18 +625,6 @@ public class CensusService extends AbstractTitanService implements Census {
             this.log.fine("%s", response);
         }
         return response;
-    }
-
-    private XML.Document makeXMLDocument(XML.Content xml, String...stylesheets) {
-        XML.Document document = new XML.Document();
-        for (String s : stylesheets) {
-            XML.Node stylesheet = new XML.ProcessingInstruction("xml-stylesheet")
-                .addAttribute(new XML.Attr("type", InternetMediaType.Application.XSLT), new XML.Attr("href", s));
-            document.append(stylesheet);
-        }
-        document.append(xml);
-
-        return document;
     }
     
     public interface ReportDaemonMBean extends ThreadMBean {

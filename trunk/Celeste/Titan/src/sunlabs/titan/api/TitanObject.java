@@ -33,6 +33,7 @@ import java.util.Set;
 
 import sunlabs.asdf.util.Time;
 import sunlabs.asdf.web.XML.XHTML;
+import sunlabs.asdf.web.XML.XML;
 import sunlabs.asdf.web.http.HTTP;
 import sunlabs.titan.node.object.TitanObjectHandler;
 
@@ -160,13 +161,11 @@ public interface TitanObject extends /*XHTMLInspectable,*/ Serializable {
 
         public void load(InputStream inStream) throws IOException;
 
-//        public void loadFromXML(InputStream in) throws IOException;
-//
-//        public void storeToXML(OutputStream os) throws IOException;
-
         public Set<Object> keySet();
 
         public XHTML.EFlow toXHTMLTable(URI uri, Map<String,HTTP.Message> props);
+
+        public XML.Content toXML();
     }
 
     /**

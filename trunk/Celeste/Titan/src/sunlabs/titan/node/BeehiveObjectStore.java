@@ -27,7 +27,6 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InterruptedIOException;
-import java.lang.reflect.InvocationTargetException;
 import java.net.URI;
 import java.util.Iterator;
 import java.util.Map;
@@ -48,8 +47,8 @@ import sunlabs.titan.api.TitanGuid;
 import sunlabs.titan.api.TitanObject;
 import sunlabs.titan.exception.BeehiveException;
 import sunlabs.titan.node.services.HTTPMessageService;
-import sunlabs.titan.node.services.PublishDaemon;
 import sunlabs.titan.node.services.api.Publish;
+import sunlabs.titan.node.services.objectstore.PublishDaemon;
 import sunlabs.titan.node.services.xml.TitanXML;
 import sunlabs.titan.node.services.xml.TitanXML.XMLObject;
 import sunlabs.titan.node.services.xml.TitanXML.XMLObjectStore;
@@ -790,7 +789,7 @@ public final class BeehiveObjectStore implements ObjectStore {
      */
     private Publish.PublishUnpublishResponse unlockAndPublish(TitanObject object, boolean trace) throws ClassNotFoundException, BeehiveObjectPool.Exception, BeehiveObjectStore.Exception {
     	try {
-    		Publish publish = (Publish) this.node.getService("sunlabs.titan.node.services.PublishDaemon");
+    		Publish publish = (Publish) this.node.getService(PublishDaemon.class);
 
     		Publish.PublishUnpublishResponse result = publish.publish(object);
     		return result;	    
@@ -810,18 +809,6 @@ public final class BeehiveObjectStore implements ObjectStore {
             this.fileStore.remove(object.getObjectId());
             throw e;
         } catch (IllegalArgumentException e) {
-            this.fileStore.remove(object.getObjectId());
-            throw new RuntimeException(e);
-        } catch (NoSuchMethodException e) {
-            this.fileStore.remove(object.getObjectId());
-            throw new RuntimeException(e);
-        } catch (InstantiationException e) {
-            this.fileStore.remove(object.getObjectId());
-            throw new RuntimeException(e);
-        } catch (IllegalAccessException e) {
-            this.fileStore.remove(object.getObjectId());
-            throw new RuntimeException(e);
-        } catch (InvocationTargetException e) {
             this.fileStore.remove(object.getObjectId());
             throw new RuntimeException(e);
         } finally {

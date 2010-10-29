@@ -73,7 +73,7 @@ public class ExtensibleObject {
          * @throws ClassCastException 
          * @see ExtensibleObject#extensibleOperation(BeehiveObjectHandler, TitanMessage)
          */
-        public Serializable extensibleOperation(TitanMessage message) throws ClassCastException, TitanMessage.RemoteException, SecurityException,
+        public Serializable extensibleOperation(TitanMessage message, ExtensibleObject.Operation.Request request) throws ClassCastException, TitanMessage.RemoteException, SecurityException,
             IllegalArgumentException, ClassNotFoundException, NoSuchMethodException, InstantiationException, IllegalAccessException, InvocationTargetException;
 
         /**
@@ -299,14 +299,10 @@ public class ExtensibleObject {
      * @throws IllegalArgumentException 
      * @throws SecurityException
      */
-    public static Serializable extensibleOperation(TitanObjectHandler handler, TitanMessage message) throws ClassCastException, TitanMessage.RemoteException,
-    ClassNotFoundException, SecurityException, IllegalArgumentException, NoSuchMethodException, InstantiationException, IllegalAccessException, InvocationTargetException {
-        ExtensibleObject.Operation.Request request = message.getPayload(ExtensibleObject.Operation.Request.class, handler.getNode());
-        ExtensibleOperation operation = request.operation;
-        TitanGuid objectId = message.getObjectId();
-
+    public static Serializable extensibleOperation(TitanObjectHandler handler, ExtensibleObject.Operation.Request request, TitanGuid objectId) throws ClassNotFoundException, SecurityException, IllegalArgumentException, NoSuchMethodException, InstantiationException, IllegalAccessException, InvocationTargetException {
+        // XXX Could this make a memory leak?  A different class loaded for every request?
         JarClassLoader classLoader = request.getClassLoader();
-        Callable<Serializable> extension = classLoader.construct(request.getClassToUse(), operation, objectId, handler);
+        Callable<Serializable> extension = classLoader.construct(request.getClassToUse(), request.operation, objectId, handler);
         try {
             Serializable result = extension.call();
             return result;

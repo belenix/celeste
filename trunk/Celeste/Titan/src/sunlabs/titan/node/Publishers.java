@@ -39,6 +39,7 @@ import sunlabs.asdf.util.AbstractStoredMap;
 import sunlabs.asdf.util.ObjectLock;
 import sunlabs.asdf.util.Time;
 import sunlabs.asdf.web.XML.XHTML;
+import sunlabs.asdf.web.XML.XML;
 import sunlabs.asdf.web.http.HTTP;
 import sunlabs.titan.TitanGuidImpl;
 import sunlabs.titan.api.ObjectStore;
@@ -47,6 +48,7 @@ import sunlabs.titan.api.TitanNodeId;
 import sunlabs.titan.api.TitanObject;
 import sunlabs.titan.node.object.DeleteableObject;
 import sunlabs.titan.node.services.HTTPMessageService;
+import sunlabs.titan.node.services.objectstore.GetPublishers.ResponseXML.PublishersXML;
 import sunlabs.titan.node.util.DOLRLogger;
 
 /**
@@ -247,6 +249,67 @@ public class Publishers extends AbstractStoredMap<TitanGuid, HashSet<Publishers.
         	result[2] = new XHTML.Table.Data("%s", secondsToLive);
         	result[3] = new XHTML.Table.Data(HTTPMessageService.inspectServiceXHTML(this.getObjectClass()));
         	return result;
+        }
+        
+        /*
+         * Doing the XML this way seems complicated.  I need a way to create an XML element containing a representation of class variables.
+         * Each of these variables may also be a class instance which has additional class variables that need representations.
+         * So the whole thing is nested XML elements, each element representing a class instance (apart from intrinsic types like int, long).
+         * Also some variables are represented as attributes, others as nested XML elements.  How to choose one or the other?
+         * 
+         * If the data could be itself marked up with elements, put it in an element.
+         * If the data is suitable for attribute form, but could end up as multiple attributes of the same name on the same element, use child elements instead.
+         * If the data is required to be in a standard DTD-like attribute type such as ID, IDREF, or ENTITY, use an attribute.
+         * If the data should not be normalized for white space, use elements. (XML processors normalize attributes in ways that can change the raw text of the attribute value.)
+         * 
+         */
+        public static class PublishRecordXML extends XML.Node implements PublishersXML.SubElement, XML.Content {
+            private static final long serialVersionUID = 1L;
+            public static final String name = "publisher";
+            public interface SubElement extends XML.Content {}
+            
+            public PublishRecordXML(PublishRecord record) {
+                super(PublishRecordXML.name, XML.Node.EndTagDisposition.REQUIRED);
+                this.addAttribute(new XML.Attr("titanNodeId", record.getNodeAddress().format()));
+                this.addAttribute(new XML.Attr("titanGuidId", record.getObjectId()));
+                this.addAttribute(new XML.Attr("expireTime", record.getExpireTimeSeconds()));
+                this.add(record.getMetadata().toXML());                
+            }
+            
+            public PublishRecordXML add(PublishRecordXML.SubElement... content) {
+                super.append(content);
+                return this;
+            }
+            
+            public PublishRecordXML add(XML.Content... content) {
+                super.append(content);
+                return this;
+            }
+        }
+        
+        public PublishRecordXML toXML() {
+            return new PublishRecordXML(this);            
+        }
+    }
+    
+
+    public static class XMLPublishRecord extends XML.Node implements XML.Content {
+        private static final long serialVersionUID = 1L;
+        public static final String name = "publish-record";
+        public interface SubElement extends XML.Content {}
+        
+        public XMLPublishRecord() {
+            super(XMLPublishRecord.name, XML.Node.EndTagDisposition.REQUIRED);
+        }
+        
+        public XMLPublishRecord add(XMLPublishRecord.SubElement... content) {
+            super.append(content);
+            return this;
+        }
+        
+        public XMLPublishRecord add(String...content) {
+            super.addCDATA((Object[]) content);
+            return this;
         }
     }
 

@@ -23,11 +23,11 @@
  */
 package sunlabs.titan.node.services;
 
-import java.io.Serializable;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import sunlabs.asdf.web.XML.XML;
 import sunlabs.titan.api.TitanGuid;
 import sunlabs.titan.api.TitanNodeId;
 import sunlabs.titan.api.TitanService;
@@ -62,7 +62,8 @@ public interface Census extends TitanService {
         }
 
         public interface Response extends TitanService.Response {
-
+            
+            public XML.Content toXML();
         }
     }
 

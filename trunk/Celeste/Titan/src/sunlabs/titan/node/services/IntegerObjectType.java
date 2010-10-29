@@ -41,6 +41,7 @@ import sunlabs.titan.node.TitanMessage;
 import sunlabs.titan.node.object.AbstractObjectHandler;
 import sunlabs.titan.node.object.MutableObject;
 import sunlabs.titan.node.services.api.Publish;
+import sunlabs.titan.node.services.objectstore.PublishDaemon;
 
 public class IntegerObjectType extends AbstractObjectHandler implements MutableObject.Handler<MutableObject.Handler.ObjectAPI> {
     private static final long serialVersionUID = 1L;

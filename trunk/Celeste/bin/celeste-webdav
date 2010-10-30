@@ -55,7 +55,6 @@ case `uname -s` in
         ;;
 esac
 
-#EXEC="${JAVA} ${JVMOPTS} -jar ${CELESTEHOME}/dist/celeste-webdav.jar --celeste-address ${CELESTEADDR}"
-EXEC="${JAVA} ${JVMOPTS} -cp ${CELESTEHOME}/dist/celeste.jar sunlabs.celeste.client.application.WebDAVServer --celeste-address ${CELESTEADDR}"
+EXEC="${JAVA} ${JVMOPTS} -Djava.util.logging.config.file=./etc/logging.properties -cp ${CELESTEHOME}/dist/celeste.jar sunlabs.celeste.client.application.WebDAVServer --celeste-address ${CELESTEADDR}"
 echo ${EXEC} "$@"
 exec ${EXEC} "$@"

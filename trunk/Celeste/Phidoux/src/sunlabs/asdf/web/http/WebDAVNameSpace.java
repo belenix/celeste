@@ -24,7 +24,6 @@
 package sunlabs.asdf.web.http;
 
 import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -39,6 +38,9 @@ import java.util.Map;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
+import javax.xml.transform.TransformerConfigurationException;
+import javax.xml.transform.TransformerException;
+import javax.xml.transform.TransformerFactoryConfigurationError;
 
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
@@ -51,8 +53,8 @@ import sunlabs.asdf.web.XML.XHTML;
 import sunlabs.asdf.web.XML.XML;
 import sunlabs.asdf.web.http.HTTP.ForbiddenException;
 import sunlabs.asdf.web.http.HTTP.LockedException;
-import sunlabs.asdf.web.http.HTTP.MethodNotAllowedException;
 import sunlabs.asdf.web.http.HTTP.Message.Header.Depth.Level;
+import sunlabs.asdf.web.http.HTTP.MethodNotAllowedException;
 import sunlabs.asdf.web.http.WebDAV.DAVAllprop;
 import sunlabs.asdf.web.http.WebDAV.DAVLockDiscovery;
 import sunlabs.asdf.web.http.WebDAV.DAVMultistatus;
@@ -69,15 +71,7 @@ public class WebDAVNameSpace extends NameSpace {
     protected WebDAV.Backend backend;
 
     public static Document parseXMLBody(HTTP.Request request) throws HTTP.BadRequestException, HTTP.InternalServerErrorException {
-
-        try {
-            // XXX There is some problem in the interaction between the HTTP.Message.Body.toInputStream() and the DocumentBuilder that makes the builder hang waiting for input.
-            ByteArrayOutputStream os = new ByteArrayOutputStream();
-            request.getMessage().getBody().writeTo(new DataOutputStream(os));
-            return parseXMLBody(new ByteArrayInputStream(os.toByteArray()));
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+        return parseXMLBody(request.getMessage().getBody().toInputStream());
     }
 
     public static Document parseXMLBody(byte[] bytes) throws HTTP.BadRequestException, HTTP.InternalServerErrorException {
@@ -91,10 +85,12 @@ public class WebDAVNameSpace extends NameSpace {
             dbf.setIgnoringComments(true);
             dbf.setNamespaceAware(true);
 
+            dbf.setExpandEntityReferences(false);
+
             DocumentBuilder db = dbf.newDocumentBuilder();
             Document doc = db.parse(in);
             in.close();
-            doc.getDocumentElement().normalize();
+            //doc.getDocumentElement().normalize();
             return doc;
         } catch (ParserConfigurationException e) {
             throw new HTTP.InternalServerErrorException(e.toString(), e);            
@@ -250,14 +246,11 @@ public class WebDAVNameSpace extends NameSpace {
 
             HTTP.Response.Status status = HTTP.Response.Status.INTERNAL_SERVER_ERROR;
             if (destination.exists()) {
-                System.out.printf("Copy: %s exists as a %s%n", destination, destination.isCollection() ? "collection" : "file");
                 if (!overwriteHeader.getOverwrite()) {
-                    System.out.printf("Copy: do not overwrite %s%n", destination);
                     throw new HTTP.PreconditionFailedException(destination.getURI(), "Attempted to overwrite existing resource, and overwrite flag is false.");
                 }
 
                 // Delete the destination.
-                System.out.printf("Copy: overwrite %s%n", destination);
                 WebDAVNameSpace.RecursiveOperation deleteOperation = new WebDAVNameSpace.DeleteOperation(ifHeader);
 
                 DAVMultistatus result = WebDAVNameSpace.treeWalk2(destination, HTTP.Message.Header.Depth.Level.INFINITY, deleteOperation);
@@ -272,7 +265,17 @@ public class WebDAVNameSpace extends NameSpace {
                     DAV.MultiStatus multiStatus = resultErrors.toXML(new DAV());
                     multiStatus.bindNameSpace();
                     XML.Document document = new XML.Document(multiStatus);
-                    return new HttpResponse(HTTP.Response.Status.MULTI_STATUS, new HttpContent.Text.XML(document));
+                    try {
+                        return new HttpResponse(HTTP.Response.Status.MULTI_STATUS, new HttpContent.Text.XML(document));
+                    } catch (TransformerConfigurationException e) {
+                        throw new HTTP.InternalServerErrorException(request.getURI(), e);
+                    } catch (TransformerFactoryConfigurationError e) {
+                        throw new HTTP.InternalServerErrorException(request.getURI(), e);
+                    } catch (TransformerException e) {
+                        throw new HTTP.InternalServerErrorException(request.getURI(), e);
+                    } finally {
+
+                    }
                 }
                 status = HTTP.Response.Status.NO_CONTENT;
             } else {
@@ -325,7 +328,17 @@ public class WebDAVNameSpace extends NameSpace {
                     DAV.MultiStatus multiStatus = resultErrors.toXML(new DAV());
                     multiStatus.bindNameSpace();
                     XML.Document document = new XML.Document(multiStatus);
-                    return new HttpResponse(HTTP.Response.Status.MULTI_STATUS, new HttpContent.Text.XML(document));
+                    try {
+                        return new HttpResponse(HTTP.Response.Status.MULTI_STATUS, new HttpContent.Text.XML(document));
+                    } catch (TransformerConfigurationException e) {
+                        throw new HTTP.InternalServerErrorException(request.getURI(), e);
+                    } catch (TransformerFactoryConfigurationError e) {
+                        throw new HTTP.InternalServerErrorException(request.getURI(), e);
+                    } catch (TransformerException e) {
+                        throw new HTTP.InternalServerErrorException(request.getURI(), e);
+                    } finally {
+
+                    }
                 }
 
                 return new HttpResponse(status);
@@ -346,10 +359,13 @@ public class WebDAVNameSpace extends NameSpace {
                 this.ifHeader = ifHeader;
             }
 
+            // The "pre" operation for the copy is to create the collections.
+            // The actual copy of a file resource is done in the "post" operation.
             public WebDAV.DAVResponse preOperation(WebDAV.Resource source, Level depthLevel, WebDAVNameSpace.RecursiveOperation operation) {
                 // Compute the shared name of the source with the destination.
                 // Copying /a/b/c from the source collection /a to collection /z results in a new resource /z/b/c
                 int length = this.fromRoot.getPath().length();
+                
                 String relativeName = source.getURI().getPath().substring(length);
                 if (relativeName.length() != 0) {
                     relativeName = "/" + relativeName;                    
@@ -389,7 +405,6 @@ public class WebDAVNameSpace extends NameSpace {
                 } catch (URISyntaxException e) {
                     return new WebDAV.DAVResponse(source.getURI(), new WebDAV.DAVStatus(HTTP.Response.Status.BAD_REQUEST), this.destinationRoot.getPath() + relativeName);
                 } catch (HTTP.Exception e) {
-//                    System.out.printf("pre: %s%n", e.toString());
                     return new WebDAV.DAVResponse(source.getURI(), new WebDAV.DAVStatus(e.getStatus()));
                 }
             }
@@ -432,8 +447,7 @@ public class WebDAVNameSpace extends NameSpace {
         }
 
         public HTTP.Response execute(HTTP.Request request, HTTP.Identity identity) throws HTTP.UnauthorizedException,
-        HTTP.InternalServerErrorException,
-        HTTP.GoneException,
+        HTTP.InternalServerErrorException, HTTP.GoneException,
         HTTP.NotFoundException,
         HTTP.BadRequestException,
         HTTP.ConflictException,
@@ -463,7 +477,17 @@ public class WebDAVNameSpace extends NameSpace {
                 DAV.MultiStatus multiStatus = resultErrors.toXML(new DAV());
                 multiStatus.bindNameSpace();
                 XML.Document document = new XML.Document(multiStatus);
-                return new HttpResponse(HTTP.Response.Status.MULTI_STATUS, new HttpContent.Text.XML(document));
+                try {
+                    return new HttpResponse(HTTP.Response.Status.MULTI_STATUS, new HttpContent.Text.XML(document));
+                } catch (TransformerConfigurationException e) {
+                    throw new HTTP.InternalServerErrorException(request.getURI(), e);
+                } catch (TransformerFactoryConfigurationError e) {
+                    throw new HTTP.InternalServerErrorException(request.getURI(), e);
+                } catch (TransformerException e) {
+                    throw new HTTP.InternalServerErrorException(request.getURI(), e);
+                } finally {
+
+                }
             }
 
             return new HttpResponse(HTTP.Response.Status.NO_CONTENT);
@@ -690,7 +714,6 @@ public class WebDAVNameSpace extends NameSpace {
                     if (resourceLocks.size() == 0) {
                         throw new HTTP.PreconditionFailedException(resource.getURI(), "Resource is not locked.  No refresh.");
                     }
-                    System.out.printf("locks: %s%n", resourceLocks);
                     for (WebDAV.Resource lockedResource : resourceLocks.keySet()) {
                         WebDAV.DAVLockDiscovery lock = resourceLocks.get(lockedResource);
                         // For each of the lockdiscovery sets, {@code lock}, find the lock with the state-token as the lock-token.
@@ -704,7 +727,20 @@ public class WebDAVNameSpace extends NameSpace {
                             XML.Node body = dav.newProp(lock.toXML(dav));
                             body.bindNameSpace();
 
-                            return new HttpResponse(HTTP.Response.Status.OK, new HttpContent.Text.XML(new XML.Document(body)));
+                            try {
+                                return new HttpResponse(HTTP.Response.Status.OK, new HttpContent.Text.XML(new XML.Document(body)));
+                            } catch (TransformerConfigurationException e) {
+                                // TODO Auto-generated catch block
+                                e.printStackTrace();
+                            } catch (TransformerFactoryConfigurationError e) {
+                                // TODO Auto-generated catch block
+                                e.printStackTrace();
+                            } catch (TransformerException e) {
+                                // TODO Auto-generated catch block
+                                e.printStackTrace();
+                            } finally {
+
+                            }
                         }
                     }
                     throw new HTTP.PreconditionFailedException(request.getURI(), String.format("Resource not in the scope of lock token %s", stateToken));
@@ -749,22 +785,56 @@ public class WebDAVNameSpace extends NameSpace {
                     XML.Node body = dav.newProp(lockDiscovery.toXML(dav));
                     body.bindNameSpace();
 
-                    HttpContent content = new HttpContent.Text.XML(new XML.Document(body));
+                    try {
+                        HttpContent content = new HttpContent.Text.XML(new XML.Document(body));
 
-                    HttpResponse response = new HttpResponse(HTTP.Response.Status.CREATED, content);
-                    response.getMessage().addHeader(new HttpHeader.LockToken(lockToken));
-                    return response;
+                        HttpResponse response = new HttpResponse(HTTP.Response.Status.CREATED, content);
+                        response.getMessage().addHeader(new HttpHeader.LockToken(lockToken));
+                        return response;
+                    } catch (TransformerConfigurationException e) {
+                        throw new HTTP.InternalServerErrorException(request.getURI(), e);
+                    } catch (TransformerFactoryConfigurationError e) {
+                        throw new HTTP.InternalServerErrorException(request.getURI(), e);
+                    } catch (TransformerException e) {
+                        throw new HTTP.InternalServerErrorException(request.getURI(), e);
+                    } finally {
+
+                    }
                 }
 
                 WebDAV.DAVLockDiscovery existingLock = resource.getLock();
                 if (existingLock.size() > 0) {
-                    System.out.printf("Already locked%n%s%n", XML.formatXMLDocument(existingLock.toXML(new DAV()).bindNameSpace().toString()));
+                    try {
+                        System.out.printf("Already locked%n%s%n", XML.formatXMLDocument(existingLock.toXML(new DAV()).bindNameSpace().toString()));
+                    } catch (TransformerConfigurationException e) {
+                        e.printStackTrace();
+                    } catch (TransformerFactoryConfigurationError e) {
+                        e.printStackTrace();
+                    } catch (TransformerException e) {
+                        e.printStackTrace();
+                    }
                     for (WebDAV.DAVActiveLock lock : existingLock) {
                         if (lock.getLockScope().isExclusive()) {
-                            throw new HTTP.LockedException(resource.getURI(), XML.formatXMLDocument(existingLock.toXML(new DAV()).bindNameSpace().toString()));
+                            try {
+                                throw new HTTP.LockedException(resource.getURI(), XML.formatXMLDocument(existingLock.toXML(new DAV()).bindNameSpace().toString()));
+                            } catch (TransformerConfigurationException e) {
+                                e.printStackTrace();
+                            } catch (TransformerFactoryConfigurationError e) {
+                                e.printStackTrace();
+                            } catch (TransformerException e) {
+                                e.printStackTrace();
+                            }
                         } else { // lock is a shared lock
                             if (lockInfo.getScope().isExclusive()) {
-                                throw new HTTP.LockedException(resource.getURI(), XML.formatXMLDocument(existingLock.toXML(new DAV()).bindNameSpace().toString()));
+                                try {
+                                    throw new HTTP.LockedException(resource.getURI(), XML.formatXMLDocument(existingLock.toXML(new DAV()).bindNameSpace().toString()));
+                                } catch (TransformerConfigurationException e) {
+                                    e.printStackTrace();
+                                } catch (TransformerFactoryConfigurationError e) {
+                                    e.printStackTrace();
+                                } catch (TransformerException e) {
+                                    e.printStackTrace();
+                                }
                             }
                         }
                         // Add another shared lock to this resource.
@@ -783,11 +853,21 @@ public class WebDAVNameSpace extends NameSpace {
                         XML.Node body = dav.newProp(lockDiscovery.toXML(dav));
                         body.bindNameSpace();
 
-                        HttpContent content = new HttpContent.Text.XML(new XML.Document(body));
+                        try {
+                            HttpContent content = new HttpContent.Text.XML(new XML.Document(body));
 
-                        HttpResponse response = new HttpResponse(HTTP.Response.Status.OK, content);
-                        response.getMessage().addHeader(new HttpHeader.LockToken(lockToken));
-                        return response;
+                            HttpResponse response = new HttpResponse(HTTP.Response.Status.OK, content);
+                            response.getMessage().addHeader(new HttpHeader.LockToken(lockToken));
+                            return response;
+                        } catch (TransformerConfigurationException e) {
+                            throw new HTTP.InternalServerErrorException(request.getURI(), e);
+                        } catch (TransformerFactoryConfigurationError e) {
+                            throw new HTTP.InternalServerErrorException(request.getURI(), e);
+                        } catch (TransformerException e) {
+                            throw new HTTP.InternalServerErrorException(request.getURI(), e);
+                        } finally {
+
+                        }
                     }
                 } else {
                     // Generate a lockdiscovery property.
@@ -807,12 +887,21 @@ public class WebDAVNameSpace extends NameSpace {
                     DAV dav = new DAV();
                     XML.Node body = dav.newProp(lockDiscovery.toXML(dav));
                     body.bindNameSpace();
+                    try {
+                        HttpContent content = new HttpContent.Text.XML(new XML.Document(body));
 
-                    HttpContent content = new HttpContent.Text.XML(new XML.Document(body));
+                        HttpResponse response = new HttpResponse(HTTP.Response.Status.OK, content);
+                        response.getMessage().addHeader(new HttpHeader.LockToken(lockToken));
+                        return response;
+                    } catch (TransformerConfigurationException e) {
+                        throw new HTTP.InternalServerErrorException(request.getURI(), e);
+                    } catch (TransformerFactoryConfigurationError e) {
+                        throw new HTTP.InternalServerErrorException(request.getURI(), e);
+                    } catch (TransformerException e) {
+                        throw new HTTP.InternalServerErrorException(request.getURI(), e);
+                    } finally {
 
-                    HttpResponse response = new HttpResponse(HTTP.Response.Status.OK, content);
-                    response.getMessage().addHeader(new HttpHeader.LockToken(lockToken));
-                    return response;
+                    }
                 }
             }
 
@@ -845,7 +934,7 @@ public class WebDAVNameSpace extends NameSpace {
         HTTP.UnsupportedMediaTypeException {
             HTTP.Message.Body content = request.getMessage().getBody();
 
-            if (content.contentLength() > 0) {
+            if (content != null && content.contentLength() > 0) {
                 throw new HTTP.UnsupportedMediaTypeException();
             }
 
@@ -923,7 +1012,17 @@ public class WebDAVNameSpace extends NameSpace {
                     DAV.MultiStatus multiStatus = resultErrors.toXML(new DAV());
                     multiStatus.bindNameSpace();
                     XML.Document document = new XML.Document(multiStatus);
-                    return new HttpResponse(HTTP.Response.Status.MULTI_STATUS, new HttpContent.Text.XML(document));
+                    try {
+                        return new HttpResponse(HTTP.Response.Status.MULTI_STATUS, new HttpContent.Text.XML(document));
+                    } catch (TransformerConfigurationException e) {
+                        throw new HTTP.InternalServerErrorException(request.getURI(), e);
+                    } catch (TransformerFactoryConfigurationError e) {
+                        throw new HTTP.InternalServerErrorException(request.getURI(), e);
+                    } catch (TransformerException e) {
+                        throw new HTTP.InternalServerErrorException(request.getURI(), e);
+                    } finally {
+
+                    }
                 }
 
                 status = HTTP.Response.Status.NO_CONTENT;
@@ -945,7 +1044,17 @@ public class WebDAVNameSpace extends NameSpace {
                 DAV.MultiStatus multiStatus = resultErrors.toXML(new DAV());
                 multiStatus.bindNameSpace();
                 XML.Document document = new XML.Document(multiStatus);
-                return new HttpResponse(HTTP.Response.Status.MULTI_STATUS, new HttpContent.Text.XML(document));
+                try {
+                    return new HttpResponse(HTTP.Response.Status.MULTI_STATUS, new HttpContent.Text.XML(document));
+                } catch (TransformerConfigurationException e) {
+                    throw new HTTP.InternalServerErrorException(request.getURI(), e);
+                } catch (TransformerFactoryConfigurationError e) {
+                    throw new HTTP.InternalServerErrorException(request.getURI(), e);
+                } catch (TransformerException e) {
+                    throw new HTTP.InternalServerErrorException(request.getURI(), e);
+                } finally {
+
+                }
             }
             return new HttpResponse(status);
         }
@@ -1241,6 +1350,10 @@ public class WebDAVNameSpace extends NameSpace {
             Element propfindElement = doc.getDocumentElement();
             NodeList propfindNodes = propfindElement.getChildNodes();
 
+//            HTTP.Message.Header litmus = request.getMessage().getHeader("X-Litmus");
+//            if (litmus.getFieldValue().equals("props: 18 (propget)")) {
+//                System.out.printf("breakpoint%n");
+//            }
             for (int i = 0; i < propfindNodes.getLength(); i++) {
                 Node n = propfindNodes.item(i);
                 if (n.getNodeType() == Node.ELEMENT_NODE) {
@@ -1251,8 +1364,19 @@ public class WebDAVNameSpace extends NameSpace {
 
                         DAV.MultiStatus multiStatus = result.toXML(new DAV());
                         multiStatus.bindNameSpace();
+                        System.out.printf("multistatus %s%n", multiStatus.toString());
                         XML.Document document = new XML.Document(multiStatus);
-                        return new HttpResponse(HTTP.Response.Status.MULTI_STATUS, new HttpContent.Text.XML(document));
+                        try {
+                            return new HttpResponse(HTTP.Response.Status.MULTI_STATUS, new HttpContent.Text.XML(document));
+                        } catch (TransformerConfigurationException e) {
+                            throw new HTTP.InternalServerErrorException(request.getURI(), e);
+                        } catch (TransformerFactoryConfigurationError e) {
+                            throw new HTTP.InternalServerErrorException(request.getURI(), e);
+                        } catch (TransformerException e) {
+                            throw new HTTP.InternalServerErrorException(request.getURI(), e);
+                        } finally {
+
+                        }
                     } else if (n.getLocalName().compareTo("allprop") == 0) {
                         WebDAVNameSpace.RecursiveOperation propfindAllPropOperation = new PropfindAllpropOperation(new WebDAV.DAVAllprop(n.getChildNodes()));
 
@@ -1261,7 +1385,17 @@ public class WebDAVNameSpace extends NameSpace {
                         DAV.MultiStatus multiStatus = result.toXML(new DAV());
                         multiStatus.bindNameSpace();
                         XML.Document document = new XML.Document(multiStatus);
-                        return new HttpResponse(HTTP.Response.Status.MULTI_STATUS, new HttpContent.Text.XML(document));                               
+                        try {
+                            return new HttpResponse(HTTP.Response.Status.MULTI_STATUS, new HttpContent.Text.XML(document));
+                        } catch (TransformerConfigurationException e) {
+                            throw new HTTP.InternalServerErrorException(request.getURI(), e);
+                        } catch (TransformerFactoryConfigurationError e) {
+                            throw new HTTP.InternalServerErrorException(request.getURI(), e);
+                        } catch (TransformerException e) {
+                            throw new HTTP.InternalServerErrorException(request.getURI(), e);
+                        } finally {
+
+                        }                          
                     } else if (n.getLocalName().compareTo("propname") == 0) {
                         WebDAVNameSpace.RecursiveOperation propfindOperation = new PropfindPropnameOperation(new WebDAV.DAVAllprop(n.getChildNodes()));
                         
@@ -1270,7 +1404,17 @@ public class WebDAVNameSpace extends NameSpace {
                         DAV.MultiStatus multiStatus = result.toXML(new DAV());
                         multiStatus.bindNameSpace();
                         XML.Document document = new XML.Document(multiStatus);
-                        return new HttpResponse(HTTP.Response.Status.MULTI_STATUS, new HttpContent.Text.XML(document));                        
+                        try {
+                            return new HttpResponse(HTTP.Response.Status.MULTI_STATUS, new HttpContent.Text.XML(document));
+                        } catch (TransformerConfigurationException e) {
+                            throw new HTTP.InternalServerErrorException(request.getURI(), e);
+                        } catch (TransformerFactoryConfigurationError e) {
+                            throw new HTTP.InternalServerErrorException(request.getURI(), e);
+                        } catch (TransformerException e) {
+                            throw new HTTP.InternalServerErrorException(request.getURI(), e);
+                        } finally {
+
+                        }                   
                     } else if (n.getLocalName().compareTo("include") == 0) {
                         WebDAVNameSpace.RecursiveOperation propfindOperation = new PropfindIncludeOperation(new WebDAV.DAVInclude(n.getChildNodes()));
                         
@@ -1280,10 +1424,21 @@ public class WebDAVNameSpace extends NameSpace {
                         DAV.MultiStatus multiStatus = result.toXML(new DAV());
                         multiStatus.bindNameSpace();
                         XML.Document document = new XML.Document(multiStatus);
-                        return new HttpResponse(HTTP.Response.Status.MULTI_STATUS, new HttpContent.Text.XML(document));
+                        try {
+                            return new HttpResponse(HTTP.Response.Status.MULTI_STATUS, new HttpContent.Text.XML(document));
+                        } catch (TransformerConfigurationException e) {
+                            throw new HTTP.InternalServerErrorException(request.getURI(), e);
+                        } catch (TransformerFactoryConfigurationError e) {
+                            throw new HTTP.InternalServerErrorException(request.getURI(), e);
+                        } catch (TransformerException e) {
+                            throw new HTTP.InternalServerErrorException(request.getURI(), e);
+                        } finally {
+
+                        }
                     } else {
                         throw new HTTP.BadRequestException(String.format("Unknown propfind element '%s'", n.getLocalName()));
                     }
+                    
                 }
             }
             throw new HTTP.BadRequestException();
@@ -1509,7 +1664,17 @@ public class WebDAVNameSpace extends NameSpace {
             DAV.MultiStatus multiStatus = result.toXML(new DAV());
             multiStatus.bindNameSpace();
             XML.Document document = new XML.Document(multiStatus);
-            return new HttpResponse(HTTP.Response.Status.MULTI_STATUS, new HttpContent.Text.XML(document));
+            try {
+                return new HttpResponse(HTTP.Response.Status.MULTI_STATUS, new HttpContent.Text.XML(document));
+            } catch (TransformerConfigurationException e) {
+                throw new HTTP.InternalServerErrorException(request.getURI(), e);
+            } catch (TransformerFactoryConfigurationError e) {
+                throw new HTTP.InternalServerErrorException(request.getURI(), e);
+            } catch (TransformerException e) {
+                throw new HTTP.InternalServerErrorException(request.getURI(), e);
+            } finally {
+
+            }
         }
         
         public static class PropertyUpdateOperation implements WebDAVNameSpace.RecursiveOperation {
@@ -1785,6 +1950,7 @@ public class WebDAVNameSpace extends NameSpace {
                     /**/
                 }
             }
+            
             DAVResponse postResult = operation.postOperation(resource, depthLevel, operation, preResult);
             response.add(postResult);
         } catch (HTTP.Exception e){

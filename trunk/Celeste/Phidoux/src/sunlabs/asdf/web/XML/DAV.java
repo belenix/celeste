@@ -185,7 +185,7 @@ public class DAV implements XML.ElementFactory {
      * All parameters that are <em>not</em> an instance of {@link XML.Attribute} or {@link ActiveLock.SubElement} are ignored.
      */
     public DAV.ActiveLock newActiveLock(Object...objects) {
-        DAV.ActiveLock result = new DAV.ActiveLock();
+        DAV.ActiveLock result = new DAV.ActiveLock(this);
         result.factory = this;
         for (Object o : objects) {
             if (o instanceof XML.Attribute) {
@@ -840,22 +840,23 @@ public class DAV implements XML.ElementFactory {
         public static final String name = "activelock";
         
         public ActiveLock(XML.ElementFactory factory) {
-            this.factory = factory;            
-        }
-        
-        public ActiveLock() {
             super(ActiveLock.name, XML.Node.EndTagDisposition.ABBREVIABLE);
+            this.factory = factory;
         }
         
-        public ActiveLock(XML.Attribute...attributes) {
-            this();
-            this.addAttribute(attributes);
-        }
+//        public ActiveLock() {
+//            super(ActiveLock.name, XML.Node.EndTagDisposition.ABBREVIABLE);
+//        }
         
-        public ActiveLock(XML.Content...content) {
-            this();
-            this.add(content);
-        }
+//        public ActiveLock(XML.Attribute...attributes) {
+//            this();
+//            this.addAttribute(attributes);
+//        }
+        
+//        public ActiveLock(XML.Content...content) {
+//            this();
+//            this.add(content);
+//        }
 
         public ActiveLock add(XML.Content...content) {
             super.append(content);

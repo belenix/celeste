@@ -41,10 +41,7 @@ import java.util.Set;
 import java.util.TimeZone;
 import java.util.UUID;
 
-import sunlabs.asdf.web.http.Base64;
-import sunlabs.asdf.web.http.HTTP;
-import sunlabs.asdf.web.http.InternetMediaType;
-import sunlabs.asdf.web.http.HTTP.ConflictException;
+import sunlabs.asdf.web.http.HTTP.BadRequestException;
 import sunlabs.asdf.web.http.HttpUtil.PathName;
 
 /**
@@ -1068,7 +1065,7 @@ public abstract class HttpHeader implements HTTP.Message.Header {
         }
         
         public boolean evaluate(HTTP.Resource...affectedResources)
-        throws HTTP.BadRequestException, HTTP.InternalServerErrorException, HTTP.NotFoundException, HTTP.GoneException, HTTP.UnauthorizedException, ConflictException {
+        throws HTTP.BadRequestException, HTTP.InternalServerErrorException, HTTP.NotFoundException, HTTP.GoneException, HTTP.UnauthorizedException, HTTP.ConflictException {
             this.parse();
             System.out.printf("IF.evaluate submitted state-tokens: %s%n", this.submittedTokens);
             

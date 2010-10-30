@@ -1881,6 +1881,9 @@ public class WebDAV {
          * <p>
          * The given Map becomes the set of properties returned on a subsequent invocation of {@link #getProperties()}.
          * </p>
+         * <p>
+         * Implementors must be careful to ensure that properties are stored with the UTF-8 character set.  See {@link OutputStreamWriter}. 
+         * </p>
          * 
          * @param properties the {@link Collection} of {@link WebDAV.Resource.Property} to set.
          *
@@ -2126,7 +2129,7 @@ public class WebDAV {
                     Node node = nodes.item(0);
                     
                     if (node != null) {
-                        this.value = String.valueOf(node.getTextContent());
+                        this.value = node.getTextContent();
                     }
                 }
             }
@@ -2141,7 +2144,7 @@ public class WebDAV {
              */
             public Property(String nameSpace, String name, String value) {
                 this.name = new Property.Name(nameSpace, name);
-                this.value = value == null ? null : String.valueOf(value);
+                this.value = value == null ? null : value;
             }
             
             /**
@@ -2307,11 +2310,11 @@ public class WebDAV {
             }
             
             /**
-             * Convert a canonical property name into name-space and name components.
+             * Convert a canonical property name into namespace and name components.
              *  
              * @see #canonicalisePropertyName(String, String)
              * @param canonicalName
-             * @return a String containing the property's name-space and name components
+             * @return a 2 element String array containing the property's namespace and name components
              */
             public static String[] fromCanonicalName(String canonicalName) {
                 String[] tokens = canonicalName.split("}", 2);

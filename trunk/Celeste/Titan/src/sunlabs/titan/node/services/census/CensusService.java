@@ -25,6 +25,9 @@ import java.util.TreeMap;
 import java.util.logging.Level;
 
 import javax.management.JMException;
+import javax.xml.transform.TransformerConfigurationException;
+import javax.xml.transform.TransformerException;
+import javax.xml.transform.TransformerFactoryConfigurationError;
 
 import sunlabs.asdf.jmx.JMX;
 import sunlabs.asdf.jmx.ThreadMBean;
@@ -601,7 +604,21 @@ public class CensusService extends AbstractTitanService implements Census {
 
             //        String xml = applyXSLT("/xsl/titan/CensusService/Select.xsl", document);
 
-            return new HttpResponse(HTTP.Response.Status.OK, new HttpContent.Text.XML(XML.formatXMLDocument(document.toString())));
+            try {
+                return new HttpResponse(HTTP.Response.Status.OK, new HttpContent.Text.XML(XML.formatXMLDocument(document.toString())));
+            } catch (TransformerConfigurationException e) {
+                // TODO Auto-generated catch block
+                e.printStackTrace();
+            } catch (TransformerFactoryConfigurationError e) {
+                // TODO Auto-generated catch block
+                e.printStackTrace();
+            } catch (TransformerException e) {
+                // TODO Auto-generated catch block
+                e.printStackTrace();
+            } finally {
+                
+            }
+            return null;
         } catch (UnsupportedEncodingException e) {
             return new HttpResponse(HTTP.Response.Status.BAD_REQUEST, new HttpContent.Text.Plain(e.toString()));
         } finally {

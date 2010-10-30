@@ -1,5 +1,5 @@
 /*
- * Copyright 2010 Sun Microsystems, Inc. All Rights Reserved.
+ * Copyright 2007-2010 Oracle. All Rights Reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER
  *
  * This code is free software; you can redistribute it and/or modify
@@ -17,11 +17,10 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
  * 02110-1301 USA
  *
- * Please contact Sun Microsystems, Inc., 16 Network Circle, Menlo
- * Park, CA 94025 or visit www.sun.com if you need additional
- * information or have any questions.
+ * Please contact Oracle Corporation, 500 Oracle Parkway, Redwood Shores, CA 94065
+ * or visit www.oracle.com if you need additional information or
+ * have any questions.
  */
-
 package sunlabs.asdf.web.http;
 
 import java.net.InetAddress;
@@ -48,10 +47,9 @@ public class WebDAVServerMain {
         return new InetSocketAddress(tokens[0], Integer.parseInt(tokens[1]));
     }
 
-    public static void main(String args[]) {       
-
+    public static void main(String args[]) {
         int httpPort = 8081;
-        int clientTimeOutMillis = 10000;
+        int clientTimeOutMillis = 100000;
         
         Stack<String> options = new Stack<String>();
         for (int i = args.length - 1; i >= 0; i--) {

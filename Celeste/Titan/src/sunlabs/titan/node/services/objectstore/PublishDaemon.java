@@ -37,6 +37,9 @@ import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 
 import javax.management.JMException;
+import javax.xml.transform.TransformerConfigurationException;
+import javax.xml.transform.TransformerException;
+import javax.xml.transform.TransformerFactoryConfigurationError;
 
 import sunlabs.asdf.jmx.ThreadMBean;
 import sunlabs.asdf.util.Attributes;
@@ -524,19 +527,27 @@ public final class PublishDaemon extends AbstractTitanService implements Publish
         }
         
         Set<Publishers.PublishRecord> publishers = this.getPublishers(message.getObjectId());
-        
+      
         GetPublishers.Response response = new GetPublishers.Response(publishers);
         
         XML.Content xml = response.toXML();
-        XML.Document document = new XML.Document(xml);
-//        Select.Response response = new Select.Response(list);
-//        XML.Content xml = response.toXML();
-//        XML.Document document = this.makeXMLDocument(xml, "/xsl/titan/CensusService/Select.xsl");
+        XML.Document document = new XML.Document(XML.ProcessingInstruction.newStyleSheet(String.format("/xsl/%s.xsl", response.getClass().getName())), xml);
 
         //        String xml = applyXSLT("/xsl/titan/CensusService/Select.xsl", document);
-
-//        return new HttpResponse(HTTP.Response.Status.OK, new HttpContent.Text.XML(XML.formatXMLDocument(document.toString())));     
-        return new HttpResponse(HTTP.Response.Status.OK, new HttpContent.Text.XML(document));        
+  
+        try {
+            return new HttpResponse(HTTP.Response.Status.OK, new HttpContent.Text.XML(document));
+        } catch (TransformerConfigurationException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        } catch (TransformerFactoryConfigurationError e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        } catch (TransformerException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }   
+        return null;
     }
 	
     public Set<Publishers.PublishRecord> getPublishers(TitanGuid objectId) throws ClassNotFoundException, ClassCastException {

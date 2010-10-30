@@ -50,6 +50,10 @@ import java.util.ListIterator;
 import java.util.Map;
 import java.util.Set;
 
+import javax.xml.transform.TransformerConfigurationException;
+import javax.xml.transform.TransformerException;
+import javax.xml.transform.TransformerFactoryConfigurationError;
+
 import sunlabs.asdf.web.XML.XHTML;
 import sunlabs.asdf.web.http.HTTP.Message;
 import sunlabs.asdf.web.http.HttpUtil.PathName1;
@@ -947,7 +951,7 @@ public abstract class HttpContent implements HTTP.Message.Body {
 
         	private String xml;
 
-            public XML(sunlabs.asdf.web.XML.XML.Document document) {
+            public XML(sunlabs.asdf.web.XML.XML.Document document) throws TransformerConfigurationException, TransformerFactoryConfigurationError, TransformerException {
                 super(new HttpHeader.ContentType(InternetMediaType.Text.XML));
                 this.xml = sunlabs.asdf.web.XML.XML.formatXMLDocument(document.toString());
             }

@@ -973,17 +973,29 @@ public class HTTP {
             UNUSED_306("Unused 306", 306),
             TEMPORARY_REDIRECT("Temporary Redirect", 307),
 
+            /** HTTP Status 400 - Bad Request */
             BAD_REQUEST("Bad Request", 400),
+            /** HTTP Status 401 - Unauthorized */
             UNAUTHORIZED("Unauthorized", 401),
+            /** HTTP Status 402 - Payment Required */
             PAYMENT_REQUIRED("Payment Required", 402),
+            /** HTTP Status 403 - Forbidden */
             FORBIDDEN("Forbidden", 403),
+            /** HTTP Status 404 - Not Found */
             NOT_FOUND("Not Found", 404),
+            /** HTTP Status 405 - Method Not Allowed */
             METHOD_NOT_ALLOWED("Method Not Allowed", 405),
+            /** HTTP Status 406 - Not Acceptable */
             NOT_ACCEPTABLE("Not Acceptable", 406),
+            /** HTTP Status 407 - Proxy Authentication Required */
             PROXY_AUTHENTICATION_REQUIRED("Proxy Authentication Required", 407),
+            /** HTTP Status 408 - Request Timeout */
             REQUEST_TIMEOUT("Request Timeout", 408),
+            /** HTTP Status 409 - Conflict */
             CONFLICT("Conflict", 409),
+            /** HTTP Status 410 - Gone */
             GONE("Gone", 410),
+            /** HTTP Status 411 - Length Required */
             LENGTH_REQUIRED("Length Required", 411),
             
             /**

@@ -143,6 +143,7 @@ public class XML {
     public static class ElementFactoryImpl implements XML.ElementFactory {
         protected XML.NameSpace nameSpacePrefix;
         protected long nameSpaceReferenceCount;
+        
         /**
          * Construct a new XML content factory using the given {@link XML.NameSpace} specification.
          * <p>
@@ -364,7 +365,7 @@ public class XML {
                     for (XML.ProcessingInstruction pi : this.piNodes) {
                         pi.streamTo(out);
                     }
-                    out.write("\n".getBytes());
+//                    out.write("\n".getBytes());
                 }
                 for (XML.Content c : this.subNodes) {
                     c.streamTo(out);
@@ -585,7 +586,11 @@ public class XML {
         public Node(Object... pcdata) {
             StringBuilder sb = new StringBuilder();
             for (Object s : pcdata) {
-                sb.append(String.valueOf(s));
+                if (s instanceof String) {
+                    sb.append((String) s);
+                } else {
+                    sb.append(String.valueOf(s));
+                }
             }
             this.pcdata = sb.toString();
 
@@ -625,7 +630,11 @@ public class XML {
 
         public Node addCDATA(Object... cdata) {
             for (Object o : cdata) {
-                this.append(new XML.Node(String.valueOf(o)));
+                if (o instanceof String) {
+                    this.append(new XML.Node((String) o));
+                } else {
+                    this.append(new XML.Node(String.valueOf(o)));
+                }
             }
             return this;
         }
@@ -779,6 +788,9 @@ public class XML {
                 if (o != null) {
                     if (o instanceof byte[]) {
                         out.write((byte[]) o);
+                    } else if (o instanceof String) {
+                        out.writeBytes(encodeXMLCharacters((String) o));
+                        //out.writeBytes((String) o);
                     } else {
                         out.writeBytes(o.toString());
                     }
@@ -919,34 +931,86 @@ public class XML {
         }
     }
     
-    public static String formatXMLDocument(String input, int indent) {
-        try {
-            Source xmlInput = new StreamSource(new StringReader(input));
-            StringWriter stringWriter = new StringWriter();
-            StreamResult xmlOutput = new StreamResult(stringWriter);
-            Transformer transformer = TransformerFactory.newInstance().newTransformer(); 
-            transformer.setOutputProperty(OutputKeys.INDENT, "yes");
-            transformer.setOutputProperty("{http://xml.apache.org/xslt}indent-amount", String.valueOf(indent));
-            transformer.transform(xmlInput, xmlOutput);
-            return xmlOutput.getWriter().toString();
-        } catch (TransformerConfigurationException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-            throw new RuntimeException(e);
-        } catch (TransformerFactoryConfigurationError e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-            throw new RuntimeException(e);
-        } catch (TransformerException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-            throw new RuntimeException(e);
-        } finally {
-            
+    /**
+     * This method ensures that the output String has only valid XML unicode characters as specified by the
+     * XML 1.0 standard. For reference, please see the
+     * standard. This method will return an empty String if the input is null or empty.
+     *
+     * @author Donoiu Cristian, GPL
+     * @param  The String whose non-valid characters we want to remove.
+     * @return The in String, stripped of non-valid characters.
+     */
+
+    public static String removeInvalidXMLCharacters(String s) {
+
+        StringBuilder out = new StringBuilder();                // Used to hold the output.
+
+        int codePoint;                                          // Used to reference the current character.
+
+        //String ss = "\ud801\udc00";                           // This is actualy one unicode character, represented by two code units!!!.
+
+        //System.out.println(ss.codePointCount(0, ss.length()));// See: 1
+
+        int i = 0;
+
+        while (i < s.length()) {
+            codePoint = s.codePointAt(i);                       // This is the unicode code of the character.
+
+            if ((codePoint == 0x9) ||                           // Consider testing larger ranges first to improve speed. 
+                    (codePoint == 0xA) ||
+                    (codePoint == 0xD) ||
+                    ((codePoint >= 0x20) && (codePoint <= 0xD7FF)) ||
+                    ((codePoint >= 0xE000) && (codePoint <= 0xFFFD)) ||
+                    ((codePoint >= 0x10000) && (codePoint <= 0x10FFFF))) {
+                out.append(Character.toChars(codePoint));
+            }               
+            i+= Character.charCount(codePoint);                 // Increment with the number of code units(java chars) needed to represent a Unicode char.  
         }
+
+        
+        return out.toString();
+    } 
+    
+
+    public static String encodeXMLCharacters(String s) {
+        StringBuilder out = new StringBuilder();
+
+        for (int i = 0; i < s.length(); i++) {
+            int codePoint = s.codePointAt(i);
+
+            if ((codePoint < 0x20) || (codePoint >= 0x7f)) {
+                if (codePoint != 0x0A) {
+                    out.append("&#");
+                    out.append(Integer.toString(codePoint));
+                    out.append(";");
+                } else {
+                    out.append((char) codePoint);
+                }
+            } else {
+                out.append((char) codePoint);
+            }
+        }
+
+        return out.toString();
+    } 
+    
+    public static String formatXMLDocument(String input, int indent) throws TransformerConfigurationException, TransformerFactoryConfigurationError, TransformerException {
+        
+        String input2 = encodeXMLCharacters(input);
+        
+        Source xmlInput = new StreamSource(new StringReader(input2));
+        StringWriter stringWriter = new StringWriter();
+        StreamResult xmlOutput = new StreamResult(stringWriter);
+        Transformer transformer = TransformerFactory.newInstance().newTransformer(); 
+        transformer.setOutputProperty(OutputKeys.INDENT, "yes");
+        transformer.setOutputProperty(OutputKeys.ENCODING, "utf-8");
+        transformer.setOutputProperty("{http://xml.apache.org/xslt}indent-amount", String.valueOf(indent));
+        transformer.transform(xmlInput, xmlOutput);
+        
+        return xmlOutput.getWriter().toString();
     }
 
-    public static String formatXMLDocument(String input) {
+    public static String formatXMLDocument(String input) throws TransformerConfigurationException, TransformerFactoryConfigurationError, TransformerException {
         return formatXMLDocument(input, 2);
     }
 

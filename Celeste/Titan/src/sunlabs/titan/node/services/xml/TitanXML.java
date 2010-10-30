@@ -22,6 +22,10 @@
  */
 package sunlabs.titan.node.services.xml;
 
+import javax.xml.transform.TransformerConfigurationException;
+import javax.xml.transform.TransformerException;
+import javax.xml.transform.TransformerFactoryConfigurationError;
+
 import sunlabs.asdf.web.XML.XML;
 import sunlabs.asdf.web.XML.XML.NameSpace;
 import sunlabs.titan.TitanGuidImpl;
@@ -281,7 +285,7 @@ public class TitanXML implements XML.ElementFactory  {
         }
     }
     
-    public static void main(String[] args) {
+    public static void main(String[] args) throws TransformerConfigurationException, TransformerFactoryConfigurationError, TransformerException {
         TitanXML xml = new TitanXML();
 
         XMLRoutingTable table = xml.newXMLRoutingTable(new TitanGuidImpl(), 0, 4);

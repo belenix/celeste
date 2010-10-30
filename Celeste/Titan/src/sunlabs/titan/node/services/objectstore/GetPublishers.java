@@ -6,7 +6,6 @@ import java.util.Set;
 import sunlabs.asdf.web.XML.XML;
 import sunlabs.titan.api.TitanGuid;
 import sunlabs.titan.node.Publishers;
-import sunlabs.titan.node.services.census.CensusService.SelectXML;
 
 public class GetPublishers implements Serializable {
     private static final long serialVersionUID = 1L;

@@ -75,7 +75,7 @@ public interface TitanService extends Serializable {
     /**
      * @param <T>
      */
-    public interface Operation<T extends Serializable> {
+    public interface Operation {
         public interface HTTP {
 
         }
@@ -98,7 +98,7 @@ public interface TitanService extends Serializable {
             
         }
         
-        public T response(TitanMessage request);
+//        public Response response(TitanMessage message, Request request);
     }
 
     /**

@@ -94,6 +94,8 @@ public class SelectComparator implements Serializable {
     
     public boolean match(String other) {
         // Figure out what type the value is: Long, Float, or String
+        if (other == null)
+            return false;
 
         try {
             long v1 = new Long(other);

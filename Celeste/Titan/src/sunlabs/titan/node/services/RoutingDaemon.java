@@ -35,6 +35,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Hashtable;
+import java.util.LinkedList;
 import java.util.Map;
 import java.util.Set;
 import java.util.logging.Level;
@@ -62,6 +63,7 @@ import sunlabs.titan.node.Reputation;
 import sunlabs.titan.node.TitanMessage;
 import sunlabs.titan.node.TitanMessage.RemoteException;
 import sunlabs.titan.node.services.census.CensusService;
+import sunlabs.titan.node.services.census.SelectComparator;
 import sunlabs.titan.util.OrderedProperties;
 
 /**
@@ -621,7 +623,7 @@ public final class RoutingDaemon extends AbstractTitanService implements Routing
     }
 
     /**
-     * Receive and process a JoinOperation message.
+     * Receive and process a {@link JoinOperation} message.
      * <p>
      * Route a message to the next hop for the destination node object-id.
      * If no more hops, then this node is the root node for the joining node
@@ -657,7 +659,7 @@ public final class RoutingDaemon extends AbstractTitanService implements Routing
                 }
             }
             Census censusService = this.node.getService(CensusService.class);
-            Map<TitanNodeId,OrderedProperties> census = censusService.select(this.node.getNodeAddress(), 0, null, null);
+            Map<TitanNodeId,OrderedProperties> census = censusService.select(this.node.getNodeAddress(), Integer.MAX_VALUE, new HashSet<TitanNodeId>(), new LinkedList<SelectComparator>());
 
             return new JoinOperation.Response(this.node.getNetworkObjectId(), this.node.getNeighbourMap().keySet(), objectRoots, census);
         }

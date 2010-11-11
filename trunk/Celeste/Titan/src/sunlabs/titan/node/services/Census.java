@@ -67,13 +67,13 @@ public interface Census extends TitanService {
         }
     }
 
-    public interface Report {
+    public interface Report extends TitanService.Operation {
 
-        public interface Request extends TitanService.Request {
+        public interface Request extends TitanService.Operation.Request {
 
         }
 
-        public interface Response extends TitanService.Response {
+        public interface Response extends TitanService.Operation.Response {
 
         }
     }
@@ -105,6 +105,8 @@ public interface Census extends TitanService {
     public final static String OperatingSystemAvailableProcessors = "Census.AvailableProcessors";
 
     public static final String ReportSerialNumber = "Census.SerialNumber";
+
+    public static final String RandomNumber = "Census.Random";
 
     /**
      * Put all of the entries in the given {@link Map} {@code census} into the census data kept by this node.

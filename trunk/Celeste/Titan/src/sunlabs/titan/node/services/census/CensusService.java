@@ -215,6 +215,13 @@ public class CensusService extends AbstractTitanService implements Census {
              * @see Census#select(int, Set, OrderedProperties)
              */
             public Request(int count, Set<TitanNodeId> exclude, List<SelectComparator> match) {
+                if (count == 0) {
+                    new Throwable().printStackTrace();
+                }
+                if (exclude == null)
+                    throw new NullPointerException();
+                if (match == null)
+                    throw new NullPointerException();
                 this.count = count;
                 this.exclude = exclude;
                 this.comparatorList = match;
@@ -472,11 +479,14 @@ public class CensusService extends AbstractTitanService implements Census {
         Map<TitanNodeId,OrderedProperties> result = new HashMap<TitanNodeId,OrderedProperties>();
         // count == 0 means return the entire Census data.
         if (count == 0) {
-            synchronized (this.catalogue) {
-                result.putAll(this.catalogue);
-            }
-            return result;
+            count = Integer.MAX_VALUE;
         }
+//        if (count == Integer.MAX_VALUE && comparatorList.size() == 0) {
+//            synchronized (this.catalogue) {
+//                result.putAll(this.catalogue);
+//            }
+//            return result;
+//        }
 
         synchronized (this.catalogue) {
             List<TitanNodeId> nodes = new LinkedList<TitanNodeId>(this.catalogue.keySet());
@@ -555,7 +565,7 @@ public class CensusService extends AbstractTitanService implements Census {
         throw new IllegalArgumentException(String.format("Timestamps differ by more than allowed amount %ds", clockSlop));
     }
     
-    public Report.Response report() throws ClassCastException, RemoteException, ClassNotFoundException {
+    private Report.Response report() throws ClassCastException, RemoteException, ClassNotFoundException {
         OrderedProperties report = new OrderedProperties();
         
         for (CensusReportGenerator generator : this.reportGenerators) {
@@ -571,17 +581,17 @@ public class CensusService extends AbstractTitanService implements Census {
 
     public HTTP.Response select(TitanMessage message, HTTP.Request httpRequest) {
         try {
-            int count = 0;
+            int count = Integer.MAX_VALUE;
             Set<TitanNodeId> excluded = new HashSet<TitanNodeId>();
             List<SelectComparator> comparatorList = new LinkedList<SelectComparator>();
 
             Map<String,String> params = null;
-            if (httpRequest.getMethod().equals(HTTP.Request.Method.GET)) {
+            if (httpRequest.getMethod().equals(HTTP.Request.Method.GET) || httpRequest.getMethod().equals(HTTP.Request.Method.POST)) {
                 params = httpRequest.getURLEncoded();
             }
             if (params != null) {
                 for (String key : params.keySet()) {
-                    System.out.printf("%s = %s%n", key, params.get(key));
+                    this.log.fine("CensusService%s = %s%n", key, params.get(key));
                     if (key.equals("count")) {
                         count = Integer.valueOf(params.get(key));
                     } else if (key.equals("select")) {
@@ -691,7 +701,7 @@ public class CensusService extends AbstractTitanService implements Census {
                     }
                 }
 
-                // Expire/Clean up the local Census data.
+                // Expire/Clean up the locally stored Census data.
                 SortedMap<TitanNodeId,OrderedProperties> newCatalogue = new TreeMap<TitanNodeId,OrderedProperties>();
                 synchronized (CensusService.this.catalogue) {
                     for (TitanNodeId nodeId : CensusService.this.catalogue.keySet()) {

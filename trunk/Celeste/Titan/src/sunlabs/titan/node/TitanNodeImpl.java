@@ -1486,19 +1486,18 @@ public class TitanNodeImpl implements TitanNode, NodeMBean {
 
     /**
      * Run a single node.
-     * Configuration parameters from the node are fetched from a URL supplied as the first argument to this class method.
+     * Configuration parameters from the node are fetched from URLs supplied as the arguments to this class method.
      */    
     public static void main(String[] args) {
-
         // Read this command line argument as a URL to fetch configuration properties.
 
         OrderedProperties configurationProperties = new OrderedProperties();
-        
+
         try {
             for (int i = 0; i < args.length; i++) {
                 configurationProperties.load(new URL(args[i]));
             }
-            
+
             TitanNodeImpl node = new TitanNodeImpl(configurationProperties);
             Thread thread = node.start();
 

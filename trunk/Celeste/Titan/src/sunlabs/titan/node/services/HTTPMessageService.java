@@ -659,7 +659,7 @@ public final class HTTPMessageService extends AbstractTitanService implements Me
                 	return new HttpResponse(HTTP.Response.Status.BAD_REQUEST, new HttpContent.Text.Plain("Unknown service: " + name));
                 } else if (uri.getPath().startsWith("/census")) {
                     Census census = this.node.getService(CensusService.class);
-                    Map<TitanNodeId,OrderedProperties> list = census.select(0);
+                    Map<TitanNodeId,OrderedProperties> list = census.select(Integer.MAX_VALUE);
 
                     StringBuilder string = new StringBuilder().append(list.size()).append("\n");
                     for (TitanNodeId node : new TreeSet<TitanNodeId>(list.keySet())) {
@@ -871,6 +871,11 @@ public final class HTTPMessageService extends AbstractTitanService implements Me
         }
 
     }
+
+    private sunlabs.asdf.web.http.HTTP.Response OCRM(HTTP.Request request) {
+        return null;
+        
+    }
     
     /*
      * Version 1 looks like this:
@@ -934,8 +939,7 @@ public final class HTTPMessageService extends AbstractTitanService implements Me
      * http://127.0.0.1:1201/AnchorObject.storeObject (using local node, store the body of this message as an Anchor object).
      * 
      */
-
-
+  
     private sunlabs.asdf.web.http.HTTP.Response REST(HTTP.Request request) {
         String[] tokens = request.getURI().getPath().split("/", 5); // Don't forget about the leading empty token <empty>/...
 
@@ -965,8 +969,6 @@ public final class HTTPMessageService extends AbstractTitanService implements Me
         int lastPeriod = method.lastIndexOf('.');
         String klasse = method.substring(0, lastPeriod);
         method = method.substring(lastPeriod+1);
-        
-        System.out.printf("node=%s object=%s method=%s exactRouting=%b%n", nodeId, objectId, method, exactRouting);
         
         try {
             TitanMessage response = null;

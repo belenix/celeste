@@ -554,8 +554,8 @@ public final class BeehiveObjectStore implements ObjectStore {
      * will be permitted to remain because the object's root handler will not have the necessary information to reject this object.
      * 
      */
-    public TitanGuid store(TitanObject object)
-    throws BeehiveObjectStore.InvalidObjectException, BeehiveObjectStore.NoSpaceException, BeehiveObjectStore.UnacceptableObjectException {
+    public TitanGuid store(TitanObject object) throws BeehiveObjectStore.InvalidObjectException, BeehiveObjectStore.NoSpaceException,
+    BeehiveObjectStore.UnacceptableObjectException {
 
         try {
             TitanGuid actualObjectId = BeehiveObjectStore.ObjectId(object);

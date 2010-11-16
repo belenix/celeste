@@ -382,6 +382,7 @@ public class CensusService extends AbstractTitanService implements Census {
             public XMLProperty(XML.ElementFactory factory, String name, String value) {
                 super(XMLProperty.name, XML.Node.EndTagDisposition.ABBREVIABLE, factory);
                 this.addAttribute(new XML.Attr("name", name), new XML.Attr("value", value));
+                this.addCDATA(value);
             }
         }
     }

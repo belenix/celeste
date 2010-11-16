@@ -1304,8 +1304,7 @@ public final class HTTPMessageService extends AbstractTitanService implements Me
                 TitanMessage response = TitanMessage.newInstance(is);
                 return response;
             } catch (ClassNotFoundException e) {
-                // TODO Auto-generated catch block
-                e.printStackTrace();
+                throw new RuntimeException(e);
             } finally {
                 is.close(); // XXX cache this socket....
             }
@@ -1359,26 +1358,23 @@ public final class HTTPMessageService extends AbstractTitanService implements Me
                 is.close(); // XXX cache this socket....
             }
         } catch (NoSuchAlgorithmException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
+            if (this.log.isLoggable(Level.WARNING))
+                this.log.warning("%s %s", addr.format(), e.toString());
         } catch (KeyManagementException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-        } catch (MalformedURLException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
+            if (this.log.isLoggable(Level.WARNING))
+                this.log.warning("%s %s", addr.format(), e.toString());
         } catch (IOException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
+            if (this.log.isLoggable(Level.INFO))
+                this.log.info("%s %s", addr.format(), e.toString());
         } catch (UnrecoverableKeyException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
+            if (this.log.isLoggable(Level.WARNING))
+                this.log.warning("%s %s", addr.format(), e.toString());
         } catch (KeyStoreException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
+            if (this.log.isLoggable(Level.WARNING))
+                this.log.warning("%s %s", addr.format(), e.toString());
         } catch (ClassNotFoundException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
+            if (this.log.isLoggable(Level.WARNING))
+                this.log.warning("%s %s", addr.format(), e.toString());
         } finally {
             
         }

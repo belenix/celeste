@@ -168,7 +168,12 @@ public class OrderedProperties extends java.util.Properties implements XHTMLInsp
     }
     
     public void load(URL url) throws IOException {
-        this.load((InputStream) url.openConnection().getContent());
+        InputStream in = (InputStream) url.openConnection().getContent();
+        try {
+            this.load(in);
+        } finally {
+            in.close();
+        }
     }
     
     // This is the biggest departure from java.util.Properties,
@@ -181,23 +186,24 @@ public class OrderedProperties extends java.util.Properties implements XHTMLInsp
         if (comments != null)
             writeln(awriter, "#" + comments);
         writeln(awriter, "#");
-        
-        for (Object key : this.keySet()) {
-            String val = null;
-            try {
-                val = (String) get(key);
-            } catch (ClassCastException e) {
-                String msg = String.format("key: %s: %s", key, e.getMessage());
-                ClassCastException withKey = new ClassCastException(msg);
-                withKey.initCause(e);
-                throw withKey;
+        synchronized (this) {
+            for (Object key : this.keySet()) {
+                String val = null;
+                try {
+                    val = (String) get(key);
+                } catch (ClassCastException e) {
+                    String msg = String.format("key: %s: %s", key, e.getMessage());
+                    ClassCastException withKey = new ClassCastException(msg);
+                    withKey.initCause(e);
+                    throw withKey;
+                }
+                key = saveConvert((String) key, true);
+
+                // No need to escape embedded and trailing spaces for value, hence
+                // pass false to flag.
+                val = saveConvert(val, false);
+                writeln(awriter, key + "=" + val);
             }
-            key = saveConvert((String) key, true);
-            
-            // No need to escape embedded and trailing spaces for value, hence
-            // pass false to flag.
-            val = saveConvert(val, false);
-            writeln(awriter, key + "=" + val);
         }
         awriter.flush();
     }

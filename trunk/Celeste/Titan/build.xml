@@ -25,6 +25,9 @@
 <project name="Titan" default="all" basedir="." >
         <description>Build the Titan system</description>
 
+	<property name="http.proxyHost" value="www-proxy.us.oracle.com"/>
+	<property name="http.proxyPort" value="80"/>
+	
     <!-- Load up user properties first;  these can be used
          to override any of the properties below  -->
     <property name="user.properties.file" location="${user.home}/.build.properties" />
@@ -343,7 +346,11 @@
     <target name="clobber" depends="clean"
             description="==> Remove all build artifacts, including javadoc">
     	<delete dir="${javadoc.dir}" />
+        <delete dir="dojo" />
+        <delete file="stat.png" quiet="true" />
         <delete file="${lib.dir}/Phidoux.jar" quiet="true" />
+        <delete file="${lib.dir}/dojo.jar" quiet="true" />
+        <delete file="dojo-release-1.5.0.tar.gz" quiet="true" />
         <delete file="${lib.dir}/titan.jar" quiet="true" />
     	<delete file="${lib.dir}/titan-src.jar" quiet="true" />
     </target>
@@ -357,29 +364,25 @@
           firewalls.  If you need them and they're not set by default,
           you can set them in your ~/.build.properties file.)
          ================================= -->
-    <target name="proxy.args"
-            depends="proxyHost.arg, proxyPort.arg, nonProxyHosts.arg" />
+    <target name="proxy.args" depends="proxyHost.arg, proxyPort.arg, nonProxyHosts.arg" />
 
-    <target name="proxyHost.arg"
-            depends="set.proxyHost.arg, unset.proxyHost.arg" />
-    <target name="set.proxyHost.arg" if="http.proxyHost" >
+    <target name="proxyHost.arg" depends="set.proxyHost.arg, unset.proxyHost.arg" />
+    <target name="set.proxyHost.arg" if="http.proxyHost">
         <property name="option.proxyHost" value="-J-Dhttp.proxyHost=${http.proxyHost}" />
     </target>
-    <target name="unset.proxyHost.arg" unless="http.proxyHost" >
+    <target name="unset.proxyHost.arg" unless="http.proxyHost">
         <property name="option.proxyHost" value="" />
     </target>
 
-    <target name="proxyPort.arg"
-            depends="set.proxyPort.arg, unset.proxyPort.arg" />
+    <target name="proxyPort.arg" depends="set.proxyPort.arg, unset.proxyPort.arg" />
     <target name="set.proxyPort.arg" if="http.proxyPort" >
         <property name="option.proxyPort" value="-J-Dhttp.proxyPort=${http.proxyPort}" />
     </target>
-    <target name="unset.proxyPort.arg" unless="http.proxyPort" >
+    <target name="unset.proxyPort.arg" unless="http.proxyPort">
         <property name="option.proxyPort" value="" />
     </target>
 
-    <target name="nonProxyHosts.arg"
-            depends="set.nonProxyHosts.arg, unset.nonProxyHosts.arg" />
+    <target name="nonProxyHosts.arg" depends="set.nonProxyHosts.arg, unset.nonProxyHosts.arg" />
     <target name="set.nonProxyHosts.arg" if="http.nonProxyHosts" >
         <property name="option.nonProxyHosts" value="-J-Dhttp.nonProxyHosts=${http.nonProxyHosts}" />
     </target>
@@ -394,8 +397,6 @@
     </target>
 	
 	<target name="-splash">
-	<!-- get src="http://c.statcounter.com/3846751/0/e8c078a4/0/" dest="stat.png" verbose="false" ignoreerrors="true"/ -->
         <get src="http://c.statcounter.com/6321838/0/1602cf99/1/" dest="stat.png" verbose="false" ignoreerrors="true"/>
-	   <!-- splash showduration="500" / -->
 	</target>
 </project>

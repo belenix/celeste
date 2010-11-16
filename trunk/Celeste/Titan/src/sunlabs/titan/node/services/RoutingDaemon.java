@@ -175,6 +175,7 @@ public final class RoutingDaemon extends AbstractTitanService implements Routing
                         for (NodeAddress potentialNeighbour : potentialNeighbours) {
                             if (!RoutingDaemon.this.node.getNeighbourMap().keySet().contains(potentialNeighbour)) {
                                 try {
+                                    RoutingDaemon.this.ping(potentialNeighbour, new PingOperation.Request(new byte[0]));
                                     RoutingDaemon.this.node.getNeighbourMap().add(potentialNeighbour);
                                 } catch (Exception reportAndIgnore) {
                                     reportAndIgnore.printStackTrace();
@@ -786,8 +787,6 @@ public final class RoutingDaemon extends AbstractTitanService implements Routing
     public PingOperation.Response ping(TitanMessage message, PingOperation.Request request) throws ClassNotFoundException, ClassCastException, RemoteException {
         this.node.getNeighbourMap().add(message.getSource());
 
-//        PingOperation.Request request = message.getPayload(PingOperation.Request.class, this.node);
-
         if (this.node.getNeighbourMap().isRoot(message.getDestinationNodeId())) {
             //
             // Respond with our NeighbourMap and our set of
@@ -796,7 +795,6 @@ public final class RoutingDaemon extends AbstractTitanService implements Routing
             Map<TitanGuid,Set<Publishers.PublishRecord>> publishers = new HashMap<TitanGuid,Set<Publishers.PublishRecord>>();
 
             for (TitanGuid objectId : this.node.getObjectPublishers()) {
-            //for (TitanGuid objectId : this.node.getObjectPublishers().keySet()) {
                 HashSet<Publishers.PublishRecord> includedPublishers = new HashSet<Publishers.PublishRecord>();
                 publishers.put(objectId, includedPublishers);
             }

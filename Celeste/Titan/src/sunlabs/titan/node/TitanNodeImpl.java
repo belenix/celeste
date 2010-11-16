@@ -57,7 +57,6 @@ import javax.net.ssl.HttpsURLConnection;
 
 import sunlabs.asdf.jmx.JMX;
 import sunlabs.asdf.util.AbstractStoredMap;
-import sunlabs.asdf.util.AbstractStoredMap.OutOfSpace;
 import sunlabs.asdf.util.Attributes;
 import sunlabs.asdf.util.Time;
 import sunlabs.asdf.util.Units;
@@ -361,6 +360,10 @@ public class TitanNodeImpl implements TitanNode, NodeMBean {
             // This will cause the class implementing the MessageService to be loaded.
             this.messageService = (MessageService) this.getService(this.configuration.asString(TitanNodeImpl.MessageService));
 
+            /**
+             * Create an object that represents this node.
+             * This is experimental.
+             */
             NodeObject.Handler nodeObjectHandler = this.getService(NodeObjectHandler.class);
             nodeObjectHandler.createObject();
             
@@ -1277,22 +1280,18 @@ public class TitanNodeImpl implements TitanNode, NodeMBean {
                         this.log.severe("%s: %s will retry in %ss%n",
                                 e.toString(), this.address.getInspectorInterface(), this.configuration.asLong(TitanNodeImpl.GatewayRetryDelaySeconds));
                     } catch (UnrecoverableKeyException e) {
-                        // TODO Auto-generated catch block
-                        e.printStackTrace();
+                        throw new RuntimeException(e);
                     } catch (KeyManagementException e) {
-                        // TODO Auto-generated catch block
-                        e.printStackTrace();
+                        throw new RuntimeException(e);
                     } catch (NoSuchAlgorithmException e) {
-                        // TODO Auto-generated catch block
-                        e.printStackTrace();
+                        throw new RuntimeException(e);
                     } catch (KeyStoreException e) {
-                        // TODO Auto-generated catch block
-                        e.printStackTrace();
+                        throw new RuntimeException(e);
                     }
                     try {
                         Thread.sleep(Time.secondsInMilliseconds(this.configuration.asLong(TitanNodeImpl.GatewayRetryDelaySeconds)));
                     } catch (InterruptedException e) {
-                        e.printStackTrace();
+                        /* */
                     }
                 }
             } else {
@@ -1329,9 +1328,9 @@ public class TitanNodeImpl implements TitanNode, NodeMBean {
             // neighbors are - it is now safe to start arbitrary services.
             this.services.startAll();
 
-//            synchronized (this) {
-//                this.notify();
-//            }
+            synchronized (this) {
+                this.notify();
+            }
             return this.messageService.getServerThread();
         } catch (IOException e) {
             throw new RuntimeException(e);
@@ -1484,6 +1483,10 @@ public class TitanNodeImpl implements TitanNode, NodeMBean {
         return result;
     }
 
+    public MessageService getMessageService() {
+        return this.messageService;
+    }
+
     /**
      * Run a single node.
      * Configuration parameters from the node are fetched from URLs supplied as the arguments to this class method.
@@ -1492,17 +1495,15 @@ public class TitanNodeImpl implements TitanNode, NodeMBean {
         // Read this command line argument as a URL to fetch configuration properties.
 
         OrderedProperties configurationProperties = new OrderedProperties();
-
         try {
             for (int i = 0; i < args.length; i++) {
                 configurationProperties.load(new URL(args[i]));
             }
-
             TitanNodeImpl node = new TitanNodeImpl(configurationProperties);
             Thread thread = node.start();
 
-            System.out.printf("%s [%d ms] %s%n", Time.ISO8601(System.currentTimeMillis()),
-                    System.currentTimeMillis() - Long.parseLong(node.getProperty(TitanNodeImpl.StartTime.getName())), node.toString());
+            System.out.printf("%s [%s] %s%n", Time.ISO8601(System.currentTimeMillis()),
+                    Time.formattedElapsedTime(System.currentTimeMillis() - Long.parseLong(node.getProperty(TitanNodeImpl.StartTime.getName()))), node.toString());
             while (true) {
                 try {
                     thread.join();
@@ -1517,14 +1518,10 @@ public class TitanNodeImpl implements TitanNode, NodeMBean {
         } catch (ConfigurationException e) {
             e.printStackTrace();
             System.exit(1);
-        } catch (OutOfSpace e) {
+        } catch (AbstractStoredMap.OutOfSpace e) {
             e.printStackTrace();
             System.exit(1);
         }
         System.exit(0);
-    }
-
-    public MessageService getMessageService() {
-        return this.messageService;
     }
 }

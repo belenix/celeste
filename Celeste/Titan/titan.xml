@@ -32,19 +32,21 @@
 		-Dcom.sun.management.jmxremote.password.file=etc/jmxremote.password.template 
 		-Dcom.sun.management.jmxremote.authenticate=true 
 		-Dcom.sun.management.jmxremote.ssl=false" />
+	
+	<property name="RoutingDaemon" value="-Dsunlabs.titan.node.services.RoutingDaemon.IntroductionRateSeconds=5" />
 
 	<property name="per-node-jvmarg" value="${per-node-jmx} -Djava.util.logging.config.file=etc/logging.properties" />
-    <property name="per-node-config-properties" value="-Dsunlabs.titan.node.TitanNodeImpl.LocalFileSystemRoot=${per-node-spool}" />
+    <property name="per-node-config-properties" value="-Dsunlabs.titan.node.TitanNodeImpl.LocalFileSystemRoot=${per-node-spool} ${RoutingDaemon}" />
     <property name="log-file" value="/var/tmp/titan.log" />
 
 	<target name="start" depends="stop">
-		<java dir="." jar="lib/titan.jar" maxmemory="12m" spawn="false" fork="true">
+		<java dir="." jar="lib/titan.jar" maxmemory="8m" spawn="false" fork="true">
 			<assertions>
 				<enable />
 			</assertions>
 
 			<jvmarg line="-Dtitan-node -server" />
-			<arg line="--delay 5 --n-nodes 6 --jmx-port ${jmx.port} ${per-node-config-properties}" />
+			<arg line="--delay 5 --n-nodes 3 --jmx-port ${jmx.port} ${per-node-config-properties}" />
 			<arg value="-V=${per-node-jvmarg}" />
 			<redirector output="${log-file}" input="/dev/null" />
 		</java>

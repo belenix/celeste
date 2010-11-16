@@ -62,10 +62,16 @@ public class NodeObjectHandler extends AbstractObjectHandler implements NodeObje
         return null;
     }
 
-    public void createObject() throws BeehiveObjectStore.InvalidObjectException, BeehiveObjectStore.ObjectExistenceException,
+    public NodeObject.Object createObject() throws BeehiveObjectStore.InvalidObjectException, BeehiveObjectStore.ObjectExistenceException,
     BeehiveObjectStore.NoSpaceException, BeehiveObjectStore.UnacceptableObjectException, ClassNotFoundException, BeehiveObjectStore.DeleteTokenException {
         NodeObject.Object object = new NodeObjectHandler.Object(TitanGuidImpl.ZERO, TitanObject.INFINITE_TIME_TO_LIVE);
         object = (NodeObject.Object) BeehiveObjectStore.CreateSignatureVerifiedObject(object.getObjectId(), object);
-        this.node.getObjectStore().create(object);        
+        this.node.getObjectStore().lock(object.getObjectId());
+        try {
+            this.node.getObjectStore().store(object);
+        } finally {
+            this.node.getObjectStore().unlock(object.getObjectId());
+        }
+        return object;
     }
 }

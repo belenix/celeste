@@ -29,7 +29,6 @@ import sunlabs.titan.node.BeehiveObjectPool;
 import sunlabs.titan.node.BeehiveObjectStore;
 import sunlabs.titan.node.BeehiveObjectStore.InvalidObjectException;
 import sunlabs.titan.node.BeehiveObjectStore.NoSpaceException;
-import sunlabs.titan.node.BeehiveObjectStore.ObjectExistenceException;
 import sunlabs.titan.node.BeehiveObjectStore.UnacceptableObjectException;
 import sunlabs.titan.node.PublishObjectMessage;
 import sunlabs.titan.node.UnpublishObjectMessage;
@@ -86,7 +85,18 @@ public interface ObjectStore extends XHTMLInspectable, Iterable<TitanGuid> {
     public final static String METADATA_DATAHASH = "ObjectStore.DataHash";
     public final static String METADATA_OBJECTID = "ObjectStore.ObjectId";
     public final static String METADATA_VOUCHER = "ObjectStore.Voucher";
-
+    
+    /**
+     * Obtain a lock on the given {@link TitanGuid}.
+     * The given {@code TitanGuid} may or may not refer to an object already in the local object store.
+     * <ul>
+     * <li>If the object-id is not locked, lock it and return.</li>
+     * <li>If the object-id is locked and the lock is already held by this Thread, then simply return.</li>
+     * <li>Otherwise, queue for the lock to be released by a call to {@link #unlock(TitanGuid)} {@link #unlock(TitanObject)} with this object-id (or object).</li>
+     * </ul>
+     * @see #unlock(TitanGuid)
+     * @see #unlock(TitanObject)
+     */
     public void lock(TitanGuid objectId);
 
     /**

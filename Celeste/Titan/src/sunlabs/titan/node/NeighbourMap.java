@@ -263,7 +263,7 @@ public final class NeighbourMap {
         //
         if (address.equals(this.node.getNodeAddress()))
             return true;
-
+        
         int level = this.node.getNodeId().sharedPrefix(address.getObjectId());
         int digit = address.getObjectId().digit(level);
 
@@ -389,8 +389,11 @@ public final class NeighbourMap {
         SortedSet<NodeAddress> newSet = new TreeSet<NodeAddress>(this.comparator);
         synchronized (this.routes) {
             for (NodeAddress n : this.routes[level][digit]) {
-                if (!n.equals(address))
+                if (!n.equals(address)) {
                     newSet.add(n);
+                } else {
+                    this.node.getLogger().info("Found %s", n.format());
+                }
             }
             this.routes[level][digit] = newSet;
         }

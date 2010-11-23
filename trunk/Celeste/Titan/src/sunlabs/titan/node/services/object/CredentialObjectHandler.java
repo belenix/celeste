@@ -41,7 +41,7 @@ import sunlabs.titan.api.TitanObject;
 import sunlabs.titan.api.TitanObject.Metadata;
 import sunlabs.titan.node.BeehiveObjectPool;
 import sunlabs.titan.node.BeehiveObjectPool.DisallowedDuplicateException;
-import sunlabs.titan.node.BeehiveObjectStore;
+import sunlabs.titan.node.TitanObjectStoreImpl;
 import sunlabs.titan.node.Publishers.PublishRecord;
 import sunlabs.titan.node.TitanMessage;
 import sunlabs.titan.node.object.AbstractObjectHandler;
@@ -85,8 +85,8 @@ public final class CredentialObjectHandler extends AbstractObjectHandler impleme
             Set<PublishRecord> alreadyPublishedObjects = this.node.getObjectPublishers().getPublishers(object.getKey());
             if (alreadyPublishedObjects.size() > 0) {
                 for (PublishRecord record : alreadyPublishedObjects) {
-                    String dataHash = record.getMetadataProperty(BeehiveObjectStore.METADATA_DATAHASH, "error");
-                    if (dataHash.compareTo(object.getValue().getProperty(BeehiveObjectStore.METADATA_DATAHASH)) != 0) {
+                    String dataHash = record.getMetadataProperty(TitanObjectStoreImpl.METADATA_DATAHASH, "error");
+                    if (dataHash.compareTo(object.getValue().getProperty(TitanObjectStoreImpl.METADATA_DATAHASH)) != 0) {
                         throw new BeehiveObjectPool.DisallowedDuplicateException(String.format("Credential %s already exists", object.getKey()));
                     }
                     break;
@@ -115,14 +115,14 @@ public final class CredentialObjectHandler extends AbstractObjectHandler impleme
     // N.B.  Here we assume that Credential is equivalent to (the
     // hypothetical) CredentialObject.CredentialAPI interface.
     //
-    public Credential retrieve(TitanGuid objectId) throws BeehiveObjectStore.DeletedObjectException, BeehiveObjectStore.NotFoundException, ClassCastException, ClassNotFoundException {
+    public Credential retrieve(TitanGuid objectId) throws TitanObjectStoreImpl.DeletedObjectException, TitanObjectStoreImpl.NotFoundException, ClassCastException, ClassNotFoundException {
         Credential credential = RetrievableObject.retrieve(this, Credential .class, objectId);
         if (credential == null)
-            throw new BeehiveObjectStore.NotFoundException("Credential %s not found.", objectId);
+            throw new TitanObjectStoreImpl.NotFoundException("Credential %s not found.", objectId);
         return credential;
     }
 
-    public TitanObject retrieveLocalObject(TitanMessage message, TitanGuid objectId) throws BeehiveObjectStore.NotFoundException {
+    public TitanObject retrieveLocalObject(TitanMessage message, TitanGuid objectId) throws TitanObjectStoreImpl.NotFoundException {
         return node.getObjectStore().get(TitanObject.class, message.subjectId);
     }
 
@@ -131,7 +131,7 @@ public final class CredentialObjectHandler extends AbstractObjectHandler impleme
     //
 
     public Publish.PublishUnpublishResponse storeLocalObject(TitanMessage message, Credential credential) throws ClassNotFoundException,
-    BeehiveObjectPool.Exception, BeehiveObjectStore.InvalidObjectIdException, BeehiveObjectStore.Exception {
+    BeehiveObjectPool.Exception, TitanObjectStoreImpl.InvalidObjectIdException, TitanObjectStoreImpl.Exception {
         if (this.log.isLoggable(Level.FINER)) {
             this.log.finest("%s", message.traceReport());
         }
@@ -143,8 +143,8 @@ public final class CredentialObjectHandler extends AbstractObjectHandler impleme
     // Methods from CredentialObject's StorableObjectType super-interface
     //
 
-    public Credential storeObject(Credential credential) throws IOException, BeehiveObjectStore.NoSpaceException,BeehiveObjectStore.DeleteTokenException,
-        BeehiveObjectStore.UnacceptableObjectException, BeehiveObjectPool.Exception {
+    public Credential storeObject(Credential credential) throws IOException, TitanObjectStoreImpl.NoSpaceException,TitanObjectStoreImpl.DeleteTokenException,
+        TitanObjectStoreImpl.UnacceptableObjectException, BeehiveObjectPool.Exception, ClassCastException, ClassNotFoundException {
         //
         // Store the credential under its specified object id (rather than under
         // the id that its contents would dictate).
@@ -162,7 +162,7 @@ public final class CredentialObjectHandler extends AbstractObjectHandler impleme
         // anyway.  The actual object-id is computed by the storing node and
         // returned in the reply.
         //
-        BeehiveObjectStore.CreateSignatureVerifiedObject(credential.getObjectId(), credential);
+        TitanObjectStoreImpl.CreateSignatureVerifiedObject(credential.getObjectId(), credential);
         StorableObject.storeObject(this, credential);
         return credential;
     }

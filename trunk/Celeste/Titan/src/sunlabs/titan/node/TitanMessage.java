@@ -45,7 +45,7 @@ import sunlabs.titan.api.TitanGuid;
 import sunlabs.titan.api.TitanNode;
 import sunlabs.titan.api.TitanNodeId;
 import sunlabs.titan.api.XHTMLInspectable;
-import sunlabs.titan.exception.BeehiveException;
+import sunlabs.titan.exception.TitanException;
 import sunlabs.titan.node.util.DOLRLogFormatter;
 import sunlabs.titan.util.DOLRStatus;
 
@@ -79,7 +79,7 @@ public class TitanMessage implements Serializable, XHTMLInspectable {
         return new TitanMessage(header, payload);
     }
 
-    public static class RemoteException extends BeehiveException {
+    public static class RemoteException extends TitanException {
         private final static long serialVersionUID = 1L;
 
         public RemoteException(Throwable reason) {

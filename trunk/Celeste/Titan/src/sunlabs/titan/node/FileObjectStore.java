@@ -185,7 +185,7 @@ public final class FileObjectStore<K,V> implements Iterable<TitanGuid> {
     /**
      * Commit the specified {@link TitanObject} to the backing-store.
      */
-    public void put(TitanGuid key, TitanObject object) throws BeehiveObjectStore.NoSpaceException, IOException {
+    public void put(TitanGuid key, TitanObject object) throws TitanObjectStoreImpl.NoSpaceException, IOException {
         TitanGuid objectId = object.getObjectId();
 
         long originalObjectLength = this.sizeOf(objectId);
@@ -193,7 +193,7 @@ public final class FileObjectStore<K,V> implements Iterable<TitanGuid> {
 
         FileOutputStream fout = null;
         File objectFile = new File(this.objectStoreDirectory, objectId.toString());
-        object.setProperty(BeehiveObjectStore.METADATA_CREATEDTIME, Time.currentTimeInSeconds());
+        object.setProperty(TitanObjectStoreImpl.METADATA_CREATEDTIME, Time.currentTimeInSeconds());
 
         try {
             fout = new FileOutputStream(objectFile);
@@ -218,7 +218,7 @@ public final class FileObjectStore<K,V> implements Iterable<TitanGuid> {
         if (this.capacityLimit != CAPACITY_UNLIMITED) {
             if (this.currentSpoolSize > this.capacityLimit) {
                 this.remove(objectId);
-                throw new BeehiveObjectStore.NoSpaceException("Object store full.");
+                throw new TitanObjectStoreImpl.NoSpaceException("Object store full.");
             }
         }
     }

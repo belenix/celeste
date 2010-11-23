@@ -35,7 +35,7 @@ import sunlabs.asdf.web.XML.XHTML;
 import sunlabs.asdf.web.XML.XML;
 import sunlabs.asdf.web.http.HTTP;
 import sunlabs.titan.TitanGuidImpl;
-import sunlabs.titan.api.ObjectStore;
+import sunlabs.titan.api.TitanObjectStore;
 import sunlabs.titan.api.TitanGuid;
 import sunlabs.titan.api.TitanObject;
 import sunlabs.titan.node.object.AbstractObjectHandler;
@@ -220,7 +220,7 @@ public abstract class AbstractTitanObject implements TitanObject {
         this.objectId = TitanGuidImpl.ANY;
 
         this.metaData = new AbstractTitanObject.Metadata();
-        this.setProperty(ObjectStore.METADATA_CLASS, handler.getName());
+        this.setProperty(TitanObjectStore.METADATA_CLASS, handler.getName());
 
         this.setDeleteTokenId(deleteTokenId);
         if (this.getDeleteTokenId() == null) {
@@ -240,15 +240,15 @@ public abstract class AbstractTitanObject implements TitanObject {
     abstract public TitanGuid getDataId();
 
     public void setTimeToLive(long timeToLive) {
-        this.getMetadata().setProperty(ObjectStore.METADATA_SECONDSTOLIVE, timeToLive);
+        this.getMetadata().setProperty(TitanObjectStore.METADATA_SECONDSTOLIVE, timeToLive);
     }
 
     public long getCreationTime() {
-        return this.getPropertyAsLong(ObjectStore.METADATA_CREATEDTIME, -1);
+        return this.getPropertyAsLong(TitanObjectStore.METADATA_CREATEDTIME, -1);
     }
 
     public long getTimeToLive() {
-        return Long.valueOf(this.getMetadata().getProperty(ObjectStore.METADATA_SECONDSTOLIVE));
+        return Long.valueOf(this.getMetadata().getProperty(TitanObjectStore.METADATA_SECONDSTOLIVE));
     }
     
     public long getRemainingSecondsToLive(long now) {
@@ -261,11 +261,11 @@ public abstract class AbstractTitanObject implements TitanObject {
     public void setDeleteTokenId(TitanGuid deleteTokenId) {
         if (deleteTokenId == null)
             throw new IllegalArgumentException("deleteTokenId is null");
-        this.setProperty(ObjectStore.METADATA_DELETETOKENID, deleteTokenId);
+        this.setProperty(TitanObjectStore.METADATA_DELETETOKENID, deleteTokenId);
     }
 
     public TitanGuid getDeleteTokenId() {
-        return this.getPropertyAsObjectId(ObjectStore.METADATA_DELETETOKENID, null);
+        return this.getPropertyAsObjectId(TitanObjectStore.METADATA_DELETETOKENID, null);
     }
 
     public TitanObject.Metadata getMetadata() {
@@ -304,7 +304,7 @@ public abstract class AbstractTitanObject implements TitanObject {
     }
 
     public String getObjectType() {
-        String type = this.getProperty(ObjectStore.METADATA_CLASS);
+        String type = this.getProperty(TitanObjectStore.METADATA_CLASS);
         return type;
     }
 

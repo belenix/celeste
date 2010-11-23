@@ -32,13 +32,13 @@ import java.util.Map;
 import java.util.Set;
 
 import sunlabs.asdf.util.ObjectLock;
-import sunlabs.titan.api.ObjectStore;
+import sunlabs.titan.api.TitanObjectStore;
 import sunlabs.titan.api.TitanGuid;
 import sunlabs.titan.api.TitanNode;
 import sunlabs.titan.api.TitanObject;
 import sunlabs.titan.node.BeehiveObjectPool;
-import sunlabs.titan.node.BeehiveObjectStore;
-import sunlabs.titan.node.BeehiveObjectStore.DeleteTokenException;
+import sunlabs.titan.node.TitanObjectStoreImpl;
+import sunlabs.titan.node.TitanObjectStoreImpl.DeleteTokenException;
 import sunlabs.titan.node.PublishObjectMessage;
 import sunlabs.titan.node.Publishers;
 import sunlabs.titan.node.TitanMessage;
@@ -69,10 +69,10 @@ public final class DeleteableObject {
              * </p>
              * @param profferedDeleteToken The {@link TitanGuid} of the delete-token for this object.
              * @param timeToLive The number of seconds for this object to continue to exist in the anti-object form.
-             * @throws BeehiveObjectStore.DeleteTokenException if {@code profferedDeleteToken} does not match
-             *          the objects' {@link ObjectStore#METADATA_DELETETOKENID}
+             * @throws TitanObjectStoreImpl.DeleteTokenException if {@code profferedDeleteToken} does not match
+             *          the objects' {@link TitanObjectStore#METADATA_DELETETOKENID}
              */
-            public void delete(TitanGuid profferedDeleteToken, long timeToLive) throws BeehiveObjectStore.DeleteTokenException;
+            public void delete(TitanGuid profferedDeleteToken, long timeToLive) throws TitanObjectStoreImpl.DeleteTokenException;
         }
 
         /**
@@ -119,7 +119,7 @@ public final class DeleteableObject {
          * </p>
          */
         public DOLRStatus deleteObject(TitanGuid objectId, TitanGuid deletionToken, long timeToLive)
-        throws BeehiveObjectStore.NoSpaceException, ClassNotFoundException, ClassCastException, TitanMessage.RemoteException, BeehiveObjectStore.DeleteTokenException;
+        throws TitanObjectStoreImpl.NoSpaceException, ClassNotFoundException, ClassCastException, TitanMessage.RemoteException, TitanObjectStoreImpl.DeleteTokenException;
 
         /**
          * This method is invoked as the result of receiving a deleteLocalObject
@@ -127,16 +127,16 @@ public final class DeleteableObject {
          * delete information.
          * @param message
          * @return A reply {@link TitanMessage}
-         * @throws BeehiveObjectStore.DeletedObjectException 
-         * @throws BeehiveObjectStore.NoSpaceException
-         * @throws BeehiveObjectStore.NotFoundException 
-         * @throws BeehiveObjectStore.UnacceptableObjectException 
-         * @throws BeehiveObjectStore.ObjectExistenceException 
-         * @throws BeehiveObjectStore.InvalidObjectException 
+         * @throws TitanObjectStoreImpl.DeletedObjectException 
+         * @throws TitanObjectStoreImpl.NoSpaceException
+         * @throws TitanObjectStoreImpl.NotFoundException 
+         * @throws TitanObjectStoreImpl.UnacceptableObjectException 
+         * @throws TitanObjectStoreImpl.ObjectExistenceException 
+         * @throws TitanObjectStoreImpl.InvalidObjectException 
          * @throws ClassCastException 
          */
         public DeleteableObject.Response deleteLocalObject(TitanMessage message, DeleteableObject.Request request) throws ClassNotFoundException,
-        BeehiveObjectStore.DeleteTokenException, BeehiveObjectStore.DeletedObjectException, BeehiveObjectStore.NoSpaceException, BeehiveObjectStore.InvalidObjectException, BeehiveObjectStore.ObjectExistenceException, BeehiveObjectStore.UnacceptableObjectException, BeehiveObjectStore.NotFoundException;
+        TitanObjectStoreImpl.DeleteTokenException, TitanObjectStoreImpl.DeletedObjectException, TitanObjectStoreImpl.NoSpaceException, TitanObjectStoreImpl.InvalidObjectException, TitanObjectStoreImpl.ObjectExistenceException, TitanObjectStoreImpl.UnacceptableObjectException, TitanObjectStoreImpl.NotFoundException;
 
         /**
          * Every {@link DeleteableObject.Handler#publishObject(TitanMessage)} implementation must have a per-object lock
@@ -159,12 +159,12 @@ public final class DeleteableObject {
          * @return The anti-object form of the orignal {@link TitanObject}
          * @throws IOException
          */
-        public TitanObject createAntiObject(DeleteableObject.Handler.Object object, TitanGuid profferedDeleteToken, long timeToLive) throws BeehiveObjectStore.NoSpaceException, BeehiveObjectStore.DeleteTokenException;
+        public TitanObject createAntiObject(DeleteableObject.Handler.Object object, TitanGuid profferedDeleteToken, long timeToLive) throws TitanObjectStoreImpl.NoSpaceException, TitanObjectStoreImpl.DeleteTokenException;
     }
 
     public static void ObjectDeleteHelper(DeleteableObject.Handler.Object object, TitanGuid deleteToken, long timeToLive) {
         object.setTimeToLive(timeToLive);
-        object.setProperty(ObjectStore.METADATA_DELETETOKEN, deleteToken);
+        object.setProperty(TitanObjectStore.METADATA_DELETETOKEN, deleteToken);
     }
 
     public static TitanObject MakeDeletable(DeleteableObject.Handler.Object object, TitanGuid deleteTokenId) {
@@ -246,8 +246,8 @@ public final class DeleteableObject {
      * @return true if the delete-token and the delete-token-id in the metaData match signifying that the object is the anti-object form.
      */
     public static boolean deleteTokenIsValid(TitanObject.Metadata metaData) {
-        TitanGuid deleteToken = metaData.getPropertyAsObjectId(ObjectStore.METADATA_DELETETOKEN, null);
-        TitanGuid deleteTokenId = metaData.getPropertyAsObjectId(ObjectStore.METADATA_DELETETOKENID, null);
+        TitanGuid deleteToken = metaData.getPropertyAsObjectId(TitanObjectStore.METADATA_DELETETOKEN, null);
+        TitanGuid deleteTokenId = metaData.getPropertyAsObjectId(TitanObjectStore.METADATA_DELETETOKENID, null);
         return DeleteableObject.deleteTokenIsValid(deleteToken, deleteTokenId);
     }
 
@@ -315,14 +315,14 @@ public final class DeleteableObject {
      * </ul>
      */
     public static DOLRStatus objectIsDeleteable(TitanObject.Metadata metaData, TitanGuid profferedDeleteToken) {
-        TitanGuid objectDeleteTokenId = metaData.getPropertyAsObjectId(ObjectStore.METADATA_DELETETOKENID, null);
+        TitanGuid objectDeleteTokenId = metaData.getPropertyAsObjectId(TitanObjectStore.METADATA_DELETETOKENID, null);
 
         if (objectDeleteTokenId == null) {
             // Cannot delete an object that doesn't have a delete-token-id
             return DOLRStatus.FORBIDDEN;
         }
 
-        TitanGuid objectDeleteToken = metaData.getPropertyAsObjectId(ObjectStore.METADATA_DELETETOKEN, null);
+        TitanGuid objectDeleteToken = metaData.getPropertyAsObjectId(TitanObjectStore.METADATA_DELETETOKEN, null);
         if (objectDeleteToken != null && objectDeleteToken.equals(profferedDeleteToken)) {
             // If there is already a delete-token specified in this object, and
             // it is the same as the one we are trying to set, then we have
@@ -352,20 +352,20 @@ public final class DeleteableObject {
      * @param excludedPublisherId The object-id of the publisher of the
      *        original {@link PublishObjectMessage} that induced this method call.
      * @param metaData The {@link TitanObject.Metadata} of the {@link PublishObjectMessage} that induced this method call.
-     * @throws BeehiveObjectStore.DeleteTokenException The delete-token in the given metadata fails the validation test (see {@link DeleteableObject#deleteTokenIsValid}).
+     * @throws TitanObjectStoreImpl.DeleteTokenException The delete-token in the given metadata fails the validation test (see {@link DeleteableObject#deleteTokenIsValid}).
      */
     public static void deleteBackPointers2(DeleteableObject.Handler<? extends DeleteableObject.Handler.Object> objectType,
             TitanGuid objectId,
             TitanGuid excludedPublisherId,
             TitanObject.Metadata metaData)
-    throws BeehiveObjectStore.DeleteTokenException {
+    throws TitanObjectStoreImpl.DeleteTokenException {
         //objectType.getLogger().info(objectType.getName() + " " + objectId.toString() + " excluding " + excludedPublisherId);
         // Check that the deletion information contained in the PublishObjectMessage is self-consistent.
         if (!DeleteableObject.deleteTokenIsValid(metaData)) {
-            throw new BeehiveObjectStore.DeleteTokenException("Invalid delete token");
+            throw new TitanObjectStoreImpl.DeleteTokenException("Invalid delete token");
         }
 
-        TitanGuid profferedDeleteToken = metaData.getPropertyAsObjectId(ObjectStore.METADATA_DELETETOKEN, null);
+        TitanGuid profferedDeleteToken = metaData.getPropertyAsObjectId(TitanObjectStore.METADATA_DELETETOKEN, null);
         TitanNode node = objectType.getNode();
 
         // Delete all copies of this object that the given DOLRNode has backpointers.
@@ -376,8 +376,8 @@ public final class DeleteableObject {
         
 
         DeleteableObject.Request request = new DeleteableObject.Request(objectId,
-                metaData.getPropertyAsObjectId(ObjectStore.METADATA_DELETETOKEN, null),
-                metaData.getPropertyAsLong(ObjectStore.METADATA_SECONDSTOLIVE, TitanObject.INFINITE_TIME_TO_LIVE));
+                metaData.getPropertyAsObjectId(TitanObjectStore.METADATA_DELETETOKEN, null),
+                metaData.getPropertyAsLong(TitanObjectStore.METADATA_SECONDSTOLIVE, TitanObject.INFINITE_TIME_TO_LIVE));
 
         if (publishers != null) {
             for (Publishers.PublishRecord publisher : publishers) {
@@ -430,13 +430,13 @@ public final class DeleteableObject {
      * Returns a {@link TitanMessage} from which only the status is useful.
      * This should return void, or some meaningful result and leave the various failures or unexpected results to Exceptions.
      * @throws ClassNotFoundException
-     * @throws BeehiveObjectStore.DeleteTokenException 
-     * @throws BeehiveObjectStore.DeletedObjectException 
-     * @throws BeehiveObjectStore.NoSpaceException 
+     * @throws TitanObjectStoreImpl.DeleteTokenException 
+     * @throws TitanObjectStoreImpl.DeletedObjectException 
+     * @throws TitanObjectStoreImpl.NoSpaceException 
      */
     public static DeleteableObject.Response deleteLocalObject(DeleteableObject.Handler<? extends DeleteableObject.Handler.Object> handler, DeleteableObject.Request request, TitanMessage message)
-    throws BeehiveObjectStore.DeleteTokenException, ClassNotFoundException, BeehiveObjectStore.DeletedObjectException, BeehiveObjectStore.NoSpaceException,
-    BeehiveObjectStore.InvalidObjectException, BeehiveObjectStore.ObjectExistenceException, BeehiveObjectStore.UnacceptableObjectException, BeehiveObjectStore.DeleteTokenException, BeehiveObjectStore.NotFoundException {
+    throws TitanObjectStoreImpl.DeleteTokenException, ClassNotFoundException, TitanObjectStoreImpl.DeletedObjectException, TitanObjectStoreImpl.NoSpaceException,
+    TitanObjectStoreImpl.InvalidObjectException, TitanObjectStoreImpl.ObjectExistenceException, TitanObjectStoreImpl.UnacceptableObjectException, TitanObjectStoreImpl.DeleteTokenException, TitanObjectStoreImpl.NotFoundException {
 
         //      objectType.getLogger().info("%5.5s... id=%5.5s... ttl=%ss from %s",
         //              message.getMessageId(),
@@ -460,15 +460,15 @@ public final class DeleteableObject {
             localObject = handler.getNode().getObjectStore().getAndLock(TitanObject.class, objectId);
             status = DeleteableObject.objectIsDeleteable(localObject.getMetadata(), profferedDeleteToken);
             if (status.equals(DOLRStatus.GONE)) { // Object is already deleted.
-                throw new BeehiveObjectStore.DeletedObjectException("Already deleted %s", localObject.getObjectId());
+                throw new TitanObjectStoreImpl.DeletedObjectException("Already deleted %s", localObject.getObjectId());
             }
             if (status.equals(DOLRStatus.FORBIDDEN)) { // Object is not deleteable.
                 handler.getLogger().info("Forbidden deletion");
-                throw new BeehiveObjectStore.DeleteTokenException("Object %s not deleteable.", objectId);
+                throw new TitanObjectStoreImpl.DeleteTokenException("Object %s not deleteable.", objectId);
             }
             if (status.equals(DOLRStatus.UNAUTHORIZED)) { // Object is not deleteable with the proffered delete token.
                 handler.getLogger().info("Unauthorized deletion");
-                throw new BeehiveObjectStore.DeleteTokenException("Incorrect delete-token");
+                throw new TitanObjectStoreImpl.DeleteTokenException("Incorrect delete-token");
             }
 
             // Take the time-to-live from the message passed in.
@@ -484,18 +484,18 @@ public final class DeleteableObject {
                     //return message.composeReply(handler.getNode().getNodeAddress(), new DeleteableObject.Response());
                 }
 
-                throw new BeehiveObjectStore.UnacceptableObjectException("Anti-object %s does not match original object id %s.", antiObject.getObjectId(), localObject.getObjectId());
+                throw new TitanObjectStoreImpl.UnacceptableObjectException("Anti-object %s does not match original object id %s.", antiObject.getObjectId(), localObject.getObjectId());
             }
             handler.getLogger().info("antiObject failed %s", objectId);
-            throw new BeehiveObjectStore.NotFoundException("Object %s not found.", localObject.getObjectId());
+            throw new TitanObjectStoreImpl.NotFoundException("Object %s not found.", localObject.getObjectId());
         } catch (ClassCastException e) {
             handler.getLogger().info("%s not of type DeleteableObject.Handler.Object", objectId);
-            throw new BeehiveObjectStore.UnacceptableObjectException("Object %s is not deleteable.", objectId);
+            throw new TitanObjectStoreImpl.UnacceptableObjectException("Object %s is not deleteable.", objectId);
         } finally {
             if (localObject != null)
                 try {
                     handler.getNode().getObjectStore().unlock(localObject);
-                } catch (BeehiveObjectStore.Exception e) {
+                } catch (TitanObjectStoreImpl.Exception e) {
                     // TODO Auto-generated catch block
                     e.printStackTrace();
                 } catch (BeehiveObjectPool.Exception e) {

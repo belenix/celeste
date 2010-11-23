@@ -27,11 +27,11 @@ import java.io.Serializable;
 import java.util.Map;
 import java.util.Set;
 
-import sunlabs.titan.api.ObjectStore;
+import sunlabs.titan.api.TitanObjectStore;
 import sunlabs.titan.api.TitanGuid;
 import sunlabs.titan.api.TitanObject;
 import sunlabs.titan.node.BeehiveObjectPool;
-import sunlabs.titan.node.BeehiveObjectStore;
+import sunlabs.titan.node.TitanObjectStoreImpl;
 import sunlabs.titan.node.NodeAddress;
 import sunlabs.titan.node.PublishObjectMessage;
 import sunlabs.titan.node.Publishers;
@@ -108,7 +108,7 @@ public interface Publish {
      * The message travels across the network until it reaches the root of the object's {@link TitanGuid}.
      * When the root receives the message, the {@link AbstractObjectHandler} specified by name in the
      * meta-data accompanying the {@link PublishObjectMessage} (using the meta-data name
-     * {@link ObjectStore#METADATA_CLASS}).
+     * {@link TitanObjectStore#METADATA_CLASS}).
      * </p>
      * <p>
      * The {@link TitanMessage} returned from the {@link AbstractObjectHandler#publishObject} method is propagated back as a reply to the original
@@ -120,12 +120,12 @@ public interface Publish {
      * If the status encoded in the {@link TitanMessage} reply is NOT any of the codes representing success, each node propagating the
      * reply must not record a back-pointer to the object on the publishing node.
      * </p>
-     * @throws sunlabs.titan.node.BeehiveObjectStore.Exception 
+     * @throws sunlabs.titan.node.TitanObjectStoreImpl.Exception 
      * @throws BeehiveObjectPool.Exception 
      * @throws ClassNotFoundException 
      * @throws ClassCastException 
      */
-    public Publish.PublishUnpublishResponse publish(TitanObject object) throws ClassCastException, ClassNotFoundException, BeehiveObjectPool.Exception, sunlabs.titan.node.BeehiveObjectStore.Exception;
+    public Publish.PublishUnpublishResponse publish(TitanObject object) throws ClassCastException, ClassNotFoundException, BeehiveObjectPool.Exception, sunlabs.titan.node.TitanObjectStoreImpl.Exception;
 
     /**
      * Transmit a {@link TitanMessage} to "unpublish" a {@link TitanGuid}.
@@ -153,13 +153,13 @@ public interface Publish {
      * </p>
      * @param object the object to be unpublished
      * @return the reply {@link TitanMessage} from the root of object identifier
-     * @throws BeehiveObjectStore.Exception 
+     * @throws TitanObjectStoreImpl.Exception 
      * @throws BeehiveObjectPool.Exception 
      * @throws ClassNotFoundException 
      * @throws ClassCastException 
-     * @throws BeehiveObjectStore.Exception 
+     * @throws TitanObjectStoreImpl.Exception 
      */
-    public Publish.PublishUnpublishResponse unpublish(TitanObject object) throws ClassCastException, ClassNotFoundException, BeehiveObjectPool.Exception, BeehiveObjectStore.Exception;
+    public Publish.PublishUnpublishResponse unpublish(TitanObject object) throws ClassCastException, ClassNotFoundException, BeehiveObjectPool.Exception, TitanObjectStoreImpl.Exception;
 
     /**
      * Get the set of publishers of a specified {@link TitanObject}. 

@@ -125,8 +125,9 @@ public interface Census extends TitanService {
      * @return A {@link Map} of {@link TitanGuid} to {@link OrderedProperties} for each node selected.
      * @throws RemoteException if the remote node threw an Exception.
      * @throws ClassCastException if a ClassCastException which obtaining the internal response.
+     * @throws ClassNotFoundException 
      */
-    public Map<TitanNodeId,OrderedProperties> select(int count, Set<TitanNodeId> exclude, List<SelectComparator> comparatorList) throws ClassCastException;
+    public Map<TitanNodeId,OrderedProperties> select(int count, Set<TitanNodeId> exclude, List<SelectComparator> comparatorList) throws ClassCastException, ClassNotFoundException;
 
     /**
      * Select {@code count} number of nodes by {@link TitanGuid} from the Census system.
@@ -136,8 +137,9 @@ public interface Census extends TitanService {
      * @return A {@link Map} of {@link TitanGuid} to {@link OrderedProperties} for each node selected.
      * @throws RemoteException if the remote node threw an Exception.
      * @throws ClassCastException if a ClassCastException which obtaining the internal response.
+     * @throws ClassNotFoundException 
      */
-    public Map<TitanNodeId,OrderedProperties> select(int count) throws ClassCastException, RemoteException;
+    public Map<TitanNodeId,OrderedProperties> select(int count) throws ClassCastException, RemoteException, ClassNotFoundException;
 
     /**
      * Get the current system-wide Census data, using the specified node in the system to proxy the request.

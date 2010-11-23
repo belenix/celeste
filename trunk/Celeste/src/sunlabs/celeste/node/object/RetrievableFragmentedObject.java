@@ -35,7 +35,7 @@ import sunlabs.titan.api.TitanGuid;
 import sunlabs.titan.api.TitanObject;
 import sunlabs.titan.node.TitanMessage;
 import sunlabs.titan.node.TitanMessage.RemoteException;
-import sunlabs.titan.node.BeehiveObjectStore;
+import sunlabs.titan.node.TitanObjectStoreImpl;
 import sunlabs.titan.node.object.TitanObjectHandler;
 import sunlabs.titan.node.object.DeleteableObject;
 
@@ -54,10 +54,10 @@ public final class RetrievableFragmentedObject {
          * @return The BeehiveObject retrieved from the object pool, or null if the object could not be retrieved.
          * @throws ErasureCode.UnsupportedAlgorithmException
          * @throws ErasureCode.NotRecoverableException
-         * @throws BeehiveObjectStore.DeletedObjectException
+         * @throws TitanObjectStoreImpl.DeletedObjectException
          */
         public T retrieveRemoteObject(StorableFragmentedObject.Handler.FragmentMap map)
-        throws ErasureCode.UnsupportedAlgorithmException, ErasureCode.NotRecoverableException, BeehiveObjectStore.DeletedObjectException;
+        throws ErasureCode.UnsupportedAlgorithmException, ErasureCode.NotRecoverableException, TitanObjectStoreImpl.DeletedObjectException;
 
         /**
          * Retrieve the local object described in the {@link TitanMessage}.
@@ -79,7 +79,7 @@ public final class RetrievableFragmentedObject {
      * exposed delete-token, a DOLRObjectStore.DeletedException is thrown.
      */
     public static TitanObject retrieveRemoteObject(RetrievableFragmentedObject.Handler<? extends RetrievableFragmentedObject.Handler.Object> objectType, TitanGuid objectId)
-    throws BeehiveObjectStore.DeletedObjectException {
+    throws TitanObjectStoreImpl.DeletedObjectException {
         TitanMessage reply = objectType.getNode().sendToObject(objectId, objectType.getName(), "retrieveLocalObject", objectId);
 
         if (!reply.getStatus().isSuccessful()) {
@@ -91,7 +91,7 @@ public final class RetrievableFragmentedObject {
                 if (!DeleteableObject.deleteTokenIsValid(object.getMetadata())) {
                     return object;
                 }
-                throw new BeehiveObjectStore.DeletedObjectException();
+                throw new TitanObjectStoreImpl.DeletedObjectException();
             } else {
                 objectType.getLogger().info("ObjectId=%s not found", objectId);
             }
@@ -107,7 +107,7 @@ public final class RetrievableFragmentedObject {
 
     public static TitanObject retrieveRemoteObject(RetrievableFragmentedObject.Handler<? extends RetrievableFragmentedObject.Handler.Object> objectType, StorableFragmentedObject.FragmentMap map)
     throws ClassCastException, ClassNotFoundException, ErasureCode.UnsupportedAlgorithmException, ErasureCode.NotRecoverableException,
-        BeehiveObjectStore.DeletedObjectException, BeehiveObjectStore.NotFoundException {
+        TitanObjectStoreImpl.DeletedObjectException, TitanObjectStoreImpl.NotFoundException {
         TitanObject object = retrieveRemoteObject(objectType, map.getObjectId());
         if (object != null) {
             if (DeleteableObject.deleteTokenIsValid(object.getMetadata())) {

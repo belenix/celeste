@@ -31,9 +31,9 @@ import sunlabs.celeste.client.ReplicationParameters;
 import sunlabs.celeste.node.services.api.AObjectVersionMapAPI;
 import sunlabs.titan.api.TitanGuid;
 import sunlabs.titan.api.XHTMLInspectable;
-import sunlabs.titan.node.BeehiveObjectStore.DeleteTokenException;
+import sunlabs.titan.node.TitanObjectStoreImpl.DeleteTokenException;
 import sunlabs.titan.node.TitanMessage.RemoteException;
-import sunlabs.titan.node.BeehiveObjectStore;
+import sunlabs.titan.node.TitanObjectStoreImpl;
 import sunlabs.titan.node.object.DeleteableObject;
 import sunlabs.titan.node.object.InspectableObject;
 import sunlabs.titan.node.object.ReplicatableObject;
@@ -62,7 +62,7 @@ public interface AnchorObject {
                 int bObjectSize,
                 boolean signWrites);
         
-        public DOLRStatus delete(FileIdentifier fileIdentifier, TitanGuid deletionToken, long timeToLive) throws IOException, BeehiveObjectStore.NoSpaceException,
+        public DOLRStatus delete(FileIdentifier fileIdentifier, TitanGuid deletionToken, long timeToLive) throws IOException, TitanObjectStoreImpl.NoSpaceException,
             ClassCastException, RemoteException, DeleteTokenException, ClassNotFoundException;
 
         /**
@@ -70,13 +70,13 @@ public interface AnchorObject {
          *
          * @param fileIdentifier
          * @return An instance of the {@code AnchorObject}.
-         * @throws BeehiveObjectStore.DeletedObjectException  If the {@code AnchorObject} exists, but has been deleted.
-         * @throws BeehiveObjectStore.NotFoundException If the {@code AnchorObject} was not found.
+         * @throws TitanObjectStoreImpl.DeletedObjectException  If the {@code AnchorObject} exists, but has been deleted.
+         * @throws TitanObjectStoreImpl.NotFoundException If the {@code AnchorObject} was not found.
          * @throws RemoteException 
          * @throws ClassCastException 
          * @throws ClassNotFoundException 
          */
-        public AnchorObject.Object retrieve(FileIdentifier fileIdentifier) throws BeehiveObjectStore.DeletedObjectException, BeehiveObjectStore.NotFoundException, ClassCastException, ClassNotFoundException;
+        public AnchorObject.Object retrieve(FileIdentifier fileIdentifier) throws TitanObjectStoreImpl.DeletedObjectException, TitanObjectStoreImpl.NotFoundException, ClassCastException, ClassNotFoundException;
     }
     
     /**

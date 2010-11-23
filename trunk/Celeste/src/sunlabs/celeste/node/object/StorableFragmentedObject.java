@@ -41,7 +41,7 @@ import sunlabs.celeste.node.erasurecode.ErasureCode;
 import sunlabs.celeste.node.erasurecode.ErasureCodeIdentity;
 import sunlabs.celeste.node.services.object.FObjectType;
 import sunlabs.titan.TitanGuidImpl;
-import sunlabs.titan.api.ObjectStore;
+import sunlabs.titan.api.TitanObjectStore;
 import sunlabs.titan.api.TitanGuid;
 import sunlabs.titan.api.TitanNode;
 import sunlabs.titan.api.TitanNodeId;
@@ -49,10 +49,10 @@ import sunlabs.titan.api.TitanObject;
 import sunlabs.titan.api.TitanService;
 import sunlabs.titan.api.XHTMLInspectable;
 import sunlabs.titan.node.BeehiveObjectPool;
-import sunlabs.titan.node.BeehiveObjectStore;
-import sunlabs.titan.node.BeehiveObjectStore.Exception;
-import sunlabs.titan.node.BeehiveObjectStore.InvalidObjectException;
-import sunlabs.titan.node.BeehiveObjectStore.UnacceptableObjectException;
+import sunlabs.titan.node.TitanObjectStoreImpl;
+import sunlabs.titan.node.TitanObjectStoreImpl.Exception;
+import sunlabs.titan.node.TitanObjectStoreImpl.InvalidObjectException;
+import sunlabs.titan.node.TitanObjectStoreImpl.UnacceptableObjectException;
 import sunlabs.titan.node.TitanMessage;
 import sunlabs.titan.node.TitanMessage.RemoteException;
 import sunlabs.titan.node.TitanNodeIdImpl;
@@ -87,12 +87,12 @@ public final class StorableFragmentedObject {
          * @param erasureCodeName
          * @param object
          * @return The {@link TitanMessage} response from the destination selected to store the object.
-         * @throws BeehiveObjectStore.NoSpaceException
+         * @throws TitanObjectStoreImpl.NoSpaceException
          * @throws TitanNode.NoSuchNodeException
          * @throws ErasureCode.UnsupportedAlgorithmException
          */
         public FragmentMap store(TitanGuid destination, ErasureCode erasureCodeName, T object)
-        throws BeehiveObjectStore.NoSpaceException, TitanNode.NoSuchNodeException, ErasureCode.UnsupportedAlgorithmException;
+        throws TitanObjectStoreImpl.NoSpaceException, TitanNode.NoSuchNodeException, ErasureCode.UnsupportedAlgorithmException;
 
         /**
          * <p>
@@ -108,12 +108,12 @@ public final class StorableFragmentedObject {
          * @param erasureCodeName
          * @param object
          * @return The {@link TitanMessage} response from the destination selected to store the object.
-         * @throws BeehiveObjectStore.NoSpaceException
+         * @throws TitanObjectStoreImpl.NoSpaceException
          * @throws TitanNode.NoSuchNodeException
          * @throws ErasureCode.UnsupportedAlgorithmException
          */
         public FragmentMap store(ErasureCode erasureCodeName, T object)
-        throws BeehiveObjectStore.NoSpaceException, TitanNode.NoSuchNodeException, ErasureCode.UnsupportedAlgorithmException;
+        throws TitanObjectStoreImpl.NoSpaceException, TitanNode.NoSuchNodeException, ErasureCode.UnsupportedAlgorithmException;
 
         /**
          * <p>
@@ -126,7 +126,7 @@ public final class StorableFragmentedObject {
          * @return The {@link TitanMessage} to use as the response.
          */
         public TitanMessage storeLocalObject(TitanMessage message)
-        throws BeehiveObjectStore.NoSpaceException;
+        throws TitanObjectStoreImpl.NoSpaceException;
     }
 
     /**
@@ -282,15 +282,15 @@ public final class StorableFragmentedObject {
      * @param object
      * @param maxAttempts
      * @return
-     * @throws BeehiveObjectStore.NoSpaceException
+     * @throws TitanObjectStoreImpl.NoSpaceException
      * @throws TitanNode.NoSuchNodeException
      * @throws ErasureCode.UnsupportedAlgorithmException
      */
     public static FragmentMap storeObjectRemotely(TitanObjectHandler objectType, TitanNodeId destination, ErasureCode erasureCode,
             StorableFragmentedObject.Handler.Object object,
             int maxAttempts)
-    throws BeehiveObjectStore.NoSpaceException, TitanNode.NoSuchNodeException, ErasureCode.UnsupportedAlgorithmException {
-        object.setProperty(StorableFragmentedObject.Handler.ERASURECODER, erasureCode).setProperty(ObjectStore.METADATA_CLASS, objectType.getName());
+    throws TitanObjectStoreImpl.NoSpaceException, TitanNode.NoSuchNodeException, ErasureCode.UnsupportedAlgorithmException {
+        object.setProperty(StorableFragmentedObject.Handler.ERASURECODER, erasureCode).setProperty(TitanObjectStore.METADATA_CLASS, objectType.getName());
 
         if (destination == TitanGuidImpl.ANY) {
             return StorableFragmentedObject.storeObjectRemotely(objectType, erasureCode, object, maxAttempts);
@@ -318,9 +318,9 @@ public final class StorableFragmentedObject {
             ErasureCode erasureCode,
             StorableFragmentedObject.Handler.Object object,
             int maxAttempts)
-    throws BeehiveObjectStore.NoSpaceException, ErasureCode.UnsupportedAlgorithmException {
+    throws TitanObjectStoreImpl.NoSpaceException, ErasureCode.UnsupportedAlgorithmException {
 
-        object.setProperty(StorableFragmentedObject.Handler.ERASURECODER, erasureCode).setProperty(ObjectStore.METADATA_CLASS, objectType.getName());
+        object.setProperty(StorableFragmentedObject.Handler.ERASURECODER, erasureCode).setProperty(TitanObjectStore.METADATA_CLASS, objectType.getName());
 
         for (int attempt = 0; attempt < maxAttempts; attempt++) {
             TitanMessage reply = objectType.getNode().sendToNode(new TitanNodeIdImpl(), objectType.getName(), "storeLocalObject", object);
@@ -340,7 +340,7 @@ public final class StorableFragmentedObject {
                 }
             }
         }
-        throw new BeehiveObjectStore.NoSpaceException();
+        throw new TitanObjectStoreImpl.NoSpaceException();
     }
 
     /**
@@ -355,7 +355,7 @@ public final class StorableFragmentedObject {
      * @return The {@link TitanMessage} to use as the response.
      */
     public static TitanMessage storeObjectLocally(StorableFragmentedObject.Handler<StorableFragmentedObject.Handler.Object> objectType, TitanObject object, TitanMessage message)
-    throws BeehiveObjectStore.NoSpaceException, BeehiveObjectStore.DeleteTokenException {
+    throws TitanObjectStoreImpl.NoSpaceException, TitanObjectStoreImpl.DeleteTokenException {
         TitanNode node = objectType.getNode();
 
         if (message.isTraced()) {
@@ -363,7 +363,7 @@ public final class StorableFragmentedObject {
         }
 
         // Ensure that that the object's TYPE is set in the metadata.
-        object.setProperty(ObjectStore.METADATA_CLASS, objectType.getName());
+        object.setProperty(TitanObjectStore.METADATA_CLASS, objectType.getName());
 
         try {
             node.getObjectStore().store(object);
@@ -378,7 +378,7 @@ public final class StorableFragmentedObject {
         }
 
         try {
-            node.getObjectStore().lock(BeehiveObjectStore.ObjectId(object));
+            node.getObjectStore().lock(TitanObjectStoreImpl.ObjectId(object));
             try {
                 node.getObjectStore().store(object);
                 if (message.isTraced()) {
@@ -398,15 +398,15 @@ public final class StorableFragmentedObject {
                     e.printStackTrace();
                 }
             }
-        } catch (BeehiveObjectStore.UnacceptableObjectException e) {
+        } catch (TitanObjectStoreImpl.UnacceptableObjectException e) {
             return message.composeReply(node.getNodeAddress(), e);
-        } catch (BeehiveObjectStore.DeleteTokenException e) {
+        } catch (TitanObjectStoreImpl.DeleteTokenException e) {
             return message.composeReply(node.getNodeAddress(), e);
-        } catch (BeehiveObjectStore.InvalidObjectIdException e) {
+        } catch (TitanObjectStoreImpl.InvalidObjectIdException e) {
             return message.composeReply(node.getNodeAddress(), e);
-        } catch (BeehiveObjectStore.NoSpaceException e) {
+        } catch (TitanObjectStoreImpl.NoSpaceException e) {
             return message.composeReply(node.getNodeAddress(), e);
-        } catch (BeehiveObjectStore.InvalidObjectException e) {
+        } catch (TitanObjectStoreImpl.InvalidObjectException e) {
             return message.composeReply(node.getNodeAddress(), e);
         }
 

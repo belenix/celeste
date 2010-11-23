@@ -37,17 +37,18 @@ import java.util.concurrent.FutureTask;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 
-import sunlabs.titan.api.ObjectStore;
+import sunlabs.titan.api.TitanObjectStore;
 import sunlabs.titan.api.TitanGuid;
 import sunlabs.titan.api.TitanNode;
 import sunlabs.titan.api.TitanNodeId;
 import sunlabs.titan.api.TitanObject;
 import sunlabs.titan.node.BeehiveObjectPool;
-import sunlabs.titan.node.BeehiveObjectStore;
+import sunlabs.titan.node.TitanObjectStoreImpl;
 import sunlabs.titan.node.TitanMessage;
 import sunlabs.titan.node.services.Census;
 import sunlabs.titan.node.services.api.Publish;
 import sunlabs.titan.node.services.census.CensusService;
+import sunlabs.titan.node.services.census.SelectComparator;
 import sunlabs.titan.util.DOLRStatus;
 import sunlabs.titan.util.OrderedProperties;
 
@@ -115,13 +116,15 @@ public final class StorableObject {
          * @param object The object to store.
          * @return The object stored with the object-id set.
          * @throws IOException if an underlying IOException was thrown while trying to store the object.
-         * @throws BeehiveObjectStore.NoSpaceException if there is no space in the object pool to store this object.
-         * @throws BeehiveObjectStore.DeleteTokenException if the delete-token encoding for this object is not well-formed
-         * @throws BeehiveObjectStore.UnacceptableObjectException 
+         * @throws TitanObjectStoreImpl.NoSpaceException if there is no space in the object pool to store this object.
+         * @throws TitanObjectStoreImpl.DeleteTokenException if the delete-token encoding for this object is not well-formed
+         * @throws TitanObjectStoreImpl.UnacceptableObjectException 
          * @throws BeehiveObjectPool.Exception 
+         * @throws ClassNotFoundException 
+         * @throws ClassCastException 
          */
-        public T storeObject(T object) throws IOException, BeehiveObjectStore.NoSpaceException, BeehiveObjectStore.DeleteTokenException,
-            BeehiveObjectStore.UnacceptableObjectException, BeehiveObjectPool.Exception;
+        public T storeObject(T object) throws IOException, TitanObjectStoreImpl.NoSpaceException, TitanObjectStoreImpl.DeleteTokenException,
+            TitanObjectStoreImpl.UnacceptableObjectException, BeehiveObjectPool.Exception, ClassCastException, ClassNotFoundException;
 
         /**
          * <p>
@@ -136,16 +139,16 @@ public final class StorableObject {
          * @throws ClassCastException 
          * @throws ClassNotFoundException 
          * @throws BeehiveObjectPool.Exception 
-         * @throws BeehiveObjectStore.UnacceptableObjectException 
-         * @throws BeehiveObjectStore.DeleteTokenException 
-         * @throws BeehiveObjectStore.NoSpaceException 
-         * @throws BeehiveObjectStore.InvalidObjectException 
-         * @throws BeehiveObjectStore.InvalidObjectIdException 
-         * @throws BeehiveObjectStore.Exception 
+         * @throws TitanObjectStoreImpl.UnacceptableObjectException 
+         * @throws TitanObjectStoreImpl.DeleteTokenException 
+         * @throws TitanObjectStoreImpl.NoSpaceException 
+         * @throws TitanObjectStoreImpl.InvalidObjectException 
+         * @throws TitanObjectStoreImpl.InvalidObjectIdException 
+         * @throws TitanObjectStoreImpl.Exception 
          */
         public Publish.PublishUnpublishResponse storeLocalObject(TitanMessage message, T object) throws ClassNotFoundException, ClassCastException,
-            BeehiveObjectStore.NoSpaceException, BeehiveObjectStore.DeleteTokenException, BeehiveObjectStore.UnacceptableObjectException,
-            BeehiveObjectPool.Exception, BeehiveObjectStore.InvalidObjectIdException, BeehiveObjectStore.InvalidObjectException, BeehiveObjectStore.Exception;
+            TitanObjectStoreImpl.NoSpaceException, TitanObjectStoreImpl.DeleteTokenException, TitanObjectStoreImpl.UnacceptableObjectException,
+            BeehiveObjectPool.Exception, TitanObjectStoreImpl.InvalidObjectIdException, TitanObjectStoreImpl.InvalidObjectException, TitanObjectStoreImpl.Exception;
     }
     
     /**
@@ -162,24 +165,24 @@ public final class StorableObject {
      * @return The reply {@link TitanMessage} containing the response from the {@link TitanObjectHandler#publishObject(TitanMessage)}
      *         method on the root node for this {@code object}.
      * @throws ClassNotFoundException
-     * @throws BeehiveObjectStore.UnacceptableObjectException
-     * @throws BeehiveObjectStore.DeleteTokenException
-     * @throws BeehiveObjectStore.InvalidObjectIdException
-     * @throws BeehiveObjectStore.NoSpaceException
-     * @throws BeehiveObjectStore.InvalidObjectException
+     * @throws TitanObjectStoreImpl.UnacceptableObjectException
+     * @throws TitanObjectStoreImpl.DeleteTokenException
+     * @throws TitanObjectStoreImpl.InvalidObjectIdException
+     * @throws TitanObjectStoreImpl.NoSpaceException
+     * @throws TitanObjectStoreImpl.InvalidObjectException
      * @throws BeehiveObjectPool.Exception
-     * @throws BeehiveObjectStore.Exception
+     * @throws TitanObjectStoreImpl.Exception
      */
     public static Publish.PublishUnpublishResponse storeLocalObject(StorableObject.Handler<? extends StorableObject.Handler.Object> handler, StorableObject.Handler.Object object, TitanMessage message) throws
-    ClassNotFoundException, BeehiveObjectStore.UnacceptableObjectException, BeehiveObjectStore.DeleteTokenException,
-    BeehiveObjectStore.InvalidObjectIdException, BeehiveObjectStore.NoSpaceException, BeehiveObjectStore.InvalidObjectException,
-    BeehiveObjectPool.Exception, BeehiveObjectStore.Exception {
+    ClassNotFoundException, TitanObjectStoreImpl.UnacceptableObjectException, TitanObjectStoreImpl.DeleteTokenException,
+    TitanObjectStoreImpl.InvalidObjectIdException, TitanObjectStoreImpl.NoSpaceException, TitanObjectStoreImpl.InvalidObjectException,
+    BeehiveObjectPool.Exception, TitanObjectStoreImpl.Exception {
         TitanNode node = handler.getNode();
 
         // Ensure that that the object's METADATA_TYPE is set in its metadata.
-        object.setProperty(ObjectStore.METADATA_CLASS, handler.getName());
+        object.setProperty(TitanObjectStore.METADATA_CLASS, handler.getName());
 
-        node.getObjectStore().lock(BeehiveObjectStore.ObjectId(object));
+        node.getObjectStore().lock(TitanObjectStoreImpl.ObjectId(object));
         Publish.PublishUnpublishResponse response = null;
         try {
             node.getObjectStore().store(object);
@@ -190,7 +193,7 @@ public final class StorableObject {
                 // TODO Auto-generated catch block
                 e.printStackTrace();
                 throw e;
-            } catch (sunlabs.titan.node.BeehiveObjectStore.Exception e) {
+            } catch (sunlabs.titan.node.TitanObjectStoreImpl.Exception e) {
                 // TODO Auto-generated catch block
                 e.printStackTrace();
                 throw e;
@@ -212,25 +215,27 @@ public final class StorableObject {
      * Store a given {@link StorableObject.Handler.Object} object in the global object store.
      * The number of copies to store is presented in the object's meta-data as
      * the value of the property
-     * {@link sunlabs.titan.api.ObjectStore#METADATA_REPLICATION_STORE ObjectStore.METADATA_REPLICATION_STORE}
+     * {@link sunlabs.titan.api.TitanObjectStore#METADATA_REPLICATION_STORE ObjectStore.METADATA_REPLICATION_STORE}
      * Each copy is stored on a different node.
      *
      * If a node is selected to store the object and that node already has an object with the same
      * {@link TitanGuid}, the node replaces the copy with the new copy and signals that the object already existed.
      * <p>
      * If the property
-     * {@link sunlabs.titan.api.ObjectStore#METADATA_REPLICATION_STORE ObjectStore.METADATA_REPLICATION_STORE}
+     * {@link sunlabs.titan.api.TitanObjectStore#METADATA_REPLICATION_STORE ObjectStore.METADATA_REPLICATION_STORE}
      * specifies a count greater than the number of nodes in the system,
      * you run the risk of never terminating.
      * </p>
      * @param handler
      * @param object
      * @throws IOException
-     * @throws BeehiveObjectStore.UnacceptableObjectException 
+     * @throws TitanObjectStoreImpl.UnacceptableObjectException 
+     * @throws ClassNotFoundException 
+     * @throws ClassCastException 
      */
     public static StorableObject.Handler.Object storeObject(StorableObject.Handler<? extends StorableObject.Handler.Object> handler, StorableObject.Handler.Object object)
-    throws BeehiveObjectStore.NoSpaceException, BeehiveObjectStore.UnacceptableObjectException, BeehiveObjectPool.Exception {
-        int nReplicas = Integer.parseInt(object.getProperty(ObjectStore.METADATA_REPLICATION_STORE, "1"));
+    throws TitanObjectStoreImpl.NoSpaceException, TitanObjectStoreImpl.UnacceptableObjectException, BeehiveObjectPool.Exception, ClassCastException, ClassNotFoundException {
+        int nReplicas = Integer.parseInt(object.getProperty(TitanObjectStore.METADATA_REPLICATION_STORE, "1"));
         // For now, parallel stores is turned off by passing null as the executor to storeObject().
         // It can generate a large number of Threads during big writes with no benefit because the publish operation is ultimately sequential due to its locking.
         //ExecutorService executor = Executors.newFixedThreadPool(nReplicas);
@@ -241,7 +246,7 @@ public final class StorableObject {
      * Store a {@link StorableObject.Handler.Object} object in the global object store.
      * <p>
      * The number of copies to store is governed by the value {@code nReplicas}
-     * (note that the value of the object's metadata value {@link ObjectStore#METADATA_REPLICATION_STORE}
+     * (note that the value of the object's metadata value {@link TitanObjectStore#METADATA_REPLICATION_STORE}
      * does not have to be equal to {@code nReplicas}.)
      * Each copy is stored on a different node, excluding the nodes specified in the {@link Set} {@code excludedNodes}.
      * </p>
@@ -251,7 +256,7 @@ public final class StorableObject {
      * </p>
      * <p>
      * If the value of {@code nReplicas} is larger than the number of nodes in the system, this method
-     * will ultimately throw {@link BeehiveObjectStore.NoSpaceException}.
+     * will ultimately throw {@link TitanObjectStoreImpl.NoSpaceException}.
      * </p>
      * @param handler The instance of the {@link StorableObject.Handler} that is invoking this method.
      * @param object The {@link StorableObject.Handler} to store.
@@ -259,18 +264,20 @@ public final class StorableObject {
      * @param nodesToExclude The {@code Set} of nodes to exclude from the candidate set of nodes to store the object.
      * @param executorService An instance of {@link ExecutorService} to use to store the {@code nReplicas} in parallel, or {@code null} to store the objects serially.
      * @throws IOException
-     * @throws BeehiveObjectStore.NoSpaceException
-     * @throws BeehiveObjectStore.UnacceptableObjectException
+     * @throws TitanObjectStoreImpl.NoSpaceException
+     * @throws TitanObjectStoreImpl.UnacceptableObjectException
      * @throws BeehiveObjectPool.Exception 
+     * @throws ClassNotFoundException 
+     * @throws ClassCastException 
      */
     public static StorableObject.Handler.Object storeObject(StorableObject.Handler<? extends StorableObject.Handler.Object> handler,
             StorableObject.Handler.Object object,
             int nReplicas,
             Set<TitanNodeId> nodesToExclude,
             ExecutorService executorService)
-    throws BeehiveObjectStore.NoSpaceException, BeehiveObjectStore.UnacceptableObjectException, BeehiveObjectPool.Exception {
-        object.setProperty(ObjectStore.METADATA_CLASS, handler.getName());
-        object.setProperty(ObjectStore.METADATA_DATAHASH, object.getDataId());
+    throws TitanObjectStoreImpl.NoSpaceException, TitanObjectStoreImpl.UnacceptableObjectException, BeehiveObjectPool.Exception, ClassCastException, ClassNotFoundException {
+        object.setProperty(TitanObjectStore.METADATA_CLASS, handler.getName());
+        object.setProperty(TitanObjectStore.METADATA_DATAHASH, object.getDataId());
 
         Census census = (Census) handler.getNode().getService(CensusService.class);
 
@@ -279,9 +286,9 @@ public final class StorableObject {
 
         for (int successfulStores = 0; successfulStores < nReplicas; /**/) {
             // Get enough nodes from Census to store the object.
-            Map<TitanNodeId,OrderedProperties> nodes = census.select(nReplicas - successfulStores, excludedNodes, null);
+            Map<TitanNodeId,OrderedProperties> nodes = census.select(nReplicas - successfulStores, excludedNodes, new LinkedList<SelectComparator>());
             if (nodes.size() == 0) {
-                throw new BeehiveObjectStore.NoSpaceException("No node found to store object %s", object.getObjectId());
+                throw new TitanObjectStoreImpl.NoSpaceException("No node found to store object %s", object.getObjectId());
             }
             if (handler.getLogger().isLoggable(Level.FINE)) {
                 handler.getLogger().fine("%s on nodes: %s.", object.getObjectId(), nodes.keySet());
@@ -339,7 +346,7 @@ public final class StorableObject {
                             if (e.getCause() instanceof BeehiveObjectPool.Exception) {
                                 // These exceptions are fatal to the whole store, so immediately get out of here throwing the rest away.
                                 throw (BeehiveObjectPool.Exception) e.getCause();
-                            } else if (e.getCause() instanceof BeehiveObjectStore.Exception) {
+                            } else if (e.getCause() instanceof TitanObjectStoreImpl.Exception) {
                                 // These exceptions are related just to the node we asked to store the object.  Continue.
                                 
                             } else {
@@ -367,7 +374,7 @@ public final class StorableObject {
                         if (e.getCause().getCause() instanceof BeehiveObjectPool.Exception) {
                             // These exceptions are fatal to the whole store, so immediately get out of here throwing the rest away.
                             throw (BeehiveObjectPool.Exception) e.getCause().getCause();
-                        } else if (e.getCause().getCause() instanceof BeehiveObjectStore.Exception) {
+                        } else if (e.getCause().getCause() instanceof TitanObjectStoreImpl.Exception) {
                             // These exceptions are related just to the node we asked to store the object.  Continue.
                         } else {
                             e.getCause().printStackTrace();
@@ -378,7 +385,7 @@ public final class StorableObject {
                         System.err.printf("StoreObject:ExecutionException BeehiveObjectPool.Exception%n");
                         // These exceptions are fatal to the whole store, so immediately get out of here throwing the rest away.
                         throw (BeehiveObjectPool.Exception) e.getCause();
-                    } else if (e.getCause() instanceof BeehiveObjectStore.Exception) {
+                    } else if (e.getCause() instanceof TitanObjectStoreImpl.Exception) {
                         // These exceptions are related just to the node we asked to store the object.  Continue.
                         
                     } else {

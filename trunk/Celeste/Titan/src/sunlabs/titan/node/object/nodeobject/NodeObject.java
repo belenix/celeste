@@ -1,14 +1,18 @@
 package sunlabs.titan.node.object.nodeobject;
 
 import sunlabs.titan.api.TitanObject;
-import sunlabs.titan.node.BeehiveObjectStore;
+import sunlabs.titan.node.TitanObjectStoreImpl;
 import sunlabs.titan.node.object.InspectableObject;
 
+/**
+ * Experimental object representing a node.
+ *
+ */
 public interface NodeObject {
     public interface Handler extends InspectableObject.Handler<NodeObject.Object> {
 
-        public NodeObject.Object createObject() throws BeehiveObjectStore.InvalidObjectException, BeehiveObjectStore.ObjectExistenceException,
-        BeehiveObjectStore.NoSpaceException, BeehiveObjectStore.UnacceptableObjectException, ClassNotFoundException, BeehiveObjectStore.DeleteTokenException;
+        public NodeObject.Object createObject() throws TitanObjectStoreImpl.InvalidObjectException, TitanObjectStoreImpl.ObjectExistenceException,
+        TitanObjectStoreImpl.NoSpaceException, TitanObjectStoreImpl.UnacceptableObjectException, ClassNotFoundException, TitanObjectStoreImpl.DeleteTokenException;
         
     }
     

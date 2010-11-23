@@ -33,7 +33,7 @@ import sunlabs.titan.api.TitanNode;
 import sunlabs.titan.api.TitanNodeId;
 import sunlabs.titan.api.TitanObject;
 import sunlabs.titan.node.BeehiveObjectPool;
-import sunlabs.titan.node.BeehiveObjectStore;
+import sunlabs.titan.node.TitanObjectStoreImpl;
 import sunlabs.titan.node.Publishers;
 import sunlabs.titan.node.TitanMessage;
 import sunlabs.titan.node.TitanMessage.RemoteException;
@@ -65,14 +65,14 @@ public class ReplicatableObject {
 	     * @return The reply {@code BeehiveMessage}.
 	     * @throws ClassCastException 
 	     * @throws ClassNotFoundException
-	     * @throws BeehiveObjectStore.NotFoundException
-	     * @throws BeehiveObjectStore.DeletedObjectException
-         * @throws BeehiveObjectStore.NoSpaceException
-         * @throws BeehiveObjectStore.UnacceptableObjectException
+	     * @throws TitanObjectStoreImpl.NotFoundException
+	     * @throws TitanObjectStoreImpl.DeletedObjectException
+         * @throws TitanObjectStoreImpl.NoSpaceException
+         * @throws TitanObjectStoreImpl.UnacceptableObjectException
          * @throws BeehiveObjectPool.Exception
 	     */
 	    public ReplicatableObject.Replicate.Response replicateObject(TitanMessage message) throws ClassNotFoundException, ClassCastException,
-	    BeehiveObjectStore.NotFoundException, BeehiveObjectStore.DeletedObjectException, BeehiveObjectStore.NoSpaceException, BeehiveObjectStore.UnacceptableObjectException, BeehiveObjectPool.Exception;
+	    TitanObjectStoreImpl.NotFoundException, TitanObjectStoreImpl.DeletedObjectException, TitanObjectStoreImpl.NoSpaceException, TitanObjectStoreImpl.UnacceptableObjectException, BeehiveObjectPool.Exception;
 	    
 	    /**
 	     * Specifies the specific behaviours of instances of {@link TitanObject} that implement {@link ReplicatableObject.Handler.Object}.

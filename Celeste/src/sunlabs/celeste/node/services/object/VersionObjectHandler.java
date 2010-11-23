@@ -53,15 +53,15 @@ import sunlabs.celeste.node.object.ExtensibleObject;
 import sunlabs.celeste.util.ACL;
 import sunlabs.titan.TitanGuidImpl;
 import sunlabs.titan.api.Credential;
-import sunlabs.titan.api.ObjectStore;
+import sunlabs.titan.api.TitanObjectStore;
 import sunlabs.titan.api.TitanGuid;
 import sunlabs.titan.api.TitanNode;
 import sunlabs.titan.api.TitanNodeId;
 import sunlabs.titan.api.TitanObject;
 import sunlabs.titan.node.AbstractTitanObject;
 import sunlabs.titan.node.BeehiveObjectPool;
-import sunlabs.titan.node.BeehiveObjectStore;
-import sunlabs.titan.node.BeehiveObjectStore.DeletedObjectException;
+import sunlabs.titan.node.TitanObjectStoreImpl;
+import sunlabs.titan.node.TitanObjectStoreImpl.DeletedObjectException;
 import sunlabs.titan.node.TitanMessage;
 import sunlabs.titan.node.TitanMessage.RemoteException;
 import sunlabs.titan.node.object.AbstractObjectHandler;
@@ -236,8 +236,8 @@ public final class VersionObjectHandler extends AbstractObjectHandler implements
 
             this.replicationStore = replicationParams.getAsInteger(VersionObject.Object.REPLICATIONPARAM_STORE, VersionObjectHandler.replicationStore);
             this.replicationCache = replicationParams.getAsInteger(VersionObject.Object.REPLICATIONPARAM_LOWWATER, VersionObjectHandler.replicationCache);
-            this.setProperty(ObjectStore.METADATA_REPLICATION_STORE, this.replicationStore);
-            this.setProperty(ObjectStore.METADATA_REPLICATION_LOWWATER, this.replicationCache);
+            this.setProperty(TitanObjectStore.METADATA_REPLICATION_STORE, this.replicationStore);
+            this.setProperty(TitanObjectStore.METADATA_REPLICATION_LOWWATER, this.replicationCache);
 
             this.version = new AnchorObjectHandler.AObject.Version(null, 0);
             this.bObjectList = new TreeMap<Long,BlockObject.Object.Reference>();
@@ -264,7 +264,7 @@ public final class VersionObjectHandler extends AbstractObjectHandler implements
                 .add(String.valueOf(this.getVersion().getSerialNumber()));
         }
 
-        public void delete(TitanGuid profferedDeleteToken, long timeToLive) throws BeehiveObjectStore.DeleteTokenException {
+        public void delete(TitanGuid profferedDeleteToken, long timeToLive) throws TitanObjectStoreImpl.DeleteTokenException {
             DeleteableObject.ObjectDeleteHelper(this, profferedDeleteToken, timeToLive);
         }
 
@@ -793,24 +793,26 @@ public final class VersionObjectHandler extends AbstractObjectHandler implements
         return new PublishDaemon.PublishObject.PublishUnpublishResponseImpl(this.node.getNodeAddress());
     }
 
-    public Publish.PublishUnpublishResponse storeLocalObject(TitanMessage message, VersionObject.Object vObject) throws ClassNotFoundException, ClassCastException, BeehiveObjectStore.NoSpaceException, BeehiveObjectStore.DeleteTokenException,
-    BeehiveObjectStore.UnacceptableObjectException, BeehiveObjectPool.Exception, BeehiveObjectStore.InvalidObjectIdException, BeehiveObjectStore.InvalidObjectException, BeehiveObjectStore.Exception {
+    public Publish.PublishUnpublishResponse storeLocalObject(TitanMessage message, VersionObject.Object vObject) throws ClassNotFoundException,
+      ClassCastException, TitanObjectStoreImpl.NoSpaceException, TitanObjectStoreImpl.DeleteTokenException,
+      TitanObjectStoreImpl.UnacceptableObjectException, BeehiveObjectPool.Exception, TitanObjectStoreImpl.InvalidObjectIdException,
+      TitanObjectStoreImpl.InvalidObjectException, TitanObjectStoreImpl.Exception {
         Publish.PublishUnpublishResponse reply = StorableObject.storeLocalObject(this, vObject, message);
         return reply;
     }
 
-    public VersionObject.Object storeObject(VersionObject.Object vObject)
-    throws IOException, BeehiveObjectStore.NoSpaceException, BeehiveObjectStore.DeleteTokenException, BeehiveObjectStore.UnacceptableObjectException, BeehiveObjectPool.Exception {
+    public VersionObject.Object storeObject(VersionObject.Object vObject) throws IOException, TitanObjectStoreImpl.NoSpaceException,
+      TitanObjectStoreImpl.DeleteTokenException, TitanObjectStoreImpl.UnacceptableObjectException, BeehiveObjectPool.Exception, ClassCastException, ClassNotFoundException {
         StorableObject.storeObject(this, vObject);
         return vObject;
     }
 
-    public TitanObject retrieveLocalObject(TitanMessage message, TitanGuid objectId) throws BeehiveObjectStore.NotFoundException {
+    public TitanObject retrieveLocalObject(TitanMessage message, TitanGuid objectId) throws TitanObjectStoreImpl.NotFoundException {
         return this.node.getObjectStore().get(TitanObject.class, message.subjectId);
     }
 
     public ReplicatableObject.Replicate.Response replicateObject(TitanMessage message) throws ClassNotFoundException, ClassCastException,
-    BeehiveObjectStore.NotFoundException, BeehiveObjectStore.DeletedObjectException, BeehiveObjectStore.NoSpaceException, BeehiveObjectStore.UnacceptableObjectException, BeehiveObjectPool.Exception {
+    TitanObjectStoreImpl.NotFoundException, TitanObjectStoreImpl.DeletedObjectException, TitanObjectStoreImpl.NoSpaceException, TitanObjectStoreImpl.UnacceptableObjectException, BeehiveObjectPool.Exception {
         try {
             ReplicatableObject.Replicate.Request request = message.getPayload(ReplicatableObject.Replicate.Request.class, this.node);
             if (this.log.isLoggable(Level.FINE)) {
@@ -828,7 +830,7 @@ public final class VersionObjectHandler extends AbstractObjectHandler implements
                 this.log.fine("excluding %s", excludeNodes);
             }
 
-            aObject.setProperty(ObjectStore.METADATA_SECONDSTOLIVE, aObject.getRemainingSecondsToLive(Time.currentTimeInSeconds()));
+            aObject.setProperty(TitanObjectStore.METADATA_SECONDSTOLIVE, aObject.getRemainingSecondsToLive(Time.currentTimeInSeconds()));
 
             StorableObject.storeObject(this, aObject, 1, excludeNodes, null);
 
@@ -845,12 +847,12 @@ public final class VersionObjectHandler extends AbstractObjectHandler implements
      * </p>
      * @throws RemoteException 
      */
-    public VersionObject.Object retrieve(TitanGuid objectId) throws ClassCastException, ClassNotFoundException, BeehiveObjectStore.DeletedObjectException, BeehiveObjectStore.NotFoundException {
+    public VersionObject.Object retrieve(TitanGuid objectId) throws ClassCastException, ClassNotFoundException, TitanObjectStoreImpl.DeletedObjectException, TitanObjectStoreImpl.NotFoundException {
         return RetrievableObject.retrieve(this, VersionObject.Object.class, objectId);
     }
 
     public Manifest getManifest(TitanGuid objectId, long offset, long length)
-    throws ClassCastException, ClassNotFoundException, VersionObject.BadManifestException, DeletedObjectException, BeehiveObjectStore.NotFoundException, RemoteException {
+    throws ClassCastException, ClassNotFoundException, VersionObject.BadManifestException, DeletedObjectException, TitanObjectStoreImpl.NotFoundException, RemoteException {
         // XXX Make this a request and send it to the object.
         VersionObject.Object vObject = this.retrieve(objectId);
         VersionObject.Manifest manifest = vObject.getManifest(offset, length);
@@ -858,7 +860,7 @@ public final class VersionObjectHandler extends AbstractObjectHandler implements
     }
 
     public DeleteableObject.Response deleteLocalObject(TitanMessage message, DeleteableObject.Request request)throws ClassNotFoundException,
-    BeehiveObjectStore.DeleteTokenException, BeehiveObjectStore.DeletedObjectException, BeehiveObjectStore.NoSpaceException, BeehiveObjectStore.InvalidObjectException, BeehiveObjectStore.ObjectExistenceException, BeehiveObjectStore.UnacceptableObjectException, BeehiveObjectStore.NotFoundException {
+    TitanObjectStoreImpl.DeleteTokenException, TitanObjectStoreImpl.DeletedObjectException, TitanObjectStoreImpl.NoSpaceException, TitanObjectStoreImpl.InvalidObjectException, TitanObjectStoreImpl.ObjectExistenceException, TitanObjectStoreImpl.UnacceptableObjectException, TitanObjectStoreImpl.NotFoundException {
         if (this.deleteLocalObjectLocks.trylock(message.subjectId)) {
             if (this.log.isLoggable(Level.FINE)) {
                 this.log.fine("%s", message.subjectId);
@@ -878,7 +880,7 @@ public final class VersionObjectHandler extends AbstractObjectHandler implements
     }
 
     public DOLRStatus deleteObject(TitanGuid objectId, TitanGuid profferedDeletionToken, long timeToLive)
-    throws BeehiveObjectStore.NoSpaceException {
+    throws TitanObjectStoreImpl.NoSpaceException {
 
         if (this.log.isLoggable(Level.FINE)) {
             this.log.fine("%s %s %ds", objectId, profferedDeletionToken, timeToLive);
@@ -891,8 +893,8 @@ public final class VersionObjectHandler extends AbstractObjectHandler implements
         return reply.getStatus();
     }
 
-    public TitanObject createAntiObject(DeleteableObject.Handler.Object object, TitanGuid profferedDeleteToken, long timeToLive) throws BeehiveObjectStore.NoSpaceException,
-    BeehiveObjectStore.DeleteTokenException {
+    public TitanObject createAntiObject(DeleteableObject.Handler.Object object, TitanGuid profferedDeleteToken, long timeToLive) throws TitanObjectStoreImpl.NoSpaceException,
+    TitanObjectStoreImpl.DeleteTokenException {
 
         //this.log.info("%s", object.getObjectId());
 

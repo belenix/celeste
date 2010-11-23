@@ -97,15 +97,15 @@ import sunlabs.celeste.util.ACL;
 import sunlabs.celeste.util.CelesteIO;
 import sunlabs.titan.TitanGuidImpl;
 import sunlabs.titan.api.Credential;
-import sunlabs.titan.api.ObjectStore;
+import sunlabs.titan.api.TitanObjectStore;
 import sunlabs.titan.api.TitanGuid;
 import sunlabs.titan.api.TitanNode;
 import sunlabs.titan.api.TitanObject;
 import sunlabs.titan.node.AbstractTitanObject;
 import sunlabs.titan.node.BeehiveObjectPool;
-import sunlabs.titan.node.BeehiveObjectStore;
-import sunlabs.titan.node.BeehiveObjectStore.DeleteTokenException;
-import sunlabs.titan.node.BeehiveObjectStore.UnacceptableObjectException;
+import sunlabs.titan.node.TitanObjectStoreImpl;
+import sunlabs.titan.node.TitanObjectStoreImpl.DeleteTokenException;
+import sunlabs.titan.node.TitanObjectStoreImpl.UnacceptableObjectException;
 import sunlabs.titan.node.TitanMessage.RemoteException;
 import sunlabs.titan.node.TitanNodeImpl;
 import sunlabs.titan.node.object.MutableObject;
@@ -755,7 +755,7 @@ public class CelesteClientDaemon extends AbstractTitanService {
             try {
                 anchorObjectHandler.retrieve(operation.getFileIdentifier());
                 throw new CelesteException.AlreadyExistsException("File exists %s", operation.getFileIdentifier());
-            } catch (BeehiveObjectStore.NotFoundException e) {
+            } catch (TitanObjectStoreImpl.NotFoundException e) {
                 // The object is NOT supposed to exist at this point.
                 //this.log.info("AObject %s does not already exist (good).", anchorObjectHandler.makeObjectId(vObject.getCreatorId(), vObject.getFileId()));
             }
@@ -817,11 +817,11 @@ public class CelesteClientDaemon extends AbstractTitanService {
             throw new CelesteException.RuntimeException(e);
         } catch (MutableObject.ObjectHistory.ValidationException e) {
             throw new CelesteException.RuntimeException(e);
-        } catch (BeehiveObjectStore.NoSpaceException e) {
+        } catch (TitanObjectStoreImpl.NoSpaceException e) {
             throw new CelesteException.NoSpaceException(e);
-        } catch (BeehiveObjectStore.DeleteTokenException e) {
+        } catch (TitanObjectStoreImpl.DeleteTokenException e) {
             throw new CelesteException.IllegalParameterException(e);
-        } catch (BeehiveObjectStore.DeletedObjectException e) {
+        } catch (TitanObjectStoreImpl.DeletedObjectException e) {
             throw new CelesteException.DeletedException(e);
         } catch (MutableObject.ProtocolException e) {
             throw new CelesteException.RuntimeException(e);
@@ -873,7 +873,7 @@ public class CelesteClientDaemon extends AbstractTitanService {
                 this.log.fine("%s", status.toString());
             }
             return Boolean.TRUE;
-        } catch (BeehiveObjectStore.NoSpaceException e) {
+        } catch (TitanObjectStoreImpl.NoSpaceException e) {
             throw new CelesteException.NoSpaceException(e);
         } catch (ClassCastException e) {
             throw new CelesteException.RuntimeException(e);
@@ -924,9 +924,9 @@ public class CelesteClientDaemon extends AbstractTitanService {
             }
             return reply;
 
-        } catch (BeehiveObjectStore.DeletedObjectException e) {
+        } catch (TitanObjectStoreImpl.DeletedObjectException e) {
             throw new CelesteException.DeletedException(e);
-        } catch (BeehiveObjectStore.NotFoundException e) {
+        } catch (TitanObjectStoreImpl.NotFoundException e) {
             throw new CelesteException.NotFoundException(e);
         } catch (MutableObject.InsufficientResourcesException e) {
             throw new CelesteException.RuntimeException(e);
@@ -1002,9 +1002,9 @@ public class CelesteClientDaemon extends AbstractTitanService {
             throw new CelesteException.RuntimeException(e);
         } catch (MutableObject.ProtocolException e) {
             throw new CelesteException.RuntimeException(e);
-        } catch (BeehiveObjectStore.DeletedObjectException e) {
+        } catch (TitanObjectStoreImpl.DeletedObjectException e) {
             throw new CelesteException.DeletedException(e);
-        } catch (BeehiveObjectStore.NotFoundException e) {
+        } catch (TitanObjectStoreImpl.NotFoundException e) {
             throw new CelesteException.NotFoundException(e);
         } catch (MutableObject.NotFoundException e) {
             throw new CelesteException.NotFoundException("Cannot determine current version for File %s", operation.getFileIdentifier());
@@ -1074,9 +1074,9 @@ public class CelesteClientDaemon extends AbstractTitanService {
 
             ResponseMessage result = new ResponseMessage(this.fillMetadata(aObject, vObject, currentLock), newLock);
             return result;
-        } catch (BeehiveObjectStore.DeletedObjectException e) {
+        } catch (TitanObjectStoreImpl.DeletedObjectException e) {
             throw new CelesteException.DeletedException(e);
-        } catch (BeehiveObjectStore.NotFoundException e) {
+        } catch (TitanObjectStoreImpl.NotFoundException e) {
             throw new CelesteException.NotFoundException(e);
         } catch (MutableObject.InsufficientResourcesException e) {
             throw new CelesteException.RuntimeException(e);
@@ -1336,9 +1336,9 @@ public class CelesteClientDaemon extends AbstractTitanService {
                 this.log.fine("OK new VObject.Reference %s", newVObjectReference);
             }
             return result;
-        } catch (BeehiveObjectStore.NoSpaceException e) {
+        } catch (TitanObjectStoreImpl.NoSpaceException e) {
             throw new CelesteException.NoSpaceException(e);
-        } catch (BeehiveObjectStore.DeletedObjectException e) {
+        } catch (TitanObjectStoreImpl.DeletedObjectException e) {
             throw new CelesteException.DeletedException(e);
         } catch (MutableObject.PredicatedValueException e) {
             throw new CelesteException.RuntimeException(e);
@@ -1346,9 +1346,9 @@ public class CelesteClientDaemon extends AbstractTitanService {
             throw new CelesteException.RuntimeException(e);
         } catch (MutableObject.ObjectHistory.ValidationException e) {
             throw new CelesteException.RuntimeException(e);
-        } catch (BeehiveObjectStore.DeleteTokenException e) {
+        } catch (TitanObjectStoreImpl.DeleteTokenException e) {
             throw new CelesteException.RuntimeException(e);
-        } catch (BeehiveObjectStore.NotFoundException e) {
+        } catch (TitanObjectStoreImpl.NotFoundException e) {
             throw new CelesteException.NotFoundException(e);
         } catch (sunlabs.titan.node.object.MutableObject.NotFoundException e) {
             throw new CelesteException.NotFoundException(e);
@@ -1356,7 +1356,7 @@ public class CelesteClientDaemon extends AbstractTitanService {
             throw new CelesteException.RuntimeException(e);
         } catch (MutableObject.DeletedException e) {
             throw new CelesteException.DeletedException(e);
-        } catch (BeehiveObjectStore.UnacceptableObjectException e) {
+        } catch (TitanObjectStoreImpl.UnacceptableObjectException e) {
             throw new CelesteException.RuntimeException(e);
         } catch (BeehiveObjectPool.Exception e) {
             throw new CelesteException.RuntimeException(e);
@@ -1410,12 +1410,12 @@ public class CelesteClientDaemon extends AbstractTitanService {
                     VersionObject.Object.Reference vObjectReference = currentVersion.getReference();
                     vObjectId = vObjectReference.getObjectId();
                 }
-            } catch (BeehiveObjectStore.DeletedObjectException e) {
+            } catch (TitanObjectStoreImpl.DeletedObjectException e) {
                 if (this.log.isLoggable(Level.FINEST)) {
                     this.log.finest("AObject %s deleted", operation.getFileIdentifier());
                 }
                 throw new CelesteException.DeletedException(e);
-            } catch (BeehiveObjectStore.NotFoundException e) {
+            } catch (TitanObjectStoreImpl.NotFoundException e) {
                 throw new CelesteException.NotFoundException(e);
             } catch (MutableObject.InsufficientResourcesException e) {
                 throw new CelesteException.RuntimeException(e);
@@ -1519,10 +1519,10 @@ public class CelesteClientDaemon extends AbstractTitanService {
             ResponseMessage reply = new ResponseMessage(metadata, e);
 
             return reply;
-        } catch (BeehiveObjectStore.DeletedObjectException deleted) {
+        } catch (TitanObjectStoreImpl.DeletedObjectException deleted) {
             deleted.printStackTrace();
             return new ResponseMessage(deleted);
-        } catch (BeehiveObjectStore.NotFoundException e) {
+        } catch (TitanObjectStoreImpl.NotFoundException e) {
             return new ResponseMessage(e);
         } catch (ClassCastException e) {
             throw new CelesteException.RuntimeException(e);
@@ -1717,9 +1717,9 @@ public class CelesteClientDaemon extends AbstractTitanService {
                 this.log.fine("OK");
             }
             return metaData;
-        } catch (BeehiveObjectStore.DeletedObjectException e) {
+        } catch (TitanObjectStoreImpl.DeletedObjectException e) {
             throw new CelesteException.DeletedException(e);
-        } catch (BeehiveObjectStore.NoSpaceException e) {
+        } catch (TitanObjectStoreImpl.NoSpaceException e) {
             throw new CelesteException.NoSpaceException(e);
         } catch (MutableObject.PredicatedValueException e) {
             throw new CelesteException.OutOfDateException(e);
@@ -1727,9 +1727,9 @@ public class CelesteClientDaemon extends AbstractTitanService {
             throw new CelesteException.RuntimeException(e);
         } catch (MutableObject.ObjectHistory.ValidationException e) {
             throw new CelesteException.RuntimeException(e);
-        } catch (BeehiveObjectStore.DeleteTokenException e) {
+        } catch (TitanObjectStoreImpl.DeleteTokenException e) {
             throw new CelesteException.RuntimeException(e);
-        } catch (BeehiveObjectStore.NotFoundException e) {
+        } catch (TitanObjectStoreImpl.NotFoundException e) {
             throw new CelesteException.NotFoundException(e);
         } catch (MutableObject.NotFoundException e) {
             throw new CelesteException.NotFoundException("Cannot determine latest version of File %s",  operation.getFileIdentifier());
@@ -1737,7 +1737,7 @@ public class CelesteClientDaemon extends AbstractTitanService {
             throw new CelesteException.RuntimeException(e);
         } catch (MutableObject.DeletedException e) {
             throw new CelesteException.DeletedException(e);
-        } catch (BeehiveObjectStore.UnacceptableObjectException e) {
+        } catch (TitanObjectStoreImpl.UnacceptableObjectException e) {
             throw new CelesteException.RuntimeException(e);
         } catch (BeehiveObjectPool.Exception e) {
             throw new CelesteException.RuntimeException(e);
@@ -1777,9 +1777,9 @@ public class CelesteClientDaemon extends AbstractTitanService {
                 //
                 ReplicationParameters replicationParams = operation.getReplicationParameters();
                 int copies = replicationParams.getAsInteger(CredentialObject.Object.REPLICATIONPARAM_STORE_NAME, 3);
-                credential.setProperty(ObjectStore.METADATA_REPLICATION_STORE, copies);
+                credential.setProperty(TitanObjectStore.METADATA_REPLICATION_STORE, copies);
                 int lowWater = replicationParams.getAsInteger(CredentialObject.Object.REPLICATIONPARAM_LOWWATER_NAME, 3);
-                credential.setProperty(ObjectStore.METADATA_REPLICATION_LOWWATER, lowWater);
+                credential.setProperty(TitanObjectStore.METADATA_REPLICATION_LOWWATER, lowWater);
 
                 //
                 // If we were to follow the pattern defined by AObjects, we
@@ -1797,9 +1797,9 @@ public class CelesteClientDaemon extends AbstractTitanService {
             } else {
                 throw new CelesteException.VerificationException("Signature failed.");
             }
-        } catch (BeehiveObjectStore.NoSpaceException e) {
+        } catch (TitanObjectStoreImpl.NoSpaceException e) {
             throw new CelesteException.CredentialException(e);
-        } catch (BeehiveObjectStore.DeleteTokenException e) {
+        } catch (TitanObjectStoreImpl.DeleteTokenException e) {
             throw new CelesteException.CredentialException(e);
         } catch (Credential.Exception e) {
             throw new CelesteException.CredentialException(e);
@@ -1807,6 +1807,10 @@ public class CelesteClientDaemon extends AbstractTitanService {
             throw new CelesteException.AlreadyExistsException(e);
         } catch (BeehiveObjectPool.Exception e) {
             throw new CelesteException.AlreadyExistsException(e);
+        } catch (ClassCastException e) {
+            throw new CelesteException.RuntimeException(e);
+        } catch (ClassNotFoundException e) {
+            throw new CelesteException.RuntimeException(e);
         } finally {
             timing.print(System.out);
         }
@@ -1839,9 +1843,9 @@ public class CelesteClientDaemon extends AbstractTitanService {
                 //
                 ReplicationParameters replicationParams = operation.getReplicationParameters();
                 int copies = replicationParams.getAsInteger(CredentialObject.Object.REPLICATIONPARAM_STORE_NAME, 3);
-                credential.setProperty(ObjectStore.METADATA_REPLICATION_STORE, copies);
+                credential.setProperty(TitanObjectStore.METADATA_REPLICATION_STORE, copies);
                 int lowWater = replicationParams.getAsInteger(CredentialObject.Object.REPLICATIONPARAM_LOWWATER_NAME, 3);
-                credential.setProperty(ObjectStore.METADATA_REPLICATION_LOWWATER, lowWater);
+                credential.setProperty(TitanObjectStore.METADATA_REPLICATION_LOWWATER, lowWater);
 
                 //
                 // If we were to follow the pattern defined by AObjects, we
@@ -1857,18 +1861,22 @@ public class CelesteClientDaemon extends AbstractTitanService {
             } else {
                 throw new CelesteException.VerificationException("Signature failed.");
             }
-        } catch (BeehiveObjectStore.NoSpaceException e) {
+        } catch (TitanObjectStoreImpl.NoSpaceException e) {
             throw new CelesteException.NoSpaceException(e);
-        } catch (BeehiveObjectStore.DeleteTokenException e) {
+        } catch (TitanObjectStoreImpl.DeleteTokenException e) {
             throw new CelesteException.CredentialException(e);
         } catch (Credential.Exception e) {
             throw new CelesteException.CredentialException(e);
         } catch (NumberFormatException e) {
             throw new CelesteException.RuntimeException(e);
-        } catch (BeehiveObjectStore.UnacceptableObjectException e) {
+        } catch (TitanObjectStoreImpl.UnacceptableObjectException e) {
             throw new CelesteException.AlreadyExistsException(e);
         } catch (BeehiveObjectPool.Exception e) {
             throw new CelesteException.AlreadyExistsException(e);
+        } catch (ClassCastException e) {
+            throw new CelesteException.RuntimeException(e);
+        } catch (ClassNotFoundException e) {
+            throw new CelesteException.RuntimeException(e);
         } finally {
             timing.print(System.out);
         }
@@ -1893,9 +1901,9 @@ public class CelesteClientDaemon extends AbstractTitanService {
             //
             return credential;
             //return new ResponseMessage(new OrderedProperties(), credential);
-        } catch (BeehiveObjectStore.DeletedObjectException e) {
+        } catch (TitanObjectStoreImpl.DeletedObjectException e) {
             throw new CelesteException.RuntimeException(e);
-        } catch (BeehiveObjectStore.NotFoundException e) {
+        } catch (TitanObjectStoreImpl.NotFoundException e) {
             throw new CelesteException.NotFoundException(e);
         } catch (ClassCastException e) {
             throw new CelesteException.RuntimeException(e);
@@ -1925,9 +1933,9 @@ public class CelesteClientDaemon extends AbstractTitanService {
 
             try {
                 aObject = anchorObjectHandler.retrieve(operation.getFileIdentifier());
-            } catch (BeehiveObjectStore.DeletedObjectException e) {
+            } catch (TitanObjectStoreImpl.DeletedObjectException e) {
                 throw new CelesteException.DeletedException(operation.getFileIdentifier().toString());
-            } catch (BeehiveObjectStore.NotFoundException e) {
+            } catch (TitanObjectStoreImpl.NotFoundException e) {
                 throw new CelesteException.NotFoundException(e);
             }
 
@@ -1950,9 +1958,9 @@ public class CelesteClientDaemon extends AbstractTitanService {
 
             try {
                 vObject = versionObjectHandler.retrieve(operation.getVObjectId());
-            } catch (BeehiveObjectStore.DeletedObjectException e) {
+            } catch (TitanObjectStoreImpl.DeletedObjectException e) {
                 throw new CelesteException.DeletedException(e);
-            } catch (BeehiveObjectStore.NotFoundException e) {
+            } catch (TitanObjectStoreImpl.NotFoundException e) {
                 throw new CelesteException.NotFoundException("Cannot locate Version object %s File %s", operation.getVObjectId(), operation.getFileIdentifier());
             }
 
@@ -1996,9 +2004,9 @@ public class CelesteClientDaemon extends AbstractTitanService {
                 return metaData;
             } catch (MutableObject.InsufficientResourcesException e) {
                 throw new CelesteException.RuntimeException(e);
-            } catch (BeehiveObjectStore.NoSpaceException e) {
+            } catch (TitanObjectStoreImpl.NoSpaceException e) {
                 throw new CelesteException.NoSpaceException(e);
-            } catch (BeehiveObjectStore.DeleteTokenException e) {
+            } catch (TitanObjectStoreImpl.DeleteTokenException e) {
                 throw new CelesteException.RuntimeException(e);
             } catch (MutableObject.PredicatedValueException e) {
                 throw new CelesteException.OutOfDateException(e);
@@ -2008,7 +2016,7 @@ public class CelesteClientDaemon extends AbstractTitanService {
                 throw new CelesteException.RuntimeException(e);
             } catch (MutableObject.DeletedException e) {
                 throw new CelesteException.DeletedException(e);
-            } catch (BeehiveObjectStore.UnacceptableObjectException e) {
+            } catch (TitanObjectStoreImpl.UnacceptableObjectException e) {
                 throw new CelesteException.RuntimeException(e);
             } catch (BeehiveObjectPool.Exception e) {
                 throw new CelesteException.RuntimeException(e);
@@ -2134,9 +2142,9 @@ public class CelesteClientDaemon extends AbstractTitanService {
             throw new CelesteException.RuntimeException(e);
         } catch (MutableObject.NotFoundException e) {
             throw new CelesteException.NotFoundException("Cannot determine current version for Anchor %s", aObject.getObjectId());
-        } catch (BeehiveObjectStore.DeletedObjectException e) {
+        } catch (TitanObjectStoreImpl.DeletedObjectException e) {
             throw new CelesteException.DeletedException(e);
-        } catch (BeehiveObjectStore.NotFoundException e) {
+        } catch (TitanObjectStoreImpl.NotFoundException e) {
             throw new CelesteException.NotFoundException(e);
         } catch (MutableObject.PredicatedValueException e) {
             throw new CelesteException.OutOfDateException(e);
@@ -2215,9 +2223,9 @@ public class CelesteClientDaemon extends AbstractTitanService {
             throw new CelesteException.RuntimeException(e);
         } catch (MutableObject.NotFoundException e) {
             throw new CelesteException.NotFoundException("Cannot determine current version for %s", operation.getFileIdentifier());
-        } catch (BeehiveObjectStore.NoSpaceException e) {
+        } catch (TitanObjectStoreImpl.NoSpaceException e) {
             throw new CelesteException.NoSpaceException(e);
-        } catch (BeehiveObjectStore.DeleteTokenException e) {
+        } catch (TitanObjectStoreImpl.DeleteTokenException e) {
             throw new CelesteException.RuntimeException(e);
         } catch (MutableObject.PredicatedValueException e) {
             throw new CelesteException.OutOfDateException(e);
@@ -2225,13 +2233,13 @@ public class CelesteClientDaemon extends AbstractTitanService {
             throw new CelesteException.RuntimeException(e);
         } catch (MutableObject.ProtocolException e) {
             throw new CelesteException.RuntimeException(e);
-        } catch (BeehiveObjectStore.DeletedObjectException e) {
+        } catch (TitanObjectStoreImpl.DeletedObjectException e) {
             throw new CelesteException.DeletedException(e);
-        } catch (BeehiveObjectStore.NotFoundException e) {
+        } catch (TitanObjectStoreImpl.NotFoundException e) {
             throw new CelesteException.NotFoundException(e);
         } catch (MutableObject.DeletedException e) {
             throw new CelesteException.DeletedException(e);
-        } catch (BeehiveObjectStore.UnacceptableObjectException e) {
+        } catch (TitanObjectStoreImpl.UnacceptableObjectException e) {
             throw new CelesteException.RuntimeException(e);
         } catch (BeehiveObjectPool.Exception e) {
             throw new CelesteException.RuntimeException(e);

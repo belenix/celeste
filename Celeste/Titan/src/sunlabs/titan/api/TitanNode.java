@@ -37,7 +37,7 @@ import sunlabs.asdf.util.Attributes;
 import sunlabs.asdf.web.XML.XHTML;
 import sunlabs.asdf.web.XML.XML;
 import sunlabs.asdf.web.http.HTTP;
-import sunlabs.titan.node.BeehiveObjectStore;
+import sunlabs.titan.node.TitanObjectStoreImpl;
 import sunlabs.titan.node.NeighbourMap;
 import sunlabs.titan.node.NodeAddress;
 import sunlabs.titan.node.NodeKey;
@@ -193,7 +193,7 @@ public interface TitanNode {
 
     public Publishers getObjectPublishers();
 
-    public ObjectStore getObjectStore();
+    public TitanObjectStore getObjectStore();
 
     public TitanMessage receive(TitanMessage message);
 
@@ -246,12 +246,12 @@ public interface TitanNode {
     /**
      * @param objectId the {@link TitanGuid} of the object to remove.
      * @return {@code true} if the object was successfully removed.
-     * @throws BeehiveObjectStore.NotFoundException
+     * @throws TitanObjectStoreImpl.NotFoundException
      * @throws ClassNotFoundException
-     * @throws BeehiveObjectStore.Exception
+     * @throws TitanObjectStoreImpl.Exception
      * @throws sunlabs.titan.node.BeehiveObjectPool.Exception
      */
-    public boolean removeLocalObject(final TitanGuid objectId) throws BeehiveObjectStore.NotFoundException, ClassNotFoundException, BeehiveObjectStore.Exception, sunlabs.titan.node.BeehiveObjectPool.Exception;
+    public boolean removeLocalObject(final TitanGuid objectId) throws TitanObjectStoreImpl.NotFoundException, ClassNotFoundException, TitanObjectStoreImpl.Exception, sunlabs.titan.node.BeehiveObjectPool.Exception;
 
     /**
      * Run the given {@link Runnable} on this node's {@link ExecutorService}

@@ -27,7 +27,7 @@ import java.io.IOException;
 
 import sunlabs.titan.api.TitanGuid;
 import sunlabs.titan.api.TitanObject;
-import sunlabs.titan.node.BeehiveObjectStore;
+import sunlabs.titan.node.TitanObjectStoreImpl;
 import sunlabs.titan.node.TitanMessage;
 import sunlabs.titan.node.TitanMessage.RemoteException;
 
@@ -59,10 +59,10 @@ public class RetrievableObject {
          * </p>
          * @throws ClassCastException 
          * @throws ClassNotFoundException 
-         * @throws BeehiveObjectStore.DeletedObjectException if the object has a valid,  exposed delete-token in the meta data.
-         * @throws BeehiveObjectStore.NotFoundException if the object could not be found.
+         * @throws TitanObjectStoreImpl.DeletedObjectException if the object has a valid,  exposed delete-token in the meta data.
+         * @throws TitanObjectStoreImpl.NotFoundException if the object could not be found.
          */
-        public T retrieve(TitanGuid objectId) throws ClassCastException, ClassNotFoundException, BeehiveObjectStore.DeletedObjectException, BeehiveObjectStore.NotFoundException;
+        public T retrieve(TitanGuid objectId) throws ClassCastException, ClassNotFoundException, TitanObjectStoreImpl.DeletedObjectException, TitanObjectStoreImpl.NotFoundException;
 
         /**
          * Retrieve the local object specified in the message.
@@ -73,26 +73,26 @@ public class RetrievableObject {
          * <p>
          * The check for a deleted object is to be checked on the client side.
          * </p>
-         * @throws BeehiveObjectStore.NotFoundException 
+         * @throws TitanObjectStoreImpl.NotFoundException 
          */
-        public TitanObject retrieveLocalObject(TitanMessage message, TitanGuid objectId) throws IOException, BeehiveObjectStore.NotFoundException;
+        public TitanObject retrieveLocalObject(TitanMessage message, TitanGuid objectId) throws IOException, TitanObjectStoreImpl.NotFoundException;
     }
 
     /**
      * Retrieve the specified {@link TitanObject} from the Titan object pool.
      * The result is the object if successfully found, cast to the given {@link Class} {@code klasse}
      * (which must be an extension of the {@link TitanObject} class).
-     * Otherwise, {@link BeehiveObjectStore.NotFoundException} is thrown.
-     * If the object is successfully retrieved but has a valid exposed delete-token, a {@link BeehiveObjectStore.DeletedObjectException} is thrown.
+     * Otherwise, {@link TitanObjectStoreImpl.NotFoundException} is thrown.
+     * If the object is successfully retrieved but has a valid exposed delete-token, a {@link TitanObjectStoreImpl.DeletedObjectException} is thrown.
      *
      * @throws ClassCastException if the retrieved object cannot be cast to the given {@code Class}.
-     * @throws BeehiveObjectStore.NotFoundException if the object cannot be found in the object pool
-     * @throws BeehiveObjectStore.DeletedObjectException if the object was found but has a valid delete-token in the metadata.
+     * @throws TitanObjectStoreImpl.NotFoundException if the object cannot be found in the object pool
+     * @throws TitanObjectStoreImpl.DeletedObjectException if the object was found but has a valid delete-token in the metadata.
      */
     public static <C extends TitanObject> C retrieve(RetrievableObject.Handler<? extends RetrievableObject.Handler.Object> handler,
             Class<? extends C> klasse,
             TitanGuid objectId)
-    throws ClassCastException, ClassNotFoundException, BeehiveObjectStore.NotFoundException, BeehiveObjectStore.DeletedObjectException {
+    throws ClassCastException, ClassNotFoundException, TitanObjectStoreImpl.NotFoundException, TitanObjectStoreImpl.DeletedObjectException {
 
         TitanMessage reply = handler.getNode().sendToObject(objectId, handler.getName(), "retrieveLocalObject", objectId);
 
@@ -101,11 +101,11 @@ public class RetrievableObject {
             if (!DeleteableObject.deleteTokenIsValid(object.getMetadata())) {
                 return object;
             }
-            throw new BeehiveObjectStore.DeletedObjectException();
+            throw new TitanObjectStoreImpl.DeletedObjectException();
         } catch (RemoteException e) {
             Throwable cause = e.getCause();
-            if (cause instanceof BeehiveObjectStore.NotFoundException) {
-                throw (BeehiveObjectStore.NotFoundException) cause;
+            if (cause instanceof TitanObjectStoreImpl.NotFoundException) {
+                throw (TitanObjectStoreImpl.NotFoundException) cause;
             }
             throw new RuntimeException(e);
         }

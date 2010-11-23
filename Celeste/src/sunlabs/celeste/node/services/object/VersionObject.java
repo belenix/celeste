@@ -41,9 +41,9 @@ import sunlabs.celeste.node.object.AccessControlledObject;
 import sunlabs.celeste.node.object.ExtensibleObject;
 import sunlabs.titan.api.Credential;
 import sunlabs.titan.api.TitanGuid;
-import sunlabs.titan.exception.BeehiveException;
+import sunlabs.titan.exception.TitanException;
 import sunlabs.titan.node.TitanMessage.RemoteException;
-import sunlabs.titan.node.BeehiveObjectStore;
+import sunlabs.titan.node.TitanObjectStoreImpl;
 import sunlabs.titan.node.object.DeleteableObject;
 import sunlabs.titan.node.object.InspectableObject;
 import sunlabs.titan.node.object.ReplicatableObject;
@@ -69,7 +69,7 @@ public interface VersionObject extends
         ReplicatableObject.Handler<VersionObject.Object>,
         ExtensibleObject.Handler<VersionObject.Object> {
 
-    public class BadManifestException extends BeehiveException {
+    public class BadManifestException extends TitanException {
         private final static long serialVersionUID = 1L;
 
         public BadManifestException() {
@@ -333,11 +333,11 @@ public interface VersionObject extends
      * @param length
      * @throws VersionObject.BadManifestException
      * @throws ClassCastException
-     * @throws BeehiveObjectStore.DeletedObjectException
-     * @throws BeehiveObjectStore.NotFoundException
+     * @throws TitanObjectStoreImpl.DeletedObjectException
+     * @throws TitanObjectStoreImpl.NotFoundException
      * @throws RemoteException 
      * @throws ClassNotFoundException 
      */
     public Manifest getManifest(TitanGuid objectId, long offset, long length)
-    throws VersionObject.BadManifestException, ClassCastException, BeehiveObjectStore.DeletedObjectException, BeehiveObjectStore.NotFoundException, RemoteException, ClassNotFoundException;
+    throws VersionObject.BadManifestException, ClassCastException, TitanObjectStoreImpl.DeletedObjectException, TitanObjectStoreImpl.NotFoundException, RemoteException, ClassNotFoundException;
 }

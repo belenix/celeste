@@ -33,7 +33,7 @@ import sunlabs.asdf.web.http.HTTP;
 import sunlabs.titan.TitanGuidImpl;
 import sunlabs.titan.api.TitanNode;
 import sunlabs.titan.api.TitanObject;
-import sunlabs.titan.node.BeehiveObjectStore;
+import sunlabs.titan.node.TitanObjectStoreImpl;
 import sunlabs.titan.node.TitanMessage;
 import sunlabs.titan.node.TitanMessage.RemoteException;
 import sunlabs.titan.node.services.api.RetrieveObject;
@@ -57,7 +57,7 @@ public final class RetrieveObjectService extends AbstractTitanService implements
 //        // as transmitting an UnpublishObject message for this object to clean
 //        // up any misconceptions that this object is here.
 //        this.node.removeLocalObject(message.subjectId);
-        } catch (BeehiveObjectStore.NotFoundException e) {
+        } catch (TitanObjectStoreImpl.NotFoundException e) {
             return message.composeReply(this.node.getNodeAddress(), e);
 
         }

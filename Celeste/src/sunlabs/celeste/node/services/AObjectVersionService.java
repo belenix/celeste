@@ -46,12 +46,12 @@ import sunlabs.celeste.client.operation.LockFileOperation;
 import sunlabs.celeste.node.services.api.AObjectVersionMapAPI;
 import sunlabs.celeste.node.services.object.VersionObject;
 import sunlabs.titan.TitanGuidImpl;
-import sunlabs.titan.api.ObjectStore;
+import sunlabs.titan.api.TitanObjectStore;
 import sunlabs.titan.api.TitanGuid;
 import sunlabs.titan.api.TitanNode;
 import sunlabs.titan.api.TitanObject.Metadata;
 import sunlabs.titan.node.AbstractTitanObject;
-import sunlabs.titan.node.BeehiveObjectStore;
+import sunlabs.titan.node.TitanObjectStoreImpl;
 import sunlabs.titan.node.Publishers.PublishRecord;
 import sunlabs.titan.node.TitanMessage;
 import sunlabs.titan.node.object.AbstractObjectHandler;
@@ -299,9 +299,9 @@ public class AObjectVersionService extends AbstractObjectHandler implements AObj
         public FSBFTObject(MutableObject.ObjectHistory history, long timeToLive, TitanGuid deleteTokenId) {
             super(AObjectVersionService.class, deleteTokenId, timeToLive);
             this.history = history;
-            this.setProperty(ObjectStore.METADATA_REPLICATION_STORE, 1);
-            this.setProperty(ObjectStore.METADATA_REPLICATION_LOWWATER, 1);
-            this.setProperty(ObjectStore.METADATA_REPLICATION_HIGHWATER, 1);
+            this.setProperty(TitanObjectStore.METADATA_REPLICATION_STORE, 1);
+            this.setProperty(TitanObjectStore.METADATA_REPLICATION_LOWWATER, 1);
+            this.setProperty(TitanObjectStore.METADATA_REPLICATION_HIGHWATER, 1);
         }
 
         @Override
@@ -382,16 +382,16 @@ public class AObjectVersionService extends AbstractObjectHandler implements AObj
      * @throws ClassNotFoundException 
      * @throws TitanMessage.RemoteException 
      * @throws ClassCastException 
-     * @throws BeehiveObjectStore.DeleteTokenException 
-     * @throws BeehiveObjectStore.UnacceptableObjectException 
-     * @throws BeehiveObjectStore.NoSpaceException 
-     * @throws BeehiveObjectStore.InvalidObjectException 
-     * @throws BeehiveObjectStore.NotFoundException 
-     * @throws BeehiveObjectStore.ObjectExistenceException 
+     * @throws TitanObjectStoreImpl.DeleteTokenException 
+     * @throws TitanObjectStoreImpl.UnacceptableObjectException 
+     * @throws TitanObjectStoreImpl.NoSpaceException 
+     * @throws TitanObjectStoreImpl.InvalidObjectException 
+     * @throws TitanObjectStoreImpl.NotFoundException 
+     * @throws TitanObjectStoreImpl.ObjectExistenceException 
      */
-    public MutableObject.CreateOperation.Response createObjectHistory(TitanMessage message, MutableObject.CreateOperation.Request request) throws ClassCastException, TitanMessage.RemoteException, ClassNotFoundException, BeehiveObjectStore.DeleteTokenException,
-        BeehiveObjectStore.UnacceptableObjectException, BeehiveObjectStore.InvalidObjectException, BeehiveObjectStore.NoSpaceException, BeehiveObjectStore.NotFoundException,
-        BeehiveObjectStore.ObjectExistenceException {
+    public MutableObject.CreateOperation.Response createObjectHistory(TitanMessage message, MutableObject.CreateOperation.Request request) throws ClassCastException, TitanMessage.RemoteException, ClassNotFoundException, TitanObjectStoreImpl.DeleteTokenException,
+        TitanObjectStoreImpl.UnacceptableObjectException, TitanObjectStoreImpl.InvalidObjectException, TitanObjectStoreImpl.NoSpaceException, TitanObjectStoreImpl.NotFoundException,
+        TitanObjectStoreImpl.ObjectExistenceException {
 
         // The message contains a CreateOperation.Request as the payload.
 //        MutableObject.CreateOperation.Request request = message.getPayload(MutableObject.CreateOperation.Request.class, this.node);
@@ -404,14 +404,14 @@ public class AObjectVersionService extends AbstractObjectHandler implements AObj
         initialObjectHistory.add(new MutableObject.TimeStamp());
         AObjectVersionService.FSBFTObject object = new AObjectVersionService.FSBFTObject(initialObjectHistory, request.getTimeToLive(),  request.getDeleteTokenId());
 
-        BeehiveObjectStore.CreateSignatureVerifiedObject(request.getReplicaId(), object);
+        TitanObjectStoreImpl.CreateSignatureVerifiedObject(request.getReplicaId(), object);
         try {
             TitanGuid objectId = AObjectVersionService.this.node.getObjectStore().create(object);
             AObjectVersionService.this.node.getObjectStore().get(AObjectVersionService.FSBFTObject.class, objectId);
             MutableObject.CreateOperation.Response result = new MutableObject.CreateOperation.Response(initialObjectHistory);
             return result;
             //return message.composeReply(this.getNode().getNodeAddress(), result);
-        } catch (BeehiveObjectStore.ObjectExistenceException e) {
+        } catch (TitanObjectStoreImpl.ObjectExistenceException e) {
             object = AObjectVersionService.this.node.getObjectStore().getAndLock(AObjectVersionService.FSBFTObject.class, request.getReplicaId());
             try {
                 if (!object.getObjectHistory().isInitial()) {
@@ -444,7 +444,7 @@ public class AObjectVersionService extends AbstractObjectHandler implements AObj
      * replica to be created (because some previous replica became unavailable).
      * </p>
      */
-    public MutableObject.GetOperation.Response getObjectHistory(TitanMessage message, MutableObject.GetOperation.Request request) throws ClassCastException, BeehiveObjectStore.NotFoundException {
+    public MutableObject.GetOperation.Response getObjectHistory(TitanMessage message, MutableObject.GetOperation.Request request) throws ClassCastException, TitanObjectStoreImpl.NotFoundException {
 //        MutableObject.GetOperation.Request request = message.getPayload(MutableObject.GetOperation.Request.class, this.node);
         TitanGuid replicaId = request.getReplicaId();
         AObjectVersionService.FSBFTObject linearizerObject =
@@ -459,9 +459,9 @@ public class AObjectVersionService extends AbstractObjectHandler implements AObj
     }
 
     public MutableObject.SetOperation.Response setObjectHistory(TitanMessage message, MutableObject.SetOperation.Request request) throws ClassNotFoundException, ClassCastException, IOException,
-        MutableObject.ObjectHistory.OutOfDateException, BeehiveObjectStore.DeleteTokenException, BeehiveObjectStore.InvalidObjectException,
-        BeehiveObjectStore.UnacceptableObjectException, BeehiveObjectStore.ObjectExistenceException, BeehiveObjectStore.NoSpaceException,
-        BeehiveObjectStore.NotFoundException {
+        MutableObject.ObjectHistory.OutOfDateException, TitanObjectStoreImpl.DeleteTokenException, TitanObjectStoreImpl.InvalidObjectException,
+        TitanObjectStoreImpl.UnacceptableObjectException, TitanObjectStoreImpl.ObjectExistenceException, TitanObjectStoreImpl.NoSpaceException,
+        TitanObjectStoreImpl.NotFoundException {
 
         //this.log.info("Update: %s ohsId=%s %s", message.subjectId, request.getObjectHistorySet().getHash(), request.getObjectHistorySet().state);
 
@@ -479,7 +479,7 @@ public class AObjectVersionService extends AbstractObjectHandler implements AObj
             objectHistory.setValue(this.log, message.getSource().getObjectId(), request.getObjectHistorySet(), request.getValue());
             object.setObjectHistory(objectHistory);
 
-            BeehiveObjectStore.CreateSignatureVerifiedObject(message.subjectId, object);
+            TitanObjectStoreImpl.CreateSignatureVerifiedObject(message.subjectId, object);
             TitanGuid objectId = this.node.getObjectStore().update(object);
 
             MutableObject.SetOperation.Response response = new MutableObject.SetOperation.Response(objectHistory);
@@ -487,7 +487,7 @@ public class AObjectVersionService extends AbstractObjectHandler implements AObj
         } finally {
             try {
                 AObjectVersionService.this.node.getObjectStore().unlock(object);
-            } catch (sunlabs.titan.node.BeehiveObjectStore.Exception e) {
+            } catch (sunlabs.titan.node.TitanObjectStoreImpl.Exception e) {
                 // TODO Auto-generated catch block
                 e.printStackTrace();
             } catch (sunlabs.titan.node.BeehiveObjectPool.Exception e) {
@@ -533,7 +533,7 @@ public class AObjectVersionService extends AbstractObjectHandler implements AObj
      * is obligated to not publish the object again, and all intermediate nodes are obligated
      * to remove any back-pointer to this object.
      */
-    public Publish.PublishUnpublishResponse publishObject(TitanMessage message, Publish.PublishUnpublishRequest request) throws ClassNotFoundException, ClassCastException, BeehiveObjectStore.ObjectExistenceException {
+    public Publish.PublishUnpublishResponse publishObject(TitanMessage message, Publish.PublishUnpublishRequest request) throws ClassNotFoundException, ClassCastException, TitanObjectStoreImpl.ObjectExistenceException {
         // Because the message may come from the root of a published object, in it's attempts make backup copies of the publish record,
         // the message.source can be different than the publisher encoded in the request.
 
@@ -546,7 +546,7 @@ public class AObjectVersionService extends AbstractObjectHandler implements AObj
             if (alreadyPublishedObjects.size() >= 1) { // The number used here is the total number allowed in the system.
                 for (PublishRecord record : alreadyPublishedObjects) {
                     if (!record.getNodeId().equals(request.getPublisherAddress().getObjectId())) {
-                        throw new BeehiveObjectStore.ObjectExistenceException();                            
+                        throw new TitanObjectStoreImpl.ObjectExistenceException();                            
                     }
                 }
             }

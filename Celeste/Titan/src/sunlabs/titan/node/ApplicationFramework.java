@@ -57,8 +57,8 @@ import sunlabs.titan.api.TitanNode;
 import sunlabs.titan.api.TitanService;
 import sunlabs.titan.api.TitanServiceFramework;
 import sunlabs.titan.api.XHTMLInspectable;
-import sunlabs.titan.node.BeehiveObjectStore.NotFoundException;
-import sunlabs.titan.node.BeehiveObjectStore.ObjectExistenceException;
+import sunlabs.titan.node.TitanObjectStoreImpl.NotFoundException;
+import sunlabs.titan.node.TitanObjectStoreImpl.ObjectExistenceException;
 import sunlabs.titan.node.services.AbstractTitanService;
 import sunlabs.titan.node.services.HTTPMessageService;
 import sunlabs.titan.node.services.api.AppClass;
@@ -1244,7 +1244,7 @@ public final class ApplicationFramework implements TitanServiceFramework, XHTMLI
             try {
                 AppClass.AppClassObject object = appClassObjectType.retrieve(nameID);
                 infoList = object.getInfoList();
-            } catch (BeehiveObjectStore.DeletedObjectException e) {
+            } catch (TitanObjectStoreImpl.DeletedObjectException e) {
                 throw new RuntimeException("Beehive Service has been deleted in the object pool: " + appName);
             } catch (NotFoundException e) {
                 throw new RuntimeException("Beehive Service not found in the object pool: " + appName);

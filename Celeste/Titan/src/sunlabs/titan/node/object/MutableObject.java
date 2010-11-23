@@ -60,12 +60,13 @@ import sunlabs.titan.api.TitanGuid;
 import sunlabs.titan.api.TitanNode;
 import sunlabs.titan.api.TitanNodeId;
 import sunlabs.titan.api.XHTMLInspectable;
-import sunlabs.titan.node.BeehiveObjectStore;
+import sunlabs.titan.node.TitanObjectStoreImpl;
 import sunlabs.titan.node.TitanMessage;
 import sunlabs.titan.node.TitanMessage.RemoteException;
 import sunlabs.titan.node.services.Census;
 import sunlabs.titan.node.services.HTTPMessageService;
 import sunlabs.titan.node.services.census.CensusService;
+import sunlabs.titan.node.services.census.SelectComparator;
 import sunlabs.titan.node.util.DOLRLogger;
 import sunlabs.titan.util.DOLRStatus;
 
@@ -95,18 +96,18 @@ public class MutableObject {
          * @throws IOException 
          * @throws ClassCastException 
          * @throws MutableObject.ObjectHistory.OutOfDateException 
-         * @throws BeehiveObjectStore.DeleteTokenException 
-         * @throws BeehiveObjectStore.UnacceptableObjectException 
-         * @throws BeehiveObjectStore.InvalidObjectException 
-         * @throws BeehiveObjectStore.NoSpaceException 
-         * @throws BeehiveObjectStore.ObjectExistenceException 
-         * @throws BeehiveObjectStore.NotFoundException 
+         * @throws TitanObjectStoreImpl.DeleteTokenException 
+         * @throws TitanObjectStoreImpl.UnacceptableObjectException 
+         * @throws TitanObjectStoreImpl.InvalidObjectException 
+         * @throws TitanObjectStoreImpl.NoSpaceException 
+         * @throws TitanObjectStoreImpl.ObjectExistenceException 
+         * @throws TitanObjectStoreImpl.NotFoundException 
          * @throws TitanMessage.RemoteException if the given {@code TitanMessage} contains an Exception thrown by the {@link TitanMessage#getPayload(Class, TitanNode)} method.
          */
         public MutableObject.SetOperation.Response setObjectHistory(TitanMessage message, MutableObject.SetOperation.Request request) throws ClassNotFoundException, ClassCastException, IOException,
-            MutableObject.ObjectHistory.OutOfDateException, BeehiveObjectStore.DeleteTokenException, BeehiveObjectStore.InvalidObjectException,
-            BeehiveObjectStore.UnacceptableObjectException, BeehiveObjectStore.ObjectExistenceException, BeehiveObjectStore.NoSpaceException,
-            BeehiveObjectStore.NotFoundException;
+            MutableObject.ObjectHistory.OutOfDateException, TitanObjectStoreImpl.DeleteTokenException, TitanObjectStoreImpl.InvalidObjectException,
+            TitanObjectStoreImpl.UnacceptableObjectException, TitanObjectStoreImpl.ObjectExistenceException, TitanObjectStoreImpl.NoSpaceException,
+            TitanObjectStoreImpl.NotFoundException;
         
         /**
          * 
@@ -116,16 +117,16 @@ public class MutableObject {
          * @throws ClassCastException
          * @throws TitanMessage.RemoteException
          * @throws ClassNotFoundException
-         * @throws BeehiveObjectStore.DeleteTokenException
-         * @throws BeehiveObjectStore.UnacceptableObjectException
-         * @throws BeehiveObjectStore.InvalidObjectException
-         * @throws BeehiveObjectStore.NoSpaceException
-         * @throws BeehiveObjectStore.NotFoundException
-         * @throws BeehiveObjectStore.ObjectExistenceException
+         * @throws TitanObjectStoreImpl.DeleteTokenException
+         * @throws TitanObjectStoreImpl.UnacceptableObjectException
+         * @throws TitanObjectStoreImpl.InvalidObjectException
+         * @throws TitanObjectStoreImpl.NoSpaceException
+         * @throws TitanObjectStoreImpl.NotFoundException
+         * @throws TitanObjectStoreImpl.ObjectExistenceException
          */
-        public MutableObject.CreateOperation.Response createObjectHistory(TitanMessage message, MutableObject.CreateOperation.Request request) throws ClassCastException, TitanMessage.RemoteException, ClassNotFoundException, BeehiveObjectStore.DeleteTokenException,
-        BeehiveObjectStore.UnacceptableObjectException, BeehiveObjectStore.InvalidObjectException, BeehiveObjectStore.NoSpaceException, BeehiveObjectStore.NotFoundException,
-        BeehiveObjectStore.ObjectExistenceException ;
+        public MutableObject.CreateOperation.Response createObjectHistory(TitanMessage message, MutableObject.CreateOperation.Request request) throws ClassCastException, TitanMessage.RemoteException, ClassNotFoundException, TitanObjectStoreImpl.DeleteTokenException,
+        TitanObjectStoreImpl.UnacceptableObjectException, TitanObjectStoreImpl.InvalidObjectException, TitanObjectStoreImpl.NoSpaceException, TitanObjectStoreImpl.NotFoundException,
+        TitanObjectStoreImpl.ObjectExistenceException ;
 
         /**
          * Get this node's object history for the specified object.
@@ -134,10 +135,10 @@ public class MutableObject {
          * @throws TitanMessage.RemoteException 
          * @throws ClassCastException 
          * @throws ClassNotFoundException 
-         * @throws BeehiveObjectStore.NotFoundException 
+         * @throws TitanObjectStoreImpl.NotFoundException 
          */
         public MutableObject.GetOperation.Response getObjectHistory(TitanMessage message, MutableObject.GetOperation.Request request) throws ClassNotFoundException, ClassCastException,
-            TitanMessage.RemoteException, BeehiveObjectStore.NotFoundException;
+            TitanMessage.RemoteException, TitanObjectStoreImpl.NotFoundException;
     }
 
     /**
@@ -1944,81 +1945,90 @@ public class MutableObject {
         }
 
         while (true) {
-            LinkedList<TitanNodeId> nodeIds = new LinkedList<TitanNodeId>(census.select(initialObjectHistorySet.getUniverseSize(), usedNodes, null).keySet());
+            try {
+                LinkedList<TitanNodeId> nodeIds = new LinkedList<TitanNodeId>(census.select(initialObjectHistorySet.getUniverseSize(), usedNodes, new LinkedList<SelectComparator>()).keySet());
 
-            if (handler.getLogger().isLoggable(Level.FINEST)) {
-                handler.getLogger().finest("Creating on %d nodes", nodeIds.size());
-            }
 
-            CountDownLatch countDown = new CountDownLatch(histories.length);
-
-            Map<FutureTask<MutableObject.ObjectHistory>, MutableObject.CreateObjectHistoryTask> taskTracker =
-                new HashMap<FutureTask<MutableObject.ObjectHistory>, MutableObject.CreateObjectHistoryTask>();
-
-            // Loop through the histories and for each one that is not filled, submit a corresponding create operation.
-            for (int i = 0; i < histories.length; i++) {
                 if (handler.getLogger().isLoggable(Level.FINEST)) {
-                    handler.getLogger().finest("replica[%d] %s", i, histories[i]);
+                    handler.getLogger().finest("Creating on %d nodes", nodeIds.size());
                 }
-                if (histories[i] == null) {
-                    TitanGuid replicaId = objectId.add(i);
-                    if (nodeIds.size() == 0)
-                    	throw new MutableObject.InsufficientResourcesException("No nodes available to create the object history.");
-                    // XXX Note that nodeIds may not contain histories.length elements and this will throw an exception.
-                    TitanNodeId nodeId = nodeIds.remove();
 
-                    usedNodes.add(nodeId);
-                    MutableObject.CreateObjectHistoryTask t = new MutableObject.CreateObjectHistoryTask(handler, countDown, nodeId, objectId, replicaId, i, deleteTokenId, histories, timeToLive);
-                    FutureTask<MutableObject.ObjectHistory> task = new FutureTask<MutableObject.ObjectHistory>(t);
-                    taskTracker.put(task, t); // track these for debugging messages below.
-                    handler.getNode().execute(task);
-                } else {
-                    countDown.countDown();
-                }
-            }
+                CountDownLatch countDown = new CountDownLatch(histories.length);
 
-            if (handler.getLogger().isLoggable(Level.FINEST)) {
-                handler.getLogger().finest("waiting for countDown=%d task size=%d", countDown.getCount(), taskTracker.size());
-            }
-            // If there were no tasks created, then all of the histories have been created. So stop.
-            if (taskTracker.size() == 0)
-                break;
+                Map<FutureTask<MutableObject.ObjectHistory>, MutableObject.CreateObjectHistoryTask> taskTracker =
+                    new HashMap<FutureTask<MutableObject.ObjectHistory>, MutableObject.CreateObjectHistoryTask>();
 
-            boolean complained = false;
-            for (;;) {
-                try {
-                    if (countDown.await(10000, TimeUnit.MILLISECONDS))
-                        break;
-                    for (Map.Entry<FutureTask<MutableObject.ObjectHistory>, MutableObject.CreateObjectHistoryTask> entry : taskTracker.entrySet()) {
-                        FutureTask<MutableObject.ObjectHistory> task = entry.getKey(); 
-                        if (!task.isDone()) {
-                            MutableObject.CreateObjectHistoryTask t = entry.getValue();
-                            handler.getLogger().warning("(id=%d) waiting for replica %s to be stored on node %s.", Thread.currentThread().getId(), task.toString(), t.replicaId, t.destinationNodeId);
-                        }                        
-                    }
-
-                    complained = true;
-                } catch (InterruptedException e) {
-                    throw new MutableObject.ProtocolException(e);
-                }
-            }
-
-            if (complained) {
-                handler.getLogger().warning("(id=%d) waiting done.", Thread.currentThread().getId());
-            }
-
-            for (FutureTask<MutableObject.ObjectHistory> task : taskTracker.keySet()) {
-                try {
-                    MutableObject.ObjectHistory history = task.get();
-                    initialObjectHistorySet.put(history);
+                // Loop through the histories and for each one that is not filled, submit a corresponding create operation.
+                for (int i = 0; i < histories.length; i++) {
                     if (handler.getLogger().isLoggable(Level.FINEST)) {
-                        handler.getLogger().finest("replica %s OHS size=%d %s", history.getObjectId(), initialObjectHistorySet.size(), initialObjectHistorySet.getState());
+                        handler.getLogger().finest("replica[%d] %s", i, histories[i]);
                     }
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                } catch (ExecutionException e) {
-                    e.printStackTrace();
+                    if (histories[i] == null) {
+                        TitanGuid replicaId = objectId.add(i);
+                        if (nodeIds.size() == 0)
+                            throw new MutableObject.InsufficientResourcesException("No nodes available to create the object history.");
+                        // XXX Note that nodeIds may not contain histories.length elements and this will throw an exception.
+                        TitanNodeId nodeId = nodeIds.remove();
+
+                        usedNodes.add(nodeId);
+                        MutableObject.CreateObjectHistoryTask t = new MutableObject.CreateObjectHistoryTask(handler, countDown, nodeId, objectId, replicaId, i, deleteTokenId, histories, timeToLive);
+                        FutureTask<MutableObject.ObjectHistory> task = new FutureTask<MutableObject.ObjectHistory>(t);
+                        taskTracker.put(task, t); // track these for debugging messages below.
+                        handler.getNode().execute(task);
+                    } else {
+                        countDown.countDown();
+                    }
                 }
+
+                if (handler.getLogger().isLoggable(Level.FINEST)) {
+                    handler.getLogger().finest("waiting for countDown=%d task size=%d", countDown.getCount(), taskTracker.size());
+                }
+                // If there were no tasks created, then all of the histories have been created. So stop.
+                if (taskTracker.size() == 0)
+                    break;
+
+                boolean complained = false;
+                for (;;) {
+                    try {
+                        if (countDown.await(10000, TimeUnit.MILLISECONDS))
+                            break;
+                        for (Map.Entry<FutureTask<MutableObject.ObjectHistory>, MutableObject.CreateObjectHistoryTask> entry : taskTracker.entrySet()) {
+                            FutureTask<MutableObject.ObjectHistory> task = entry.getKey(); 
+                            if (!task.isDone()) {
+                                MutableObject.CreateObjectHistoryTask t = entry.getValue();
+                                handler.getLogger().warning("(id=%d) waiting for replica %s to be stored on node %s.", Thread.currentThread().getId(), task.toString(), t.replicaId, t.destinationNodeId);
+                            }                        
+                        }
+
+                        complained = true;
+                    } catch (InterruptedException e) {
+                        throw new MutableObject.ProtocolException(e);
+                    }
+                }
+
+                if (complained) {
+                    handler.getLogger().warning("(id=%d) waiting done.", Thread.currentThread().getId());
+                }
+
+                for (FutureTask<MutableObject.ObjectHistory> task : taskTracker.keySet()) {
+                    try {
+                        MutableObject.ObjectHistory history = task.get();
+                        initialObjectHistorySet.put(history);
+                        if (handler.getLogger().isLoggable(Level.FINEST)) {
+                            handler.getLogger().finest("replica %s OHS size=%d %s", history.getObjectId(), initialObjectHistorySet.size(), initialObjectHistorySet.getState());
+                        }
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    } catch (ExecutionException e) {
+                        e.printStackTrace();
+                    }
+                }
+            } catch (ClassCastException e) {
+                throw new MutableObject.ProtocolException(e);
+            } catch (ClassNotFoundException e) {
+                throw new MutableObject.ProtocolException(e);
+            } finally {
+
             }
         }
 

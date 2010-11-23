@@ -1,13 +1,13 @@
 package sunlabs.titan.node;
 
 /**
- * The global object pool as the aggregate set of node {@link BeehiveObjectStore} instances.
+ * The global object pool as the aggregate set of node {@link TitanObjectStoreImpl} instances.
  *
  */
 public class BeehiveObjectPool {
     /**
      * {@code BeehiveObjectPool} Exceptions are related to topics involving the whole of the object pool.
-     * For those Exceptions related to individual node object stores, see {@link BeehiveObjectStore.Exception} et alia).
+     * For those Exceptions related to individual node object stores, see {@link TitanObjectStoreImpl.Exception} et alia).
      *
      */
     abstract public static class Exception extends java.lang.Exception {

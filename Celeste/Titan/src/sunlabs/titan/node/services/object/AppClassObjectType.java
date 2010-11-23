@@ -36,15 +36,15 @@ import javax.management.JMException;
 import sunlabs.asdf.web.XML.XHTML;
 import sunlabs.asdf.web.http.HTTP;
 import sunlabs.titan.TitanGuidImpl;
-import sunlabs.titan.api.ObjectStore;
+import sunlabs.titan.api.TitanObjectStore;
 import sunlabs.titan.api.TitanGuid;
 import sunlabs.titan.api.TitanNode;
 import sunlabs.titan.api.TitanObject;
 import sunlabs.titan.node.AbstractTitanObject;
 import sunlabs.titan.node.BeehiveObjectPool;
-import sunlabs.titan.node.BeehiveObjectStore;
-import sunlabs.titan.node.BeehiveObjectStore.InvalidObjectException;
-import sunlabs.titan.node.BeehiveObjectStore.NoSpaceException;
+import sunlabs.titan.node.TitanObjectStoreImpl;
+import sunlabs.titan.node.TitanObjectStoreImpl.InvalidObjectException;
+import sunlabs.titan.node.TitanObjectStoreImpl.NoSpaceException;
 import sunlabs.titan.node.TitanMessage;
 import sunlabs.titan.node.object.AbstractObjectHandler;
 import sunlabs.titan.node.object.RetrievableObject;
@@ -149,11 +149,11 @@ public class AppClassObjectType extends AbstractObjectHandler implements AppClas
 
         public AppClassObject(TitanGuid objectId, AppClass.AppClassObject.InfoList infoList) {
             super(AppClassObjectType.class, TitanGuidImpl.ZERO, Long.MAX_VALUE);
-            this.setProperty(ObjectStore.METADATA_REPLICATION_STORE, 1);
+            this.setProperty(TitanObjectStore.METADATA_REPLICATION_STORE, 1);
             this.infoList = infoList;
             try {
-                BeehiveObjectStore.CreateSignatureVerifiedObject(objectId, this);
-            } catch (BeehiveObjectStore.DeleteTokenException e) {
+                TitanObjectStoreImpl.CreateSignatureVerifiedObject(objectId, this);
+            } catch (TitanObjectStoreImpl.DeleteTokenException e) {
                 e.printStackTrace();
                 throw new RuntimeException(e);
             }
@@ -191,26 +191,26 @@ public class AppClassObjectType extends AbstractObjectHandler implements AppClas
         return new PublishDaemon.PublishObject.PublishUnpublishResponseImpl(this.node.getNodeAddress());
     }
 
-    public TitanObject retrieveLocalObject(TitanMessage message, TitanGuid objectId) throws BeehiveObjectStore.NotFoundException {
+    public TitanObject retrieveLocalObject(TitanMessage message, TitanGuid objectId) throws TitanObjectStoreImpl.NotFoundException {
         return this.node.getObjectStore().get(TitanObject.class, message.subjectId);
     }
 
     public AppClassObjectType.AppClassObject retrieve(TitanGuid objectId) throws ClassCastException, ClassNotFoundException,
-        BeehiveObjectStore.NotFoundException, BeehiveObjectStore.DeletedObjectException {
+        TitanObjectStoreImpl.NotFoundException, TitanObjectStoreImpl.DeletedObjectException {
         AppClassObjectType.AppClassObject object = RetrievableObject.retrieve(this, AppClassObjectType.AppClassObject.class, objectId);
         return object;
     }
     
     public  Publish.PublishUnpublishResponse storeLocalObject(TitanMessage message, AppClass.AppClassObject aObject) throws ClassCastException, ClassNotFoundException,
-    BeehiveObjectStore.UnacceptableObjectException, BeehiveObjectStore.DeleteTokenException, BeehiveObjectStore.InvalidObjectIdException, NoSpaceException,
-    InvalidObjectException, BeehiveObjectPool.Exception, BeehiveObjectStore.Exception {
+    TitanObjectStoreImpl.UnacceptableObjectException, TitanObjectStoreImpl.DeleteTokenException, TitanObjectStoreImpl.InvalidObjectIdException, NoSpaceException,
+    InvalidObjectException, BeehiveObjectPool.Exception, TitanObjectStoreImpl.Exception {
         Publish.PublishUnpublishResponse reply = StorableObject.storeLocalObject(this, aObject, message);
         return reply;
     }
 
     public AppClass.AppClassObject storeObject(AppClass.AppClassObject aObject)
-    throws IOException, BeehiveObjectStore.NoSpaceException, BeehiveObjectStore.DeleteTokenException, BeehiveObjectStore.UnacceptableObjectException, BeehiveObjectPool.Exception {
-        aObject = (AppClass.AppClassObject) BeehiveObjectStore.CreateSignatureVerifiedObject(aObject.getObjectId(), aObject);
+    throws IOException, TitanObjectStoreImpl.NoSpaceException, TitanObjectStoreImpl.DeleteTokenException, TitanObjectStoreImpl.UnacceptableObjectException, BeehiveObjectPool.Exception, ClassCastException, ClassNotFoundException {
+        aObject = (AppClass.AppClassObject) TitanObjectStoreImpl.CreateSignatureVerifiedObject(aObject.getObjectId(), aObject);
 
         return (AppClass.AppClassObject) StorableObject.storeObject(this, aObject);
     }

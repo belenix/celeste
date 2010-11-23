@@ -24,11 +24,11 @@
 package sunlabs.celeste;
 
 import sunlabs.celeste.client.operation.CelesteOperation;
-import sunlabs.titan.exception.BeehiveException;
+import sunlabs.titan.exception.TitanException;
 import sunlabs.titan.node.AbstractTitanObject;
 import sunlabs.titan.util.OrderedProperties;
 
-public abstract class CelesteException extends BeehiveException {
+public abstract class CelesteException extends TitanException {
     private final static long serialVersionUID = 1L;
 
     public static class AccessControlException extends CelesteException {

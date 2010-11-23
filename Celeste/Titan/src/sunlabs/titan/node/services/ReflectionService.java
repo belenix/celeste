@@ -36,7 +36,7 @@ import sunlabs.titan.TitanGuidImpl;
 import sunlabs.titan.api.TitanGuid;
 import sunlabs.titan.api.TitanNode;
 import sunlabs.titan.api.TitanObject;
-import sunlabs.titan.node.BeehiveObjectStore;
+import sunlabs.titan.node.TitanObjectStoreImpl;
 import sunlabs.titan.node.Publishers.PublishRecord;
 import sunlabs.titan.node.TitanMessage;
 import sunlabs.titan.node.TitanMessage.RemoteException;
@@ -53,7 +53,7 @@ public final class ReflectionService extends AbstractTitanService implements Ref
         super(node, ReflectionService.name, "Beehive Reflection service");
     }
 
-    public TitanObject retrieveObject(TitanMessage message) throws ClassCastException, ClassNotFoundException, BeehiveObjectStore.NotFoundException {
+    public TitanObject retrieveObject(TitanMessage message) throws ClassCastException, ClassNotFoundException, TitanObjectStoreImpl.NotFoundException {
         return this.node.getObjectStore().get(TitanObject.class, message.subjectId);
     }
 
@@ -70,7 +70,7 @@ public final class ReflectionService extends AbstractTitanService implements Ref
         }
     }
     
-    public Reflection.ObjectInspect.Response inspectObject(TitanMessage message, Reflection.ObjectInspect.Request request) throws ClassCastException, ClassNotFoundException, TitanMessage.RemoteException, BeehiveObjectStore.NotFoundException {
+    public Reflection.ObjectInspect.Response inspectObject(TitanMessage message, Reflection.ObjectInspect.Request request) throws ClassCastException, ClassNotFoundException, TitanMessage.RemoteException, TitanObjectStoreImpl.NotFoundException {
         Publish publish = this.node.getService(PublishDaemon.class);
         Set<PublishRecord> publishers = publish.getPublishers(message.subjectId);
 
@@ -81,7 +81,7 @@ public final class ReflectionService extends AbstractTitanService implements Ref
         return response;
     }
     
-    public XHTML.EFlow inspectObject(TitanGuid objectId, URI uri, Map<String,HTTP.Message> props) throws ClassCastException, ClassNotFoundException, BeehiveObjectStore.NotFoundException {
+    public XHTML.EFlow inspectObject(TitanGuid objectId, URI uri, Map<String,HTTP.Message> props) throws ClassCastException, ClassNotFoundException, TitanObjectStoreImpl.NotFoundException {
     	Reflection.ObjectInspect.Request request = new Reflection.ObjectInspect.Request(objectId, uri, props);
 
     	if (this.log.isLoggable(Level.FINE)) {
@@ -105,8 +105,8 @@ public final class ReflectionService extends AbstractTitanService implements Ref
     		}
     		return new XHTML.Div(new XHTML.Table(new XHTML.Table.Caption("Publishers"), tbody).setClass("Publishers"), response.getXhtml()).setClass("section");
     	} catch (TitanMessage.RemoteException e) {
-    		if (e.getCause() instanceof BeehiveObjectStore.NotFoundException) {
-    			throw new BeehiveObjectStore.NotFoundException(e);
+    		if (e.getCause() instanceof TitanObjectStoreImpl.NotFoundException) {
+    			throw new TitanObjectStoreImpl.NotFoundException(e);
     		}
     		throw new RuntimeException(e);
     	}
@@ -122,7 +122,7 @@ public final class ReflectionService extends AbstractTitanService implements Ref
         return reply.getPayload(ObjectType.Response.class, node);
     }
 
-    public Reflection.ObjectType.Response getObjectType(TitanMessage message) throws ClassCastException, ClassNotFoundException, BeehiveObjectStore.NotFoundException, TitanMessage.RemoteException {
+    public Reflection.ObjectType.Response getObjectType(TitanMessage message) throws ClassCastException, ClassNotFoundException, TitanObjectStoreImpl.NotFoundException, TitanMessage.RemoteException {
             Reflection.ObjectType.Request request = message.getPayload(Reflection.ObjectType.Request.class, node);
             TitanGuid objectId = request.getObjectId();
             TitanObject object = this.node.getObjectStore().get(TitanObject.class, objectId);

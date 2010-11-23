@@ -66,7 +66,7 @@ import sunlabs.asdf.web.http.HTTP;
 import sunlabs.titan.Copyright;
 import sunlabs.titan.Release;
 import sunlabs.titan.TitanGuidImpl;
-import sunlabs.titan.api.ObjectStore;
+import sunlabs.titan.api.TitanObjectStore;
 import sunlabs.titan.api.TitanGuid;
 import sunlabs.titan.api.TitanNode;
 import sunlabs.titan.api.TitanNodeId;
@@ -232,7 +232,7 @@ public class TitanNodeImpl implements TitanNode, NodeMBean {
     private NeighbourMap map;
 
     /** This Node's object store */
-    private final ObjectStore store;
+    private final TitanObjectStore store;
 
     private ScheduledThreadPoolExecutor tasks;
 //    private ScheduledThreadPoolExecutor clientTasks;
@@ -339,7 +339,7 @@ public class TitanNodeImpl implements TitanNode, NodeMBean {
 
             this.map = new NeighbourMap(this);
             // XXX Should the object store be part of PublishDaemon? Or vice-versa?
-            this.store = new BeehiveObjectStore(this, this.configuration.asString(TitanNodeImpl.ObjectStoreCapacity));
+            this.store = new TitanObjectStoreImpl(this, this.configuration.asString(TitanNodeImpl.ObjectStoreCapacity));
             this.objectPublishers = new Publishers(this, this.spoolDirectory);
 
 //            if (true) {
@@ -390,15 +390,15 @@ public class TitanNodeImpl implements TitanNode, NodeMBean {
             throw new RuntimeException(e);
         } catch (InvocationTargetException e) {
             throw new RuntimeException(e);
-        } catch (BeehiveObjectStore.InvalidObjectException e) {
+        } catch (TitanObjectStoreImpl.InvalidObjectException e) {
             throw new RuntimeException(e);
-        } catch (BeehiveObjectStore.ObjectExistenceException e) {
+        } catch (TitanObjectStoreImpl.ObjectExistenceException e) {
             throw new RuntimeException(e);
-        } catch (BeehiveObjectStore.NoSpaceException e) {
+        } catch (TitanObjectStoreImpl.NoSpaceException e) {
             throw new RuntimeException(e);
-        } catch (BeehiveObjectStore.UnacceptableObjectException e) {
+        } catch (TitanObjectStoreImpl.UnacceptableObjectException e) {
             throw new RuntimeException(e);
-        } catch (BeehiveObjectStore.DeleteTokenException e) {
+        } catch (TitanObjectStoreImpl.DeleteTokenException e) {
             throw new RuntimeException(e);
         }
 
@@ -489,9 +489,9 @@ public class TitanNodeImpl implements TitanNode, NodeMBean {
     }
 
     /**
-     * Get this Node's {@link ObjectStore}.
+     * Get this Node's {@link TitanObjectStore}.
      */
-    public ObjectStore getObjectStore() {
+    public TitanObjectStore getObjectStore() {
         return this.store;
     }
     
@@ -1004,7 +1004,7 @@ public class TitanNodeImpl implements TitanNode, NodeMBean {
      * </p>
      * @param objectId
      */
-    public boolean removeLocalObject(final TitanGuid objectId) throws ClassNotFoundException, BeehiveObjectStore.NotFoundException, BeehiveObjectStore.Exception, BeehiveObjectPool.Exception {
+    public boolean removeLocalObject(final TitanGuid objectId) throws ClassNotFoundException, TitanObjectStoreImpl.NotFoundException, TitanObjectStoreImpl.Exception, BeehiveObjectPool.Exception {
         TitanObject object = this.store.getAndLock(TitanObject.class, objectId);
         if (object == null) {
             return false;

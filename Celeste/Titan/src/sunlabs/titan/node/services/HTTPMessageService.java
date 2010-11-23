@@ -110,7 +110,7 @@ import sunlabs.titan.api.TitanNode;
 import sunlabs.titan.api.TitanNode.NoSuchNodeException;
 import sunlabs.titan.api.TitanNodeId;
 import sunlabs.titan.api.TitanObject;
-import sunlabs.titan.node.BeehiveObjectStore;
+import sunlabs.titan.node.TitanObjectStoreImpl;
 import sunlabs.titan.node.NodeAddress;
 import sunlabs.titan.node.NodeKey;
 import sunlabs.titan.node.TitanMessage;
@@ -721,7 +721,7 @@ public final class HTTPMessageService extends AbstractTitanService implements Me
                 	try {
                 		XHTML.EFlow eflow = reflection.inspectObject(objectId, uri, map);
                 		return new HttpResponse(HTTP.Response.Status.OK, new HttpContent.Text.HTML(this.makeDocument(objectId.toString(), new XHTML.Body(eflow), null, null)));      
-                	} catch (BeehiveObjectStore.NotFoundException e) {
+                	} catch (TitanObjectStoreImpl.NotFoundException e) {
                 		return new HttpResponse(HTTP.Response.Status.NOT_FOUND, new HttpContent.Text.Plain(HTTP.Response.Status.NOT_FOUND.toString() + " " + objectId.toString()));
                 	}
                 }

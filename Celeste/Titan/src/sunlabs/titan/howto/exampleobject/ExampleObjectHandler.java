@@ -13,7 +13,7 @@ import sunlabs.titan.api.TitanNode;
 import sunlabs.titan.api.TitanObject;
 import sunlabs.titan.node.AbstractTitanObject;
 import sunlabs.titan.node.BeehiveObjectPool;
-import sunlabs.titan.node.BeehiveObjectStore;
+import sunlabs.titan.node.TitanObjectStoreImpl;
 import sunlabs.titan.node.TitanMessage;
 import sunlabs.titan.node.object.AbstractObjectHandler;
 import sunlabs.titan.node.services.AbstractTitanService;
@@ -52,7 +52,7 @@ public class ExampleObjectHandler extends AbstractObjectHandler implements Examp
     }
 
     public PublishUnpublishResponse publishObject(TitanMessage message, Publish.PublishUnpublishRequest request) throws ClassNotFoundException, ClassCastException,
-        BeehiveObjectPool.Exception, BeehiveObjectStore.Exception {
+        BeehiveObjectPool.Exception, TitanObjectStoreImpl.Exception {
 
         return null;
     }
@@ -62,10 +62,10 @@ public class ExampleObjectHandler extends AbstractObjectHandler implements Examp
         return null;
     }
 
-    public void createObject() throws BeehiveObjectStore.InvalidObjectException, BeehiveObjectStore.ObjectExistenceException,
-    BeehiveObjectStore.NoSpaceException, BeehiveObjectStore.UnacceptableObjectException, ClassNotFoundException, BeehiveObjectStore.DeleteTokenException {
+    public void createObject() throws TitanObjectStoreImpl.InvalidObjectException, TitanObjectStoreImpl.ObjectExistenceException,
+    TitanObjectStoreImpl.NoSpaceException, TitanObjectStoreImpl.UnacceptableObjectException, ClassNotFoundException, TitanObjectStoreImpl.DeleteTokenException {
         ExampleObject.Object object = new ExampleObjectHandler.Object(TitanGuidImpl.ZERO, TitanObject.INFINITE_TIME_TO_LIVE);
-        object = (ExampleObject.Object) BeehiveObjectStore.CreateSignatureVerifiedObject(object.getObjectId(), object);
+        object = (ExampleObject.Object) TitanObjectStoreImpl.CreateSignatureVerifiedObject(object.getObjectId(), object);
         this.node.getObjectStore().create(object);        
     }
 }

@@ -26,7 +26,7 @@ package sunlabs.celeste.node.services.object;
 import sunlabs.celeste.client.ReplicationParameters;
 import sunlabs.titan.api.TitanGuid;
 import sunlabs.titan.api.TitanObject;
-import sunlabs.titan.node.BeehiveObjectStore;
+import sunlabs.titan.node.TitanObjectStoreImpl;
 import sunlabs.titan.node.object.DeleteableObject;
 import sunlabs.titan.node.object.RetrievableObject;
 import sunlabs.titan.node.object.StorableObject;
@@ -43,7 +43,7 @@ public interface FObjectType extends
         public byte[] getContents();
 
         public void delete(TitanGuid profferedDeleteToken, long timeToLive)
-        throws BeehiveObjectStore.DeleteTokenException;
+        throws TitanObjectStoreImpl.DeleteTokenException;
 
         public int getReplicationMinimum();
 

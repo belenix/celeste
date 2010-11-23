@@ -42,7 +42,7 @@ import sunlabs.asdf.web.XML.XHTML;
 import sunlabs.asdf.web.XML.XML;
 import sunlabs.asdf.web.http.HTTP;
 import sunlabs.titan.TitanGuidImpl;
-import sunlabs.titan.api.ObjectStore;
+import sunlabs.titan.api.TitanObjectStore;
 import sunlabs.titan.api.TitanGuid;
 import sunlabs.titan.api.TitanNodeId;
 import sunlabs.titan.api.TitanObject;
@@ -197,10 +197,10 @@ public class Publishers extends AbstractStoredMap<TitanGuid, HashSet<Publishers.
         }
 
         /**
-         * Get the {@link ObjectStore#METADATA_SECONDSTOLIVE} in the metadata for the published object
+         * Get the {@link TitanObjectStore#METADATA_SECONDSTOLIVE} in the metadata for the published object
          */
         public long getObjectTTL() {
-            return Long.parseLong(this.getMetadataProperty(ObjectStore.METADATA_SECONDSTOLIVE, "-1"));
+            return Long.parseLong(this.getMetadataProperty(TitanObjectStore.METADATA_SECONDSTOLIVE, "-1"));
         }
 
         /**
@@ -215,7 +215,7 @@ public class Publishers extends AbstractStoredMap<TitanGuid, HashSet<Publishers.
         }
 
         public String getObjectClass() {
-            return this.metaData.getProperty(ObjectStore.METADATA_CLASS, null);
+            return this.metaData.getProperty(TitanObjectStore.METADATA_CLASS, null);
         }
 
         /**
@@ -225,7 +225,7 @@ public class Publishers extends AbstractStoredMap<TitanGuid, HashSet<Publishers.
          * A non-null value signifies that the publisher has the anti-object form of the object.
          */
         public String getDeleteToken() {
-            return this.metaData.getProperty(ObjectStore.METADATA_DELETETOKEN, null);
+            return this.metaData.getProperty(TitanObjectStore.METADATA_DELETETOKEN, null);
         }
 
         @Override

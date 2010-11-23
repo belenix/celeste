@@ -53,7 +53,7 @@ import sunlabs.celeste.node.services.object.VersionObjectHandler;
 import sunlabs.titan.TitanGuidImpl;
 import sunlabs.titan.api.TitanGuid;
 import sunlabs.titan.api.TitanNode;
-import sunlabs.titan.node.BeehiveObjectStore;
+import sunlabs.titan.node.TitanObjectStoreImpl;
 import sunlabs.titan.node.TitanMessage;
 import sunlabs.titan.node.object.TitanObjectHandler;
 import sunlabs.titan.node.object.MutableObject;
@@ -108,8 +108,8 @@ public class WordCount implements ExtensibleObject.Extension<HashMap<String,Long
 
     @SuppressWarnings("unchecked")
     public HashMap<String,Long> call()
-    throws BeehiveObjectStore.DeletedObjectException, ClassNotFoundException, BeehiveObjectStore.NotFoundException, BeehiveObjectStore.ObjectExistenceException,
-           BeehiveObjectStore.InvalidObjectException, MutableObject.InsufficientResourcesException, MutableObject.NotFoundException,
+    throws TitanObjectStoreImpl.DeletedObjectException, ClassNotFoundException, TitanObjectStoreImpl.NotFoundException, TitanObjectStoreImpl.ObjectExistenceException,
+           TitanObjectStoreImpl.InvalidObjectException, MutableObject.InsufficientResourcesException, MutableObject.NotFoundException,
            MutableObject.ProtocolException, TitanMessage.RemoteException {
 
         TitanGuid vObjectId = this.operation.getVObjectId();
@@ -160,7 +160,7 @@ public class WordCount implements ExtensibleObject.Extension<HashMap<String,Long
             this.threadPool = Executors.newFixedThreadPool(3);
         }
 
-        public HashMap<String,Long> call() throws BeehiveObjectStore.ObjectExistenceException, BeehiveObjectStore.NotFoundException, ClassCastException {
+        public HashMap<String,Long> call() throws TitanObjectStoreImpl.ObjectExistenceException, TitanObjectStoreImpl.NotFoundException, ClassCastException {
             // Get the required VersionObject then iterate through the BlockObjects
             // asking each one for its word count.
             
@@ -182,7 +182,7 @@ public class WordCount implements ExtensibleObject.Extension<HashMap<String,Long
                 bObjectMap = manifest.getManifest();
             } catch (BadManifestException e) {
                 e.printStackTrace();
-                throw new BeehiveObjectStore.NotFoundException(e);
+                throw new TitanObjectStoreImpl.NotFoundException(e);
             }
 
             BlockObject blockObjectHandler = this.handler.getNode().getService(BlockObjectHandler.class);
@@ -367,7 +367,7 @@ public class WordCount implements ExtensibleObject.Extension<HashMap<String,Long
             return wordMap;
         }
 
-        public BObjectExtension.BObjectResult call() throws BeehiveObjectStore.ObjectExistenceException, BeehiveObjectStore.NotFoundException {
+        public BObjectExtension.BObjectResult call() throws TitanObjectStoreImpl.ObjectExistenceException, TitanObjectStoreImpl.NotFoundException {
             long startTime = System.currentTimeMillis();
             try {
                 BlockObject.Object bObject = this.handler.getNode().getObjectStore().get(BlockObject.Object.class, this.objectId);
@@ -378,7 +378,7 @@ public class WordCount implements ExtensibleObject.Extension<HashMap<String,Long
                     }
                     return new BObjectResult(false, 0, false, wordMap);
                 }
-                throw new BeehiveObjectStore.ObjectExistenceException("BlockObject %s not found.", this.objectId);
+                throw new TitanObjectStoreImpl.ObjectExistenceException("BlockObject %s not found.", this.objectId);
             } finally {
                 long elapsedTime = System.currentTimeMillis() - startTime;
                 this.handler.getLogger().info("[%d ms] %s", elapsedTime, this.objectId.toString());

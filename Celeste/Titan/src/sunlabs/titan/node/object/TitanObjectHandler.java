@@ -27,7 +27,7 @@ import sunlabs.titan.api.TitanNode;
 import sunlabs.titan.api.TitanObject;
 import sunlabs.titan.api.TitanService;
 import sunlabs.titan.node.BeehiveObjectPool;
-import sunlabs.titan.node.BeehiveObjectStore;
+import sunlabs.titan.node.TitanObjectStoreImpl;
 import sunlabs.titan.node.TitanMessage;
 import sunlabs.titan.node.UnpublishObjectMessage;
 import sunlabs.titan.node.services.api.Publish;
@@ -96,9 +96,9 @@ public interface TitanObjectHandler extends TitanService {
      * @throws ClassCastException 
      * @throws ClassNotFoundException 
      * @throws BeehiveObjectPool.Exception
-     * @throws BeehiveObjectStore.Exception
+     * @throws TitanObjectStoreImpl.Exception
      */
-    public Publish.PublishUnpublishResponse publishObject(TitanMessage message, Publish.PublishUnpublishRequest request) throws ClassNotFoundException, ClassCastException, BeehiveObjectPool.Exception, BeehiveObjectStore.Exception;
+    public Publish.PublishUnpublishResponse publishObject(TitanMessage message, Publish.PublishUnpublishRequest request) throws ClassNotFoundException, ClassCastException, BeehiveObjectPool.Exception, TitanObjectStoreImpl.Exception;
 
     /**
      * Receive and process a {@link UnpublishObjectMessage} for a

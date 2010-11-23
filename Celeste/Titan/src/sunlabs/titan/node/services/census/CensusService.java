@@ -777,11 +777,11 @@ public class CensusService extends AbstractTitanService implements Census {
         }
     }
 
-    public Map<TitanNodeId,OrderedProperties> select(int count) throws ClassCastException {
+    public Map<TitanNodeId,OrderedProperties> select(int count) throws ClassCastException, ClassNotFoundException {
         return this.select(count, new HashSet<TitanNodeId>(), new LinkedList<SelectComparator>());
     }
 
-    public Map<TitanNodeId,OrderedProperties> select(int count, Set<TitanNodeId> exclude, List<SelectComparator> comparatorList) throws ClassCastException {
+    public Map<TitanNodeId,OrderedProperties> select(int count, Set<TitanNodeId> exclude, List<SelectComparator> comparatorList) throws ClassCastException, ClassNotFoundException {
         TimeProfiler timeProfiler = new TimeProfiler("CensusDaemon.select");
         try {
             Select.Request request = new Select.Request(count, exclude, comparatorList);
@@ -791,8 +791,6 @@ public class CensusService extends AbstractTitanService implements Census {
             try {
                 Select.Response response = reply.getPayload(Select.Response.class, this.node);
                 return response.getCensusData();
-            } catch (ClassNotFoundException e) {
-                e.printStackTrace();
             } catch (RemoteException e) {
                 e.printStackTrace();
             }
@@ -948,11 +946,16 @@ public class CensusService extends AbstractTitanService implements Census {
             e.printStackTrace();
             XHTML.Div body = new XHTML.Div(new sunlabs.asdf.web.XML.XHTML.Heading.Para(e.toString()));
             return body;
+        } catch (ClassCastException e) {
+            XHTML.Div body = new XHTML.Div(new sunlabs.asdf.web.XML.XHTML.Heading.Para(e.toString()));
+            return body;
+        } catch (ClassNotFoundException e) {
+            XHTML.Div body = new XHTML.Div(new sunlabs.asdf.web.XML.XHTML.Heading.Para(e.toString()));
+            return body;
         }
     }
 
-    public Map<TitanNodeId, OrderedProperties> select(int count,
-            Set<TitanNodeId> excludedNodes, OrderedProperties matchedAttributes)
+    public Map<TitanNodeId, OrderedProperties> select(int count, Set<TitanNodeId> excludedNodes, OrderedProperties matchedAttributes)
             throws ClassCastException {
         // TODO Auto-generated method stub
         return null;

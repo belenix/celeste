@@ -50,12 +50,12 @@ import sunlabs.asdf.web.http.HTTP;
 import sunlabs.asdf.web.http.HttpContent;
 import sunlabs.asdf.web.http.HttpMessage;
 import sunlabs.asdf.web.http.HttpResponse;
-import sunlabs.titan.api.ObjectStore;
+import sunlabs.titan.api.TitanObjectStore;
 import sunlabs.titan.api.TitanGuid;
 import sunlabs.titan.api.TitanNode;
 import sunlabs.titan.api.TitanObject;
 import sunlabs.titan.node.BeehiveObjectPool;
-import sunlabs.titan.node.BeehiveObjectStore;
+import sunlabs.titan.node.TitanObjectStoreImpl;
 import sunlabs.titan.node.NodeAddress;
 import sunlabs.titan.node.PublishObjectMessage;
 import sunlabs.titan.node.Publishers;
@@ -264,7 +264,7 @@ public final class PublishDaemon extends AbstractTitanService implements Publish
         	// During the first iteration through the objects, go as fast possible.
         	long publishObjectInterstitialSleepTime = 0;
 
-        	ObjectStore objectStore = PublishDaemon.this.node.getObjectStore();
+        	TitanObjectStore objectStore = PublishDaemon.this.node.getObjectStore();
 
 
         	long count = 0;
@@ -307,7 +307,7 @@ public final class PublishDaemon extends AbstractTitanService implements Publish
                             } catch (ClassNotFoundException e) {
                                 // TODO Auto-generated catch block
                                 e.printStackTrace();
-                            } catch (BeehiveObjectStore.Exception e) {
+                            } catch (TitanObjectStoreImpl.Exception e) {
                                 // TODO Auto-generated catch block
                                 e.printStackTrace();
                             } catch (BeehiveObjectPool.Exception e) {
@@ -320,7 +320,7 @@ public final class PublishDaemon extends AbstractTitanService implements Publish
         					PublishDaemon.this.log.finest("already locked %s", objectId.toString());
         				}
         			}
-        		} catch (BeehiveObjectStore.NotFoundException e) {
+        		} catch (TitanObjectStoreImpl.NotFoundException e) {
         			// skip this object...
         		}
 
@@ -455,7 +455,7 @@ public final class PublishDaemon extends AbstractTitanService implements Publish
      * The reply {@link TitanMessage} is returned.
      * </p>
      */
-    public PublishDaemon.PublishObject.PublishUnpublishResponseImpl publish(TitanObject object) throws ClassCastException, ClassNotFoundException, BeehiveObjectPool.Exception, BeehiveObjectStore.Exception {
+    public PublishDaemon.PublishObject.PublishUnpublishResponseImpl publish(TitanObject object) throws ClassCastException, ClassNotFoundException, BeehiveObjectPool.Exception, TitanObjectStoreImpl.Exception {
         long publishRecordSecondsToLive = Math.min(this.getPublishRecordSecondsToLive(), object.getRemainingSecondsToLive(Time.currentTimeInSeconds()));
 
         if (this.log.isLoggable(Level.FINEST)) {
@@ -475,8 +475,8 @@ public final class PublishDaemon extends AbstractTitanService implements Publish
             // We know that the "publishObject" method is defined to throw ClassNotFoundException, ClassCastException, BeehiveObjectPool.Exception, BeehiveObjectStore.Exception
             if (e.getCause() instanceof BeehiveObjectPool.Exception)
                 throw (BeehiveObjectPool.Exception) e.getCause();
-            if (e.getCause() instanceof BeehiveObjectStore.Exception)
-                throw (BeehiveObjectStore.Exception) e.getCause();
+            if (e.getCause() instanceof TitanObjectStoreImpl.Exception)
+                throw (TitanObjectStoreImpl.Exception) e.getCause();
             throw new IllegalArgumentException(e);
         }
     }
@@ -492,7 +492,7 @@ public final class PublishDaemon extends AbstractTitanService implements Publish
         return this.node.receive(message);
     }
 
-    public Publish.PublishUnpublishResponse unpublish(TitanObject object) throws ClassCastException, ClassNotFoundException, BeehiveObjectPool.Exception, BeehiveObjectStore.Exception {
+    public Publish.PublishUnpublishResponse unpublish(TitanObject object) throws ClassCastException, ClassNotFoundException, BeehiveObjectPool.Exception, TitanObjectStoreImpl.Exception {
         Publish.PublishUnpublishRequest request = new PublishDaemon.PublishObject.PublishUnpublishRequestImpl(this.node.getNodeAddress(), 0L, object);
         if (this.log.isLoggable(Level.FINEST)) {
             this.log.finest("%s %s", object.getObjectId(), object.getObjectType());
@@ -509,8 +509,8 @@ public final class PublishDaemon extends AbstractTitanService implements Publish
             // We know that the "unpublishObject" method is defined to throw ClassNotFoundException, ClassCastException, BeehiveObjectPool.Exception, BeehiveObjectStore.Exception
             if (e.getCause() instanceof BeehiveObjectPool.Exception)
                 throw (BeehiveObjectPool.Exception) e.getCause();
-            if (e.getCause() instanceof BeehiveObjectStore.Exception)
-                throw (BeehiveObjectStore.Exception) e.getCause();
+            if (e.getCause() instanceof TitanObjectStoreImpl.Exception)
+                throw (TitanObjectStoreImpl.Exception) e.getCause();
             throw new IllegalArgumentException(e);
         }
     }

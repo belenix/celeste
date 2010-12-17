@@ -42,10 +42,10 @@ import sunlabs.asdf.util.Units;
 import sunlabs.asdf.web.XML.XHTML;
 import sunlabs.asdf.web.http.HTTP;
 import sunlabs.titan.TitanGuidImpl;
-import sunlabs.titan.api.ObjectStore;
+import sunlabs.titan.api.TitanObjectStore;
 import sunlabs.titan.api.TitanGuid;
 import sunlabs.titan.api.TitanObject;
-import sunlabs.titan.exception.BeehiveException;
+import sunlabs.titan.exception.TitanException;
 import sunlabs.titan.node.services.HTTPMessageService;
 import sunlabs.titan.node.services.api.Publish;
 import sunlabs.titan.node.services.objectstore.PublishDaemon;
@@ -112,7 +112,7 @@ import sunlabs.titan.node.services.xml.TitanXML.XMLObjectStore;
  * The object store also maintains the list of objects for which  this Node is the root.
  * </p>
  */
-public final class BeehiveObjectStore implements ObjectStore {
+public final class TitanObjectStoreImpl implements TitanObjectStore {
 
     /**
      *
@@ -138,7 +138,7 @@ public final class BeehiveObjectStore implements ObjectStore {
         }
     }
     
-    public static class InvalidObjectException extends BeehiveObjectStore.Exception {
+    public static class InvalidObjectException extends TitanObjectStoreImpl.Exception {
         private final static long serialVersionUID = 1L;
         public InvalidObjectException() {
             super();
@@ -162,7 +162,7 @@ public final class BeehiveObjectStore implements ObjectStore {
      * or when an object that is not supposed to exist does.
      *
      */
-    public static class ObjectExistenceException extends BeehiveObjectStore.Exception {
+    public static class ObjectExistenceException extends TitanObjectStoreImpl.Exception {
         private final static long serialVersionUID = 1L;
         public ObjectExistenceException() {
             super();
@@ -186,7 +186,7 @@ public final class BeehiveObjectStore implements ObjectStore {
      * or when an object that is not supposed to exist does.
      *
      */
-    public static class NotFoundException extends BeehiveObjectStore.Exception {
+    public static class NotFoundException extends TitanObjectStoreImpl.Exception {
         private final static long serialVersionUID = 1L;
         public NotFoundException() {
             super();
@@ -209,7 +209,7 @@ public final class BeehiveObjectStore implements ObjectStore {
      *
      *
      */
-    public static class NoSpaceException extends BeehiveObjectStore.Exception {
+    public static class NoSpaceException extends TitanObjectStoreImpl.Exception {
         private final static long serialVersionUID = 1L;
         public NoSpaceException() {
             super();
@@ -232,7 +232,7 @@ public final class BeehiveObjectStore implements ObjectStore {
      *
      *
      */
-    public static class DeleteTokenException extends BeehiveObjectStore.Exception {
+    public static class DeleteTokenException extends TitanObjectStoreImpl.Exception {
         private static final long serialVersionUID = 1L;
         public DeleteTokenException(String message) {
             super(message);
@@ -251,7 +251,7 @@ public final class BeehiveObjectStore implements ObjectStore {
      *
      *
      */
-    public static class InvalidObjectIdException extends BeehiveException {
+    public static class InvalidObjectIdException extends TitanException {
         private static final long serialVersionUID = 1L;
         public InvalidObjectIdException(String message) {
             super(message);
@@ -271,7 +271,7 @@ public final class BeehiveObjectStore implements ObjectStore {
      * not acceptable to the object store.
      *
      */
-    public static class UnacceptableObjectException extends BeehiveObjectStore.Exception {
+    public static class UnacceptableObjectException extends TitanObjectStoreImpl.Exception {
         private final static long serialVersionUID = 1L;
         public UnacceptableObjectException() {
             super();
@@ -296,7 +296,7 @@ public final class BeehiveObjectStore implements ObjectStore {
      * A deleted BeehiveObject has meta-data such that
      * the {@code deleteToken != null && deleteTokenId != null && deleteTokenId.equals(deleteToken.getObjectId())}
      */
-    public static class DeletedObjectException extends BeehiveObjectStore.Exception {
+    public static class DeletedObjectException extends TitanObjectStoreImpl.Exception {
         private final static long serialVersionUID = 1L;
         public DeletedObjectException() {
             super();
@@ -355,7 +355,7 @@ public final class BeehiveObjectStore implements ObjectStore {
      * consists of both objects stored locally as well as the
      * back-pointers to objects stored elsewhere.
      */
-    public BeehiveObjectStore(final TitanNodeImpl node, String objectStoreCapacity) throws IOException {
+    public TitanObjectStoreImpl(final TitanNodeImpl node, String objectStoreCapacity) throws IOException {
         this.node = node;
         this.fileStore = new FileObjectStore3(new File(node.getSpoolDirectory() + File.separator + "object-store" + File.separator + "object"), objectStoreCapacity);
 
@@ -367,7 +367,7 @@ public final class BeehiveObjectStore implements ObjectStore {
     }
 
     public <C extends TitanObject> C tryGetAndLock(final Class<? extends C> klasse, final TitanGuid objectId)
-    throws ClassCastException, BeehiveObjectStore.NotFoundException {
+    throws ClassCastException, TitanObjectStoreImpl.NotFoundException {
         synchronized (this.locks) {
             if (this.locks.trylock(objectId)) {
                 return this.get(klasse, objectId);
@@ -377,7 +377,7 @@ public final class BeehiveObjectStore implements ObjectStore {
     }
     
     public <C extends TitanObject> C get(final Class<? extends C> klasse, final TitanGuid objectId)
-    throws ClassCastException, BeehiveObjectStore.NotFoundException {
+    throws ClassCastException, TitanObjectStoreImpl.NotFoundException {
         try {
             if (objectId.equals(this.node.getNodeId())) {
                 this.node.getLogger().warning("Why am I fetching my own node objectid?");
@@ -385,7 +385,7 @@ public final class BeehiveObjectStore implements ObjectStore {
             }
             TitanObject object = this.fileStore.get(objectId);
 
-            TitanGuid computedObjectId = BeehiveObjectStore.ObjectId(object);
+            TitanGuid computedObjectId = TitanObjectStoreImpl.ObjectId(object);
             if (computedObjectId.equals(objectId)) {
                 return klasse.cast(object);
             }
@@ -406,11 +406,11 @@ public final class BeehiveObjectStore implements ObjectStore {
             if (this.node.getLogger().isLoggable(Level.WARNING)) {
                 this.node.getLogger().warning("%s %s (%s)", e, objectId, klasse.getName());
             }
-        } catch (BeehiveObjectStore.InvalidObjectIdException e) {
+        } catch (TitanObjectStoreImpl.InvalidObjectIdException e) {
             if (this.node.getLogger().isLoggable(Level.WARNING)) {
                 this.node.getLogger().warning("%s %s (%s)", e.toString(), objectId, klasse.getName());
             }
-        } catch (BeehiveObjectStore.DeleteTokenException e) {
+        } catch (TitanObjectStoreImpl.DeleteTokenException e) {
             if (this.node.getLogger().isLoggable(Level.FINE)) {
                 this.node.getLogger().fine("%s: Remove local object %s", e.toString(), objectId);
             }
@@ -425,16 +425,16 @@ public final class BeehiveObjectStore implements ObjectStore {
 
         Publish publish = this.node.getService(PublishDaemon.class);
         publish.unpublish(objectId);
-        throw new BeehiveObjectStore.NotFoundException("Object %s (%s) not found.", objectId, klasse.getName());
+        throw new TitanObjectStoreImpl.NotFoundException("Object %s (%s) not found.", objectId, klasse.getName());
     }
     
     public <C extends TitanObject> C getAndLock(final Class<? extends C> klasse, final TitanGuid objectId)
-    throws ClassCastException, BeehiveObjectStore.NotFoundException {
+    throws ClassCastException, TitanObjectStoreImpl.NotFoundException {
         synchronized (this.locks) {
             this.lock(objectId);
             try {
                 return this.get(klasse, objectId);
-            } catch (BeehiveObjectStore.NotFoundException e) {
+            } catch (TitanObjectStoreImpl.NotFoundException e) {
                 this.unlock(objectId);
                 throw e;
             } catch (ClassCastException e) {
@@ -457,7 +457,7 @@ public final class BeehiveObjectStore implements ObjectStore {
 
         try {
             // Set the object's object-id by force, to ensure that it is correct.
-            TitanGuid computedObjectId = BeehiveObjectStore.ObjectId(object);
+            TitanGuid computedObjectId = TitanObjectStoreImpl.ObjectId(object);
             object.setObjectId(computedObjectId);
 
             boolean needToPublish = false;
@@ -478,10 +478,10 @@ public final class BeehiveObjectStore implements ObjectStore {
                     if (needToPublish) {
                         try {
                             this.unlock(object);
-                        } catch (BeehiveObjectStore.Exception e) {
-                            throw new BeehiveObjectStore.UnacceptableObjectException(e);
+                        } catch (TitanObjectStoreImpl.Exception e) {
+                            throw new TitanObjectStoreImpl.UnacceptableObjectException(e);
                         } catch (BeehiveObjectPool.Exception e) {
-                            throw new BeehiveObjectStore.UnacceptableObjectException(e);
+                            throw new TitanObjectStoreImpl.UnacceptableObjectException(e);
                         }
 
                         //                        if (!this.unlock(object).getStatus().isSuccessful()) {
@@ -494,7 +494,7 @@ public final class BeehiveObjectStore implements ObjectStore {
             }
             // If we couldn't get the lock on this object, then some other Thread
             // has a lock on it and assume that it has already been created.
-            throw new BeehiveObjectStore.ObjectExistenceException("Object already exists. ObjectId=" + computedObjectId);
+            throw new TitanObjectStoreImpl.ObjectExistenceException("Object already exists. ObjectId=" + computedObjectId);
         } catch (DeleteTokenException e) {
             throw new InvalidObjectException(e);
         } catch (InvalidObjectIdException e) {
@@ -504,12 +504,12 @@ public final class BeehiveObjectStore implements ObjectStore {
 
     public TitanGuid update(TitanObject object) throws InvalidObjectException, ObjectExistenceException, NoSpaceException, UnacceptableObjectException {
         try {
-            TitanGuid actualObjectId = BeehiveObjectStore.ObjectId(object);
+            TitanGuid actualObjectId = TitanObjectStoreImpl.ObjectId(object);
             object.setObjectId(actualObjectId);
 
             this.locks.assertLock(actualObjectId);
             if (!this.containsObject(actualObjectId)) {
-                throw new BeehiveObjectStore.ObjectExistenceException("%s not found",  actualObjectId);
+                throw new TitanObjectStoreImpl.ObjectExistenceException("%s not found",  actualObjectId);
             }
             this.put(object);
             return actualObjectId;
@@ -527,12 +527,12 @@ public final class BeehiveObjectStore implements ObjectStore {
      * There is no locking.
      * </p>
      * @param object
-     * @throws BeehiveObjectStore.InvalidObjectException
+     * @throws TitanObjectStoreImpl.InvalidObjectException
      * @throws IOException
      */
-    private TitanObject put(TitanObject object) throws BeehiveObjectStore.InvalidObjectException, BeehiveObjectStore.NoSpaceException {
+    private TitanObject put(TitanObject object) throws TitanObjectStoreImpl.InvalidObjectException, TitanObjectStoreImpl.NoSpaceException {
         try {
-            object.setProperty(BeehiveObjectStore.METADATA_CREATEDTIME, Time.currentTimeInSeconds());
+            object.setProperty(TitanObjectStoreImpl.METADATA_CREATEDTIME, Time.currentTimeInSeconds());
             this.fileStore.put(object.getObjectId(), object);
             return object;
         } catch (IOException e) {
@@ -540,7 +540,7 @@ public final class BeehiveObjectStore implements ObjectStore {
         } catch (IllegalStateException e) {
             throw e;
         } catch (AbstractStoredMap.OutOfSpace e) {
-            throw new BeehiveObjectStore.NoSpaceException("No space for object %s", object.getObjectId());
+            throw new TitanObjectStoreImpl.NoSpaceException("No space for object %s", object.getObjectId());
         }
     }
 
@@ -554,19 +554,19 @@ public final class BeehiveObjectStore implements ObjectStore {
      * will be permitted to remain because the object's root handler will not have the necessary information to reject this object.
      * 
      */
-    public TitanGuid store(TitanObject object) throws BeehiveObjectStore.InvalidObjectException, BeehiveObjectStore.NoSpaceException,
-    BeehiveObjectStore.UnacceptableObjectException {
+    public TitanGuid store(TitanObject object) throws TitanObjectStoreImpl.InvalidObjectException, TitanObjectStoreImpl.NoSpaceException,
+    TitanObjectStoreImpl.UnacceptableObjectException {
 
         try {
-            TitanGuid actualObjectId = BeehiveObjectStore.ObjectId(object);
+            TitanGuid actualObjectId = TitanObjectStoreImpl.ObjectId(object);
             object.setObjectId(actualObjectId);
 
             this.locks.assertLock(actualObjectId);
             this.put(object);
             return actualObjectId;
-        } catch (BeehiveObjectStore.InvalidObjectIdException e) {
+        } catch (TitanObjectStoreImpl.InvalidObjectIdException e) {
             throw new InvalidObjectException(e);
-        } catch (BeehiveObjectStore.DeleteTokenException e) {
+        } catch (TitanObjectStoreImpl.DeleteTokenException e) {
             throw new InvalidObjectException(e);
         }
     }
@@ -595,7 +595,7 @@ public final class BeehiveObjectStore implements ObjectStore {
      * set.
      * </p>
      */
-    public static TitanObject CreateSignatureVerifiedObject(TitanGuid objectId, TitanObject object) throws BeehiveObjectStore.DeleteTokenException {
+    public static TitanObject CreateSignatureVerifiedObject(TitanGuid objectId, TitanObject object) throws TitanObjectStoreImpl.DeleteTokenException {
         String deleteTokenId = object.getDeleteTokenId().toString();
 
         TitanGuid dataHash = object.getDataId();
@@ -605,9 +605,9 @@ public final class BeehiveObjectStore implements ObjectStore {
         .add(dataHash);
 
         object
-        .setProperty(ObjectStore.METADATA_OBJECTID, objectId)
-        .setProperty(ObjectStore.METADATA_DATAHASH, dataHash)
-        .setProperty(ObjectStore.METADATA_VOUCHER, voucher);
+        .setProperty(TitanObjectStore.METADATA_OBJECTID, objectId)
+        .setProperty(TitanObjectStore.METADATA_DATAHASH, dataHash)
+        .setProperty(TitanObjectStore.METADATA_VOUCHER, voucher);
         object.setObjectId(objectId);
 
 //        System.err.printf("ObjectId %5.5s... Voucher %5.5s... deleteId %5.5s... dataId %5.5s...\n", objectId, voucher, deleteTokenId, dataHash);
@@ -623,21 +623,21 @@ public final class BeehiveObjectStore implements ObjectStore {
      * See {@link TitanObject}.
      *
      * @param object the {@code BeehiveObject} to compute the {@code TitanGuid}.
-     * @throws BeehiveObjectStore.InvalidObjectIdException if a valid {@code TitanGuid}
+     * @throws TitanObjectStoreImpl.InvalidObjectIdException if a valid {@code TitanGuid}
      *         cannot be calculated.
-     * @throws BeehiveObjectStore.DeleteTokenException if the Delete Token hash
-     *         (specified by the {@link ObjectStore#METADATA_DELETETOKENID}
+     * @throws TitanObjectStoreImpl.DeleteTokenException if the Delete Token hash
+     *         (specified by the {@link TitanObjectStore#METADATA_DELETETOKENID}
      *         property in the meta-data) is either missing, or (if present)
      *         does not match the hash of the Delete Token itself (specified
      *         by the {@code ObjectStore#METADATA_DELETETOKENID} property
      *         in the meta-data) does not match the Delete Token Hash
      */
-    public static TitanGuid ObjectId(TitanObject object) throws BeehiveObjectStore.InvalidObjectIdException, BeehiveObjectStore.DeleteTokenException {
+    public static TitanGuid ObjectId(TitanObject object) throws TitanObjectStoreImpl.InvalidObjectIdException, TitanObjectStoreImpl.DeleteTokenException {
         TitanGuid dataHash = object.getDataId();
         TitanGuid deleteTokenId = object.getDeleteTokenId();
 
-        TitanGuid voucher = object.getPropertyAsObjectId(ObjectStore.METADATA_VOUCHER, null);
-        TitanGuid deleteToken = object.getPropertyAsObjectId(ObjectStore.METADATA_DELETETOKEN, null);
+        TitanGuid voucher = object.getPropertyAsObjectId(TitanObjectStore.METADATA_VOUCHER, null);
+        TitanGuid deleteToken = object.getPropertyAsObjectId(TitanObjectStore.METADATA_DELETETOKEN, null);
 
         //
         // If a voucher is present in the meta-data, then this object is either
@@ -651,7 +651,7 @@ public final class BeehiveObjectStore implements ObjectStore {
         //
         TitanGuid objectId;
         if (voucher != null) {
-            objectId = object.getPropertyAsObjectId(ObjectStore.METADATA_OBJECTID, null);
+            objectId = object.getPropertyAsObjectId(TitanObjectStore.METADATA_OBJECTID, null);
             if (objectId == null) {
                 System.err.println("************** OBJECT MISSING OBJECTID IN METADATA");
             }
@@ -660,14 +660,14 @@ public final class BeehiveObjectStore implements ObjectStore {
                 if (deleteToken != null) {
                     if (!deleteTokenId.equals(deleteToken.getGuid())) {
                         System.err.printf("%s deleteTokenId=%s, deleteToken=%s\n", object.getObjectType(), deleteTokenId, deleteToken);
-                        throw new BeehiveObjectStore.DeleteTokenException("Delete-token does not match delete-token-object-id");
+                        throw new TitanObjectStoreImpl.DeleteTokenException("Delete-token does not match delete-token-object-id");
                     }
                 }
             } else {
                 System.err.println(object.getObjectType());
                 System.err.printf("ObjectId %5.5s... Voucher %5.5s... deleteId %5.5s... dataId %5.5s...\n", objectId, voucher, deleteTokenId, dataHash);
 
-                throw new BeehiveObjectStore.InvalidObjectIdException("Signature/Hash attestation failed: " +
+                throw new TitanObjectStoreImpl.InvalidObjectIdException("Signature/Hash attestation failed: " +
                         String.format("ObjectId %5.5s... Voucher %5.5s... deleteId %5.5s... dataId %5.5s...\n", objectId, voucher, deleteTokenId, dataHash));
             }
         } else { //This object is Data verifiable only.
@@ -710,7 +710,7 @@ public final class BeehiveObjectStore implements ObjectStore {
      * <p>
      * Note that the unlocked object is NOT published or unpublished.
      * To automatically publish or unpublish an object use
-     * {@link BeehiveObjectStore#unlock(TitanObject) unlock(BeehiveObject)}
+     * {@link TitanObjectStoreImpl#unlock(TitanObject) unlock(BeehiveObject)}
      * </p>
      */
     public void unlock(TitanGuid objectId) {
@@ -729,11 +729,11 @@ public final class BeehiveObjectStore implements ObjectStore {
      * If the object is in the local store transmit a Publish Object message.
      * If the object is NOT in the local store transmit an Unpublish Object message.
      * </p>
-     * @throws BeehiveObjectStore.Exception 
+     * @throws TitanObjectStoreImpl.Exception 
      * @throws BeehiveObjectPool.Exception 
      * @throws ClassNotFoundException 
      */
-    public Publish.PublishUnpublishResponse unlock(TitanObject object) throws ClassNotFoundException, BeehiveObjectPool.Exception, BeehiveObjectStore.Exception {
+    public Publish.PublishUnpublishResponse unlock(TitanObject object) throws ClassNotFoundException, BeehiveObjectPool.Exception, TitanObjectStoreImpl.Exception {
         // The object must be locked by the invoking thread.
         this.locks.assertLock(object.getObjectId());
 
@@ -775,7 +775,7 @@ public final class BeehiveObjectStore implements ObjectStore {
      * a backpointer to the object on the publishing node.
      * </p>
      */
-    private Publish.PublishUnpublishResponse unlockAndPublish(TitanObject object) throws ClassNotFoundException, BeehiveObjectPool.Exception, BeehiveObjectStore.Exception {
+    private Publish.PublishUnpublishResponse unlockAndPublish(TitanObject object) throws ClassNotFoundException, BeehiveObjectPool.Exception, TitanObjectStoreImpl.Exception {
         return this.unlockAndPublish(object, false);
     }
 
@@ -787,7 +787,7 @@ public final class BeehiveObjectStore implements ObjectStore {
      * @throws ClassNotFoundException 
      * @throws BeehiveObjectPool.Exception 
      */
-    private Publish.PublishUnpublishResponse unlockAndPublish(TitanObject object, boolean trace) throws ClassNotFoundException, BeehiveObjectPool.Exception, BeehiveObjectStore.Exception {
+    private Publish.PublishUnpublishResponse unlockAndPublish(TitanObject object, boolean trace) throws ClassNotFoundException, BeehiveObjectPool.Exception, TitanObjectStoreImpl.Exception {
     	try {
     		Publish publish = (Publish) this.node.getService(PublishDaemon.class);
 
@@ -802,7 +802,7 @@ public final class BeehiveObjectStore implements ObjectStore {
         } catch (BeehiveObjectPool.Exception e) {
             this.fileStore.remove(object.getObjectId());   
             throw e;
-        } catch (BeehiveObjectStore.Exception e) {
+        } catch (TitanObjectStoreImpl.Exception e) {
             this.fileStore.remove(object.getObjectId());
             throw e;
         } catch (NullPointerException e) {
@@ -823,13 +823,13 @@ public final class BeehiveObjectStore implements ObjectStore {
      * @param type
      * @param trace
      * @return
-     * @throws BeehiveObjectStore.Exception 
+     * @throws TitanObjectStoreImpl.Exception 
      * @throws BeehiveObjectPool.Exception 
      * @throws ClassNotFoundException 
      * @throws ClassCastException 
      */
     private Publish.PublishUnpublishResponse unlockAndUnpublish(TitanObject object) throws ClassCastException, ClassNotFoundException,
-    BeehiveObjectPool.Exception, BeehiveObjectStore.Exception {
+    BeehiveObjectPool.Exception, TitanObjectStoreImpl.Exception {
     	try {
     		Publish publisher = (Publish) this.node.getService(PublishDaemon.class);
     		Publish.PublishUnpublishResponse result = publisher.unpublish(object);
@@ -861,9 +861,9 @@ public final class BeehiveObjectStore implements ObjectStore {
                         object.isDeleted(),
                         this.fileStore.sizeOf(objectId),
                         Long.toString((object.getCreationTime() + object.getTimeToLive()) - currentTimeSeconds),
-                        object.getProperty(ObjectStore.METADATA_REPLICATION_STORE),
-                        object.getProperty(ObjectStore.METADATA_REPLICATION_LOWWATER),
-                        object.getProperty(ObjectStore.METADATA_REPLICATION_HIGHWATER) == null ? "?" : object.getProperty(ObjectStore.METADATA_REPLICATION_HIGHWATER));
+                        object.getProperty(TitanObjectStore.METADATA_REPLICATION_STORE),
+                        object.getProperty(TitanObjectStore.METADATA_REPLICATION_LOWWATER),
+                        object.getProperty(TitanObjectStore.METADATA_REPLICATION_HIGHWATER) == null ? "?" : object.getProperty(TitanObjectStore.METADATA_REPLICATION_HIGHWATER));
                 result.add(o);
             } catch (ClassCastException e) {
                 // TODO Auto-generated catch block
@@ -935,9 +935,9 @@ public final class BeehiveObjectStore implements ObjectStore {
                 		"forever"
                 		: Long.toString((dolrObject.getCreationTime() + dolrObject.getTimeToLive()) - currentTimeSeconds); 
                 String replicationInfo = String.format("%s &le; %s &le; %s",
-                		dolrObject.getProperty(ObjectStore.METADATA_REPLICATION_LOWWATER),
-                		dolrObject.getProperty(ObjectStore.METADATA_REPLICATION_STORE),
-                		dolrObject.getProperty(ObjectStore.METADATA_REPLICATION_HIGHWATER) == null ? "?" : dolrObject.getProperty(ObjectStore.METADATA_REPLICATION_HIGHWATER));
+                		dolrObject.getProperty(TitanObjectStore.METADATA_REPLICATION_LOWWATER),
+                		dolrObject.getProperty(TitanObjectStore.METADATA_REPLICATION_STORE),
+                		dolrObject.getProperty(TitanObjectStore.METADATA_REPLICATION_HIGHWATER) == null ? "?" : dolrObject.getProperty(TitanObjectStore.METADATA_REPLICATION_HIGHWATER));
                 row.add(objectIdCell,
                         new XHTML.Table.Data("%d", this.fileStore.sizeOf(objectId)),
                         new XHTML.Table.Data(replicationInfo),

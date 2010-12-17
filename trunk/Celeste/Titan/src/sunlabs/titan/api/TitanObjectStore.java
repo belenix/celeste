@@ -26,10 +26,10 @@ package sunlabs.titan.api;
 import java.io.IOException;
 
 import sunlabs.titan.node.BeehiveObjectPool;
-import sunlabs.titan.node.BeehiveObjectStore;
-import sunlabs.titan.node.BeehiveObjectStore.InvalidObjectException;
-import sunlabs.titan.node.BeehiveObjectStore.NoSpaceException;
-import sunlabs.titan.node.BeehiveObjectStore.UnacceptableObjectException;
+import sunlabs.titan.node.TitanObjectStoreImpl;
+import sunlabs.titan.node.TitanObjectStoreImpl.InvalidObjectException;
+import sunlabs.titan.node.TitanObjectStoreImpl.NoSpaceException;
+import sunlabs.titan.node.TitanObjectStoreImpl.UnacceptableObjectException;
 import sunlabs.titan.node.PublishObjectMessage;
 import sunlabs.titan.node.UnpublishObjectMessage;
 import sunlabs.titan.node.object.TitanObjectHandler;
@@ -38,7 +38,7 @@ import sunlabs.titan.node.services.xml.TitanXML.XMLObjectStore;
 
 // Not sure this interface is that useful as opposed to just using the class definition
 
-public interface ObjectStore extends XHTMLInspectable, Iterable<TitanGuid> {
+public interface TitanObjectStore extends XHTMLInspectable, Iterable<TitanGuid> {
     /** If set, this object must not be cached */
     public final static String METADATA_UNCACHABLE = "ObjectStore.Uncachable";
 
@@ -109,15 +109,15 @@ public interface ObjectStore extends XHTMLInspectable, Iterable<TitanGuid> {
      *
      * @param object
 
-     * @throws BeehiveObjectStore.InvalidObjectException The {@link TitanObject} is invalid because of incorrect parameters.
-     * @throws BeehiveObjectStore.ObjectExistenceException The {@link TitanObject} already exists.
-     * @throws BeehiveObjectStore.NoSpaceException There is no space on this node for the {@link TitanObject}
-     * @throws BeehiveObjectStore.UnacceptableObjectException The {@link TitanObject} is unacceptable as it is presented due
+     * @throws TitanObjectStoreImpl.InvalidObjectException The {@link TitanObject} is invalid because of incorrect parameters.
+     * @throws TitanObjectStoreImpl.ObjectExistenceException The {@link TitanObject} already exists.
+     * @throws TitanObjectStoreImpl.NoSpaceException There is no space on this node for the {@link TitanObject}
+     * @throws TitanObjectStoreImpl.UnacceptableObjectException The {@link TitanObject} is unacceptable as it is presented due
      *         to some inconsistency or the object's {@link TitanObjectHandler} rejected it during publishing.
      * @throws ClassNotFoundException 
      */
-    public TitanGuid create(TitanObject object) throws BeehiveObjectStore.InvalidObjectException, BeehiveObjectStore.ObjectExistenceException,
-        BeehiveObjectStore.NoSpaceException, BeehiveObjectStore.UnacceptableObjectException, ClassNotFoundException;
+    public TitanGuid create(TitanObject object) throws TitanObjectStoreImpl.InvalidObjectException, TitanObjectStoreImpl.ObjectExistenceException,
+        TitanObjectStoreImpl.NoSpaceException, TitanObjectStoreImpl.UnacceptableObjectException, ClassNotFoundException;
 
     /**
      * Given a {@link TitanGuid} get the corresponding {@link TitanObject} from the local object store.
@@ -125,18 +125,18 @@ public interface ObjectStore extends XHTMLInspectable, Iterable<TitanGuid> {
      * If the object is not found, the node
      * will perform a clean-up and <em>unpublish</em> of the specified {@code TitanGuid}
      * lest the system have some residual, but incorrect, location information for the
-     * object-id and {@link sunlabs.titan.node.BeehiveObjectStore.NotFoundException} is thrown.
+     * object-id and {@link sunlabs.titan.node.TitanObjectStoreImpl.NotFoundException} is thrown.
      * </p>
      * <p>
      * The {@link TitanObject} instance returned from this method cannot be put back in the object store
-     * (ie. the subject of a {@link ObjectStore#store(TitanObject) store} or
-     * {@link ObjectStore#update(TitanObject) update} method).
+     * (ie. the subject of a {@link TitanObjectStore#store(TitanObject) store} or
+     * {@link TitanObjectStore#update(TitanObject) update} method).
      * </p>
      * <p>
      * See
-     * {@link ObjectStore#getAndLock getAndLock}
+     * {@link TitanObjectStore#getAndLock getAndLock}
      * and
-     * {@link ObjectStore#tryGetAndLock tryGetAndLock}
+     * {@link TitanObjectStore#tryGetAndLock tryGetAndLock}
      * to obtain an instance of a {@code BeehiveObject}
      * that you can put back in the object store.
      * </p>
@@ -145,7 +145,7 @@ public interface ObjectStore extends XHTMLInspectable, Iterable<TitanGuid> {
      * @throws ClassCastException
      */
     public <C extends TitanObject> C get(final Class<? extends C> klasse, final TitanGuid objectId) throws ClassCastException,
-        BeehiveObjectStore.NotFoundException;
+        TitanObjectStoreImpl.NotFoundException;
 
     /**
      * Given a {@link TitanGuid} get the corresponding {@link TitanObject} from the local object store.
@@ -153,23 +153,23 @@ public interface ObjectStore extends XHTMLInspectable, Iterable<TitanGuid> {
      * If the object is not found, the node
      * will perform a clean-up and <em>unpublish</em> of the specified {@code TitanGuid}
      * lest the system have some residual, but incorrect, location information for the
-     * object-id and {@link BeehiveObjectStore.NotFoundException} is thrown.
+     * object-id and {@link TitanObjectStoreImpl.NotFoundException} is thrown.
      * </p>
      * <p>
      * The {@code TitanObject} instance returned from this method is locked and must be explicitly unlocked
-     * (see {@link ObjectStore#unlock(TitanObject)})
+     * (see {@link TitanObjectStore#unlock(TitanObject)})
      * </p>
      * <p>
      * See
-     * {@link ObjectStore#get} to obtain an instance of a {@link TitanObject} which is not locked.
+     * {@link TitanObjectStore#get} to obtain an instance of a {@link TitanObject} which is not locked.
      * </p>
      *
      * @param objectId the {@link TitanGuid} of the stored object to retrieve.
      * @throws ClassCastException if the stored object is not the specified class.
-     * @throws BeehiveObjectStore.NotFoundException if the stored object is not found
+     * @throws TitanObjectStoreImpl.NotFoundException if the stored object is not found
      */
     public <C extends TitanObject> C getAndLock(final Class<? extends C> klasse, final TitanGuid objectId) throws ClassCastException,
-        BeehiveObjectStore.NotFoundException;
+        TitanObjectStoreImpl.NotFoundException;
 
     /**
      * Given a {@link TitanGuid} try to obtain a locked instance of the corresponding
@@ -181,10 +181,10 @@ public interface ObjectStore extends XHTMLInspectable, Iterable<TitanGuid> {
      *
      * @param objectId the {@link TitanGuid} of the stored object to retrieve.
      * @throws ClassCastException if the stored object is not the specified class.
-     * @throws BeehiveObjectStore.NotFoundException if the stored object is not found
+     * @throws TitanObjectStoreImpl.NotFoundException if the stored object is not found
      */
     public <C extends TitanObject> C tryGetAndLock(final Class<? extends C> klasse, final TitanGuid objectId) throws ClassCastException,
-        BeehiveObjectStore.NotFoundException;
+        TitanObjectStoreImpl.NotFoundException;
 
     /**
      * Store (either create or update as appropriate) the given {@link TitanObject} in the object store.
@@ -199,13 +199,13 @@ public interface ObjectStore extends XHTMLInspectable, Iterable<TitanGuid> {
      * Update an existing {@link TitanObject} in the object store.
      * The object <em>must</em> already exist.
      * The object <em>must</em> be locked by the current Thread (see {@link #lock(TitanGuid)}).
-     * @throws BeehiveObjectStore.InvalidObjectException
-     * @throws BeehiveObjectStore.ObjectExistenceException
-     * @throws BeehiveObjectStore.NoSpaceException
+     * @throws TitanObjectStoreImpl.InvalidObjectException
+     * @throws TitanObjectStoreImpl.ObjectExistenceException
+     * @throws TitanObjectStoreImpl.NoSpaceException
      * @throws UnacceptableObjectException
      * @throws IOException;
      */
-    public TitanGuid update(TitanObject object) throws BeehiveObjectStore.InvalidObjectException, BeehiveObjectStore.ObjectExistenceException, BeehiveObjectStore.NoSpaceException, UnacceptableObjectException;
+    public TitanGuid update(TitanObject object) throws TitanObjectStoreImpl.InvalidObjectException, TitanObjectStoreImpl.ObjectExistenceException, TitanObjectStoreImpl.NoSpaceException, UnacceptableObjectException;
 
     /**
      * Remove a (locked) {@link TitanObject} from the local object store.
@@ -230,7 +230,7 @@ public interface ObjectStore extends XHTMLInspectable, Iterable<TitanGuid> {
      * <p>
      * NOTE: this method does NOT cause a Publish or Unpublish message to be emitted.
      * </p>
-     * @see ObjectStore#unlock(TitanObject)
+     * @see TitanObjectStore#unlock(TitanObject)
      *
      * @param objectId the {@link TitanGuid} of the {@link TitanObject} to lock.
      */
@@ -239,13 +239,13 @@ public interface ObjectStore extends XHTMLInspectable, Iterable<TitanGuid> {
     /**
      * Unlock the given object and if the object is in the local store, emit a {@link PublishObjectMessage}.
      * If the object is NOT in the local store, emit an {@link UnpublishObjectMessage}.
-     * @throws BeehiveObjectStore.Exception 
+     * @throws TitanObjectStoreImpl.Exception 
      * @throws BeehiveObjectPool.Exception 
      * @throws ClassNotFoundException 
      *
-     * @see ObjectStore#unlock(TitanGuid)
+     * @see TitanObjectStore#unlock(TitanGuid)
      */
-    public Publish.PublishUnpublishResponse unlock(TitanObject object) throws ClassNotFoundException, BeehiveObjectStore.Exception, BeehiveObjectPool.Exception;
+    public Publish.PublishUnpublishResponse unlock(TitanObject object) throws ClassNotFoundException, TitanObjectStoreImpl.Exception, BeehiveObjectPool.Exception;
 
     public XMLObjectStore toXML();
 }

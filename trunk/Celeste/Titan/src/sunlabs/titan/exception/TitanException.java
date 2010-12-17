@@ -28,22 +28,22 @@ package sunlabs.titan.exception;
  * 
  * @author Glenn Scott - Sun Microsystems Laboratories
  */
-public abstract class BeehiveException extends java.lang.Exception {
+public abstract class TitanException extends java.lang.Exception {
     private final static long serialVersionUID = 1L;
 
-    public BeehiveException() {
+    public TitanException() {
         super();
     }
 
-    public BeehiveException(String format, Object...args) {
+    public TitanException(String format, Object...args) {
         super(String.format(format, args));
     }
     
-    public BeehiveException(String message) {
+    public TitanException(String message) {
         super(message);
     }
 
-    public BeehiveException(Throwable reason) {
+    public TitanException(Throwable reason) {
         super(reason);
     }
 }
